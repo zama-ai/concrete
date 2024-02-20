@@ -40,6 +40,7 @@
 * [Key Value Database](application-tutorial/key\_value\_database.md)
 * [SHA-256](application-tutorial/sha256.md)
 * [Game of Life](application-tutorial/game_of_life.md)
+* [XOR Distance](application-tutorial/xor_distance.md)
 
 ## How To
 
