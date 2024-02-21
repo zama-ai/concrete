@@ -18,7 +18,7 @@ on:
         description: 'Slab request ID'
         type: string
       user_inputs:
-        description: 'either "nightly" or "public" to specify the release type'
+        description: 'either "nightly" or "public" or "private" to specify the release type'
         required: true
         default: 'nightly'
         type: string

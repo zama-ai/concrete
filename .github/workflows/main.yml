@@ -8,6 +8,7 @@ on:
       - 'main'
       - 'release/*'
       - 'force-docker-images'
+      - 'private_release/*'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   schedule:
@@ -259,6 +260,14 @@ jobs:
     with:
       command: concrete-python-release
       user_inputs: 'public'
+
+  concrete-python-private-release:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/heads/private_release/')
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-release
+      user_inputs: 'private'
 
   concrete-python-docker-release:
     needs: [concrete-python-public-release]
