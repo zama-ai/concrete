@@ -10,6 +10,7 @@
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Protocol.h"
 #include <memory>
+#include <mutex>
 #include <stdlib.h>
 #include <vector>
 
@@ -87,7 +88,8 @@ public:
   LweBootstrapKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                   Message<concreteprotocol::LweBootstrapKeyInfo> info)
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
-        info(info){};
+        info(info), decompress_mutext(std::make_shared<std::mutex>()),
+        decompressed(false){};
 
   /// @brief Initialize the key from the protocol message.
   static LweBootstrapKey
@@ -107,7 +109,9 @@ public:
 private:
   LweBootstrapKey(Message<concreteprotocol::LweBootstrapKeyInfo> info)
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
-        buffer(std::make_shared<std::vector<uint64_t>>()), info(info){};
+        buffer(std::make_shared<std::vector<uint64_t>>()), info(info),
+        decompress_mutext(std::make_shared<std::mutex>()),
+        decompressed(false){};
   LweBootstrapKey() = delete;
 
   /// @brief  The buffer of the seeded key if needed.
@@ -118,6 +122,12 @@ private:
 
   /// @brief The metadata of the bootrap key.
   Message<concreteprotocol::LweBootstrapKeyInfo> info;
+
+  /// @brief Mutex to guard the decompression
+  std::shared_ptr<std::mutex> decompress_mutext;
+
+  /// @brief A boolean that indicates if the decompression is done or not
+  bool decompressed;
 };
 
 class LweKeyswitchKey {
@@ -130,7 +140,8 @@ public:
   LweKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
                   Message<concreteprotocol::LweKeyswitchKeyInfo> info)
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
-        info(info){};
+        info(info), decompress_mutext(std::make_shared<std::mutex>()),
+        decompressed(false){};
 
   /// @brief Initialize the key from the protocol message.
   static LweKeyswitchKey
@@ -150,7 +161,9 @@ public:
 private:
   LweKeyswitchKey(Message<concreteprotocol::LweKeyswitchKeyInfo> info)
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
-        buffer(std::make_shared<std::vector<uint64_t>>()), info(info){};
+        buffer(std::make_shared<std::vector<uint64_t>>()), info(info),
+        decompress_mutext(std::make_shared<std::mutex>()),
+        decompressed(false){};
 
   /// @brief  The buffer of the seeded key if needed.
   std::shared_ptr<std::vector<uint64_t>> seededBuffer;
@@ -160,6 +173,12 @@ private:
 
   /// @brief The metadata of the bootrap key.
   Message<concreteprotocol::LweKeyswitchKeyInfo> info;
+
+  /// @brief Mutex to guard the decompression
+  std::shared_ptr<std::mutex> decompress_mutext;
+
+  /// @brief A boolean that indicates if the decompression is done or not
+  bool decompressed;
 };
 
 class PackingKeyswitchKey {
