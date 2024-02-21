@@ -150,6 +150,7 @@ jobs:
           sudo apt install -y graphviz libgraphviz-dev
           
           pip install $CONCRETE_PYTHON/dist/*manylinux*.whl
+          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
           pip install -r $CONCRETE_PYTHON/requirements.dev.txt
 
           expected_version=$(cat "$CONCRETE_PYTHON/version.txt")
