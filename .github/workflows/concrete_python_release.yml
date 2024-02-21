@@ -192,7 +192,7 @@ jobs:
 
       - name: Install OS Dependencies
         run: |
-          brew install ninja ccache graphviz
+          brew install ninja ccache
 
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
