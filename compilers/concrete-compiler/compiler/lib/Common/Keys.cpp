@@ -193,8 +193,7 @@ Message<concreteprotocol::LweBootstrapKey> LweBootstrapKey::toProto() const {
 }
 
 const std::vector<uint64_t> &LweBootstrapKey::getBuffer() {
-  if (buffer->size() == 0)
-    decompress();
+  decompress();
   return *buffer;
 }
 
@@ -220,6 +219,11 @@ void LweBootstrapKey::decompress() {
   case concreteprotocol::Compression::NONE:
     return;
   case concreteprotocol::Compression::SEED: {
+    if (decompressed)
+      return;
+    const std::lock_guard<std::mutex> guard(*decompress_mutext);
+    if (decompressed)
+      return;
     auto params = info.asReader().getParams();
     buffer->resize(concrete_cpu_bootstrap_key_size_u64(
         params.getLevelCount(), params.getGlweDimension(),
@@ -230,6 +234,7 @@ void LweBootstrapKey::decompress() {
         buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
         params.getPolynomialSize(), params.getGlweDimension(),
         params.getLevelCount(), params.getBaseLog(), seed);
+    decompressed = true;
     return;
   }
   default:
@@ -313,8 +318,7 @@ LweKeyswitchKey::getInfo() const {
 }
 
 const std::vector<uint64_t> &LweKeyswitchKey::getBuffer() {
-  if (buffer->size() == 0)
-    decompress();
+  decompress();
   return *buffer;
 }
 
@@ -335,6 +339,11 @@ void LweKeyswitchKey::decompress() {
   case concreteprotocol::Compression::NONE:
     return;
   case concreteprotocol::Compression::SEED: {
+    if (decompressed)
+      return;
+    const std::lock_guard<std::mutex> guard(*decompress_mutext);
+    if (decompressed)
+      return;
     auto params = info.asReader().getParams();
     buffer->resize(concrete_cpu_keyswitch_key_size_u64(
         params.getLevelCount(), params.getInputLweDimension(),
@@ -345,6 +354,7 @@ void LweKeyswitchKey::decompress() {
         buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
         params.getOutputLweDimension(), params.getLevelCount(),
         params.getBaseLog(), seed);
+    decompressed = true;
     return;
   }
   default:
