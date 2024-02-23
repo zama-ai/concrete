@@ -11,8 +11,6 @@ from concrete import fhe
 from concrete.fhe.dtypes import Integer
 from concrete.fhe.values import ValueDescription
 
-KNOWN_MULTI_BUG = "_mark_xfail_if_multi"
-
 cases = [
     [
         # operation
@@ -107,7 +105,7 @@ cases += [
     for rhs_is_signed in [False, True]
     for operation in [
         (
-            "maximum" + KNOWN_MULTI_BUG,
+            "maximum",
             lambda x, y: np.maximum(x, y),
         ),
     ]
@@ -144,8 +142,8 @@ for lhs_bit_width in range(1, 5):
                         strategy,
                     ]
                     for operation in [
-                        ("minimum" + KNOWN_MULTI_BUG, lambda x, y: np.minimum(x, y)),
-                        ("maximum" + KNOWN_MULTI_BUG, lambda x, y: np.maximum(x, y)),
+                        ("minimum", lambda x, y: np.minimum(x, y)),
+                        ("maximum", lambda x, y: np.maximum(x, y)),
                     ]
                     for strategy in strategies
                 ]
@@ -195,14 +193,6 @@ def test_minimum_maximum(
 
     parameter_encryption_statuses = {"x": "encrypted", "y": "encrypted"}
     configuration = helpers.configuration()
-    can_be_known_failure = (
-        name.endswith("xfail_if_multi")
-        and configuration.parameter_selection_strategy == fhe.ParameterSelectionStrategy.MULTI
-    )
-    if can_be_known_failure:
-        pytest.skip(
-            reason="Compiler parametrization pass make the compilation fail with an assertion"
-        )
 
     if strategy is not None:
         configuration = configuration.fork(min_max_strategy_preference=[strategy])
@@ -216,10 +206,8 @@ def test_minimum_maximum(
         )
         for _ in range(100)
     ]
-    try:
-        circuit = compiler.compile(inputset, configuration)
-    except AssertionError:
-        pytest.xfail("Known cp bug")
+
+    circuit = compiler.compile(inputset, configuration)
 
     samples = [
         [
@@ -244,16 +232,4 @@ def test_minimum_maximum(
         ],
     ]
     for sample in samples:
-        try:
-            helpers.check_execution(circuit, function, sample, retries=5)
-        except RuntimeError as exc:
-            if (
-                str(exc) == "RuntimeError: Can't compile: Parametrization of TFHE operations failed"
-                and can_be_known_failure
-            ):
-                pytest.xfail("Known multi output bug, bad compilation")
-            raise
-        except AssertionError:
-            if can_be_known_failure:
-                pytest.xfail("Known multi output bug, bad result")
-            raise
+        helpers.check_execution(circuit, function, sample, retries=5)
