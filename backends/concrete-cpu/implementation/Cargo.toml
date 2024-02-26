@@ -21,7 +21,7 @@ dyn-stack = { version = "0.9", default-features = false }
 readonly = "0.2"
 aligned-vec = { version = "0.5", default-features = false }
 concrete-fft = { version = "0.2.1", default-features = false }
-bytemuck = "1.12"
+bytemuck = "=1.14.1"
 num-complex = { version = "0.4", default-features = false, features = [
   "bytemuck",
 ] }
