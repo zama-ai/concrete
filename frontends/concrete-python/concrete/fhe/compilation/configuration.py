@@ -10,6 +10,7 @@ from typing import List, Optional, Tuple, Union, get_type_hints
 import numpy as np
 
 from ..dtypes import Integer
+from ..representation import GraphProcessor
 from ..values import ValueDescription
 from .utils import friendly_type_format
 
@@ -931,6 +932,7 @@ class Configuration:
     relu_on_bits_threshold: int
     relu_on_bits_chunk_size: int
     if_then_else_chunk_size: int
+    additional_processors: List[GraphProcessor]
 
     def __init__(
         self,
@@ -987,6 +989,7 @@ class Configuration:
         relu_on_bits_threshold: int = 7,
         relu_on_bits_chunk_size: int = 3,
         if_then_else_chunk_size: int = 3,
+        additional_processors: Optional[List[GraphProcessor]] = None,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1069,6 +1072,7 @@ class Configuration:
         self.relu_on_bits_threshold = relu_on_bits_threshold
         self.relu_on_bits_chunk_size = relu_on_bits_chunk_size
         self.if_then_else_chunk_size = if_then_else_chunk_size
+        self.additional_processors = [] if additional_processors is None else additional_processors
 
         self._validate()
 
@@ -1129,6 +1133,7 @@ class Configuration:
         relu_on_bits_threshold: Union[Keep, int] = KEEP,
         relu_on_bits_chunk_size: Union[Keep, int] = KEEP,
         if_then_else_chunk_size: Union[Keep, int] = KEEP,
+        additional_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
@@ -1158,6 +1163,21 @@ class Configuration:
                 "min_max_strategy_preference",
             ]
             if name in already_checked_by_parse_methods:
+                continue
+
+            if name == "additional_processors":
+                valid = isinstance(self.additional_processors, list)
+                if valid:
+                    for processor in self.additional_processors:
+                        valid = valid and isinstance(processor, GraphProcessor)
+                if not valid:
+                    hint_type = friendly_type_format(hint)
+                    value_type = friendly_type_format(type(self.additional_processors))
+                    message = (
+                        f"Unexpected type for keyword argument 'additional_processors' "
+                        f"(expected '{hint_type}', got '{value_type}')"
+                    )
+                    raise TypeError(message)
                 continue
 
             original_hint = hint

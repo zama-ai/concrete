@@ -3,8 +3,7 @@ Declaration of `CheckIntegerOnly` graph processor.
 """
 
 from ...dtypes import Integer
-from ...representation import Graph
-from . import GraphProcessor
+from ...representation import Graph, GraphProcessor
 
 
 class CheckIntegerOnly(GraphProcessor):

@@ -412,3 +412,25 @@ def test_direct_graph_integer_range(helpers):
         configuration=helpers.configuration(),
     )
     assert circuit.graph.integer_range() is None
+
+
+def test_graph_processor(helpers):
+    """
+    Test providing additional graph processors.
+    """
+
+    class CountNodes(fhe.GraphProcessor):
+        """Sample graph processor to count nodes."""
+
+        node_count: int = 0
+
+        def apply(self, graph: fhe.Graph):
+            self.node_count += len(graph.query_nodes())
+
+    processor = CountNodes()
+    configuration = helpers.configuration().fork(additional_processors=[processor])
+
+    compiler = fhe.Compiler(lambda x: x**2, {"x": "encrypted"})
+    compiler.compile(range(8), configuration)
+
+    assert processor.node_count == 3

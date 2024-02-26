@@ -22,7 +22,7 @@ from concrete.fhe.compilation.configuration import Configuration
 from ..representation import Graph, Node, Operation
 from .context import Context
 from .conversion import Conversion
-from .processors.all import *  # pylint: disable=wildcard-import
+from .processors import *  # pylint: disable=wildcard-import
 from .utils import MAXIMUM_TLU_BIT_WIDTH, construct_deduplicated_tables
 
 # pylint: enable=import-error,no-name-in-module
@@ -196,7 +196,7 @@ class Converter:
                 min_max_strategy_preference=configuration.min_max_strategy_preference,
             ),
             ProcessRounding(),
-        ]
+        ] + configuration.additional_processors
 
         for processor in pipeline:
             processor.apply(graph)
