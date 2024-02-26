@@ -32,10 +32,9 @@ from ..compilation.configuration import (
 )
 from ..dtypes import Integer
 from ..extensions.bits import MAX_EXTRACTABLE_BIT, MIN_EXTRACTABLE_BIT
-from ..representation import Graph, Node
+from ..representation import Graph, GraphProcessor, Node
 from ..values import ValueDescription
 from .conversion import Conversion, ConversionType
-from .processors import GraphProcessor
 from .utils import MAXIMUM_TLU_BIT_WIDTH, Comparison, _FromElementsOp
 
 # pylint: enable=import-error,no-name-in-module

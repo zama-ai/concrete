@@ -14,8 +14,7 @@ from ...compilation.configuration import (
     MultivariateStrategy,
 )
 from ...dtypes import Integer
-from ...representation import Graph, Node, Operation
-from . import GraphProcessor
+from ...representation import Graph, GraphProcessor, Node, Operation
 
 
 class AssignBitWidths(GraphProcessor):

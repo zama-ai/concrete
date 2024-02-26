@@ -10,8 +10,7 @@ import numpy as np
 
 from ...dtypes import Integer
 from ...extensions.table import LookupTable
-from ...representation import Graph, Node
-from . import GraphProcessor
+from ...representation import Graph, GraphProcessor, Node
 
 
 class ProcessRounding(GraphProcessor):
