@@ -338,6 +338,10 @@ run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
 
+run-end-to-end-distributed-tests: build-end-to-end-dataflow-tests
+	srun -n4 -c8 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
+	srun -n4 -c8 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
+
 # benchmark
 
 build-benchmarks: build-initialized
