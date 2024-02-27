@@ -84,33 +84,9 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build build-end-to-end-dataflow-tests
             echo "Debug: ccache statistics (after the build):"
             ccache -s
-
-      - name: Build compiler Dialects docs and check diff
-        uses: addnab/docker-run-action@v3
-        id: build-compiler-docs
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
-            -v ${{ github.workspace }}/wheels:/wheels
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
-            -e SSH_AUTH_SOCK=/ssh.socket
-            ${{ env.DOCKER_GPU_OPTION }}
-          shell: bash
-          run: |
-            set -e
-            cd /concrete/compilers/concrete-compiler/compiler
-            make BUILD_DIR=/build doc
-            cd /build/tools/concretelang/docs/concretelang/
-            sed -i -e 's/\[TOC\]//' *Dialect.md
-            for i in `ls *Dialect.md`; do diff $i /concrete/docs/dev/compilation/$i; done;
 
       - name: Enable complete tests on push to main
         if: github.ref == 'refs/heads/main'
@@ -140,7 +116,7 @@ jobs:
             dnf install -y libzstd libzstd-devel
             sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-end-to-end-distributed-tests
             chmod -R ugo+rwx /tmp/KeySetCache
             
       - name: Analyze logs
