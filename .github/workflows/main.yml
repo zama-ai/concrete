@@ -154,6 +154,14 @@ jobs:
     with:
       command: compiler-cpu-build
 
+  compiler-cpu-build-distributed:
+    needs: file-change
+    if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-cpu-api == 'true'|| needs.file-change.outputs.concrete-compiler-cpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: compiler-cpu-build-distributed
+
   compiler-gpu-build:
     needs: file-change
     if: needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.concrete-cuda-api == 'true' || needs.file-change.outputs.concrete-compiler-gpu-workflow == 'true' || needs.file-change.outputs.push-main == 'true'
