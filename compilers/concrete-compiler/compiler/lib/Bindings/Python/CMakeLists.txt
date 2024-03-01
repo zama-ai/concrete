@@ -49,6 +49,8 @@ declare_mlir_python_sources(
   concrete/compiler/parameter.py
   concrete/compiler/public_arguments.py
   concrete/compiler/public_result.py
+  concrete/compiler/server_circuit.py
+  concrete/compiler/server_program.py
   concrete/compiler/evaluation_keys.py
   concrete/compiler/simulated_value_decrypter.py
   concrete/compiler/simulated_value_exporter.py

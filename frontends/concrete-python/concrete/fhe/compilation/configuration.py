@@ -1285,10 +1285,9 @@ class Configuration:
             raise RuntimeError(message)
 
         if (
-            self.composable
-            and self.parameter_selection_strategy != ParameterSelectionStrategy.MULTI
+            self.composable and self.parameter_selection_strategy == ParameterSelectionStrategy.MONO
         ):  # pragma: no cover
-            message = "Composition can only be used with MULTI parameter selection strategy"
+            message = "Composition can not be used with MONO parameter selection strategy"
             raise RuntimeError(message)
 
 

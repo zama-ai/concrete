@@ -11,6 +11,7 @@
 #include "concretelang/Common/Keysets.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Runtime/DFRuntime.hpp"
+#include "concretelang/ServerLib/ServerLib.h"
 #include "concretelang/Support/logging.h"
 #include <llvm/Support/Debug.h>
 #include <mlir-c/Bindings/Python/Interop.h>
@@ -79,9 +80,9 @@ library_compile(LibrarySupport_Py support, const char *module,
   llvm::SourceMgr sm;
   sm.AddNewSourceBuffer(llvm::MemoryBuffer::getMemBuffer(module),
                         llvm::SMLoc());
-  GET_OR_THROW_LLVM_EXPECTED(compilationResult,
-                             support.support.compile(sm, options));
-  return std::move(*compilationResult);
+  GET_OR_THROW_EXPECTED(auto compilationResult,
+                        support.support.compile(sm, options));
+  return compilationResult;
 }
 
 std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
@@ -89,36 +90,36 @@ library_compile_module(
     LibrarySupport_Py support, mlir::ModuleOp module,
     mlir::concretelang::CompilationOptions options,
     std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
-  GET_OR_THROW_LLVM_EXPECTED(compilationResult,
-                             support.support.compile(module, cctx, options));
-  return std::move(*compilationResult);
+  GET_OR_THROW_EXPECTED(auto compilationResult,
+                        support.support.compile(module, cctx, options));
+  return compilationResult;
 }
 
 concretelang::clientlib::ClientParameters library_load_client_parameters(
     LibrarySupport_Py support,
     mlir::concretelang::LibraryCompilationResult &result) {
-  GET_OR_THROW_LLVM_EXPECTED(clientParameters,
-                             support.support.loadClientParameters(result));
-  return *clientParameters;
+  GET_OR_THROW_EXPECTED(auto clientParameters,
+                        support.support.loadClientParameters(result));
+  return clientParameters;
 }
 
 mlir::concretelang::ProgramCompilationFeedback
 library_load_compilation_feedback(
     LibrarySupport_Py support,
     mlir::concretelang::LibraryCompilationResult &result) {
-  GET_OR_THROW_LLVM_EXPECTED(compilationFeedback,
-                             support.support.loadCompilationFeedback(result));
-  return *compilationFeedback;
+  GET_OR_THROW_EXPECTED(auto compilationFeedback,
+                        support.support.loadCompilationFeedback(result));
+  return compilationFeedback;
 }
 
 concretelang::serverlib::ServerLambda
 library_load_server_lambda(LibrarySupport_Py support,
                            mlir::concretelang::LibraryCompilationResult &result,
                            std::string circuitName, bool useSimulation) {
-  GET_OR_THROW_LLVM_EXPECTED(
-      serverLambda,
+  GET_OR_THROW_EXPECTED(
+      auto serverLambda,
       support.support.loadServerLambda(result, circuitName, useSimulation));
-  return *serverLambda;
+  return serverLambda;
 }
 
 std::unique_ptr<concretelang::clientlib::PublicResult>
@@ -126,18 +127,18 @@ library_server_call(LibrarySupport_Py support,
                     concretelang::serverlib::ServerLambda lambda,
                     concretelang::clientlib::PublicArguments &args,
                     concretelang::clientlib::EvaluationKeys &evaluationKeys) {
-  GET_OR_THROW_LLVM_EXPECTED(
-      publicResult, support.support.serverCall(lambda, args, evaluationKeys));
-  return std::move(*publicResult);
+  GET_OR_THROW_EXPECTED(auto publicResult, support.support.serverCall(
+                                               lambda, args, evaluationKeys));
+  return publicResult;
 }
 
 std::unique_ptr<concretelang::clientlib::PublicResult>
 library_simulate(LibrarySupport_Py support,
                  concretelang::serverlib::ServerLambda lambda,
                  concretelang::clientlib::PublicArguments &args) {
-  GET_OR_THROW_LLVM_EXPECTED(publicResult,
-                             support.support.simulate(lambda, args));
-  return std::move(*publicResult);
+  GET_OR_THROW_EXPECTED(auto publicResult,
+                        support.support.simulate(lambda, args));
+  return publicResult;
 }
 
 std::string library_get_shared_lib_path(LibrarySupport_Py support) {
@@ -1189,6 +1190,48 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](const ::concretelang::clientlib::SharedScalarOrTensorData &value) {
             return pybind11::bytes(valueSerialize(value));
           });
+
+  pybind11::class_<ServerProgram>(m, "ServerProgram")
+      .def_static("load",
+                  [](LibrarySupport_Py &support, bool useSimulation) {
+                    GET_OR_THROW_EXPECTED(auto programInfo,
+                                          support.support.getProgramInfo());
+                    auto sharedLibPath = support.support.getSharedLibPath();
+                    GET_OR_THROW_RESULT(
+                        auto result,
+                        ServerProgram::load(programInfo.asReader(),
+                                            sharedLibPath, useSimulation));
+                    return result;
+                  })
+      .def("get_server_circuit", [](ServerProgram &program,
+                                    const std::string &circuitName) {
+        GET_OR_THROW_RESULT(auto result, program.getServerCircuit(circuitName));
+        return result;
+      });
+
+  pybind11::class_<ServerCircuit>(m, "ServerCircuit")
+      .def("call",
+           [](ServerCircuit &circuit,
+              ::concretelang::clientlib::PublicArguments &publicArguments,
+              ::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+             SignalGuard signalGuard;
+             auto keyset = evaluationKeys.keyset;
+             auto values = publicArguments.values;
+             GET_OR_THROW_RESULT(auto output, circuit.call(keyset, values));
+             ::concretelang::clientlib::PublicResult res{output};
+             return std::make_unique<::concretelang::clientlib::PublicResult>(
+                 std::move(res));
+           })
+      .def("simulate",
+           [](ServerCircuit &circuit,
+              ::concretelang::clientlib::PublicArguments &publicArguments) {
+             pybind11::gil_scoped_release release;
+             auto values = publicArguments.values;
+             GET_OR_THROW_RESULT(auto output, circuit.simulate(values));
+             ::concretelang::clientlib::PublicResult res{output};
+             return std::make_unique<::concretelang::clientlib::PublicResult>(
+                 std::move(res));
+           });
 
   pybind11::class_<::concretelang::clientlib::ValueExporter>(m, "ValueExporter")
       .def_static(

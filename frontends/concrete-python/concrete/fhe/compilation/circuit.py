@@ -359,14 +359,14 @@ class Circuit:
         """
         Get size of the inputs of the circuit.
         """
-        return self._property("size_of_inputs")  # pragma: no cover
+        return self._property("size_of_inputs")()  # pragma: no cover
 
     @property
     def size_of_outputs(self) -> int:
         """
         Get size of the outputs of the circuit.
         """
-        return self._property("size_of_outputs")  # pragma: no cover
+        return self._property("size_of_outputs")()  # pragma: no cover
 
     @property
     def p_error(self) -> int:
@@ -396,21 +396,21 @@ class Circuit:
         """
         Get the number of programmable bootstraps in the circuit.
         """
-        return self._property("programmable_bootstrap_count")  # pragma: no cover
+        return self._property("programmable_bootstrap_count")()  # pragma: no cover
 
     @property
     def programmable_bootstrap_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of programmable bootstraps per bit width in the circuit.
         """
-        return self._property("programmable_bootstrap_count_per_parameter")  # pragma: no cover
+        return self._property("programmable_bootstrap_count_per_parameter")()  # pragma: no cover
 
     @property
     def programmable_bootstrap_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of programmable bootstraps per tag in the circuit.
         """
-        return self._property("programmable_bootstrap_count_per_tag")  # pragma: no cover
+        return self._property("programmable_bootstrap_count_per_tag")()  # pragma: no cover
 
     @property
     def programmable_bootstrap_count_per_tag_per_parameter(self) -> Dict[str, Dict[int, int]]:
@@ -419,7 +419,7 @@ class Circuit:
         """
         return self._property(
             "programmable_bootstrap_count_per_tag_per_parameter"
-        )  # pragma: no cover
+        )()  # pragma: no cover
 
     # Key Switch Statistics
 
@@ -428,28 +428,28 @@ class Circuit:
         """
         Get the number of key switches in the circuit.
         """
-        return self._property("key_switch_count")  # pragma: no cover
+        return self._property("key_switch_count")()  # pragma: no cover
 
     @property
     def key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of key switches per parameter in the circuit.
         """
-        return self._property("key_switch_count_per_parameter")  # pragma: no cover
+        return self._property("key_switch_count_per_parameter")()  # pragma: no cover
 
     @property
     def key_switch_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of key switches per tag in the circuit.
         """
-        return self._property("key_switch_count_per_tag")  # pragma: no cover
+        return self._property("key_switch_count_per_tag")()  # pragma: no cover
 
     @property
     def key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of key switches per tag per parameter in the circuit.
         """
-        return self._property("key_switch_count_per_tag_per_parameter")  # pragma: no cover
+        return self._property("key_switch_count_per_tag_per_parameter")()  # pragma: no cover
 
     # Packing Key Switch Statistics
 
@@ -458,28 +458,30 @@ class Circuit:
         """
         Get the number of packing key switches in the circuit.
         """
-        return self._property("packing_key_switch_count")  # pragma: no cover
+        return self._property("packing_key_switch_count")()  # pragma: no cover
 
     @property
     def packing_key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the circuit.
         """
-        return self._property("packing_key_switch_count_per_parameter")  # pragma: no cover
+        return self._property("packing_key_switch_count_per_parameter")()  # pragma: no cover
 
     @property
     def packing_key_switch_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of packing key switches per tag in the circuit.
         """
-        return self._property("packing_key_switch_count_per_tag")  # pragma: no cover
+        return self._property("packing_key_switch_count_per_tag")()  # pragma: no cover
 
     @property
     def packing_key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the circuit.
         """
-        return self._property("packing_key_switch_count_per_tag_per_parameter")  # pragma: no cover
+        return self._property(
+            "packing_key_switch_count_per_tag_per_parameter"
+        )()  # pragma: no cover
 
     # Clear Addition Statistics
 
@@ -488,28 +490,28 @@ class Circuit:
         """
         Get the number of clear additions in the circuit.
         """
-        return self._property("clear_addition_count")  # pragma: no cover
+        return self._property("clear_addition_count")()  # pragma: no cover
 
     @property
     def clear_addition_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the circuit.
         """
-        return self._property("clear_addition_count_per_parameter")  # pragma: no cover
+        return self._property("clear_addition_count_per_parameter")()  # pragma: no cover
 
     @property
     def clear_addition_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of clear additions per tag in the circuit.
         """
-        return self._property("clear_addition_count_per_tag")  # pragma: no cover
+        return self._property("clear_addition_count_per_tag")()  # pragma: no cover
 
     @property
     def clear_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the circuit.
         """
-        return self._property("clear_addition_count_per_tag_per_parameter")  # pragma: no cover
+        return self._property("clear_addition_count_per_tag_per_parameter")()  # pragma: no cover
 
     # Encrypted Addition Statistics
 
@@ -518,28 +520,30 @@ class Circuit:
         """
         Get the number of encrypted additions in the circuit.
         """
-        return self._property("encrypted_addition_count")  # pragma: no cover
+        return self._property("encrypted_addition_count")()  # pragma: no cover
 
     @property
     def encrypted_addition_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the circuit.
         """
-        return self._property("encrypted_addition_count_per_parameter")  # pragma: no cover
+        return self._property("encrypted_addition_count_per_parameter")()  # pragma: no cover
 
     @property
     def encrypted_addition_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of encrypted additions per tag in the circuit.
         """
-        return self._property("encrypted_addition_count_per_tag")  # pragma: no cover
+        return self._property("encrypted_addition_count_per_tag")()  # pragma: no cover
 
     @property
     def encrypted_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the circuit.
         """
-        return self._property("encrypted_addition_count_per_tag_per_parameter")  # pragma: no cover
+        return self._property(
+            "encrypted_addition_count_per_tag_per_parameter"
+        )()  # pragma: no cover
 
     # Clear Multiplication Statistics
 
@@ -548,21 +552,21 @@ class Circuit:
         """
         Get the number of clear multiplications in the circuit.
         """
-        return self._property("clear_multiplication_count")  # pragma: no cover
+        return self._property("clear_multiplication_count")()  # pragma: no cover
 
     @property
     def clear_multiplication_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of clear multiplications per parameter in the circuit.
         """
-        return self._property("clear_multiplication_count_per_parameter")  # pragma: no cover
+        return self._property("clear_multiplication_count_per_parameter")()  # pragma: no cover
 
     @property
     def clear_multiplication_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of clear multiplications per tag in the circuit.
         """
-        return self._property("clear_multiplication_count_per_tag")  # pragma: no cover
+        return self._property("clear_multiplication_count_per_tag")()  # pragma: no cover
 
     @property
     def clear_multiplication_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
@@ -571,7 +575,7 @@ class Circuit:
         """
         return self._property(
             "clear_multiplication_count_per_tag_per_parameter"
-        )  # pragma: no cover
+        )()  # pragma: no cover
 
     # Encrypted Negation Statistics
 
@@ -580,28 +584,30 @@ class Circuit:
         """
         Get the number of encrypted negations in the circuit.
         """
-        return self._property("encrypted_negation_count")  # pragma: no cover
+        return self._property("encrypted_negation_count")()  # pragma: no cover
 
     @property
     def encrypted_negation_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the circuit.
         """
-        return self._property("encrypted_negation_count_per_parameter")  # pragma: no cover
+        return self._property("encrypted_negation_count_per_parameter")()  # pragma: no cover
 
     @property
     def encrypted_negation_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of encrypted negations per tag in the circuit.
         """
-        return self._property("encrypted_negation_count_per_tag")  # pragma: no cover
+        return self._property("encrypted_negation_count_per_tag")()  # pragma: no cover
 
     @property
     def encrypted_negation_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the circuit.
         """
-        return self._property("encrypted_negation_count_per_tag_per_parameter")  # pragma: no cover
+        return self._property(
+            "encrypted_negation_count_per_tag_per_parameter"
+        )()  # pragma: no cover
 
     # All Statistics
 

@@ -1723,7 +1723,7 @@ def test_converter_process_multi_precision(function, parameters, expected_graph,
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    GraphConverter(configuration).process(graph)
+    GraphConverter(configuration).process({"main": graph})
     for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
@@ -1765,7 +1765,7 @@ def test_converter_process_single_precision(function, parameters, expected_graph
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    GraphConverter(configuration).process(graph)
+    GraphConverter(configuration).process({"main": graph})
     for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]

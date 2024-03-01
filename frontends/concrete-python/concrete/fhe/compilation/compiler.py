@@ -220,8 +220,10 @@ class Compiler:
         self.graph = Tracer.trace(self.function, parameters)
         if self.artifacts is not None:
             self.artifacts.add_graph("initial", self.graph)
-
-        fuse(self.graph, self.artifacts)
+        fuse(
+            self.graph,
+            self.artifacts.module_artifacts.functions["main"] if self.artifacts else None,
+        )
 
     def _evaluate(
         self,
@@ -244,7 +246,11 @@ class Compiler:
             if self.artifacts is not None:
                 self.artifacts.add_graph("initial", self.graph)  # pragma: no cover
 
-            fuse(self.graph, self.artifacts)
+            fuse(
+                self.graph,
+                self.artifacts.module_artifacts.functions["main"] if self.artifacts else None,
+            )
+
             if self.artifacts is not None:
                 self.artifacts.add_graph("final", self.graph)  # pragma: no cover
 

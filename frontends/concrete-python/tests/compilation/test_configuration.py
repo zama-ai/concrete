@@ -217,38 +217,38 @@ def test_configuration_bad_fork(kwargs, expected_error, expected_message):
             """
 
 %0:
-    %0 >= 3
+    main.%0 >= 3
 %1:
-    %1 >= 7
+    main.%1 >= 7
 %2:
-    %2 >= 2
+    main.%2 >= 2
 %3:
-    %3 >= 5
+    main.%3 >= 5
 %4:
-    %4 >= 8
-    %3 == %1
-    %1 == %4
+    main.%4 >= 8
+    main.%3 == main.%1
+    main.%1 == main.%4
 
             """,
             """
 
- %0 = 3
- %1 = 8
- %2 = 2
- %3 = 8
- %4 = 8
-max = 8
+ main.%0 = 3
+ main.%1 = 8
+ main.%2 = 2
+ main.%3 = 8
+ main.%4 = 8
+main.max = 8
 
             """
             if USE_MULTI_PRECISION
             else """
 
- %0 = 8
- %1 = 8
- %2 = 8
- %3 = 8
- %4 = 8
-max = 8
+ main.%0 = 8
+ main.%1 = 8
+ main.%2 = 8
+ main.%3 = 8
+ main.%4 = 8
+main.max = 8
 
             """,
         ),

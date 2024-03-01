@@ -14,29 +14,21 @@ from ..representation import Graph
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
 
 
-class DebugArtifacts:
+class FunctionDebugArtifacts:
     """
-    DebugArtifacts class, to export information about the compilation process.
+    An object containing debug artifacts for a certain function in an fhe module.
     """
-
-    output_directory: Path
 
     source_code: Optional[str]
     parameter_encryption_statuses: Dict[str, str]
     textual_representations_of_graphs: Dict[str, List[str]]
     final_graph: Optional[Graph]
-    mlir_to_compile: Optional[str]
-    client_parameters: Optional[bytes]
 
-    def __init__(self, output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY):
-        self.output_directory = Path(output_directory)
-
+    def __init__(self):
         self.source_code = None
         self.parameter_encryption_statuses = {}
         self.textual_representations_of_graphs = {}
         self.final_graph = None
-        self.mlir_to_compile = None
-        self.client_parameters = None
 
     def add_source_code(self, function: Union[str, Callable]):
         """
@@ -46,7 +38,6 @@ class DebugArtifacts:
             function (Union[str, Callable]):
                 either the source code of the function or the function itself
         """
-
         try:
             self.source_code = (
                 function if isinstance(function, str) else inspect.getsource(function)
@@ -65,7 +56,6 @@ class DebugArtifacts:
             encryption_status (str):
                 encryption status of the parameter
         """
-
         self.parameter_encryption_statuses[name] = encryption_status
 
     def add_graph(self, name: str, graph: Graph):
@@ -79,14 +69,32 @@ class DebugArtifacts:
             graph (Graph):
                 a representation of the function being compiled
         """
-
         if name not in self.textual_representations_of_graphs:
             self.textual_representations_of_graphs[name] = []
-
         textual_representation = graph.format()
         self.textual_representations_of_graphs[name].append(textual_representation)
-
         self.final_graph = graph
+
+
+class ModuleDebugArtifacts:
+    """
+    An object containing debug artifacts for an fhe module.
+    """
+
+    output_directory: Path
+    mlir_to_compile: Optional[str]
+    client_parameters: Optional[bytes]
+    functions: Dict[str, FunctionDebugArtifacts]
+
+    def __init__(
+        self,
+        function_names: List[str],
+        output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY,
+    ):
+        self.output_directory = Path(output_directory)
+        self.mlir_to_compile = None
+        self.client_parameters = None
+        self.functions = {name: FunctionDebugArtifacts() for name in function_names}
 
     def add_mlir_to_compile(self, mlir: str):
         """
@@ -96,7 +104,6 @@ class DebugArtifacts:
             mlir (str):
                 textual representation of the resulting MLIR
         """
-
         self.mlir_to_compile = mlir
 
     def add_client_parameters(self, client_parameters: bytes):
@@ -113,7 +120,6 @@ class DebugArtifacts:
         """
         Export the collected information to `self.output_directory`.
         """
-
         # pylint: disable=too-many-branches
 
         output_directory = self.output_directory
@@ -164,27 +170,35 @@ class DebugArtifacts:
 
                 f.write(f"{name}=={version}\n")
 
-        if self.source_code is not None:
-            with open(output_directory.joinpath("function.txt"), "w", encoding="utf-8") as f:
-                f.write(self.source_code)
+        for function_name, function in self.functions.items():
+            if function.source_code is not None:
+                with open(
+                    output_directory.joinpath(f"{function_name}.txt"), "w", encoding="utf-8"
+                ) as f:
+                    f.write(function.source_code)
 
-        if len(self.parameter_encryption_statuses) > 0:
-            with open(output_directory.joinpath("parameters.txt"), "w", encoding="utf-8") as f:
-                for name, parameter in self.parameter_encryption_statuses.items():
-                    f.write(f"{name} :: {parameter}\n")
+            if len(function.parameter_encryption_statuses) > 0:
+                with open(
+                    output_directory.joinpath(f"{function_name}.parameters.txt"),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    for name, parameter in function.parameter_encryption_statuses.items():
+                        f.write(f"{name} :: {parameter}\n")
 
-        identifier = 0
+            identifier = 0
 
-        textual_representations = self.textual_representations_of_graphs.items()
-        for name, representations in textual_representations:
-            for representation in representations:
-                identifier += 1
-                output_path = output_directory.joinpath(f"{identifier}.{name}.graph.txt")
-                with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(f"{representation}\n")
+            textual_representations = function.textual_representations_of_graphs.items()
+            for name, representations in textual_representations:
+                for representation in representations:
+                    identifier += 1
+                    output_path = output_directory.joinpath(
+                        f"{function_name}.{identifier}.{name}.graph.txt"
+                    )
+                    with open(output_path, "w", encoding="utf-8") as f:
+                        f.write(f"{representation}\n")
 
         if self.mlir_to_compile is not None:
-            assert self.final_graph is not None
             with open(output_directory.joinpath("mlir.txt"), "w", encoding="utf-8") as f:
                 f.write(f"{self.mlir_to_compile}\n")
 
@@ -193,3 +207,96 @@ class DebugArtifacts:
                 f.write(self.client_parameters)
 
         # pylint: enable=too-many-branches
+
+
+class DebugArtifacts:
+    """
+    DebugArtifacts class, to export information about the compilation process for single function.
+    """
+
+    module_artifacts: ModuleDebugArtifacts
+
+    def __init__(self, output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY):
+        self.module_artifacts = ModuleDebugArtifacts(["main"], output_directory)
+
+    def add_source_code(self, function: Union[str, Callable]):
+        """
+        Add source code of the function being compiled.
+
+        Args:
+            function (Union[str, Callable]):
+                either the source code of the function or the function itself
+        """
+        self.module_artifacts.functions["main"].add_source_code(function)
+
+    def add_parameter_encryption_status(self, name: str, encryption_status: str):
+        """
+        Add parameter encryption status of a parameter of the function being compiled.
+
+        Args:
+            name (str):
+                name of the parameter
+
+            encryption_status (str):
+                encryption status of the parameter
+        """
+
+        self.module_artifacts.functions["main"].add_parameter_encryption_status(
+            name, encryption_status
+        )
+
+    def add_graph(self, name: str, graph: Graph):
+        """
+        Add a representation of the function being compiled.
+
+        Args:
+            name (str):
+                name of the graph (e.g., initial, optimized, final)
+
+            graph (Graph):
+                a representation of the function being compiled
+        """
+
+        self.module_artifacts.functions["main"].add_graph(name, graph)
+
+    def add_mlir_to_compile(self, mlir: str):
+        """
+        Add textual representation of the resulting MLIR.
+
+        Args:
+            mlir (str):
+                textual representation of the resulting MLIR
+        """
+
+        self.module_artifacts.add_mlir_to_compile(mlir)
+
+    def add_client_parameters(self, client_parameters: bytes):
+        """
+        Add client parameters used.
+
+        Args:
+            client_parameters (bytes): client parameters
+        """
+
+        self.module_artifacts.add_client_parameters(client_parameters)
+
+    def export(self):
+        """
+        Export the collected information to `self.output_directory`.
+        """
+
+        self.module_artifacts.export()
+
+    @property
+    def output_directory(self) -> Path:
+        """
+        Return the directory to export artifacts to.
+        """
+        return self.module_artifacts.output_directory
+
+    @property
+    def mlir_to_compile(self) -> Optional[str]:
+        """
+        Return the mlir string.
+        """
+        return self.module_artifacts.mlir_to_compile

@@ -50,6 +50,7 @@ public:
   Result<std::vector<TransportValue>> call(const ServerKeyset &serverKeyset,
                                            std::vector<TransportValue> &args);
 
+  /// Simulate the circuit with public arguments.
   Result<std::vector<TransportValue>>
   simulate(std::vector<TransportValue> &args);
 

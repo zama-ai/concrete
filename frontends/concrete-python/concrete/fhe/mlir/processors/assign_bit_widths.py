@@ -14,10 +14,10 @@ from ...compilation.configuration import (
     MultivariateStrategy,
 )
 from ...dtypes import Integer
-from ...representation import Graph, GraphProcessor, Node, Operation
+from ...representation import Graph, MultiGraphProcessor, Node, Operation
 
 
-class AssignBitWidths(GraphProcessor):
+class AssignBitWidths(MultiGraphProcessor):
     """
     AssignBitWidths graph processor, to assign proper bit-widths to be compatible with FHE.
 
@@ -56,52 +56,54 @@ class AssignBitWidths(GraphProcessor):
         self.multivariate_strategy_preference = multivariate_strategy_preference
         self.min_max_strategy_preference = min_max_strategy_preference
 
-    def apply(self, graph: Graph):
+    def apply_many(self, graphs: Dict[str, Graph]):
         optimizer = z3.Optimize()
 
-        max_bit_width: z3.Int = z3.Int("max")
         bit_widths: Dict[Node, z3.Int] = {}
 
-        additional_constraints = AdditionalConstraints(
-            optimizer,
-            graph,
-            bit_widths,
-            self.comparison_strategy_preference,
-            self.bitwise_strategy_preference,
-            self.shifts_with_promotion,
-            self.multivariate_strategy_preference,
-            self.min_max_strategy_preference,
-        )
+        for graph_name, graph in graphs.items():
+            max_bit_width: z3.Int = z3.Int(f"{graph_name}.max")
 
-        nodes = graph.query_nodes(ordered=True)
-        for i, node in enumerate(nodes):
-            assert isinstance(node.output.dtype, Integer)
-            required_bit_width = node.output.dtype.bit_width
+            additional_constraints = AdditionalConstraints(
+                optimizer,
+                graph,
+                bit_widths,
+                self.comparison_strategy_preference,
+                self.bitwise_strategy_preference,
+                self.shifts_with_promotion,
+                self.multivariate_strategy_preference,
+                self.min_max_strategy_preference,
+            )
 
-            bit_width_hint = node.properties.get("bit_width_hint")
-            if bit_width_hint is not None:
-                required_bit_width = max(required_bit_width, bit_width_hint)
+            nodes = graph.query_nodes(ordered=True)
+            for i, node in enumerate(nodes):
+                assert isinstance(node.output.dtype, Integer)
+                required_bit_width = node.output.dtype.bit_width
 
-            bit_width = z3.Int(f"%{i}")
-            bit_widths[node] = bit_width
+                bit_width_hint = node.properties.get("bit_width_hint")
+                if bit_width_hint is not None:
+                    required_bit_width = max(required_bit_width, bit_width_hint)
 
-            base_constraint = bit_width >= required_bit_width
-            node.bit_width_constraints.append(base_constraint)
+                bit_width = z3.Int(f"{graph_name}.%{i}")
+                bit_widths[node] = bit_width
 
-            optimizer.add(base_constraint)
-            optimizer.add(max_bit_width >= bit_width)
+                base_constraint = bit_width >= required_bit_width
+                node.bit_width_constraints.append(base_constraint)
 
-            additional_constraints.generate_for(node, bit_width)
+                optimizer.add(base_constraint)
+                optimizer.add(max_bit_width >= bit_width)
 
-        if self.single_precision:
-            for bit_width in bit_widths.values():
-                optimizer.add(bit_width == max_bit_width)
+                additional_constraints.generate_for(node, bit_width)
 
-        if self.composable:
-            input_output_bitwidth = z3.Int("input_output")
-            for node in chain(graph.input_nodes.values(), graph.output_nodes.values()):
-                bit_width = bit_widths[node]
-                optimizer.add(bit_width == input_output_bitwidth)
+            if self.single_precision:
+                for bit_width in bit_widths.values():
+                    optimizer.add(bit_width == max_bit_width)
+
+            if self.composable:
+                input_output_bitwidth = z3.Int("input_output")
+                for node in chain(graph.input_nodes.values(), graph.output_nodes.values()):
+                    bit_width = bit_widths[node]
+                    optimizer.add(bit_width == input_output_bitwidth)
 
         optimizer.minimize(sum(bit_width for bit_width in bit_widths.values()))
 
@@ -120,9 +122,9 @@ class AssignBitWidths(GraphProcessor):
                 node.output.dtype.bit_width,
             )
             node.output.dtype.bit_width = new_bit_width
-
-        graph.bit_width_constraints = optimizer
-        graph.bit_width_assignments = model
+        for graph in graphs.values():
+            graph.bit_width_constraints = optimizer
+            graph.bit_width_assignments = model
 
 
 class AdditionalConstraints:

@@ -17,11 +17,11 @@ from concrete.compiler import (
     CompilationOptions,
     EvaluationKeys,
     LibraryCompilationResult,
-    LibraryLambda,
     LibrarySupport,
     Parameter,
     ProgramCompilationFeedback,
     PublicArguments,
+    ServerProgram,
     set_compiler_logging,
     set_llvm_debug_flag,
 )
@@ -60,7 +60,7 @@ class Server:
     _support: LibrarySupport
     _compilation_result: LibraryCompilationResult
     _compilation_feedback: ProgramCompilationFeedback
-    _server_lambda: LibraryLambda
+    _server_program: ServerProgram
 
     _mlir: Optional[str]
     _configuration: Optional[Configuration]
@@ -71,7 +71,7 @@ class Server:
         output_dir: Optional[tempfile.TemporaryDirectory],
         support: LibrarySupport,
         compilation_result: LibraryCompilationResult,
-        server_lambda: LibraryLambda,
+        server_program: ServerProgram,
         is_simulated: bool,
     ):
         self.client_specs = client_specs
@@ -81,7 +81,7 @@ class Server:
         self._support = support
         self._compilation_result = compilation_result
         self._compilation_feedback = self._support.load_compilation_feedback(compilation_result)
-        self._server_lambda = server_lambda
+        self._server_program = server_program
         self._mlir = None
 
         assert_that(
@@ -200,7 +200,7 @@ class Server:
                     compilation_context is not None
                 ), "must provide compilation context when compiling MlirModule"
                 compilation_result = support.compile(mlir, options, compilation_context)
-            server_lambda = support.load_server_lambda(compilation_result, is_simulated)
+            server_program = ServerProgram.load(support, is_simulated)
         finally:
             set_llvm_debug_flag(False)
             set_compiler_logging(False)
@@ -213,7 +213,7 @@ class Server:
             output_dir,
             support,
             compilation_result,
-            server_lambda,
+            server_program,
             is_simulated,
         )
 
@@ -314,16 +314,17 @@ class Server:
             generateStaticLib=False,
         )
         compilation_result = support.reload()
-        server_lambda = support.load_server_lambda(compilation_result, is_simulated)
+        server_program = ServerProgram.load(support, is_simulated)
 
         return Server(
-            client_specs, output_dir, support, compilation_result, server_lambda, is_simulated
+            client_specs, output_dir, support, compilation_result, server_program, is_simulated
         )
 
     def run(
         self,
         *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
         evaluation_keys: Optional[EvaluationKeys] = None,
+        function_name: str = "main",
     ) -> Union[Value, Tuple[Value, ...]]:
         """
         Evaluate.
@@ -334,6 +335,9 @@ class Server:
 
             evaluation_keys (Optional[EvaluationKeys], default = None):
                 evaluation keys required for fhe execution
+
+            function_name (str):
+                The name of the function to run
 
         Returns:
             Union[Value, Tuple[Value, ...]]:
@@ -364,13 +368,12 @@ class Server:
             buffers.append(arg.inner)
 
         public_args = PublicArguments.new(self.client_specs.client_parameters, buffers)
+        server_circuit = self._server_program.get_server_circuit(function_name)
 
         if self.is_simulated:
-            public_result = self._support.simulate(self._server_lambda, public_args)
+            public_result = server_circuit.simulate(public_args)
         else:
-            public_result = self._support.server_call(
-                self._server_lambda, public_args, evaluation_keys
-            )
+            public_result = server_circuit.call(public_args, evaluation_keys)
 
         result = tuple(Value(public_result.get_value(i)) for i in range(public_result.n_values()))
         return result if len(result) > 1 else result[0]
@@ -405,20 +408,6 @@ class Server:
         return self._compilation_feedback.total_keyswitch_keys_size
 
     @property
-    def size_of_inputs(self) -> int:
-        """
-        Get size of the inputs of the compiled program.
-        """
-        return self._compilation_feedback.circuit("main").total_inputs_size
-
-    @property
-    def size_of_outputs(self) -> int:
-        """
-        Get size of the outputs of the compiled program.
-        """
-        return self._compilation_feedback.circuit("main").total_output_size
-
-    @property
     def p_error(self) -> int:
         """
         Get the probability of error for each simple TLU (on a scalar).
@@ -439,43 +428,55 @@ class Server:
         """
         return self._compilation_feedback.complexity
 
+    def size_of_inputs(self, function: str = "main") -> int:
+        """
+        Get size of the inputs of the compiled program.
+        """
+        return self._compilation_feedback.circuit(function).total_inputs_size
+
+    def size_of_outputs(self, function: str = "main") -> int:
+        """
+        Get size of the outputs of the compiled program.
+        """
+        return self._compilation_feedback.circuit(function).total_output_size
+
     # Programmable Bootstrap Statistics
 
-    @property
-    def programmable_bootstrap_count(self) -> int:
+    def programmable_bootstrap_count(self, function: str = "main") -> int:
         """
         Get the number of programmable bootstraps in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count(
+        return self._compilation_feedback.circuit(function).count(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
         )
 
-    @property
-    def programmable_bootstrap_count_per_parameter(self) -> Dict[Parameter, int]:
+    def programmable_bootstrap_count_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[Parameter, int]:
         """
         Get the number of programmable bootstraps per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_parameter(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.BOOTSTRAP},
             client_parameters=self.client_specs.client_parameters,
         )
 
-    @property
-    def programmable_bootstrap_count_per_tag(self) -> Dict[str, int]:
+    def programmable_bootstrap_count_per_tag(self, function: str = "main") -> Dict[str, int]:
         """
         Get the number of programmable bootstraps per tag in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag(
+        return self._compilation_feedback.circuit(function).count_per_tag(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
         )
 
-    @property
-    def programmable_bootstrap_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def programmable_bootstrap_count_per_tag_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of programmable bootstraps per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_tag_per_parameter(
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.BOOTSTRAP},
             client_parameters=self.client_specs.client_parameters,
@@ -483,41 +484,39 @@ class Server:
 
     # Key Switch Statistics
 
-    @property
-    def key_switch_count(self) -> int:
+    def key_switch_count(self, function: str = "main") -> int:
         """
         Get the number of key switches in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count(
+        return self._compilation_feedback.circuit(function).count(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
         )
 
-    @property
-    def key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
+    def key_switch_count_per_parameter(self, function: str = "main") -> Dict[Parameter, int]:
         """
         Get the number of key switches per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_parameter(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
         )
 
-    @property
-    def key_switch_count_per_tag(self) -> Dict[str, int]:
+    def key_switch_count_per_tag(self, function: str = "main") -> Dict[str, int]:
         """
         Get the number of key switches per tag in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag(
+        return self._compilation_feedback.circuit(function).count_per_tag(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
         )
 
-    @property
-    def key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def key_switch_count_per_tag_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of key switches per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_tag_per_parameter(
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
             key_types={KeyType.KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
@@ -525,41 +524,41 @@ class Server:
 
     # Packing Key Switch Statistics
 
-    @property
-    def packing_key_switch_count(self) -> int:
+    def packing_key_switch_count(self, function: str = "main") -> int:
         """
         Get the number of packing key switches in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count(
+        return self._compilation_feedback.circuit(function).count(
             operations={PrimitiveOperation.WOP_PBS}
         )
 
-    @property
-    def packing_key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
+    def packing_key_switch_count_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_parameter(
             operations={PrimitiveOperation.WOP_PBS},
             key_types={KeyType.PACKING_KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
         )
 
-    @property
-    def packing_key_switch_count_per_tag(self) -> Dict[str, int]:
+    def packing_key_switch_count_per_tag(self, function: str = "main") -> Dict[str, int]:
         """
         Get the number of packing key switches per tag in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag(
+        return self._compilation_feedback.circuit(function).count_per_tag(
             operations={PrimitiveOperation.WOP_PBS}
         )
 
-    @property
-    def packing_key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def packing_key_switch_count_per_tag_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_tag_per_parameter(
             operations={PrimitiveOperation.WOP_PBS},
             key_types={KeyType.PACKING_KEY_SWITCH},
             client_parameters=self.client_specs.client_parameters,
@@ -567,41 +566,39 @@ class Server:
 
     # Clear Addition Statistics
 
-    @property
-    def clear_addition_count(self) -> int:
+    def clear_addition_count(self, function: str = "main") -> int:
         """
         Get the number of clear additions in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count(
+        return self._compilation_feedback.circuit(function).count(
             operations={PrimitiveOperation.CLEAR_ADDITION}
         )
 
-    @property
-    def clear_addition_count_per_parameter(self) -> Dict[Parameter, int]:
+    def clear_addition_count_per_parameter(self, function: str = "main") -> Dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_parameter(
             operations={PrimitiveOperation.CLEAR_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
         )
 
-    @property
-    def clear_addition_count_per_tag(self) -> Dict[str, int]:
+    def clear_addition_count_per_tag(self, function: str = "main") -> Dict[str, int]:
         """
         Get the number of clear additions per tag in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag(
+        return self._compilation_feedback.circuit(function).count_per_tag(
             operations={PrimitiveOperation.CLEAR_ADDITION},
         )
 
-    @property
-    def clear_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def clear_addition_count_per_tag_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_tag_per_parameter(
             operations={PrimitiveOperation.CLEAR_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -609,41 +606,41 @@ class Server:
 
     # Encrypted Addition Statistics
 
-    @property
-    def encrypted_addition_count(self) -> int:
+    def encrypted_addition_count(self, function: str = "main") -> int:
         """
         Get the number of encrypted additions in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count(
+        return self._compilation_feedback.circuit(function).count(
             operations={PrimitiveOperation.ENCRYPTED_ADDITION}
         )
 
-    @property
-    def encrypted_addition_count_per_parameter(self) -> Dict[Parameter, int]:
+    def encrypted_addition_count_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
         )
 
-    @property
-    def encrypted_addition_count_per_tag(self) -> Dict[str, int]:
+    def encrypted_addition_count_per_tag(self, function: str = "main") -> Dict[str, int]:
         """
         Get the number of encrypted additions per tag in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag(
+        return self._compilation_feedback.circuit(function).count_per_tag(
             operations={PrimitiveOperation.ENCRYPTED_ADDITION},
         )
 
-    @property
-    def encrypted_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def encrypted_addition_count_per_tag_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_tag_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_ADDITION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -651,41 +648,41 @@ class Server:
 
     # Clear Multiplication Statistics
 
-    @property
-    def clear_multiplication_count(self) -> int:
+    def clear_multiplication_count(self, function: str = "main") -> int:
         """
         Get the number of clear multiplications in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count(
+        return self._compilation_feedback.circuit(function).count(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
         )
 
-    @property
-    def clear_multiplication_count_per_parameter(self) -> Dict[Parameter, int]:
+    def clear_multiplication_count_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[Parameter, int]:
         """
         Get the number of clear multiplications per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_parameter(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
         )
 
-    @property
-    def clear_multiplication_count_per_tag(self) -> Dict[str, int]:
+    def clear_multiplication_count_per_tag(self, function: str = "main") -> Dict[str, int]:
         """
         Get the number of clear multiplications per tag in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag(
+        return self._compilation_feedback.circuit(function).count_per_tag(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
         )
 
-    @property
-    def clear_multiplication_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def clear_multiplication_count_per_tag_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_tag_per_parameter(
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -693,41 +690,41 @@ class Server:
 
     # Encrypted Negation Statistics
 
-    @property
-    def encrypted_negation_count(self) -> int:
+    def encrypted_negation_count(self, function: str = "main") -> int:
         """
         Get the number of encrypted negations in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count(
+        return self._compilation_feedback.circuit(function).count(
             operations={PrimitiveOperation.ENCRYPTED_NEGATION}
         )
 
-    @property
-    def encrypted_negation_count_per_parameter(self) -> Dict[Parameter, int]:
+    def encrypted_negation_count_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_NEGATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
         )
 
-    @property
-    def encrypted_negation_count_per_tag(self) -> Dict[str, int]:
+    def encrypted_negation_count_per_tag(self, function: str = "main") -> Dict[str, int]:
         """
         Get the number of encrypted negations per tag in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag(
+        return self._compilation_feedback.circuit(function).count_per_tag(
             operations={PrimitiveOperation.ENCRYPTED_NEGATION},
         )
 
-    @property
-    def encrypted_negation_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def encrypted_negation_count_per_tag_per_parameter(
+        self, function: str = "main"
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the compiled program.
         """
-        return self._compilation_feedback.circuit("main").count_per_tag_per_parameter(
+        return self._compilation_feedback.circuit(function).count_per_tag_per_parameter(
             operations={PrimitiveOperation.ENCRYPTED_NEGATION},
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
@@ -741,14 +738,8 @@ class Server:
         Get all statistics of the compiled program.
         """
         attributes = [
-            "size_of_secret_keys",
-            "size_of_bootstrap_keys",
-            "size_of_keyswitch_keys",
             "size_of_inputs",
             "size_of_outputs",
-            "p_error",
-            "global_p_error",
-            "complexity",
             "programmable_bootstrap_count",
             "programmable_bootstrap_count_per_parameter",
             "programmable_bootstrap_count_per_tag",
@@ -778,4 +769,11 @@ class Server:
             "encrypted_negation_count_per_tag",
             "encrypted_negation_count_per_tag_per_parameter",
         ]
-        return {attribute: getattr(self, attribute) for attribute in attributes}
+        output = {attribute: getattr(self, attribute)() for attribute in attributes}
+        output["size_of_secret_keys"] = self.size_of_secret_keys
+        output["size_of_bootstrap_keys"] = self.size_of_bootstrap_keys
+        output["size_of_keyswitch_keys"] = self.size_of_keyswitch_keys
+        output["p_error"] = self.p_error
+        output["global_p_error"] = self.global_p_error
+        output["complexity"] = self.complexity
+        return output

@@ -120,6 +120,7 @@ class Client:
     def encrypt(
         self,
         *args: Optional[Union[int, np.ndarray, List]],
+        function_name: str = "main",
     ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
@@ -127,18 +128,20 @@ class Client:
         Args:
             *args (Optional[Union[int, np.ndarray, List]]):
                 argument(s) for evaluation
+            function_name (str):
+                name of the function to encrypt
 
         Returns:
             Optional[Union[Value, Tuple[Optional[Value], ...]]]:
                 encrypted argument(s) for evaluation
         """
 
-        ordered_sanitized_args = validate_input_args(self.specs, *args)
+        ordered_sanitized_args = validate_input_args(self.specs, *args, function_name=function_name)
 
         self.keygen(force=False)
         keyset = self.keys._keyset  # pylint: disable=protected-access
 
-        exporter = ValueExporter.new(keyset, self.specs.client_parameters)
+        exporter = ValueExporter.new(keyset, self.specs.client_parameters, function_name)
         exported = [
             None
             if arg is None
@@ -155,6 +158,7 @@ class Client:
     def decrypt(
         self,
         *results: Union[Value, Tuple[Value, ...]],
+        function_name: str = "main",
     ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
@@ -162,6 +166,8 @@ class Client:
         Args:
             *results (Union[Value, Tuple[Value, ...]]):
                 result(s) of evaluation
+            function_name (str):
+                name of the function to decrypt for
 
         Returns:
             Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
@@ -179,7 +185,7 @@ class Client:
         self.keygen(force=False)
         keyset = self.keys._keyset  # pylint: disable=protected-access
 
-        decrypter = ValueDecrypter.new(keyset, self.specs.client_parameters)
+        decrypter = ValueDecrypter.new(keyset, self.specs.client_parameters, function_name)
         decrypted = tuple(
             decrypter.decrypt(position, result.inner)
             for position, result in enumerate(flattened_results)
