@@ -42,14 +42,18 @@ using concretelang::serverlib::ServerProgram;
 using concretelang::values::TransportValue;
 using concretelang::values::Value;
 
-#define GET_OR_THROW_LLVM_EXPECTED(VARNAME, EXPECTED)                          \
-  auto VARNAME = EXPECTED;                                                     \
-  if (auto err = VARNAME.takeError()) {                                        \
-    throw std::runtime_error(llvm::toString(std::move(err)));                  \
-  }
-
 #define CONCAT(a, b) CONCAT_INNER(a, b)
 #define CONCAT_INNER(a, b) a##b
+
+#define GET_OR_THROW_EXPECTED_(VARNAME, RESULT, MAYBE)                         \
+  auto MAYBE = RESULT;                                                         \
+  if (auto err = MAYBE.takeError()) {                                          \
+    throw std::runtime_error(llvm::toString(std::move(err)));                  \
+  }                                                                            \
+  VARNAME = std::move(*MAYBE);
+
+#define GET_OR_THROW_EXPECTED(VARNAME, RESULT)                                 \
+  GET_OR_THROW_EXPECTED_(VARNAME, RESULT, CONCAT(maybe, __COUNTER__))
 
 #define GET_OR_THROW_RESULT_(VARNAME, RESULT, MAYBE)                           \
   auto MAYBE = RESULT;                                                         \
@@ -368,6 +372,13 @@ public:
         outcomeToExpected(serverProgram.getServerCircuit(circuitName)));
     return ::concretelang::serverlib::ServerLambda{serverCircuit,
                                                    useSimulation};
+  }
+
+  llvm::Expected<ServerProgram>
+  loadServerProgram(LibraryCompilationResult &result, bool useSimulation) {
+    EXPECTED_TRY(auto programInfo, getProgramInfo());
+    return outcomeToExpected(ServerProgram::load(
+        programInfo.asReader(), getSharedLibPath(), useSimulation));
   }
 
   /// Load the client parameters from the compilation result.

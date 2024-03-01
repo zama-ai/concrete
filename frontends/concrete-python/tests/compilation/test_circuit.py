@@ -683,8 +683,11 @@ def test_statistics(function, parameters, expected_statistics, helpers):
 
     for name, expected_value in expected_statistics.items():
         assert hasattr(circuit, name)
+        attr = getattr(circuit, name)
+        if callable(attr):
+            attr = attr()
         assert (
-            getattr(circuit, name) == expected_value
+            attr == expected_value
         ), f"""
 
 Expected {name} to be {expected_value} but it's {getattr(circuit, name)}

@@ -40,12 +40,15 @@ class Graph:
     bit_width_constraints: Optional[z3.Optimize]
     bit_width_assignments: Optional[z3.Model]
 
+    name: str
+
     def __init__(
         self,
         graph: nx.MultiDiGraph,
         input_nodes: Dict[int, Node],
         output_nodes: Dict[int, Node],
         is_direct: bool = False,
+        name: str = "main",
     ):
         self.graph = graph
 
@@ -58,6 +61,8 @@ class Graph:
 
         self.bit_width_assignments = None
         self.bit_width_constraints = None
+
+        self.name = name
 
         self.prune_useless_nodes()
 
@@ -584,18 +589,20 @@ class Graph:
 
         lines = []
         for variable in self.bit_width_assignments.decls():  # type: ignore
-            width = self.bit_width_assignments.get_interp(variable)  # type: ignore
-            lines.append(f"{variable} = {width}")
+            if variable.name().startswith(f"{self.name}.") or variable.name() == "input_output":
+                width = self.bit_width_assignments.get_interp(variable)  # type: ignore
+                lines.append(f"{variable} = {width}")
 
         def sorter(line: str) -> int:
-            if line.startswith("max"):
+            if line.startswith(f"{self.name}.max"):
                 # we won't have 4 million nodes...
                 return 2**32
-
-            assert line.startswith("%")
+            if line.startswith("input_output"):
+                # this is the composable constraint
+                return 2**32
 
             equals_position = line.find("=")
-            index = line[1 : equals_position - 1]
+            index = line[len(self.name) + 2 : equals_position - 1]
             return int(index)
 
         result = ""
@@ -967,6 +974,8 @@ class Graph:
 class GraphProcessor(ABC):
     """
     GraphProcessor base class, to define the API for a graph processing pipeline.
+
+    Process a single graph.
     """
 
     @abstractmethod
@@ -998,3 +1007,23 @@ class GraphProcessor(ABC):
             highlighted_nodes=highlights_with_location
         )
         raise RuntimeError(message)
+
+
+class MultiGraphProcessor(GraphProcessor):
+    """
+    MultiGraphProcessor base class, to define the API for a multiple graph processing pipeline.
+
+    Processes multiple graphs at once.
+    """
+
+    @abstractmethod
+    def apply_many(self, graphs: Dict[str, Graph]):
+        """
+        Process a dictionnary of graphs.
+        """
+
+    def apply(self, graph: Graph):
+        """
+        Process a single graph.
+        """
+        return self.apply_many({"main": graph})

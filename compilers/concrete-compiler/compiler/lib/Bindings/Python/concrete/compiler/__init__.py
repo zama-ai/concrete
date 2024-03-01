@@ -37,6 +37,7 @@ from .value_exporter import ValueExporter
 from .simulated_value_decrypter import SimulatedValueDecrypter
 from .simulated_value_exporter import SimulatedValueExporter
 from .parameter import Parameter
+from .server_program import ServerProgram
 
 
 def init_dfr():

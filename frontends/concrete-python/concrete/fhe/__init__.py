@@ -29,7 +29,7 @@ from .compilation import (
     Value,
     inputset,
 )
-from .compilation.decorators import circuit, compiler
+from .compilation.decorators import circuit, compiler, function, module
 from .dtypes import Integer
 from .extensions import (
     AutoRounder,

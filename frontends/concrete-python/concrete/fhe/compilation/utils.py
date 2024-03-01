@@ -15,7 +15,7 @@ from ..dtypes import Float, Integer, SignedInteger, UnsignedInteger
 from ..representation import Graph, Node, Operation
 from ..tracing import ScalarAnnotation
 from ..values import ValueDescription
-from .artifacts import DebugArtifacts
+from .artifacts import FunctionDebugArtifacts
 from .specs import ClientSpecs
 
 # ruff: noqa: ERA001
@@ -68,6 +68,7 @@ def inputset(
 def validate_input_args(
     client_specs: ClientSpecs,
     *args: Optional[Union[int, np.ndarray, List]],
+    function_name: str = "main",
 ) -> List[Optional[Union[int, np.ndarray]]]:
     """Validate input arguments.
 
@@ -76,11 +77,15 @@ def validate_input_args(
             client specification
         *args (Optional[Union[int, np.ndarray, List]]):
             argument(s) for evaluation
+        function_name (str): name of the function to verify
 
     Returns:
         List[Optional[Union[int, np.ndarray]]]: ordered validated args
     """
-    client_parameters_json = json.loads(client_specs.client_parameters.serialize())["circuits"][0]
+    functions_parameters = json.loads(client_specs.client_parameters.serialize())["circuits"]
+    client_parameters_json = next(
+        filter(lambda x: x["name"] == function_name, functions_parameters)
+    )
     assert "inputs" in client_parameters_json
     input_specs = client_parameters_json["inputs"]
     if len(args) != len(input_specs):
@@ -153,7 +158,7 @@ def validate_input_args(
     return ordered_sanitized_args
 
 
-def fuse(graph: Graph, artifacts: Optional[DebugArtifacts] = None):
+def fuse(graph: Graph, artifacts: Optional[FunctionDebugArtifacts] = None):
     """
     Fuse appropriate subgraphs in a graph to a single Operation.Generic node.
 
