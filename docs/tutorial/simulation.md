@@ -1,6 +1,6 @@
 # Simulation
 
-During development, the speed of homomorphic execution can be a blocker for fast prototyping. You could call the function you're trying to compile directly, of course, but it won't be exactly the same as FHE execution, which has a certain probability of error (see [Exactness](../getting-started/exactness.md)).
+During development, the speed of homomorphic execution can be a blocker for fast prototyping. You could call the function you're trying to compile directly, of course, but it won't be exactly the same as FHE execution, which has a certain probability of error (see [Exactness](./table\_lookups.md#table-lookup-exactness)).
 
 To overcome this issue, simulation is introduced:
 

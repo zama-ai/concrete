@@ -67,9 +67,9 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
 * **auto\_adjust\_rounders**: bool = False
   * Adjust rounders automatically.
 * **p\_error**: Optional\[float] = None
-  * Error probability for individual table lookups. If set, all table lookups will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
+  * Error probability for individual table lookups. If set, all table lookups will have the probability of a non-exact result smaller than the set value. See [Exactness](../tutorial/table\_lookups.md#table-lookup-exactness) to learn more.
 * **global\_p\_error**: Optional\[float] = None
-  * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../getting-started/exactness.md) to learn more.
+  * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../tutorial/table\_lookups.md#table-lookup-exactness) to learn more.
 * **single\_precision**: bool = False
   * Use single precision for the whole circuit.
 * **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MULTI
