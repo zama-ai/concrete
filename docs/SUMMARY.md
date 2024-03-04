@@ -33,12 +33,12 @@
 * [Multi parameters](compilation/multi\_parameters.md)
 * [Decorator](compilation/decorator.md)
 * [Direct circuits](compilation/direct\_circuits.md)
-* [Statistics](compilation/statistics.md)
 
 ## Execution / Analysis
 
 * [Simulation](execution-analysis/simulation.md)
 * [Progressbar](execution-analysis/progressbar.md)
+* [Statistics](compilation/statistics.md)
 * [Formatting and drawing](execution-analysis/formatting\_and\_drawing.md)
 * [Debug](execution-analysis/debug.md)
 

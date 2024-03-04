@@ -1,6 +1,6 @@
 # Table lookups
 
-One of the most common operations in **Concrete** is `Table Lookups` (TLUs). All operations except addition, subtraction, multiplication with non-encrypted values, tensor manipulation operations, and a few operations built with those primitive operations (e.g. matmul, conv) are converted to Table Lookups under the hood:
+One of the most common operations in **Concrete** are `Table Lookups` (TLUs). All operations except addition, subtraction, multiplication with non-encrypted values, tensor manipulation operations, and a few operations built with those primitive operations (e.g. matmul, conv) are converted to Table Lookups under the hood.
 
 Table Lookups are very flexible. They allow Concrete to support many operations, but they are expensive. The exact cost depends on many variables (hardware used, error probability, etc.), but they are always much more expensive compared to other operations. You should try to avoid them as much as possible. It's not always possible to avoid them completely, but you might remove the number of TLUs or replace some of them with other primitive operations.
 
@@ -185,7 +185,7 @@ We refer the users to [this page](extensions.md) for explanations about `fhe.uni
 
 ## Table lookup exactness
 
-TLUs are performed with an FHE operation called `Programmable Bootstrapping` (PBS). PBS's have a certain probability of error, which, when triggered, result in inaccurate results.
+TLUs are performed with an FHE operation called `Programmable Bootstrapping` (PBS). PBSs have a certain probability of error: when these errors happen, it results in inaccurate results.
 
 Let's say you have the table:
 
@@ -197,20 +197,20 @@ And you perform a Table Lookup using `4`. The result you should get is `lut[4] =
 
 The probability of this error can be configured through the `p_error` and `global_p_error` configuration options. The difference between these two options is that, `p_error` is for individual TLUs but `global_p_error` is for the whole circuit.
 
-If you set `p_error` to `0.01`, for example, it means every TLU in the circuit will have a 99% chance of being exact with a 1% probability of error. If you have a single TLU in the circuit, `global_p_error` would be 1% as well. But if you have 2 TLUs for example, `global_p_error` would be almost 2% (`1 - (0.99 * 0.99)`).
+If you set `p_error` to `0.01`, for example, it means every TLU in the circuit will have a 99% chance (or more) of being exact. If there is a single TLU in the circuit, it corresponds to `global_p_error = 0.01` as well. But if we have 2 TLUs, then `global_p_error` would be higher: that's `1 - (0.99 * 0.99) ~= 0.02 = 2%`.
 
-However, if you set `global_p_error` to `0.01`, the whole circuit will have 1% probability of error, no matter how many Table Lookups are included.
+If you set `global_p_error` to `0.01`, the whole circuit will have at most 1% probability of error, no matter how many Table Lookups are included (which means that `p_error` will be smaller than `0.01` if there are more than a single TLU).
 
 If you set both of them, both will be satisfied. Essentially, the stricter one will be used.
 
-By default, both `p_error` and `global_p_error` is set to `None`, which results in a `global_p_error` of `1 / 100_000` being used.
+By default, both `p_error` and `global_p_error` are set to `None`, which results in a `global_p_error` of `1 / 100_000` being used.
 
 Feel free to play with these configuration options to pick the one best suited for your needs! See [How to Configure](../guides/configure.md) to learn how you can set a custom `p_error` and/or `global_p_error`.
 
 {% hint style="info" %}
-Configuring either of those variables impacts computation time (compilation, keys generation, circuit execution) and space requirements (size of the keys on disk and in memory). Lower error probabilities would result in longer computation times and larger space requirements.
+Configuring either of those variables impacts compilation and execution times (compilation, keys generation, circuit execution) and space requirements (size of the keys on disk and in memory). Lower error probabilities result in longer compilation and execution times and larger space requirements.
 {% endhint %}
 
 ## Table lookup performance
 
-PBS are very expensive, in terms of computations. Fortunately, it is sometimes possible to replace PBS by [rounded PBS](rounding.md), [truncate PBS](truncating.md) or even [approximate PBS](rounding.md). These TLU have a slightly different semantic, but are very useful in cases like machine learning for more efficiency without drop of accuracy.
+PBSs are very expensive, in terms of computations. Fortunately, it is sometimes possible to replace PBS by [rounded PBS](rounding.md), [truncate PBS](truncating.md) or even [approximate PBS](rounding.md). These TLUs have a slightly different semantic, but are very useful in cases like machine learning for more efficiency without drop of accuracy.
