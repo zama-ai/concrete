@@ -414,10 +414,20 @@ def test_direct_graph_integer_range(helpers):
     assert circuit.graph.integer_range() is None
 
 
-def test_graph_processor(helpers):
+def test_graph_processors(helpers):
     """
     Test providing additional graph processors.
     """
+
+    class RecordInputBitWidth(fhe.GraphProcessor):
+        """Sample graph processor to record the input bit width."""
+
+        input_bit_width: int = 0
+
+        def apply(self, graph: fhe.Graph):
+            assert len(graph.input_nodes) == 1
+            assert isinstance(graph.input_nodes[0].output.dtype, fhe.Integer)
+            self.input_bit_width = graph.input_nodes[0].output.dtype.bit_width
 
     class CountNodes(fhe.GraphProcessor):
         """Sample graph processor to count nodes."""
@@ -427,10 +437,17 @@ def test_graph_processor(helpers):
         def apply(self, graph: fhe.Graph):
             self.node_count += len(graph.query_nodes())
 
-    processor = CountNodes()
-    configuration = helpers.configuration().fork(additional_processors=[processor])
+    pre_processor1 = RecordInputBitWidth()
+    post_processor1 = RecordInputBitWidth()
+    post_processor2 = CountNodes()
+    configuration = helpers.configuration().fork(
+        additional_pre_processors=[pre_processor1],
+        additional_post_processors=[post_processor1, post_processor2],
+    )
 
-    compiler = fhe.Compiler(lambda x: x**2, {"x": "encrypted"})
+    compiler = fhe.Compiler(lambda x: (x + 5) ** 2, {"x": "encrypted"})
     compiler.compile(range(8), configuration)
 
-    assert processor.node_count == 3
+    assert pre_processor1.input_bit_width == 3
+    assert post_processor1.input_bit_width == 8 if configuration.single_precision else 4
+    assert post_processor2.node_count == 5

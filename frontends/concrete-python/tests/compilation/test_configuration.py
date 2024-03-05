@@ -178,10 +178,18 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             "'bad' is not a valid 'MinMaxStrategy' (one-tlu-promoted, three-tlu-casted, chunked)",
         ),
         pytest.param(
-            {"additional_processors": "bad"},
+            {"additional_pre_processors": "bad"},
             TypeError,
             (
-                "Unexpected type for keyword argument 'additional_processors' "
+                "Unexpected type for keyword argument 'additional_pre_processors' "
+                "(expected 'Optional[List[GraphProcessor]]', got 'str')"
+            ),
+        ),
+        pytest.param(
+            {"additional_post_processors": "bad"},
+            TypeError,
+            (
+                "Unexpected type for keyword argument 'additional_post_processors' "
                 "(expected 'Optional[List[GraphProcessor]]', got 'str')"
             ),
         ),
