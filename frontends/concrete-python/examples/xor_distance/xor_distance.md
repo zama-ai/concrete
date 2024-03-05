@@ -4,7 +4,7 @@ We describe how to compute a XOR distance (as known as an Hamming weight distanc
 can be useful in particular for biometry use-cases, where obviously, private is a very interesting
 feature.
 
-The full code can be done [here](../../frontends/concrete-python/examples/xor_distance/hamming_distance.py). Execution times of the different functions are given in the
+The full code can be done [here](hamming_distance.py). Execution times of the different functions are given in the
 final section.
 
 ## The Goal
@@ -36,7 +36,7 @@ to compute this function over encrypted `x` and `y` vectors.
 
 ## First Implementation
 
-In the [full code](../../frontends/concrete-python/examples/xor_distance/hamming_distance.py), we use a first implementation, which is
+In the [full code](hamming_distance.py), we use a first implementation, which is
 
 ```
 def dist_in_fhe_directly_from_cp(x, y):
@@ -47,7 +47,7 @@ Here, it's a pure copy of the code in Concrete, and it compiles directly into FH
 
 ## Second Implementation with `fhe.bits`
 
-In the [full code](../../frontends/concrete-python/examples/xor_distance/hamming_distance.py), we use a second implementation, which is
+In the [full code](hamming_distance.py), we use a second implementation, which is
 
 ```
 def dist_in_fhe_with_bits_1b(x, y):
@@ -62,7 +62,7 @@ signification bit is exactly `x ^ y`.
 
 ## Third Implementation with Concatenation
 
-In the [full code](../../frontends/concrete-python/examples/xor_distance/hamming_distance.py), we use a third implementation, which is
+In the [full code](hamming_distance.py), we use a third implementation, which is
 
 ```
 def dist_in_fhe_with_xor_internal(x, y, bitsize_w):
@@ -80,7 +80,7 @@ Here, we concatenate the elements of `x` and `y` (which are of bitsize `bitsize_
 
 ## Fourth Implementation with `fhe.multivariate`
 
-In the [full code](../../frontends/concrete-python/examples/xor_distance/hamming_distance.py), we use a fourth implementation, which is
+In the [full code](hamming_distance.py), we use a fourth implementation, which is
 
 ```
 def dist_in_fhe_with_multivariate_internal(x, y):
@@ -94,7 +94,7 @@ Here, we use `fhe.multivariate`, which is a function which takes the two inputs 
 
 _All of the following timings were measured on an `hpc7a` machine, with Concrete 2.5.1._
 
-If one executes the [code](../../frontends/concrete-python/examples/xor_distance/hamming_distance.py)
+If one executes the [code](hamming_distance.py)
 for 120-bit vectors (of whatever shape), execution times should be:
 
 ```

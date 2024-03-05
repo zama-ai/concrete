@@ -1,8 +1,8 @@
 # Game of Life
 
-In the associated [Python file](https://github.com/zama-ai/concrete/blob/main/frontends/concrete-python/examples/game_of_life/game_of_life.py), you can run the Game of Life, written in Concrete Python.
+In the associated [Python file](game_of_life.py), you can run the Game of Life, written in Concrete Python.
 
-![ Game of Life](../_static/game-of-life.gif)
+![ Game of Life](game-of-life.gif)
 
 ### Installation
 
@@ -51,4 +51,4 @@ In FHE: `python3 game_of_life.py --dimension 6 --refresh_every 8 --log2_p_error 
 
 ### Technical Explanations
 
-A blog is currently in the process of being written, and a link will be added here when it's available. In the meantime, some explanations are given in the code.
+See the full explanations in [this blog post](https://www.zama.ai/post/the-encrypted-game-of-life-using-concrete-python)https://www.zama.ai/post/the-encrypted-game-of-life-using-concrete-python. 

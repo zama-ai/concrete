@@ -2,7 +2,7 @@
 
 `concrete-optimizer` is a tool that selects appropriate cryptographic parameters for a given fully homomorphic encryption (FHE) computation. These parameters have an impact on the security, correctness, and efficiency of the computation.
 
-The computation is guaranteed to be secure with the given level of security (see [here](../security/security_curves.md) for details) which is typically 128 bits. The correctness of the computation is guaranteed up to a given failure probability. A surrogate of the execution time is minimized which allows for  efficient FHE computation.
+The computation is guaranteed to be secure with the given level of security (see [here](./security_curves.md) for details) which is typically 128 bits. The correctness of the computation is guaranteed up to a given failure probability. A surrogate of the execution time is minimized which allows for  efficient FHE computation.
 
 The cryptographic parameters are degrees of freedom in the FHE algorithms (bootstrapping, keyswitching, etc.) that need to be fixed. The search space for possible crypto-parameters is finite but extremely large. The role of the optimizer is to quickly find the most efficient crypto-parameters possible while guaranteeing security and correctness.
 
@@ -14,7 +14,7 @@ The security level is chosen by the user. We typically operate at a fixed securi
 
 An independent public research tool, the [lattice estimator](https://github.com/malb/lattice-estimator), is used to estimate the security level. The lattice estimator is maintained by FHE experts. For a given set of crypto-parameters, this tool considers all possible attacks and returns a security level.
 
-For each security level, a parameter curve of the appropriate minimal error level is pre-computed using the lattice estimator, and is used as an input to the optimizer. Learn more about the parameter curves [here](../security/security_curves.md).
+For each security level, a parameter curve of the appropriate minimal error level is pre-computed using the lattice estimator, and is used as an input to the optimizer. Learn more about the parameter curves [here](./security_curves.md).
 
 ### Correctness
 
@@ -40,9 +40,9 @@ In more complex cases, the optimizer iteratively performs an exhaustive search, 
 
 ## How can I determine, understand, and explore crypto-parameters
 
-One can have a look at [reference crypto-parameters](../../../compilers/concrete-optimizer/v0-parameters/ref/v0_last_128) for each security level (but for a given correctness). This provides insight between the calcululs content (i.e. maximum precision, maximum dot 2-norm, etc.,) and the cost.
+One can have a look at [reference crypto-parameters](../../compilers/concrete-optimizer/v0-parameters/ref/v0_last_128) for each security level (but for a given correctness). This provides insight between the calcululs content (i.e. maximum precision, maximum dot 2-norm, etc.,) and the cost.
 
-Then one can manually explore crypto-parameters space using a [CLI tool](../../../compilers/concrete-optimizer/v0-parameters/README.md).
+Then one can manually explore crypto-parameters space using a [CLI tool](../../compilers/concrete-optimizer/v0-parameters/README.md).
 
 ## Citing
 

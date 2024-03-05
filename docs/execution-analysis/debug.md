@@ -4,10 +4,10 @@ In this section, you will learn how to debug the compilation process easily and 
 
 ## Compiler debug and verbose modes
 
-There are two [configuration](../howto/configure.md) options that you can use to understand what's happening under the hood during the compilation process.
+There are two [configuration](../guides/configure.md) options that you can use to understand what's happening under the hood during the compilation process.
 
-- **compiler_verbose_mode** will print the passes applied by the compiler and let you see the transformations done by the compiler. Also, in the case of a crash, it could narrow down the crash location.
-- **compiler_debug_mode** is a lot more detailed version of the verbose mode. This is even better for crashes.
+* **compiler\_verbose\_mode** will print the passes applied by the compiler and let you see the transformations done by the compiler. Also, in the case of a crash, it could narrow down the crash location.
+* **compiler\_debug\_mode** is a lot more detailed version of the verbose mode. This is even better for crashes.
 
 {% hint style="warning" %}
 These flags might not work as expected in Jupyter notebooks as they output to stderr directly from C++.

@@ -37,10 +37,11 @@ assert np.array_equal(circuit.encrypt_run_decrypt(sample), complex_univariate_fu
 
 {% hint style="danger" %}
 The wrapped function:
-- shouldn't have any side effects (e.g., no modification of global state)
-- should be deterministic (e.g., no random numbers)
-- should have the same output shape as its input (i.e., `output.shape` should be the same with `input.shape`)
-- each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]`)
+
+* shouldn't have any side effects (e.g., no modification of global state)
+* should be deterministic (e.g., no random numbers)
+* should have the same output shape as its input (i.e., `output.shape` should be the same with `input.shape`)
+* each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]`)
 
 If any of these constraints are violated, the outcome is undefined.
 {% endhint %}
@@ -79,16 +80,17 @@ assert np.array_equal(circuit.encrypt_run_decrypt(*sample), function(*sample))
 
 {% hint style="danger" %}
 The wrapped function:
-- shouldn't have any side effects (e.g., no modification of global state)
-- should be deterministic (e.g., no random numbers)
-- should have input shapes which are broadcastable to the output shape (i.e., `input.shape` should be broadcastable to `output.shape` for all inputs)
-- each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]` of all inputs)
+
+* shouldn't have any side effects (e.g., no modification of global state)
+* should be deterministic (e.g., no random numbers)
+* should have input shapes which are broadcastable to the output shape (i.e., `input.shape` should be broadcastable to `output.shape` for all inputs)
+* each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]` of all inputs)
 
 If any of these constraints are violated, the outcome is undefined.
 {% endhint %}
 
 {% hint style="warning" %}
-Multivariate functions cannot be called with [rounded](./rounding.md) inputs.
+Multivariate functions cannot be called with [rounded](rounding.md) inputs.
 {% endhint %}
 
 ## fhe.conv(...)
@@ -256,7 +258,7 @@ for x in range(10):
     assert np.array_equal(circuit.encrypt_run_decrypt(x), np.array([[x, x, x], [x, x, x]]) + 1)
 ```
 
-## fhe.hint(value, **kwargs)
+## fhe.hint(value, \*\*kwargs)
 
 Allows you to hint properties of a value. Imagine you have this circuit:
 
@@ -295,7 +297,7 @@ return %5
 
 The first solution in these cases should be to use a bigger inputset, but it can still be tricky to solve with the inputset. That's where the `hint` extension comes into play. Hints are a way to provide extra information to compilation process:
 
-- Bit-width hints are for constraining the minimum number of bits in the encoded value. If you hint a value to be 8-bits, it means it should be at least `uint8` or `int8`.
+* Bit-width hints are for constraining the minimum number of bits in the encoded value. If you hint a value to be 8-bits, it means it should be at least `uint8` or `int8`.
 
 To fix `f` using hints, you can do:
 
@@ -374,23 +376,26 @@ assert circuit.encrypt_run_decrypt(5) == 5
 ```
 
 ReLU extension can be converted in two different ways:
-- With a single TLU on the original bit-width.
-- With multiple TLUs on smaller bit-widths.
 
-For small bit-widths, the first one is better as it'll have a single TLU on a small bit-width.
-For big bit-widths, the second one is better as it won't have a TLU on a big bit-width.
+* With a single TLU on the original bit-width.
+* With multiple TLUs on smaller bit-widths.
+
+For small bit-widths, the first one is better as it'll have a single TLU on a small bit-width. For big bit-widths, the second one is better as it won't have a TLU on a big bit-width.
 
 The decision between the two can be controlled with `relu_on_bits_threshold: int = 7` configuration option:
-- `relu_on_bits_threshold=5` means:
-  - 1-bit to 4-bits would be converted using the first way (i.e., using TLU)
-  - 5-bits and more would be converted using the second way (i.e., using bits)
+
+* `relu_on_bits_threshold=5` means:
+  * 1-bit to 4-bits would be converted using the first way (i.e., using TLU)
+  * 5-bits and more would be converted using the second way (i.e., using bits)
 
 There is another option to customize the implementation `relu_on_bits_chunk_size: int = 2`:
-- `relu_on_bits_chunk_size=4` means:
-  - When using the second implementation:
-    - The input would be split to 4-bit chunks using [fhe.bits](../tutorial/bit_extraction.md), and then the ReLU would be applied to those chunks, which are then combined back.
+
+* `relu_on_bits_chunk_size=4` means:
+  * When using the second implementation:
+    * The input would be split to 4-bit chunks using [fhe.bits](bit\_extraction.md), and then the ReLU would be applied to those chunks, which are then combined back.
 
 Here is a script showing how execution cost is impacted when changing these values:
+
 ```python
 from concrete import fhe
 import numpy as np
@@ -481,8 +486,7 @@ The default values of these options are set based on simple circuits. How they a
 Conversion with the second method (i.e., using chunks) only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
 {% endhint %}
 
-
-## fhe.if_then_else(condition, x, y)
+## fhe.if\_then\_else(condition, x, y)
 
 Allows you to perform ternary if operation, with the same semantic as `x if condition else y`:
 
@@ -537,11 +541,7 @@ assert circuit.encrypt_run_decrypt(5) == 5
 ```
 
 {% hint style="info" %}
-Identity extension can be used to clone an input while changing its bit-width. Imagine you
-have `return x**2, x+100` where `x` is 2-bits. Because of `x+100`, `x` will be assigned 7-bits
-and `x**2` would be more expensive than it needs to be. If `return x**2, fhe.identity(x)+100`
-is used instead, `x` will be assigned 2-bits as it should and `fhe.identity(x)` will be assigned
-7-bits as necessary.
+Identity extension can be used to clone an input while changing its bit-width. Imagine you have `return x**2, x+100` where `x` is 2-bits. Because of `x+100`, `x` will be assigned 7-bits and `x**2` would be more expensive than it needs to be. If `return x**2, fhe.identity(x)+100` is used instead, `x` will be assigned 2-bits as it should and `fhe.identity(x)` will be assigned 7-bits as necessary.
 {% endhint %}
 
 {% hint style="warning" %}

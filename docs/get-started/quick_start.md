@@ -69,7 +69,7 @@ All inputs in the inputset will be evaluated in the graph, which takes time. If 
 
 {% hint style="warning" %}
 There is a utility function called `fhe.inputset(...)` for easily creating random inputsets, see its
-[documentation](../tutorial/extensions.md#fheinputset) to learn more!
+[documentation](../core-features/extensions.md#fheinputset) to learn more!
 {% endhint %}
 
 ## Compiling the function

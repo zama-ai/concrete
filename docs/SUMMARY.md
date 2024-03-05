@@ -1,83 +1,80 @@
 # Table of contents
 
-* [What is Concrete?](README.md)
+* [Welcome to Concrete](README.md)
 
-## Getting Started
+## Get Started
 
-* [Installation](getting-started/installing.md)
-* [Quick Start](getting-started/quick\_start.md)
-* [Compatibility](getting-started/compatibility.md)
-* [Terminology](getting-started/terminology.md)
+* [What is Concrete?](get-started/readme.md)
+* [Installation](get-started/installing.md)
+* [Quick start](get-started/quick\_start.md)
+* [Compatibility](get-started/compatibility.md)
+* [Terminology](get-started/terminology.md)
 
-## Feature
+## Core features
 
-* [Overview](getting-started/fhe_basics.md)
-
-* [Table Lookups](tutorial/table\_lookups.md)
-
-* [Bit Extraction](tutorial/bit\_extraction.md)
-* [Rounding](tutorial/rounding.md)
-* [Truncating](tutorial/truncating.md)
-* [Floating Points](tutorial/floating\_points.md)
-
-* [Comparisons](tutorial/comparisons.md)
-* [Min/Max Operations](tutorial/minmax.md)
-* [Bitwise Operations](tutorial/bitwise.md)
-
-* [Common Tricks](tutorial/workarounds.md)
-* [Extensions](tutorial/extensions.md)
-
-* [Tagging](tutorial/tagging.md)
+* [Overview](core-features/fhe\_basics.md)
+* [Table lookups](core-features/table\_lookups.md)
+* [Bit extraction](core-features/bit\_extraction.md)
+* [Rounding](core-features/rounding.md)
+* [Truncating](core-features/truncating.md)
+* [Floating points](core-features/floating\_points.md)
+* [Comparisons](core-features/comparisons.md)
+* [Min/Max operations](core-features/minmax.md)
+* [Bitwise operations](core-features/bitwise.md)
+* [Common tips](core-features/workarounds.md)
+* [Extensions](core-features/extensions.md)
+* [Tagging](core-features/tagging.md)
 
 ## Compilation
 
-* [Composition](tutorial/composition.md)
-* [Reuse Arguments](howto/reuse\_arguments.md)
-* [Multi Precision](tutorial/multi\_precision.md)
-* [Multi Parameters](tutorial/multi\_parameters.md)
-* [Decorator](tutorial/decorator.md)
-* [Direct Circuits](tutorial/direct\_circuits.md)
-* [Statistics](tutorial/statistics.md)
+* [Composition](compilation/composition.md)
+* [Reuse arguments](compilation/reuse\_arguments.md)
+* [Multi precision](compilation/multi\_precision.md)
+* [Multi parameters](compilation/multi\_parameters.md)
+* [Decorator](compilation/decorator.md)
+* [Direct circuits](compilation/direct\_circuits.md)
+* [Statistics](compilation/statistics.md)
 
 ## Execution / Analysis
 
-* [Simulation](tutorial/simulation.md)
-* [Progressbar](tutorial/progressbar.md)
-* [Formatting and Drawing](tutorial/formatting\_and\_drawing.md)
-* [Debug](howto/debug.md)
+* [Simulation](execution-analysis/simulation.md)
+* [Progressbar](execution-analysis/progressbar.md)
+* [Formatting and drawing](execution-analysis/formatting\_and\_drawing.md)
+* [Debug](execution-analysis/debug.md)
 
-## Application Tutorials
+## Guides
 
-* [Key Value Database](application-tutorial/key\_value\_database.md)
-* [SHA-256](application-tutorial/sha256.md)
-* [Game of Life](application-tutorial/game_of_life.md)
-* [XOR Distance](application-tutorial/xor_distance.md)
+* [Configure](guides/configure.md)
+* [Manage keys](guides/manage\_keys.md)
+* [Deploy](guides/deploy.md)
 
-## Guide
+## Tutorials
 
-* [Configure](howto/configure.md)
-* [Manage Keys](howto/manage\_keys.md)
-* [Deploy](howto/deploy.md)
+* [See all tutorials](tutorials/see-all-tutorials.md)
+* [Part I: Concrete - FHE compiler](https://www.zama.ai/post/zama-concrete-fully-homomorphic-encryption-compiler)
+* [Part II: The Architecture of Concrete](https://www.zama.ai/post/the-architecture-of-concrete-zama-fully-homomorphic-encryption-compiler-leveraging-mlir)
 
 ## Explanations
 
-* [Frontend fusing](dev/fusing.md)
-* [Optimizer](dev/compilation/optimizer.md)
-* [MLIR FHE Dialects](dev/compilation/dialects.md)
-    * [FHELinalg Dialect](dev/compilation/FHELinalgDialect.md)
-    * [FHE Dialect](dev/compilation/FHEDialect.md)
-    * [TFHE Dialect](dev/compilation/TFHEDialect.md)
-    * [Concrete Dialect](dev/compilation/ConcreteDialect.md)
-    * [Tracing Dialect](dev/compilation/TracingDialect.md)
-    * [Runtime Dialect](dev/compilation/RTDialect.md)
-    * [SDFG Dialect](dev/compilation/SDFGDialect.md)
-* [Security](dev/security/security_curves.md)
-* [Call FHE circuits from other languages](howto/call_from_other_language.md)
+* [Frontend fusing](explanations/fusing.md)
+* [Compiler backend](explanations/backends/README.md)
+  * [Adding a new backend](explanations/backends/new\_backend.md)
+* [Optimizer](explanations/optimizer.md)
+* [MLIR FHE dialects](explanations/dialects.md)
+  * [FHELinalg dialect](explanations/FHELinalgDialect.md)
+  * [FHE dialect](explanations/FHEDialect.md)
+  * [TFHE dialect](explanations/TFHEDialect.md)
+  * [Concrete dialect](explanations/ConcreteDialect.md)
+  * [Tracing dialect](explanations/TracingDialect.md)
+  * [Runtime dialect](explanations/RTDialect.md)
+  * [SDFG dialect](explanations/SDFGDialect.md)
+* [Security](explanations/security\_curves.md)
+* [Call FHE circuits from other languages](explanations/call\_from\_other\_language.md)
+* [Project layout](explanations/layout.md)
 
 ## Developer
 
-* [Contribute](dev/contributing.md)
-* [Project layout](dev/setup/layout.md)
-* [Compiler backend](dev/backends/README.md)
-    * [Adding a new backend](dev/backends/new_backend.md)
-
+* [Contributing](dev/contributing.md)
+* [Release note](https://github.com/zama-ai/concrete/releases)
+* [Feature request](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=feature\&projects=\&template=features.md)
+* [Bug report](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=bug%2C+triage\&projects=\&template=bug\_report.md)
