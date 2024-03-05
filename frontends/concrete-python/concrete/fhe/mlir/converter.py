@@ -184,21 +184,25 @@ class Converter:
                 configuration to use
         """
 
-        pipeline = [
-            CheckIntegerOnly(),
-            AssignBitWidths(
-                single_precision=configuration.single_precision,
-                composable=configuration.composable,
-                comparison_strategy_preference=configuration.comparison_strategy_preference,
-                bitwise_strategy_preference=configuration.bitwise_strategy_preference,
-                shifts_with_promotion=configuration.shifts_with_promotion,
-                multivariate_strategy_preference=configuration.multivariate_strategy_preference,
-                min_max_strategy_preference=configuration.min_max_strategy_preference,
-            ),
-            ProcessRounding(
-                rounding_exactness=configuration.rounding_exactness,
-            ),
-        ] + configuration.additional_processors
+        pipeline = (
+            configuration.additional_pre_processors
+            + [
+                CheckIntegerOnly(),
+                AssignBitWidths(
+                    single_precision=configuration.single_precision,
+                    composable=configuration.composable,
+                    comparison_strategy_preference=configuration.comparison_strategy_preference,
+                    bitwise_strategy_preference=configuration.bitwise_strategy_preference,
+                    shifts_with_promotion=configuration.shifts_with_promotion,
+                    multivariate_strategy_preference=configuration.multivariate_strategy_preference,
+                    min_max_strategy_preference=configuration.min_max_strategy_preference,
+                ),
+                ProcessRounding(
+                    rounding_exactness=configuration.rounding_exactness,
+                ),
+            ]
+            + configuration.additional_post_processors
+        )
 
         for processor in pipeline:
             processor.apply(graph)

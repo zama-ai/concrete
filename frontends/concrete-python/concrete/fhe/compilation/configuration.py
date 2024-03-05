@@ -981,7 +981,8 @@ class Configuration:
     relu_on_bits_threshold: int
     relu_on_bits_chunk_size: int
     if_then_else_chunk_size: int
-    additional_processors: List[GraphProcessor]
+    additional_pre_processors: List[GraphProcessor]
+    additional_post_processors: List[GraphProcessor]
     rounding_exactness: Exactness
     approximate_rounding_config: ApproximateRoundingConfig
 
@@ -1040,7 +1041,8 @@ class Configuration:
         relu_on_bits_threshold: int = 7,
         relu_on_bits_chunk_size: int = 3,
         if_then_else_chunk_size: int = 3,
-        additional_processors: Optional[List[GraphProcessor]] = None,
+        additional_pre_processors: Optional[List[GraphProcessor]] = None,
+        additional_post_processors: Optional[List[GraphProcessor]] = None,
         rounding_exactness: Exactness = Exactness.EXACT,
         approximate_rounding_config: Optional[ApproximateRoundingConfig] = None,
     ):
@@ -1125,7 +1127,12 @@ class Configuration:
         self.relu_on_bits_threshold = relu_on_bits_threshold
         self.relu_on_bits_chunk_size = relu_on_bits_chunk_size
         self.if_then_else_chunk_size = if_then_else_chunk_size
-        self.additional_processors = [] if additional_processors is None else additional_processors
+        self.additional_pre_processors = (
+            [] if additional_pre_processors is None else additional_pre_processors
+        )
+        self.additional_post_processors = (
+            [] if additional_post_processors is None else additional_post_processors
+        )
         self.rounding_exactness = rounding_exactness
         self.approximate_rounding_config = (
             approximate_rounding_config or ApproximateRoundingConfig()
@@ -1190,7 +1197,8 @@ class Configuration:
         relu_on_bits_threshold: Union[Keep, int] = KEEP,
         relu_on_bits_chunk_size: Union[Keep, int] = KEEP,
         if_then_else_chunk_size: Union[Keep, int] = KEEP,
-        additional_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
+        additional_pre_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
+        additional_post_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
         rounding_exactness: Union[Keep, Exactness] = KEEP,
         approximate_rounding_config: Union[Keep, Optional[ApproximateRoundingConfig]] = KEEP,
     ) -> "Configuration":
@@ -1224,16 +1232,17 @@ class Configuration:
             if name in already_checked_by_parse_methods:
                 continue
 
-            if name == "additional_processors":
-                valid = isinstance(self.additional_processors, list)
+            if name in ["additional_pre_processors", "additional_post_processors"]:
+                attr = getattr(self, name)
+                valid = isinstance(attr, list)
                 if valid:
-                    for processor in self.additional_processors:
+                    for processor in attr:
                         valid = valid and isinstance(processor, GraphProcessor)
                 if not valid:
                     hint_type = friendly_type_format(hint)
-                    value_type = friendly_type_format(type(self.additional_processors))
+                    value_type = friendly_type_format(type(attr))
                     message = (
-                        f"Unexpected type for keyword argument 'additional_processors' "
+                        f"Unexpected type for keyword argument '{name}' "
                         f"(expected '{hint_type}', got '{value_type}')"
                     )
                     raise TypeError(message)
