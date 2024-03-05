@@ -1,37 +1,38 @@
-# What is Concrete?
+# Welcome to Concrete
 
-📁 [Github](https://github.com/zama-ai/concrete) | 💛 [Community support](https://zama.ai/community) | 🟨 [Zama Bounty Program](https://github.com/zama-ai/bounty-program)
+⭐️[ Star the repo on Github](https://github.com/zama-ai/concrete) | 📚 [FHE resources by Zama](https://github.com/zama-ai/awesome-zama/tree/main) | 💬 [Community support ](https://community.zama.ai/)
 
-<figure><img src="_static/zama_home_docs.png" alt=""><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/doc header.png" alt=""><figcaption></figcaption></figure>
 
-**Concrete** is an open source framework which simplifies the use of Fully Homomorphic Encryption (FHE).
+**Concrete** is an open-source FHE Compiler that simplifies the use of Fully Homomorphic Encryption (FHE).
 
-FHE is a powerful cryptographic tool, allowing computation to be performed directly on encrypted data without needing to decrypt it. With FHE, you can build services that preserve privacy for all users. FHE also offers ideal protection against data breaches as everything is done on encrypted data. Even if the server is compromised, no sensitive data is leaked.
+### Get started
 
-Since writing FHE programs is a difficult task, Concrete framework contains a TFHE Compiler based on [LLVM](https://en.wikipedia.org/wiki/LLVM) to make this process easier for developers.
+Learn the basics of Concrete, set it up, and make it run with ease.
 
-## Organization of this documentation
+<table data-view="cards"><thead><tr><th align="center"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td align="center">What is Concrete</td><td><a href="get-started/">get-started</a></td></tr><tr><td align="center">Installation</td><td><a href="get-started/installing.md">installing.md</a></td></tr><tr><td align="center">Quick start</td><td><a href="get-started/quick_start.md">quick_start.md</a></td></tr></tbody></table>
 
-This documentation is split into several sections:
+### Build with Concrete
 
-* **Getting Started** gives you the basics,
-* **Tutorials** provides essential examples on various features of the library,
-* **How to** helps you perform specific tasks,
-* **Developer** explains the inner workings of the library and everything related to contributing to the project.
+Start building with Concrete by exploring its core features, discovering essential guides, and learning more with step-by-step tutorials.
 
-## Looking for support? Ask our team!
+<table data-view="cards"><thead><tr><th align="center"></th><th></th><th></th><th data-hidden data-card-cover data-type="files"></th></tr></thead><tbody><tr><td align="center"><strong>Fundamentals</strong></td><td>Explore the core features and basics of Concrete.</td><td><ul><li><a href="broken-reference">Core features</a></li><li><a href="broken-reference">Compilation</a></li><li><a href="broken-reference">Execution/Analysis</a></li></ul></td><td><a href=".gitbook/assets/fundamentals.png">fundamentals.png</a></td></tr><tr><td align="center"><strong>Guides</strong></td><td>Discover essential guides to work with Concrete.</td><td><ul><li><a href="guides/configure.md">Configure</a></li><li><a href="guides/manage_keys.md">Manage keys</a></li><li><a href="howto/debug.md">Deploy</a></li></ul></td><td><a href=".gitbook/assets/guides.png">guides.png</a></td></tr><tr><td align="center"><strong>Tutorials</strong></td><td>Learn more about TFHE-rs with our tutorials.</td><td><ul><li><a href="tutorials/see-all-tutorials.md#start-here">Start here</a></li><li><a href="tutorials/see-all-tutorials.md#go-further">Go further</a></li><li><a href="tutorials/see-all-tutorials.md">See all tutorials</a></li></ul></td><td><a href=".gitbook/assets/tutorials.png">tutorials.png</a></td></tr></tbody></table>
 
-* Support forum: [https://community.zama.ai](https://community.zama.ai) (we answer in less than 24 hours).
-* Live discussion on the FHE.org discord server: [https://discord.fhe.org](https://discord.fhe.org) (inside the #**concrete** channel).
-<!-- markdown-link-check-disable-next-line -->
-* Do you have a question about Zama? Write us on [Twitter](https://twitter.com/zama_fhe) or send us an email at: **hello@zama.ai**
+### Explanations
 
-## How is Concrete different from Concrete Numpy?
+Review product architecture, and access additional resources for in-depth explanations while working with Concrete.
 
-Concrete Numpy was the former name of the Python frontend of the Concrete Compiler. Concrete Compiler is now open source, and the package name is updated from `concrete-numpy` to `concrete-python` (as `concrete` is already booked for a non FHE-related project).
+<table data-view="cards"><thead><tr><th align="center"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td align="center">Frontend fusing</td><td><a href="dev/fusing.md">fusing.md</a></td></tr><tr><td align="center">Compiler backend</td><td><a href="dev/compilation/optimizer.md">optimizer.md</a></td></tr><tr><td align="center">Optimizer</td><td><a href="dev/compilation/dialects.md">dialects.md</a></td></tr></tbody></table>
 
-Users from Concrete Numpy can safely update to Concrete, with a few required changes, as explained in the [upgrading document](https://github.com/zama-ai/concrete/blob/main/UPGRADING.md).
+### Supports
 
-## How is it different from the previous version of Concrete?
+Our team of experts usually answers within 24 hours in working days.
 
-Before v1.0, Concrete was a set of Rust libraries implementing Zama's variant of TFHE. Starting with v1, Concrete is now Zama's TFHE Compiler framework only. The Rust library is now called [TFHE-rs](https://github.com/zama-ai/tfhe-rs).
+<table data-card-size="large" data-view="cards"><thead><tr><th align="center"></th><th align="center"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td align="center">💬 <strong>Community forum</strong></td><td align="center">Ask technical questions to the Zama team and find solutions to common issues</td><td><a href="https://community.zama.ai/">https://community.zama.ai/</a></td></tr><tr><td align="center">👾 <strong>Discord channel</strong></td><td align="center">Discuss FHE-related topics with the FHE community in real-time</td><td><a href="https://discord.com/invite/fhe-org">https://discord.com/invite/fhe-org</a></td></tr></tbody></table>
+
+### Developers
+
+* [Contribute to Concrete](dev/contributing.md)
+* [Check the latest release note](https://github.com/zama-ai/concrete/releases)
+* [Request a feature](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=feature\&projects=\&template=features.md)
+* [Report a bug](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=bug%2C+triage\&projects=\&template=bug\_report.md)

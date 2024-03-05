@@ -59,7 +59,7 @@ Let's take a closer look at the transforms we can currently perform.
 
 ### Fusing.
 
-We have allocated a whole new chapter to explaining fusing. You can find it [here](../fusing.md).
+We have allocated a whole new chapter to explaining fusing. You can find it [here](../../explanations/fusing.md).
 
 ## Bounds measurement
 

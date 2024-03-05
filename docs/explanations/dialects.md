@@ -20,7 +20,7 @@ In addition, the project further defines two dialects that help expose dynamic t
 
 The figure below illustrates the relationship between the dialects and their embedding into the compilation pipeline.
 
-![](../../\_static/compilation-pipeline/compilation-flow.png)
+![](../\_static/compilation-pipeline/compilation-flow.png)
 
 The following sections focus on the FHE-related dialects, i.e., on the FHELinalg Dialect, the FHE Dialect, the TFHE Dialect and the Concrete Dialect.
 

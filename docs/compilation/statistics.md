@@ -2,13 +2,13 @@
 
 Concrete analyzes all compiled circuits and calculates some statistics. These statistics can be used to find bottlenecks and compare circuits. Statistics are calculated in terms of basic operations. There are 6 basic operations in Concrete:
 
-- **clear addition:** x + y where x is encrypted and y is clear
-- **encrypted addition:** x + y where both x and y are encrypted
-- **clear multiplication:** x * y where x is encrypted and y is clear
-- **encrypted negation:** -x where x is encrypted
-- **key switch:** building block for table lookups
-- **packing key switch:** building block for table lookups
-- **programmable bootstrapping:** building block for table lookups
+* **clear addition:** x + y where x is encrypted and y is clear
+* **encrypted addition:** x + y where both x and y are encrypted
+* **clear multiplication:** x \* y where x is encrypted and y is clear
+* **encrypted negation:** -x where x is encrypted
+* **key switch:** building block for table lookups
+* **packing key switch:** building block for table lookups
+* **programmable bootstrapping:** building block for table lookups
 
 You can print all statistics using the `show_statistics` configuration option:
 
@@ -67,7 +67,7 @@ Each of these properties can be directly accessed on the circuit (e.g., `circuit
 
 ## Tags
 
-Circuit analysis also considers [tags](../tutorial/tagging.md)!
+Circuit analysis also considers [tags](../core-features/tagging.md)!
 
 Imagine you have a neural network with 10 layers, each of them tagged. You can easily see the number of additions and multiplications required for matrix multiplications per layer:
 

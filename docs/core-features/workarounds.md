@@ -1,19 +1,14 @@
-# Common tricks used in (T)FHE
+# Common tricks
 
-As explained in the [Basics of FHE](../getting-started/fhe_basics.md), the challenge for developers
-is to adapt their code to fit FHE constraints. In this document we have collected some common examples
-to illustrate the kind of optimization one can do to get better performance.
+As explained in the [Basics of FHE](fhe\_basics.md), the challenge for developers is to adapt their code to fit FHE constraints. In this document we have collected some common examples to illustrate the kind of optimization one can do to get better performance.
 
 {% hint style="info" %}
-All code snippets provided here are temporary workarounds. In future versions of Concrete, some
-functions described here could be directly available in a more generic and efficient form.
-These code snippets are coming from support answers in our [community forum](https://community.zama.ai)
+All code snippets provided here are temporary workarounds. In future versions of Concrete, some functions described here could be directly available in a more generic and efficient form. These code snippets are coming from support answers in our [community forum](https://community.zama.ai)
 {% endhint %}
 
 ## Minimum for Two values
 
-In this first example, we compute a minimum by creating the difference between two numbers `y` and `x`
-and conditionally remove this diff from `y` to either get `x` if `y>x` or `y` if `x>y`:
+In this first example, we compute a minimum by creating the difference between two numbers `y` and `x` and conditionally remove this diff from `y` to either get `x` if `y>x` or `y` if `x>y`:
 
 ```python
 import numpy as np
@@ -105,8 +100,7 @@ assert circuit.encrypt_run_decrypt(array, index) == array[index]
 
 ## Filter an array with comparison (>)
 
-This example filters an encrypted array with an encrypted condition, here a `greater than` with an encrypted value.
-It packs all values with a selection bit, resulting from the comparison that allow the unpacking of only the filtered values:
+This example filters an encrypted array with an encrypted condition, here a `greater than` with an encrypted value. It packs all values with a selection bit, resulting from the comparison that allow the unpacking of only the filtered values:
 
 ```python
 import numpy as np
@@ -138,9 +132,7 @@ assert np.array_equal(circuit.encrypt_run_decrypt(numbers, threshold), list(map(
 
 ## Matrix Row/Col means
 
-In this example Matrix operation, we are introducing a key concept when using Concrete:
-trying to maximize the parallelization. Here instead of sequentially summing all values to create a
-mean value, we split the values in sub-groups, and do the mean of the sub-group means:
+In this example Matrix operation, we are introducing a key concept when using Concrete: trying to maximize the parallelization. Here instead of sequentially summing all values to create a mean value, we split the values in sub-groups, and do the mean of the sub-group means:
 
 ```python
 import numpy as np

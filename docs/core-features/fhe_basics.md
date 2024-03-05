@@ -1,8 +1,8 @@
-# Fully Homomorphic Encryption for developer introduction
+# Overview
 
 ## Operations on encrypted values
 
-The idea of homomorphic encryption is that you can compute on ciphertexts without knowing the messages they encrypt. A scheme is said to be [fully homomorphic](https://en.wikipedia.org/wiki/Homomorphic_encryption#Fully_homomorphic_encryption), if an unlimited number of additions and multiplications are supported ($$x$$ is a plaintext and $$E[x]$$ is the corresponding ciphertext):
+The idea of homomorphic encryption is that you can compute on ciphertexts without knowing the messages they encrypt. A scheme is said to be [fully homomorphic](https://en.wikipedia.org/wiki/Homomorphic\_encryption#Fully\_homomorphic\_encryption), if an unlimited number of additions and multiplications are supported ($$x$$ is a plaintext and $$E[x]$$ is the corresponding ciphertext):
 
 * homomorphic addition: $$E[x] + E[y] = E[x + y]$$
 * homomorphic multiplication: $$E[x] * E[y] = E[x * y]$$
@@ -11,7 +11,7 @@ The idea of homomorphic encryption is that you can compute on ciphertexts withou
 
 FHE encrypts data as LWE ciphertexts. These ciphertexts can be visually represented as a bit vector with the encrypted message in the higher-order (yellow) bits as well as a random part (gray), that guarantees the security of the encrypted message, called noise.
 
-![](../_static/basics/Ciphertext.png)
+![](../\_static/basics/Ciphertext.png)
 
 Under the hood, each time you perform an operation on an encrypted value, the noise grows and at a certain point, it may overlap with the message and corrupt its value.
 
@@ -23,7 +23,7 @@ A typical FHE program will be made up of a series of operations followed by a Bo
 
 The amount of noise in a ciphertext is not as bounded as it may appear in the above illustration. As the errors are drawn randomly from a Gaussian distribution, they can be of varying size. This means that we need to be careful to ensure the noise terms do not affect the message bits. If the error terms do overflow into the message bits, this can cause an incorrect output (failure) when bootstrapping.
 
-The default failure probability in Concrete is set for the whole program and is $$ \frac{1}{100000} $$ by default. This means that 1 execution of every 100,000 may result in an incorrect output. To have a lower probability of error, you need to change the cryptographic parameters, likely resulting in worse performance. On the other side of this trade-off, allowing a higher probability of error will likely speed-up operations.
+The default failure probability in Concrete is set for the whole program and is $$\frac{1}{100000}$$ by default. This means that 1 execution of every 100,000 may result in an incorrect output. To have a lower probability of error, you need to change the cryptographic parameters, likely resulting in worse performance. On the other side of this trade-off, allowing a higher probability of error will likely speed-up operations.
 
 ## Function evaluation
 
@@ -38,6 +38,7 @@ Concrete uses the PBS to support function evaluation:
 Let's take a simple example. A function (or circuit) that takes a 4 bits input variable and output the maximum value between a clear constant and the encrypted input:
 
 example:
+
 ```python
 import numpy as np
 
@@ -54,7 +55,6 @@ def encrypted_max(x: uint4):
 ```
 
 The Lookup table `lut` being applied during the Programmable Bootstrap.
-
 
 ## PBS management
 
@@ -90,8 +90,7 @@ Once happy with the code, the development process is over and you will create th
 
 ### Deployment
 
-A typical Concrete deployment will host on a server the compilation artifact: Client specifications required by the compiled circuits and the fhe executable itself. Client will ask for the circuit requirements, generate keys accordingly, then it will send
-an encrypted payload and receive an encrypted result.
+A typical Concrete deployment will host on a server the compilation artifact: Client specifications required by the compiled circuits and the fhe executable itself. Client will ask for the circuit requirements, generate keys accordingly, then it will send an encrypted payload and receive an encrypted result.
 
 ```mermaid
 sequenceDiagram
@@ -104,4 +103,4 @@ sequenceDiagram
     Client->>Client: Decrypt(result)
 ```
 
-For more information on deployment, see [Howto - Deploy](../howto/deploy.md)
+For more information on deployment, see [Howto - Deploy](../guides/deploy.md)
