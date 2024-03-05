@@ -13,7 +13,7 @@ for file in $files
 do
     cmp <(head -n 4 $file) <(echo "// Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.") || print_and_exit $file
 done
 
@@ -23,5 +23,5 @@ files=$(find ./compiler/{include,lib,src} -iregex '^.*\.\(py\)$' ! -path ./compi
 for file in $files
 do
     cmp <(head -n 2 $file) <(echo "#  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt for license information.") || print_and_exit $file
+#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.") || print_and_exit $file
 done

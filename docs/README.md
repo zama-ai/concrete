@@ -20,9 +20,15 @@ Start building with Concrete by exploring its core features, discovering essenti
 
 ### Explanations
 
-Review product architecture, and access additional resources for in-depth explanations while working with Concrete.
+Refer to the API, review product architecture, and access additional resources for in-depth explanations while working with Concrete.
 
-<table data-view="cards"><thead><tr><th align="center"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td align="center">Frontend fusing</td><td><a href="dev/fusing.md">fusing.md</a></td></tr><tr><td align="center">Compiler backend</td><td><a href="dev/compilation/optimizer.md">optimizer.md</a></td></tr><tr><td align="center">Optimizer</td><td><a href="dev/compilation/dialects.md">dialects.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th align="center"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody>
+    <tr><td align="center">API</td><td><a href="dev/api/README.md">README.md</a></td></tr>
+    <tr><td align="center">Frontend fusing</td><td><a href="dev/fusing.md">fusing.md</a></td></tr>
+    <tr><td align="center">Compiler backend</td><td><a href="dev/compilation/optimizer.md">optimizer.md</a></td></tr>
+    <tr><td align="center">Optimizer</td><td><a href="dev/compilation/dialects.md">dialects.md</a></td></tr>
+</tbody>
+</table>
 
 ### Supports
 
