@@ -153,8 +153,7 @@ struct FunctionToDag {
     } else if (isRound(op)) {
       index = addRound(dag, val, encrypted_inputs, precision);
     } else if (isReinterpretPrecision(op)) {
-      addReinterpretPrecision(dag, val, encrypted_inputs, precision);
-      return;
+      index = addReinterpretPrecision(dag, val, encrypted_inputs, precision);
     } else if (auto lsb = asLsb(op)) {
       addLsb(dag, lsb, encrypted_inputs);
       return;
