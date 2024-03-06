@@ -6,18 +6,63 @@ import json
 import os
 import re
 from copy import deepcopy
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
 import numpy as np
 
 from ..dtypes import Float, Integer, SignedInteger, UnsignedInteger
 from ..representation import Graph, Node, Operation
+from ..tracing import ScalarAnnotation
 from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .specs import ClientSpecs
 
 # ruff: noqa: ERA001
+
+
+def inputset(
+    *inputs: Union[ScalarAnnotation, ValueDescription, Callable[[int], Any]],
+    size: int = 100,
+) -> List[Tuple[Any, ...]]:
+    """
+    Generate a random inputset.
+
+    Args:
+        *inputs (Union[ScalarAnnotation, ValueDescription, Callable[[int], Any]]):
+            specification of each input
+
+        size (int, default = 100):
+            size of the inputset
+
+    Returns:
+        List[Tuple[Any, ...]]:
+            generated inputset
+    """
+
+    result: List[Tuple[Any, ...]] = []
+    for i in range(size):
+        sample: List[Any] = []
+        for specification in inputs:
+            is_value = isinstance(specification, ValueDescription)
+            is_scalar_annotation = isinstance(specification, type) and issubclass(
+                specification, ScalarAnnotation
+            )
+
+            if is_scalar_annotation or is_value:
+                dtype = specification.dtype  # type: ignore
+                shape = () if is_scalar_annotation else specification.shape  # type: ignore
+
+                if isinstance(dtype, Integer):
+                    sample.append(np.random.randint(dtype.min(), dtype.max() + 1, size=shape))
+                else:
+                    sample.append(np.random.rand(*shape))
+            else:
+                assert not isinstance(specification, (ScalarAnnotation, ValueDescription))
+                sample.append(specification(i))
+
+        result.append(tuple(sample))
+    return result
 
 
 def validate_input_args(

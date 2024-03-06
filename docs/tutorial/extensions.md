@@ -547,3 +547,20 @@ is used instead, `x` will be assigned 2-bits as it should and `fhe.identity(x)` 
 {% hint style="warning" %}
 Identity extension only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
 {% endhint %}
+
+## fhe.inputset(...)
+
+Used for creating a random inputset with the given specifications:
+
+```python
+inputset = fhe.inputset(fhe.uint4, fhe.tensor[fhe.int3, 3, 2], lambda index: custom_value(index))
+assert isinstance(inputset, list)
+assert all(isinstance(sample, tuple) and len(sample) == 3 for sample in inputset)
+```
+
+The result will have 100 inputs by default which can be customized using the size keyword argument:
+
+```python
+inputset = fhe.inputset(fhe.uint4, fhe.uint4, size=10)
+assert len(inputset) == 10
+```
