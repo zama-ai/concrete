@@ -27,6 +27,7 @@ from .compilation import (
     ParameterSelectionStrategy,
     Server,
     Value,
+    inputset,
 )
 from .compilation.decorators import circuit, compiler
 from .dtypes import Integer
