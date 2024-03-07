@@ -507,7 +507,8 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       auto programInfoOrErr =
           mlir::concretelang::createProgramInfoFromTfheDialect(
               module, options.optimizerConfig.security,
-              options.encodings.value(), options.compressEvaluationKeys);
+              options.encodings.value(), options.compressEvaluationKeys,
+              options.compressInputCiphertexts);
 
       if (!programInfoOrErr)
         return programInfoOrErr.takeError();

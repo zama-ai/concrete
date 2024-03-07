@@ -23,7 +23,7 @@ llvm::Expected<Message<concreteprotocol::ProgramInfo>>
 createProgramInfoFromTfheDialect(
     mlir::ModuleOp module, int bitsOfSecurity,
     const Message<concreteprotocol::ProgramEncodingInfo> &encodings,
-    bool compressEvaluationKeys);
+    bool compressEvaluationKeys, bool compressInputCiphertexts);
 
 } // namespace concretelang
 } // namespace mlir

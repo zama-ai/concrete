@@ -57,6 +57,9 @@ public:
   ~EncryptionCSPRNG();
 };
 
+void writeSeed(struct Uint128 seed, uint64_t *buffer);
+void readSeed(struct Uint128 &seed, uint64_t *buffer);
+
 } // namespace csprng
 } // namespace concretelang
 

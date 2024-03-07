@@ -513,6 +513,35 @@ Result<Transformer> getEncryptionTransformer(
   };
 }
 
+Result<Transformer> getSeededEncryptionTransformer(
+    ClientKeyset keyset,
+    const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info) {
+
+  auto key = keyset.lweSecretKeys[info.asReader().getKeyId()];
+  auto lweDimension = info.asReader().getLweDimension();
+  auto variance = info.asReader().getVariance();
+
+  return [=](Value input) {
+    auto inputTensor = input.getTensor<uint64_t>().value();
+    auto outputTensor = Tensor<uint64_t>(inputTensor);
+    // 3 = 2 (seed) + 1 (encrypted scalar)
+    auto const ciphertextSize = 3;
+    outputTensor.dimensions.push_back(ciphertextSize);
+    outputTensor.values.resize(outputTensor.values.size() * ciphertextSize);
+    struct Uint128 seed;
+    for (size_t i = 0; i < inputTensor.values.size(); i++) {
+      csprng::getRandomSeed(&seed);
+      // Write seed
+      csprng::writeSeed(seed, &outputTensor.values[i * 3]);
+      // Encrypt
+      concrete_cpu_encrypt_seeded_lwe_ciphertext_u64(
+          key.getRawPtr(), &outputTensor.values[i * 3 + 2],
+          inputTensor.values[i], lweDimension, seed, variance);
+    }
+    return Value{outputTensor};
+  };
+}
+
 Result<Transformer> getEncryptionSimulationTransformer(
     const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info,
     std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
@@ -771,35 +800,63 @@ Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
                                                        .getEncryption(),
                                                    csprng));
   } else {
-    OUTCOME_TRY(encryptionTransformer,
-                getEncryptionTransformer(keyset,
-                                         gateInfo.asReader()
-                                             .getTypeInfo()
-                                             .getLweCiphertext()
-                                             .getEncryption(),
-                                         csprng));
-  }
-
-  /// Generating the compression transformer.
-  Transformer compressionTransformer;
-  if (gateInfo.asReader().getTypeInfo().getLweCiphertext().getCompression() ==
-      concreteprotocol::Compression::NONE) {
-    OUTCOME_TRY(compressionTransformer, getNoneCompressionTransformer());
-  } else {
-    return StringError(
-        "Only none compression is currently supported for lwe ciphertext "
-        "currently.");
+    auto compression =
+        gateInfo.asReader().getTypeInfo().getLweCiphertext().getCompression();
+    if (compression == concreteprotocol::Compression::NONE) {
+      OUTCOME_TRY(encryptionTransformer,
+                  getEncryptionTransformer(keyset,
+                                           gateInfo.asReader()
+                                               .getTypeInfo()
+                                               .getLweCiphertext()
+                                               .getEncryption(),
+                                           csprng));
+    } else if (compression == concreteprotocol::Compression::SEED) {
+      OUTCOME_TRY(encryptionTransformer,
+                  getSeededEncryptionTransformer(keyset, gateInfo.asReader()
+                                                             .getTypeInfo()
+                                                             .getLweCiphertext()
+                                                             .getEncryption()));
+    } else {
+      return StringError(
+          "Only none compression is currently supported for lwe ciphertext "
+          "currently.");
+    }
   }
 
   OUTCOME_TRY(auto verify, getLweCiphertextInputValueVerifier(gateInfo));
   return [=](Value val) -> Result<TransportValue> {
     OUTCOME_TRYV(verify(val));
     auto output =
-        compressionTransformer(encryptionTransformer(encodingTransformer(val)))
-            .intoRawTransportValue();
+        encryptionTransformer(encodingTransformer(val)).intoRawTransportValue();
     output.asBuilder().initTypeInfo().setLweCiphertext(
         gateInfo.asReader().getTypeInfo().getLweCiphertext());
     return output;
+  };
+}
+
+Result<Transformer> getSeededLweCiphertextDecompressionTransformer(
+    const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info) {
+
+  auto lweDimension = info.asReader().getLweDimension();
+  auto lweSize = lweDimension + 1;
+  return [=](Value input) -> Value {
+    auto inputTensor = input.getTensor<uint64_t>().value();
+    auto outputTensor = Tensor<uint64_t>(inputTensor);
+    outputTensor.dimensions.back() = lweSize;
+    auto size = 1;
+    for (auto d : outputTensor.dimensions) {
+      size *= d;
+    }
+    outputTensor.values.resize(size);
+
+    for (size_t i = 0; i < inputTensor.values.size(); i += 3) {
+      Uint128 seed;
+      csprng::readSeed(seed, &inputTensor.values[i]);
+      concrete_cpu_decompress_seeded_lwe_ciphertext_u64(
+          &outputTensor.values[(i / 3) * lweSize], &inputTensor.values[i + 2],
+          lweDimension, seed);
+    }
+    return Value{outputTensor};
   };
 }
 
@@ -812,9 +869,14 @@ Result<ArgTransformer> TransformerFactory::getLweCiphertextArgTransformer(
 
   /// Generating the decompression transformer.
   Transformer decompressionTransformer;
-  if (gateInfo.asReader().getTypeInfo().getLweCiphertext().getCompression() ==
-      concreteprotocol::Compression::NONE) {
+  auto lweCiphertextInfo = gateInfo.asReader().getTypeInfo().getLweCiphertext();
+  auto compression = lweCiphertextInfo.getCompression();
+  if (compression == concreteprotocol::Compression::NONE) {
     OUTCOME_TRY(decompressionTransformer, getNoneDecompressionTransformer());
+  } else if (compression == concreteprotocol::Compression::SEED) {
+    OUTCOME_TRY(decompressionTransformer,
+                getSeededLweCiphertextDecompressionTransformer(
+                    lweCiphertextInfo.getEncryption()));
   } else {
     return StringError(
         "Only none compression is currently supported for lwe ciphertext "
