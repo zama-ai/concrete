@@ -103,5 +103,43 @@ EncryptionCSPRNG::~EncryptionCSPRNG() {
   }
 }
 
+void writeSeed(struct Uint128 seed, uint64_t *buffer) {
+  buffer[0] = (uint64_t)seed.little_endian_bytes[0];
+  buffer[0] += (uint64_t)seed.little_endian_bytes[1] << 8;
+  buffer[0] += (uint64_t)seed.little_endian_bytes[2] << 16;
+  buffer[0] += (uint64_t)seed.little_endian_bytes[3] << 24;
+  buffer[0] += (uint64_t)seed.little_endian_bytes[4] << 32;
+  buffer[0] += (uint64_t)seed.little_endian_bytes[5] << 40;
+  buffer[0] += (uint64_t)seed.little_endian_bytes[6] << 48;
+  buffer[0] += (uint64_t)seed.little_endian_bytes[7] << 56;
+  buffer[1] = (uint64_t)seed.little_endian_bytes[8];
+  buffer[1] += (uint64_t)seed.little_endian_bytes[9] << 8;
+  buffer[1] += (uint64_t)seed.little_endian_bytes[10] << 16;
+  buffer[1] += (uint64_t)seed.little_endian_bytes[11] << 24;
+  buffer[1] += (uint64_t)seed.little_endian_bytes[12] << 32;
+  buffer[1] += (uint64_t)seed.little_endian_bytes[13] << 40;
+  buffer[1] += (uint64_t)seed.little_endian_bytes[14] << 48;
+  buffer[1] += (uint64_t)seed.little_endian_bytes[15] << 56;
+}
+
+void readSeed(struct Uint128 &seed, uint64_t *buffer) {
+  seed.little_endian_bytes[0] = buffer[0];
+  seed.little_endian_bytes[1] = buffer[0] >> 8;
+  seed.little_endian_bytes[2] = buffer[0] >> 16;
+  seed.little_endian_bytes[3] = buffer[0] >> 24;
+  seed.little_endian_bytes[4] = buffer[0] >> 32;
+  seed.little_endian_bytes[5] = buffer[0] >> 40;
+  seed.little_endian_bytes[6] = buffer[0] >> 48;
+  seed.little_endian_bytes[7] = buffer[0] >> 56;
+  seed.little_endian_bytes[8] = buffer[1];
+  seed.little_endian_bytes[9] = buffer[1] >> 8;
+  seed.little_endian_bytes[10] = buffer[1] >> 16;
+  seed.little_endian_bytes[11] = buffer[1] >> 24;
+  seed.little_endian_bytes[12] = buffer[1] >> 32;
+  seed.little_endian_bytes[13] = buffer[1] >> 40;
+  seed.little_endian_bytes[14] = buffer[1] >> 48;
+  seed.little_endian_bytes[15] = buffer[1] >> 56;
+}
+
 } // namespace csprng
 } // namespace concretelang

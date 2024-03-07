@@ -95,6 +95,7 @@ struct CompilationOptions {
   bool skipProgramInfo;
 
   bool compressEvaluationKeys;
+  bool compressInputCiphertexts;
 
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
@@ -104,7 +105,8 @@ struct CompilationOptions {
         optimizeTFHE(true), simulate(false), emitGPUOps(false),
         optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
         chunkSize(4), chunkWidth(2), encodings(std::nullopt),
-        skipProgramInfo(false), compressEvaluationKeys(false){};
+        skipProgramInfo(false), compressEvaluationKeys(false),
+        compressInputCiphertexts(false){};
 
   /// @brief Constructor for CompilationOptions with default parameters for a
   /// specific backend.

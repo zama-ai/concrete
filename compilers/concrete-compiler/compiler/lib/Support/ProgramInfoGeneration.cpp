@@ -47,7 +47,8 @@ typedef double Variance;
 llvm::Expected<Message<concreteprotocol::GateInfo>>
 generateGate(mlir::Type inputType,
              const Message<concreteprotocol::EncodingInfo> &inputEncodingInfo,
-             concrete::SecurityCurve curve) {
+             concrete::SecurityCurve curve,
+             concreteprotocol::Compression compression) {
 
   auto inputEncoding = inputEncodingInfo.asReader().getEncoding();
   if (!inputEncoding.hasIntegerCiphertext() &&
@@ -95,14 +96,18 @@ generateGate(mlir::Type inputType,
                              .getModuli()
                              .size());
     }
-    gateDimensions.set(gateDimensionsSize - 1, normKey.dimension + 1);
+    auto ciphertextSize = normKey.dimension + 1;
+    if (compression == concreteprotocol::Compression::SEED) {
+      ciphertextSize = 3;
+    }
+    gateDimensions.set(gateDimensionsSize - 1, ciphertextSize);
     lweCiphertextGateInfo.setIntegerPrecision(64);
     auto encryptionInfo = lweCiphertextGateInfo.initEncryption();
     encryptionInfo.setKeyId(normKey.index);
     encryptionInfo.setVariance(curve.getVariance(1, normKey.dimension, 64));
     encryptionInfo.setLweDimension(normKey.dimension);
     encryptionInfo.initModulus().initMod().initNative();
-    lweCiphertextGateInfo.setCompression(concreteprotocol::Compression::NONE);
+    lweCiphertextGateInfo.setCompression(compression);
     lweCiphertextGateInfo.initEncoding().setInteger(
         inputEncoding.getIntegerCiphertext());
     auto rawInfo = output.asBuilder().initRawInfo();
@@ -124,14 +129,18 @@ generateGate(mlir::Type inputType,
     for (size_t i = 0; i < encodingDimensions.size(); i++) {
       gateDimensions.set(i, encodingDimensions[i]);
     }
-    gateDimensions.set(gateDimensionsSize - 1, normKey.dimension + 1);
+    auto ciphertextSize = normKey.dimension + 1;
+    if (compression == concreteprotocol::Compression::SEED) {
+      ciphertextSize = 3;
+    }
+    gateDimensions.set(gateDimensionsSize - 1, ciphertextSize);
     lweCiphertextGateInfo.setIntegerPrecision(64);
     auto encryptionInfo = lweCiphertextGateInfo.initEncryption();
     encryptionInfo.setKeyId(normKey.index);
     encryptionInfo.setVariance(curve.getVariance(1, normKey.dimension, 64));
     encryptionInfo.setLweDimension(normKey.dimension);
     encryptionInfo.initModulus().initMod().initNative();
-    lweCiphertextGateInfo.setCompression(concreteprotocol::Compression::NONE);
+    lweCiphertextGateInfo.setCompression(compression);
     lweCiphertextGateInfo.initEncoding().initBoolean();
 
     auto rawInfo = output.asBuilder().initRawInfo();
@@ -298,7 +307,8 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
 llvm::Expected<Message<concreteprotocol::CircuitInfo>>
 extractCircuitInfo(mlir::func::FuncOp funcOp,
                    concreteprotocol::CircuitEncodingInfo::Reader encodings,
-                   concrete::SecurityCurve curve) {
+                   concrete::SecurityCurve curve,
+                   bool compressInputCiphertexts) {
 
   auto output = Message<concreteprotocol::CircuitInfo>();
 
@@ -312,7 +322,10 @@ extractCircuitInfo(mlir::func::FuncOp funcOp,
   for (unsigned int i = 0; i < funcType.getNumInputs(); i++) {
     auto ty = funcType.getInput(i);
     auto encoding = encodings.getInputs()[i];
-    auto maybeGate = generateGate(ty, encoding, curve);
+    auto compression = compressInputCiphertexts
+                           ? concreteprotocol::Compression::SEED
+                           : concreteprotocol::Compression::NONE;
+    auto maybeGate = generateGate(ty, encoding, curve, compression);
     if (!maybeGate) {
       return maybeGate.takeError();
     }
@@ -321,7 +334,8 @@ extractCircuitInfo(mlir::func::FuncOp funcOp,
   for (unsigned int i = 0; i < funcType.getNumResults(); i++) {
     auto ty = funcType.getResult(i);
     auto encoding = encodings.getOutputs()[i];
-    auto maybeGate = generateGate(ty, encoding, curve);
+    auto compression = concreteprotocol::Compression::NONE;
+    auto maybeGate = generateGate(ty, encoding, curve, compression);
     if (!maybeGate) {
       return maybeGate.takeError();
     }
@@ -334,7 +348,7 @@ extractCircuitInfo(mlir::func::FuncOp funcOp,
 llvm::Expected<Message<concreteprotocol::ProgramInfo>> extractProgramInfo(
     mlir::ModuleOp module,
     const Message<concreteprotocol::ProgramEncodingInfo> &encodings,
-    concrete::SecurityCurve curve) {
+    concrete::SecurityCurve curve, bool compressInputCiphertexts) {
 
   auto output = Message<concreteprotocol::ProgramInfo>();
   auto circuitsCount = encodings.asReader().getCircuits().size();
@@ -353,7 +367,8 @@ llvm::Expected<Message<concreteprotocol::ProgramInfo>> extractProgramInfo(
              << functionName.cStr();
     }
 
-    auto maybeCircuitInfo = extractCircuitInfo(*funcOp, circuitEncoding, curve);
+    auto maybeCircuitInfo = extractCircuitInfo(*funcOp, circuitEncoding, curve,
+                                               compressInputCiphertexts);
     if (!maybeCircuitInfo) {
       return maybeCircuitInfo.takeError();
     }
@@ -368,7 +383,7 @@ llvm::Expected<Message<concreteprotocol::ProgramInfo>>
 createProgramInfoFromTfheDialect(
     mlir::ModuleOp module, int bitsOfSecurity,
     const Message<concreteprotocol::ProgramEncodingInfo> &encodings,
-    bool compressEvaluationKeys) {
+    bool compressEvaluationKeys, bool compressInputCiphertexts) {
 
   // Check that security curves exist
   const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
@@ -378,7 +393,8 @@ createProgramInfoFromTfheDialect(
   }
 
   // We generate the circuit infos from the module.
-  auto maybeProgramInfo = extractProgramInfo(module, encodings, *curve);
+  auto maybeProgramInfo =
+      extractProgramInfo(module, encodings, *curve, compressInputCiphertexts);
   if (!maybeProgramInfo) {
     return maybeProgramInfo.takeError();
   }
