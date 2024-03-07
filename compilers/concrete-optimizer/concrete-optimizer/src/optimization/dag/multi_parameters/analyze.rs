@@ -29,7 +29,7 @@ type Op = Operator;
 #[derive(Debug)]
 pub struct AnalyzedDag {
     pub operators: Vec<Op>,
-    // Collect all operators ouput variances
+    // Collect all operators output variances
     pub nb_partitions: usize,
     pub instrs_partition: Vec<InstructionPartition>,
     pub out_variances: Vec<Vec<SymbolicVariance>>,
