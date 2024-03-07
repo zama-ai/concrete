@@ -1,6 +1,8 @@
 #ifndef END_TO_END_TEST_H
 #define END_TO_END_TEST_H
 
+#include <random>
+
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/logging.h"
 #include "llvm/Support/CommandLine.h"
@@ -75,6 +77,10 @@ parseEndToEndCommandLine(int argc, char **argv) {
       "compress-evaluation-keys",
       llvm::cl::desc("Enable the compression of evaluation keys"),
       llvm::cl::init(false));
+  llvm::cl::opt<bool> compressInputCiphertexts(
+      "compress-input-ciphertexts",
+      llvm::cl::desc("Enable the compression of input ciphertexts"),
+      llvm::cl::init(false));
 
   llvm::cl::opt<bool> distBenchmark(
       "distributed",
@@ -131,6 +137,11 @@ parseEndToEndCommandLine(int argc, char **argv) {
   llvm::cl::opt<int> retryFailingTests("retry-failing-tests",
                                        llvm::cl::desc("Retry test which fails"),
                                        llvm::cl::init(0));
+  llvm::cl::opt<int> randomTests(
+      "random-tests",
+      llvm::cl::desc("Set the number of tests to be chosen randomly among all "
+                     "those given in tests files"),
+      llvm::cl::init(-1));
 
   llvm::cl::ParseCommandLineOptions(argc, argv);
 
@@ -147,18 +158,40 @@ parseEndToEndCommandLine(int argc, char **argv) {
     compilationOptions.batchTFHEOps = batchTFHEOps.getValue();
   compilationOptions.simulate = simulate.getValue();
   compilationOptions.compressEvaluationKeys = compressEvaluationKeys.getValue();
+  compilationOptions.compressInputCiphertexts =
+      compressInputCiphertexts.getValue();
   compilationOptions.optimizerConfig.display = optimizerDisplay.getValue();
   compilationOptions.optimizerConfig.security = securityLevel.getValue();
   compilationOptions.optimizerConfig.strategy = optimizerStrategy.getValue();
   compilationOptions.optimizerConfig.key_sharing = keySharing.getValue();
   mlir::concretelang::setupLogging(verbose.getValue());
 
+  // Parse all tests description files
   std::vector<EndToEndDescFile> parsedDescriptionFiles;
   for (auto descFile : descriptionFiles) {
     EndToEndDescFile f;
     f.path = descFile;
     f.descriptions = loadEndToEndDesc(descFile);
     parsedDescriptionFiles.push_back(f);
+  }
+  // Pick tests randomly if option is set
+  auto nbRandomTests = randomTests.getValue();
+  if (nbRandomTests != -1) {
+    auto rd = std::random_device{};
+    auto rng = std::default_random_engine{rd()};
+    auto totalNbTests = 0;
+    for (auto file : parsedDescriptionFiles) {
+      totalNbTests += file.descriptions.size();
+    }
+    if (totalNbTests > nbRandomTests) {
+      auto ratioOfTestsByFile = nbRandomTests / (double)totalNbTests;
+      for (auto &file : parsedDescriptionFiles) {
+        auto nbRandomTestsForFile =
+            (size_t)std::ceil(file.descriptions.size() * ratioOfTestsByFile);
+        std::shuffle(file.descriptions.begin(), file.descriptions.end(), rng);
+        file.descriptions.resize(nbRandomTestsForFile);
+      }
+    }
   }
   int num_iterations =
       (distBenchmark.getValue()) ? numIterations.getValue() : 0;
