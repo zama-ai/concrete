@@ -82,7 +82,7 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_seeded_lwe_ciphertext_u64(
 
         let seed = Seed(u128::from_le_bytes(compression_seed.little_endian_bytes));
 
-        let mut seeded_lwe_out = SeededLweCiphertext::from_scalar(
+        let mut seeded_lwe_ciphertext = SeededLweCiphertext::from_scalar(
             *seeded_lwe_out,
             LweDimension(lwe_dimension).to_lwe_size(),
             CompressionSeed { seed },
@@ -91,14 +91,14 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_seeded_lwe_ciphertext_u64(
 
         let mut boxed_seeder = new_dyn_seeder();
         let seeder = boxed_seeder.as_mut();
-
         encrypt_seeded_lwe_ciphertext(
             &lwe_sk,
-            &mut seeded_lwe_out,
+            &mut seeded_lwe_ciphertext,
             Plaintext(input),
             Variance::from_variance(variance),
             seeder,
-        )
+        );
+        *seeded_lwe_out = seeded_lwe_ciphertext.into_scalar();
     });
 }
 
