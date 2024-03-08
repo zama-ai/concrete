@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
   auto descriptionFiles = std::get<1>(cmdLine);
 
   for (auto descFile : descriptionFiles) {
-    auto suiteName = path::stem(descFile.path).str() + ".library";
+    auto suiteName = path::stem(descFile.path).str();
     registerEndToEndSuite(suiteName, descFile.descriptions, options);
   }
   return RUN_ALL_TESTS();
