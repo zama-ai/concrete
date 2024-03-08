@@ -1,4 +1,4 @@
-// RUN: concretecompiler --passes canonicalize --passes MANP --passes ConcreteOptimizer --action=dump-fhe-no-linalg --split-input-file %s 2>&1 | FileCheck %s
+// RUN: concretecompiler --passes canonicalize --passes MANP --passes ConcreteOptimizer --optimizer-strategy=dag-mono --action=dump-fhe-no-linalg --split-input-file %s 2>&1 | FileCheck %s
 
 func.func @single_cst_add_eint_int(%t: tensor<8x!FHE.eint<2>>) -> tensor<8x!FHE.eint<2>>
 {
