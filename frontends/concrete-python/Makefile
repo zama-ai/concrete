@@ -39,7 +39,17 @@ licenses:
 # Testing
 # =======
 
-pytest: pytest-single pytest-multi
+pytest: pytest-default
+
+pytest-default:
+	export LD_PRELOAD=$(RUNTIME_LIBRARY)
+	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+	pytest tests -svv -n auto \
+		--cov=concrete \
+		--cov-fail-under=95 \
+		--cov-report=term-missing:skip-covered \
+		--key-cache "${KEY_CACHE_DIRECTORY}" \
+		-m "${PYTEST_MARKERS}"
 
 pytest-single:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
