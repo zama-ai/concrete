@@ -229,7 +229,7 @@ endif
 
 build-tests: build-unit-tests build-end-to-end-tests
 
-run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-python-tests
+run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-random-end-to-end-tests-for-each-options run-python-tests
 
 ## check-tests
 
@@ -293,20 +293,18 @@ generate-cpu-tests: \
 	$(FIXTURE_CPU_DIR)/end_to_end_multi_precision.yaml \
 	$(FIXTURE_CPU_DIR)/end_to_end_linalg_enc_enc_matmul_dot.yaml
 
-SECURITY_TO_TEST=128
-ifeq ($(MINIMAL_TESTS),ON)
-	OPTIMIZATION_STRATEGY_TO_TEST=dag-multi
-else
-	OPTIMIZATION_STRATEGY_TO_TEST=dag-mono dag-multi
-endif
 PARALLEL_END_2_END_TESTS= end_to_end_jit_test end_to_end_jit_lambda
 run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
 	$(foreach TEST,$(PARALLEL_END_2_END_TESTS), \
 	    $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/$(TEST) || exit $$?;)
-	$(foreach optimizer_strategy,$(OPTIMIZATION_STRATEGY_TO_TEST), $(foreach security,$(SECURITY_TO_TEST), \
-	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
-	  $(GTEST_PARALLEL_SEPARATOR) --backend=cpu --security-level=$(security) \
-	  --optimizer-strategy=$(optimizer_strategy) --retry-failing-tests=5 $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;))
+	$(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test $(GTEST_PARALLEL_SEPARATOR) \
+	--retry-failing-tests=5 $(FIXTURE_CPU_DIR)/*.yaml
+
+OPTIONS_TO_TESTS=--simulate --compress-evaluation-keys --compress-input-ciphertexts --optimizer-strategy=dag-mono --optimizer-key-sharing=false
+run-random-end-to-end-tests-for-each-options: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
+	$(foreach option,$(OPTIONS_TO_TESTS), \
+	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test $(GTEST_PARALLEL_SEPARATOR) \
+	  --random-tests=100 $(option) $(FIXTURE_CPU_DIR)/*.yaml || exit $$?;)
 
 ### end-to-end-tests GPU
 
@@ -558,6 +556,7 @@ FORCE:
 	build-end-to-end-tests \
 	build-end-to-end-dataflow-tests \
 	run-end-to-end-dataflow-tests \
+	run-random-end-to-end-tests-for-each-options \
 	opt \
 	mlir-opt \
 	mlir-cpu-runner \
