@@ -1,0 +1,216 @@
+description: boolean_and
+program: |
+  func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+    %1 = "FHE.and"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+    return %1: !FHE.ebool
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: boolean_or
+program: |
+  func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+    %1 = "FHE.or"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+    return %1: !FHE.ebool
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: boolean_nand
+program: |
+  func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+    %1 = "FHE.nand"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+    return %1: !FHE.ebool
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 0
+---
+description: boolean_xor
+program: |
+  func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool) -> !FHE.ebool {
+    %1 = "FHE.xor"(%arg0, %arg1) : (!FHE.ebool, !FHE.ebool) -> !FHE.ebool
+    return %1: !FHE.ebool
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 0
+---
+description: boolean_gen_gate
+program: |
+  func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool, %arg2: tensor<4xi64>) -> !FHE.ebool {
+    %1 = "FHE.gen_gate"(%arg0, %arg1, %arg2) : (!FHE.ebool, !FHE.ebool, tensor<4xi64>) -> !FHE.ebool
+    return %1: !FHE.ebool
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    - tensor: [1, 0, 1, 1]
+      shape: [4]
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    - tensor: [0, 1, 1, 1]
+      shape: [4]
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    - tensor: [0, 0, 1, 0]
+      shape: [4]
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    - tensor: [0, 0, 0, 1]
+      shape: [4]
+    outputs:
+    - scalar: 1
+---
+description: boolean_mux
+program: |
+  func.func @main(%arg0: !FHE.ebool, %arg1: !FHE.ebool, %arg2: !FHE.ebool) -> !FHE.ebool {
+    %1 = "FHE.mux"(%arg0, %arg1, %arg2) : (!FHE.ebool, !FHE.ebool, !FHE.ebool) -> !FHE.ebool
+    return %1: !FHE.ebool
+  }
+tests:
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    - scalar: 0
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 0
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 0
+  - inputs:
+    - scalar: 1
+    - scalar: 0
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 0
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
+  - inputs:
+    - scalar: 1
+    - scalar: 1
+    - scalar: 1
+    outputs:
+    - scalar: 1
+---
+description: return_aliasing
+program: |
+  func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
+    %1 = "FHE.add_eint"(%arg0, %arg0) : (!FHE.eint<3>, !FHE.eint<3>) -> !FHE.eint<3>
+    return %1, %1: !FHE.eint<3>, !FHE.eint<3>
+  }
+tests:
+  - inputs:
+    - scalar: 3
+    outputs:
+    - scalar: 6
+    - scalar: 6
