@@ -107,7 +107,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
   llvm::cl::opt<optimizer::Strategy> optimizerStrategy(
       "optimizer-strategy",
       llvm::cl::desc("Select the concrete optimizer strategy"),
-      llvm::cl::init(optimizer::DEFAULT_STRATEGY),
+      llvm::cl::init(optimizer::DEFAULT_CONFIG.strategy),
       llvm::cl::values(clEnumValN(optimizer::Strategy::V0, "V0",
                                   "Use the V0 optimizer strategy that use the "
                                   "worst case atomic pattern")),
@@ -126,7 +126,7 @@ parseEndToEndCommandLine(int argc, char **argv) {
       llvm::cl::desc(
           "Set the optimizerConfig.key_sharing compilation options to "
           "run the tests"),
-      llvm::cl::init(true));
+      llvm::cl::init(optimizer::DEFAULT_CONFIG.key_sharing));
 
   // Verbose compiler
   llvm::cl::opt<bool> verbose("verbose",
@@ -205,27 +205,49 @@ parseEndToEndCommandLine(int argc, char **argv) {
 }
 
 std::string getOptionsName(mlir::concretelang::CompilationOptions compilation) {
+  const auto defaultOptions = mlir::concretelang::CompilationOptions();
   namespace optimizer = mlir::concretelang::optimizer;
   std::ostringstream os;
-  if (compilation.simulate)
-    os << "_simulate";
-  if (compilation.loopParallelize)
-    os << "_loop";
-  if (compilation.dataflowParallelize)
-    os << "_dataflow";
-  if (compilation.emitGPUOps)
-    os << "_gpu";
+
+  /// Simulate options
+  if (compilation.simulate != defaultOptions.simulate)
+    os << "_simulate" << compilation.simulate;
+
+  /// Parallelization options
+  if (compilation.loopParallelize != defaultOptions.loopParallelize)
+    os << "_loop" << compilation.loopParallelize;
+  if (compilation.dataflowParallelize != defaultOptions.dataflowParallelize)
+    os << "_dataflow" << compilation.dataflowParallelize;
+
+  /// Compression options
+  if (compilation.compressEvaluationKeys !=
+      defaultOptions.compressEvaluationKeys)
+    os << "_compressEvaluationKeys" << compilation.compressEvaluationKeys;
+  if (compilation.compressInputCiphertexts !=
+      defaultOptions.compressInputCiphertexts)
+    os << "_compressInputCiphertexts" << compilation.compressInputCiphertexts;
+
+  /// Optimizer options
+  if (compilation.optimizerConfig.strategy !=
+      defaultOptions.optimizerConfig.strategy)
+    os << "_optimizerStrategy" << compilation.optimizerConfig.strategy;
+  if (compilation.optimizerConfig.key_sharing !=
+      defaultOptions.optimizerConfig.key_sharing)
+    os << "_optimizerKeySharing" << compilation.optimizerConfig.key_sharing;
+  if (compilation.optimizerConfig.security !=
+      defaultOptions.optimizerConfig.security)
+    os << "_optimizerSecurity" << compilation.optimizerConfig.security;
+  if (compilation.optimizerConfig.composable !=
+      defaultOptions.optimizerConfig.composable)
+    os << "_optimizerSecurity" << compilation.optimizerConfig.composable;
+
+  /// GPU
+  if (compilation.emitGPUOps != defaultOptions.emitGPUOps)
+    os << "_gpu" << compilation.emitGPUOps;
   auto ostr = os.str();
+
   if (ostr.size() == 0) {
     os << "_default";
-  }
-  if (compilation.optimizerConfig.security !=
-      optimizer::DEFAULT_CONFIG.security) {
-    os << "_security" << compilation.optimizerConfig.security;
-  }
-  if (compilation.optimizerConfig.strategy !=
-      optimizer::DEFAULT_CONFIG.strategy) {
-    os << "_" << compilation.optimizerConfig.strategy;
   }
   return os.str().substr(1);
 }
