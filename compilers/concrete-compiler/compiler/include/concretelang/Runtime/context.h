@@ -46,10 +46,12 @@ typedef struct RuntimeContext {
   virtual ~RuntimeContext() {
 #ifdef CONCRETELANG_CUDA_SUPPORT
     for (int i = 0; i < num_devices; ++i) {
-      if (bsk_gpu[i] != nullptr)
-        cuda_drop(bsk_gpu[i], i);
-      if (ksk_gpu[i] != nullptr)
-        cuda_drop(ksk_gpu[i], i);
+      for (auto k : bsk_gpu[i])
+        if (k != nullptr)
+          cuda_drop(k, i);
+      for (auto k : ksk_gpu[i])
+        if (k != nullptr)
+          cuda_drop(k, i);
     }
 #endif
   };
@@ -82,18 +84,19 @@ protected:
 #ifdef CONCRETELANG_CUDA_SUPPORT
 public:
   void *get_bsk_gpu(uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
-                    uint32_t glwe_dim, uint32_t gpu_idx, void *stream) {
+                    uint32_t glwe_dim, uint32_t gpu_idx, void *stream,
+                    uint32_t bsk_idx) {
 
-    if (bsk_gpu[gpu_idx] != nullptr) {
-      return bsk_gpu[gpu_idx];
+    if (bsk_gpu[gpu_idx][bsk_idx] != nullptr) {
+      return bsk_gpu[gpu_idx][bsk_idx];
     }
     const std::lock_guard<std::mutex> guard(*bsk_gpu_mutex[gpu_idx]);
 
-    if (bsk_gpu[gpu_idx] != nullptr) {
-      return bsk_gpu[gpu_idx];
+    if (bsk_gpu[gpu_idx][bsk_idx] != nullptr) {
+      return bsk_gpu[gpu_idx][bsk_idx];
     }
 
-    auto bsk = serverKeyset.lweBootstrapKeys[0];
+    auto bsk = serverKeyset.lweBootstrapKeys[bsk_idx];
 
     size_t bsk_buffer_len = bsk.getBuffer().size();
     size_t bsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
@@ -107,22 +110,24 @@ public:
     // Synchronization here is not optional as it works with mutex to
     // prevent other GPU streams from reading partially copied keys.
     cudaStreamSynchronize(*(cudaStream_t *)stream);
-    bsk_gpu[gpu_idx] = bsk_gpu_tmp;
-    return bsk_gpu[gpu_idx];
+    bsk_gpu[gpu_idx][bsk_idx] = bsk_gpu_tmp;
+    return bsk_gpu[gpu_idx][bsk_idx];
   }
 
   void *get_ksk_gpu(uint32_t level, uint32_t input_lwe_dim,
-                    uint32_t output_lwe_dim, uint32_t gpu_idx, void *stream) {
+                    uint32_t output_lwe_dim, uint32_t gpu_idx, void *stream,
+                    uint32_t ksk_idx) {
 
-    if (ksk_gpu[gpu_idx] != nullptr) {
-      return ksk_gpu[gpu_idx];
+    if (ksk_gpu[gpu_idx][ksk_idx] != nullptr) {
+      return ksk_gpu[gpu_idx][ksk_idx];
     }
 
     const std::lock_guard<std::mutex> guard(*ksk_gpu_mutex[gpu_idx]);
-    if (ksk_gpu[gpu_idx] != nullptr) {
-      return ksk_gpu[gpu_idx];
+    if (ksk_gpu[gpu_idx][ksk_idx] != nullptr) {
+      return ksk_gpu[gpu_idx][ksk_idx];
     }
-    auto ksk = serverKeyset.lweKeyswitchKeys[0];
+
+    auto ksk = serverKeyset.lweKeyswitchKeys[ksk_idx];
 
     size_t ksk_buffer_size = sizeof(uint64_t) * ksk.getBuffer().size();
 
@@ -135,15 +140,15 @@ public:
     // Synchronization here is not optional as it works with mutex to
     // prevent other GPU streams from reading partially copied keys.
     cudaStreamSynchronize(*(cudaStream_t *)stream);
-    ksk_gpu[gpu_idx] = ksk_gpu_tmp;
-    return ksk_gpu[gpu_idx];
+    ksk_gpu[gpu_idx][ksk_idx] = ksk_gpu_tmp;
+    return ksk_gpu[gpu_idx][ksk_idx];
   }
 
 private:
   std::vector<std::unique_ptr<std::mutex>> bsk_gpu_mutex;
-  std::vector<void *> bsk_gpu;
+  std::vector<std::vector<void *>> bsk_gpu;
   std::vector<std::unique_ptr<std::mutex>> ksk_gpu_mutex;
-  std::vector<void *> ksk_gpu;
+  std::vector<std::vector<void *>> ksk_gpu;
   int num_devices;
 #endif
 } RuntimeContext;

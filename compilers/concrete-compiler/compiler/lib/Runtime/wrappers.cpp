@@ -26,17 +26,18 @@
 void *memcpy_async_bsk_to_gpu(mlir::concretelang::RuntimeContext *context,
                               uint32_t input_lwe_dim, uint32_t poly_size,
                               uint32_t level, uint32_t glwe_dim,
-                              uint32_t gpu_idx, void *stream) {
+                              uint32_t gpu_idx, void *stream,
+                              uint32_t bsk_idx) {
   return context->get_bsk_gpu(input_lwe_dim, poly_size, level, glwe_dim,
-                              gpu_idx, stream);
+                              gpu_idx, stream, bsk_idx);
 }
 
 void *memcpy_async_ksk_to_gpu(mlir::concretelang::RuntimeContext *context,
                               uint32_t level, uint32_t input_lwe_dim,
                               uint32_t output_lwe_dim, uint32_t gpu_idx,
-                              void *stream) {
+                              void *stream, uint32_t ksk_idx) {
   return context->get_ksk_gpu(level, input_lwe_dim, output_lwe_dim, gpu_idx,
-                              stream);
+                              stream, ksk_idx);
 }
 
 void *alloc_and_memcpy_async_to_gpu(uint64_t *buf_ptr, uint64_t buf_offset,
@@ -125,8 +126,9 @@ void memref_batched_keyswitch_lwe_cuda_u64(
   // TODO: Should be created by the compiler codegen
   void *stream = cuda_create_stream(gpu_idx);
   // Get the pointer on the keyswitching key on the GPU
-  void *ksk_gpu = memcpy_async_ksk_to_gpu(context, level, input_lwe_dim,
-                                          output_lwe_dim, gpu_idx, stream);
+  void *ksk_gpu =
+      memcpy_async_ksk_to_gpu(context, level, input_lwe_dim, output_lwe_dim,
+                              gpu_idx, stream, ksk_index);
   // Move the input and output batch of ciphertexts to the GPU
   // TODO: The allocation should be done by the compiler codegen
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
@@ -171,8 +173,9 @@ void memref_batched_bootstrap_lwe_cuda_u64(
   // TODO: Should be created by the compiler codegen
   void *stream = cuda_create_stream(gpu_idx);
   // Get the pointer on the bootstraping key on the GPU
-  void *fbsk_gpu = memcpy_async_bsk_to_gpu(context, input_lwe_dim, poly_size,
-                                           level, glwe_dim, gpu_idx, stream);
+  void *fbsk_gpu =
+      memcpy_async_bsk_to_gpu(context, input_lwe_dim, poly_size, level,
+                              glwe_dim, gpu_idx, stream, bsk_index);
   // Move the input and output batch of ciphertext to the GPU
   // TODO: The allocation should be done by the compiler codegen
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
@@ -261,8 +264,9 @@ void memref_batched_mapped_bootstrap_lwe_cuda_u64(
   // TODO: Should be created by the compiler codegen
   void *stream = cuda_create_stream(gpu_idx);
   // Get the pointer on the bootstraping key on the GPU
-  void *fbsk_gpu = memcpy_async_bsk_to_gpu(context, input_lwe_dim, poly_size,
-                                           level, glwe_dim, gpu_idx, stream);
+  void *fbsk_gpu =
+      memcpy_async_bsk_to_gpu(context, input_lwe_dim, poly_size, level,
+                              glwe_dim, gpu_idx, stream, bsk_index);
   // Move the input and output batch of ciphertext to the GPU
   // TODO: The allocation should be done by the compiler codegen
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
