@@ -42,9 +42,11 @@ RuntimeContext::RuntimeContext(ServerKeyset serverKeyset)
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
   assert(cudaGetDeviceCount(&num_devices) == cudaSuccess);
-  bsk_gpu.resize(num_devices, nullptr);
-  ksk_gpu.resize(num_devices, nullptr);
+  bsk_gpu.resize(num_devices);
+  ksk_gpu.resize(num_devices);
   for (int i = 0; i < num_devices; ++i) {
+    bsk_gpu[i].resize(serverKeyset.lweBootstrapKeys.size(), nullptr);
+    ksk_gpu[i].resize(serverKeyset.lweKeyswitchKeys.size(), nullptr);
     bsk_gpu_mutex.push_back(std::make_unique<std::mutex>());
     ksk_gpu_mutex.push_back(std::make_unique<std::mutex>());
   }
