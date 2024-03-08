@@ -20,8 +20,8 @@ tests_directory = os.path.dirname(tests.__file__)
 
 
 INSECURE_KEY_CACHE_LOCATION = None
-USE_MULTI_PRECISION = False
-OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MONO
+USE_MULTI_PRECISION = True
+OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MULTI
 USE_GPU = False
 
 
@@ -87,10 +87,10 @@ def pytest_sessionstart(session):
 
         INSECURE_KEY_CACHE_LOCATION = str(key_cache_location)
 
-    precision = session.config.getoption("--precision", default="single")
-    USE_MULTI_PRECISION = precision == "multi"
+    precision = session.config.getoption("--precision", default="multi")
+    USE_MULTI_PRECISION = precision != "single"
 
-    strategy = session.config.getoption("--strategy", default="mono")
+    strategy = session.config.getoption("--strategy", default="multi")
     if strategy == "v0":
         OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.V0
     elif strategy == "multi":

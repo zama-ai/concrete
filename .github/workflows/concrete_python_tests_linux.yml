@@ -119,12 +119,10 @@ jobs:
             source .venv/bin/activate
 
             export COMPILER_BUILD_DIRECTORY=/build
-            export KEY_CACHE_DIRECTORY=/tmp/KeySetCache
             
-            make pytest-multi
+            mkdir ./KeySetCache
+            KEY_CACHE_DIRECTORY=./KeySetCache make pytest
             
-            chmod -R ugo+rwx /tmp/KeySetCache
-
       - name: Build bindings gpu
         uses: addnab/docker-run-action@v3
         if: ${{ contains(inputs.instance_type, 'p3') }}
@@ -178,7 +176,7 @@ jobs:
             source .venv/bin/activate
 
             export COMPILER_BUILD_DIRECTORY=/build
-            export KEY_CACHE_DIRECTORY=/tmp/KeySetCache
+            KEY_CACHE_DIRECTORY=/tmp/KeySetCache mkdir ./KeySetCache
             make pytest-gpu
             
             chmod -R ugo+rwx /tmp/KeySetCache

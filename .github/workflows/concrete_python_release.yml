@@ -163,9 +163,10 @@ jobs:
 
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
+          cp $CONCRETE_PYTHON/Makefile .
           
-          pytest -svv -n auto tests --key-cache /tmp/KeySetCache
-          rm -rf /tmp/KeySetCache
+          mkdir ./KeySetCache
+          KEY_CACHE_DIRECTORY=./KeySetCache make pytest
           
           deactivate
 
@@ -294,8 +295,10 @@ jobs:
 
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
+          cp $CONCRETE_PYTHON/Makefile .
 
-          pytest tests -svv -n auto -m "not dataflow" --key-cache "./KeySetCache"
+          mkdir ./KeySetCache
+          KEY_CACHE_DIRECTORY=./KeySetCache PYTEST_MARKERS="not dataflow" make pytest
 
       - name: Cleanup host
         if: success() || failure()
