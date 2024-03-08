@@ -1,4 +1,4 @@
-// RUN: concretecompiler %s --optimize-tfhe=false --action=dump-tfhe 2>&1| FileCheck %s
+// RUN: concretecompiler %s --optimize-tfhe=false --optimizer-strategy=dag-mono --action=dump-tfhe 2>&1| FileCheck %s
 
 //CHECK: func.func @apply_lookup_table_cst(%[[A0:.*]]: !TFHE.glwe<sk?>) -> !TFHE.glwe<sk?> {
 

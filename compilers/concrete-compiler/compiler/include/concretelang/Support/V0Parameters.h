@@ -96,7 +96,7 @@ enum Strategy {
 
 std::string const StrategyLabel[] = {"V0", "dag-mono", "dag-multi"};
 
-constexpr Strategy DEFAULT_STRATEGY = Strategy::DAG_MONO;
+constexpr Strategy DEFAULT_STRATEGY = Strategy::DAG_MULTI;
 constexpr concrete_optimizer::MultiParamStrategy DEFAULT_MULTI_PARAM_STRATEGY =
     concrete_optimizer::MultiParamStrategy::ByPrecision;
 constexpr bool DEFAULT_KEY_SHARING = true;

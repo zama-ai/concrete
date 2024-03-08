@@ -1,4 +1,4 @@
-// RUN: concretecompiler %s --optimize-tfhe=false --action=dump-tfhe 2>&1| FileCheck %s
+// RUN: concretecompiler %s --optimize-tfhe=false --optimizer-strategy=dag-mono --action=dump-tfhe 2>&1| FileCheck %s
 
 // CHECK: func.func @apply_lookup_table(%arg0: !TFHE.glwe<sk?>, %arg1: tensor<4xi64>) -> !TFHE.glwe<sk?> {
 // CHECK-NEXT: %0 = "TFHE.encode_expand_lut_for_bootstrap"(%arg1) {isSigned = false, outputBits = 3 : i32, polySize = 256 : i32} : (tensor<4xi64>) -> tensor<256xi64>

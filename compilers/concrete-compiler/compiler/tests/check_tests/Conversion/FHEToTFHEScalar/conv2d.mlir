@@ -1,4 +1,4 @@
-// RUN: concretecompiler %s --optimize-tfhe=false --action=dump-tfhe 2>&1| FileCheck %s
+// RUN: concretecompiler %s --optimize-tfhe=false --optimizer-strategy=dag-mono --action=dump-tfhe 2>&1| FileCheck %s
 
 // CHECK: func.func @conv2d(%[[Varg0:.*]]: tensor<100x3x28x28x!TFHE.glwe<sk?>>, %[[Varg1:.*]]: tensor<4x3x14x14xi3>, %[[Varg2:.*]]: tensor<4xi3>) -> tensor<100x4x15x15x!TFHE.glwe<sk?>> {
 // CHECK-NEXT:    %[[Vc0:.*]] = arith.constant 0 : index
