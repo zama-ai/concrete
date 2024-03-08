@@ -64,22 +64,32 @@ struct CompilationOptions {
 
   bool verifyDiagnostics;
 
+  /// Simulate options
+  bool simulate;
+
+  /// Parallelization options
   bool autoParallelize;
   bool loopParallelize;
+  bool dataflowParallelize;
+
+  /// Compression options
+  bool compressEvaluationKeys;
+  bool compressInputCiphertexts;
+
+  /// Optimizer options
+  optimizer::Config optimizerConfig;
+
+  /// use GPU during execution by generating GPU operations if possible
+  bool emitGPUOps;
+
+  /// Other options
   bool batchTFHEOps;
   int64_t maxBatchSize;
   bool emitSDFGOps;
   bool unrollLoopsWithSDFGConvertibleOps;
-  bool dataflowParallelize;
   bool optimizeTFHE;
-  /// simulate crypto operations
-  bool simulate;
-  /// use GPU during execution by generating GPU operations if possible
-  bool emitGPUOps;
 
   std::optional<std::vector<int64_t>> fhelinalgTileSizes;
-
-  optimizer::Config optimizerConfig;
 
   /// When decomposing big integers into chunks, chunkSize is the total number
   /// of bits used for the message, including the carry, while chunkWidth is
@@ -94,19 +104,24 @@ struct CompilationOptions {
 
   bool skipProgramInfo;
 
-  bool compressEvaluationKeys;
-  bool compressInputCiphertexts;
-
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
-        autoParallelize(false), loopParallelize(false), batchTFHEOps(false),
-        maxBatchSize(std::numeric_limits<int64_t>::max()), emitSDFGOps(false),
-        unrollLoopsWithSDFGConvertibleOps(false), dataflowParallelize(false),
-        optimizeTFHE(true), simulate(false), emitGPUOps(false),
-        optimizerConfig(optimizer::DEFAULT_CONFIG), chunkIntegers(false),
-        chunkSize(4), chunkWidth(2), encodings(std::nullopt),
-        skipProgramInfo(false), compressEvaluationKeys(false),
-        compressInputCiphertexts(false){};
+        /// Simulate options
+        simulate(false),
+        // Parallelization options
+        autoParallelize(false), loopParallelize(true),
+        dataflowParallelize(false),
+        /// Compression options
+        compressEvaluationKeys(false), compressInputCiphertexts(false),
+        /// Optimizer options
+        optimizerConfig(optimizer::DEFAULT_CONFIG),
+        /// GPU
+        emitGPUOps(false),
+        /// Other options
+        batchTFHEOps(false), maxBatchSize(std::numeric_limits<int64_t>::max()),
+        emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
+        optimizeTFHE(true), chunkIntegers(false), chunkSize(4), chunkWidth(2),
+        encodings(std::nullopt){};
 
   /// @brief Constructor for CompilationOptions with default parameters for a
   /// specific backend.
