@@ -7,7 +7,7 @@ def ExtractStatistics : Pass<"ExtractStatistics", "::mlir::ModuleOp"> {
   let summary = "Extracts statistics";
   let description = [{
     Extracts different statistics (e.g. number of certain crypto operations),
-    and provides those numbers throught the CompilationFeedback.
+    and provides those numbers through the CompilationFeedback.
   }];
 }
 

@@ -1,6 +1,6 @@
 use crate::dag::operator::Precision;
 
-// Default heuristic to split in several word
+// Default heuristic to split in several words
 pub fn default_coprimes(precision: Precision) -> Result<Vec<u64>, String> {
     Ok(match precision {
         1 => vec![2],
