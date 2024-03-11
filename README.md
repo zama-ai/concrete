@@ -51,7 +51,7 @@ Depending on your OS, Concrete may be installed with Docker or with pip:
 |               Windows                       |         Yes         |    Coming soon   |
 |     Windows Subsystem for Linux             |         Yes         |       Yes        |
 |            macOS 11+ (Intel)                |         Yes         |       Yes        |
-| macOS 11+ (Apple Silicon: M1, M2, etc.)     |         Yes         |       Yes        |
+| macOS 11+ (Apple Silicon: M1, M2, etc.)     |      Coming soon    |       Yes        |
 
 
 #### Docker

@@ -38,9 +38,11 @@ pip install concrete-python[full]
 
 ## Using Docker
 
-You can also get the Concrete docker image:
+You can also get the Concrete docker image (replace "v2.4.0" below by the correct version you want):
 
 ```shell
-docker pull zamafhe/concrete-python:v2.0.0
+docker pull zamafhe/concrete-python:v2.4.0
 docker run --rm -it zamafhe/concrete-python:latest /bin/bash
 ```
+
+Docker is not supported on Apple Silicon.
