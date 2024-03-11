@@ -5,6 +5,7 @@ use tfhe::core_crypto::prelude::*;
 use super::csprng::new_dyn_seeder;
 use super::types::{EncCsprng, Uint128};
 use super::utils::nounwind;
+use crate::c_api::types::Parallelism;
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_init_lwe_keyswitch_key_u64(
@@ -128,6 +129,8 @@ pub unsafe extern "C" fn concrete_cpu_decompress_seeded_lwe_keyswitch_key_u64(
     decomposition_level_count: usize,
     decomposition_base_log: usize,
     compression_seed: Uint128,
+    // parallelism
+    parallelism: Parallelism,
 ) {
     nounwind(|| {
         let mut output_ksk = LweKeyswitchKey::from_container(
@@ -161,11 +164,20 @@ pub unsafe extern "C" fn concrete_cpu_decompress_seeded_lwe_keyswitch_key_u64(
             CompressionSeed { seed },
             CiphertextModulus::new_native(),
         );
-
-        decompress_seeded_lwe_keyswitch_key::<_, _, _, SoftwareRandomGenerator>(
-            &mut output_ksk,
-            &input_ksk,
-        )
+        match parallelism {
+            Parallelism::No => {
+                decompress_seeded_lwe_keyswitch_key::<_, _, _, SoftwareRandomGenerator>(
+                    &mut output_ksk,
+                    &input_ksk,
+                )
+            }
+            Parallelism::Rayon => {
+                par_decompress_seeded_lwe_keyswitch_key::<_, _, _, SoftwareRandomGenerator>(
+                    &mut output_ksk,
+                    &input_ksk,
+                )
+            }
+        }
     });
 }
 
