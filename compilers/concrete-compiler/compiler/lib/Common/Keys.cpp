@@ -233,7 +233,7 @@ void LweBootstrapKey::decompress() {
     concrete_cpu_decompress_seeded_lwe_bootstrap_key_u64(
         buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
         params.getPolynomialSize(), params.getGlweDimension(),
-        params.getLevelCount(), params.getBaseLog(), seed);
+        params.getLevelCount(), params.getBaseLog(), seed, Parallelism::Rayon);
     decompressed = true;
     return;
   }
@@ -353,7 +353,7 @@ void LweKeyswitchKey::decompress() {
     concrete_cpu_decompress_seeded_lwe_keyswitch_key_u64(
         buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
         params.getOutputLweDimension(), params.getLevelCount(),
-        params.getBaseLog(), seed);
+        params.getBaseLog(), seed, Parallelism::Rayon);
     decompressed = true;
     return;
   }

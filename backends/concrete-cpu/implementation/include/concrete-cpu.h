@@ -177,7 +177,8 @@ void concrete_cpu_decompress_seeded_lwe_bootstrap_key_u64(uint64_t *lwe_bsk,
                                                           size_t output_glwe_dimension,
                                                           size_t decomposition_level_count,
                                                           size_t decomposition_base_log,
-                                                          struct Uint128 compression_seed);
+                                                          struct Uint128 compression_seed,
+                                                          Parallelism parallelism);
 
 void concrete_cpu_decompress_seeded_lwe_ciphertext_u64(uint64_t *lwe_out,
                                                        const uint64_t *seeded_lwe_in,
@@ -190,7 +191,8 @@ void concrete_cpu_decompress_seeded_lwe_keyswitch_key_u64(uint64_t *lwe_ksk,
                                                           size_t output_lwe_dimension,
                                                           size_t decomposition_level_count,
                                                           size_t decomposition_base_log,
-                                                          struct Uint128 compression_seed);
+                                                          struct Uint128 compression_seed,
+                                                          Parallelism parallelism);
 
 void concrete_cpu_decrypt_glwe_ciphertext_u64(const uint64_t *glwe_sk,
                                               uint64_t *output,

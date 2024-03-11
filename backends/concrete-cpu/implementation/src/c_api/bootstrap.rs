@@ -179,6 +179,8 @@ pub unsafe extern "C" fn concrete_cpu_decompress_seeded_lwe_bootstrap_key_u64(
     decomposition_level_count: usize,
     decomposition_base_log: usize,
     compression_seed: Uint128,
+    // parallelism
+    parallelism: Parallelism,
 ) {
     nounwind(|| {
         let mut output_bsk = LweBootstrapKey::from_container(
@@ -217,11 +219,20 @@ pub unsafe extern "C" fn concrete_cpu_decompress_seeded_lwe_bootstrap_key_u64(
             CompressionSeed { seed },
             CiphertextModulus::new_native(),
         );
-
-        decompress_seeded_lwe_bootstrap_key::<_, _, _, SoftwareRandomGenerator>(
-            &mut output_bsk,
-            &input_bsk,
-        )
+        match parallelism {
+            Parallelism::No => {
+                decompress_seeded_lwe_bootstrap_key::<_, _, _, SoftwareRandomGenerator>(
+                    &mut output_bsk,
+                    &input_bsk,
+                )
+            }
+            Parallelism::Rayon => {
+                par_decompress_seeded_lwe_bootstrap_key::<_, _, _, SoftwareRandomGenerator>(
+                    &mut output_bsk,
+                    &input_bsk,
+                )
+            }
+        }
     });
 }
 
