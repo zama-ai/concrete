@@ -9,10 +9,10 @@
 
 #### Code examples on GitHub
 
-* [Key value database](https://github.com/zama-ai/concrete/blob/main/docs/application-tutorial/key\_value\_database.ipynb)
-* [SHA-256 ](https://github.com/zama-ai/concrete/blob/main/docs/application-tutorial/sha256.ipynb)
-* [Game of Life](https://github.com/zama-ai/concrete/tree/docs-revamp/frontends/concrete-python/examples/game\_of\_life)
-* [XOR distance](https://github.com/zama-ai/concrete/tree/docs-revamp/frontends/concrete-python/examples/xor\_distance)
+* [Key value database](../application-tutorial/key_value_database.ipynb)
+* [SHA-256 ](../application-tutorial/sha256.ipynb)
+* [Game of Life](../../frontends/concrete-python/examples/game_of_life)
+* [XOR distance](../../frontends/concrete-python/examples/xor_distance)
 
 #### Blog tutorials
 
