@@ -245,7 +245,7 @@ def test_round_bit_pattern_signed_range_assigned(input_bits, lsbs_to_remove, hel
         helpers.check_execution(circuit, function, value, retries=3)
 
 
-def test_round_bit_pattern_no_overflow_protection(helpers, pytestconfig):
+def test_round_bit_pattern_no_overflow_protection(helpers):
     """
     Test round bit pattern without overflow protection.
     """
@@ -256,7 +256,8 @@ def test_round_bit_pattern_no_overflow_protection(helpers, pytestconfig):
         return rounded**2
 
     inputset = range(-32, 32)
-    circuit = function.compile(inputset, helpers.configuration())
+    configuration = helpers.configuration()
+    circuit = function.compile(inputset, configuration)
 
     expected_mlir = (
         """
@@ -272,7 +273,7 @@ module {
 }
 
         """  # noqa: E501
-        if pytestconfig.getoption("precision") == "multi"
+        if not configuration.single_precision
         else """
 
 module {
@@ -293,7 +294,7 @@ module {
     helpers.check_str(expected_mlir, circuit.mlir)
 
 
-def test_round_bit_pattern_identity(helpers, pytestconfig):
+def test_round_bit_pattern_identity(helpers):
     """
     Test round bit pattern used multiple times outside TLUs.
     """
@@ -304,7 +305,8 @@ def test_round_bit_pattern_identity(helpers, pytestconfig):
         return rounded + rounded
 
     inputset = range(-20, 20)
-    circuit = function.compile(inputset, helpers.configuration())
+    configuration = helpers.configuration()
+    circuit = function.compile(inputset, configuration)
 
     expected_mlir = (
         """
@@ -320,7 +322,7 @@ module {
 }
 
         """  # noqa: E501
-        if pytestconfig.getoption("precision") == "multi"
+        if not configuration.single_precision
         else """
 
 module {
