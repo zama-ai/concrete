@@ -113,6 +113,19 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("can't set the option to a non-boolean value")
         self.cpp().set_compress_evaluation_keys(compress_evaluation_keys)
 
+    def set_compress_input_ciphertexts(self, compress_input_ciphertexts: bool):
+        """Set option for compression of input ciphertexts.
+
+        Args:
+            compress_input_ciphertexts (bool): whether to turn it on or off
+
+        Raises:
+            TypeError: if the value to set is not boolean
+        """
+        if not isinstance(compress_input_ciphertexts, bool):
+            raise TypeError("can't set the option to a non-boolean value")
+        self.cpp().set_compress_input_ciphertexts(compress_input_ciphertexts)
+
     def set_verify_diagnostics(self, verify_diagnostics: bool):
         """Set option for diagnostics verification.
 

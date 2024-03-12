@@ -956,6 +956,7 @@ class Configuration:
     dataflow_parallelize: bool
     auto_parallelize: bool
     compress_evaluation_keys: bool
+    compress_input_ciphertexts: bool
     p_error: Optional[float]
     global_p_error: Optional[float]
     insecure_key_cache_location: Optional[str]
@@ -1005,6 +1006,7 @@ class Configuration:
         dataflow_parallelize: bool = False,
         auto_parallelize: bool = False,
         compress_evaluation_keys: bool = False,
+        compress_input_ciphertexts: bool = False,
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         auto_adjust_rounders: bool = False,
@@ -1068,6 +1070,7 @@ class Configuration:
         self.dataflow_parallelize = dataflow_parallelize
         self.auto_parallelize = auto_parallelize
         self.compress_evaluation_keys = compress_evaluation_keys
+        self.compress_input_ciphertexts = compress_input_ciphertexts
         self.p_error = p_error
         self.global_p_error = global_p_error
         self.auto_adjust_rounders = auto_adjust_rounders
@@ -1165,6 +1168,7 @@ class Configuration:
         dataflow_parallelize: Union[Keep, bool] = KEEP,
         auto_parallelize: Union[Keep, bool] = KEEP,
         compress_evaluation_keys: Union[Keep, bool] = KEEP,
+        compress_input_ciphertexts: Union[Keep, bool] = KEEP,
         p_error: Union[Keep, Optional[float]] = KEEP,
         global_p_error: Union[Keep, Optional[float]] = KEEP,
         auto_adjust_rounders: Union[Keep, bool] = KEEP,

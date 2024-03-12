@@ -713,6 +713,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, bool b) {
              options.compressEvaluationKeys = b;
            })
+      .def("set_compress_input_ciphertexts",
+           [](CompilationOptions &options, bool b) {
+             options.compressInputCiphertexts = b;
+           })
       .def("set_optimize_concrete", [](CompilationOptions &options,
                                        bool b) { options.optimizeTFHE = b; })
       .def("set_p_error",
