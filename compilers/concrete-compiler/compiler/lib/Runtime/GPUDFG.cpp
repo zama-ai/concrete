@@ -434,6 +434,8 @@ struct Dependence {
       if (onHostReady)
         return;
       if (host_data.allocated == nullptr) {
+	//cudaHostAlloc(&host_data.aligned, data_size, cudaHostAllocDefault);
+	//host_data.allocated = host_data.aligned;
         host_data.allocated = host_data.aligned = (uint64_t *)malloc(data_size);
         hostAllocated = true;
       }
@@ -1001,6 +1003,8 @@ void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
 void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
                                       uint64_t *out_ptr) {
   assert(p->output_size.val == p->glwe_dim.val * p->poly_size.val + 1);
+  if (!p->output_streams[0]->need_new_gen(chunk_id))
+    return;
 
   Dependence *idep1 = p->input_streams[1]->get(host_location, chunk_id);
   MemRef2 &mtlu = idep1->host_data;
@@ -1008,6 +1012,7 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
   uint64_t glwe_ct_len =
       p->poly_size.val * (p->glwe_dim.val + 1) * num_lut_vectors;
   uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
+  //uint64_t *glwe_ct; cudaHostAlloc(&glwe_ct, glwe_ct_size, cudaHostAllocDefault);
   uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size);
   auto tlu = mtlu.aligned + mtlu.offset;
   // Glwe trivial encryption
@@ -1069,7 +1074,8 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
             p->ctx.val);
       Dependence *dep =
           new Dependence(loc, out, nullptr, true, true, d0->chunk_id);
-      free(glwe_ct);
+      //free(glwe_ct);
+      cudaFreeHost(glwe_ct);
       return dep;
     } else {
       // Schedule the bootstrap kernel on the GPU
@@ -1117,7 +1123,6 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
 
   cudaStream_t *cstream = (cudaStream_t *)p->dfg->get_gpu_stream(loc);
   Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
-  if (p->output_streams[0]->need_new_gen(chunk_id))
     p->output_streams[0]->put(
         sched(idep0, idep1, glwe_ct, lut_indexes, cstream, loc), chunk_id);
 }
