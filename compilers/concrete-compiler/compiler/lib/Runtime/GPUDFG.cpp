@@ -27,6 +27,8 @@
 #include "keyswitch.h"
 #include "linear_algebra.h"
 
+#include "cuda_profiler_api.h"
+
 using RuntimeContext = mlir::concretelang::RuntimeContext;
 
 namespace mlir {
@@ -1649,6 +1651,11 @@ void *stream_emulator_init() {
   int device = next_device.fetch_add(1) % num_devices;
   return new GPU_DFG(device);
 }
-void stream_emulator_run(void *dfg) {}
-void stream_emulator_delete(void *dfg) { delete (GPU_DFG *)dfg; }
+void stream_emulator_run(void *dfg) {
+  cudaProfilerStart();
+}
+void stream_emulator_delete(void *dfg) {
+  cudaProfilerStop();
+  delete (GPU_DFG *)dfg;
+}
 #endif
