@@ -116,7 +116,7 @@ jobs:
             make BUILD_DIR=/build doc
             cd /build/tools/concretelang/docs/concretelang/
             sed -i -e 's/\[TOC\]//' *Dialect.md
-            for i in `ls *Dialect.md`; do diff $i /concrete/docs/dev/compilation/$i; done;
+            for i in `ls *Dialect.md`; do diff $i /concrete/docs/explanations/$i; done;
 
       - name: Enable complete tests on push to main
         if: github.ref == 'refs/heads/main'
