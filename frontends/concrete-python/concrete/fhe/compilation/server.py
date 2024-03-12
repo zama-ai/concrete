@@ -122,6 +122,7 @@ class Server:
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)
         options.set_compress_evaluation_keys(configuration.compress_evaluation_keys)
+        options.set_compress_input_ciphertexts(configuration.compress_input_ciphertexts)
         options.set_composable(configuration.composable)
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
