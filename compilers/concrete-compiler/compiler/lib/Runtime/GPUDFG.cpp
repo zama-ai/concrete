@@ -195,15 +195,21 @@ struct GPU_DFG {
     free_stream_order_dependent_data();
   }
   inline void register_stream(Stream *s) { streams.push_back(s); }
-  inline void register_stream_order_dependent_allocation(void *p) {
+  inline void register_stream_order_dependent_allocation(void *p, bool gpu) {
     std::lock_guard<std::mutex> guard(free_list_guard);
-    to_free_list.push_back(p);
+    if (gpu)
+      to_free_list_gpu.push_back(p);
+    else
+      to_free_list.push_back(p);
   }
   inline void free_stream_order_dependent_data() {
     std::lock_guard<std::mutex> guard(free_list_guard);
     for (auto p : to_free_list)
       free(p);
     to_free_list.clear();
+    for (auto p : to_free_list_gpu)
+      cudaFreeHost(p);
+    to_free_list_gpu.clear();
   }
   inline int8_t *get_pbs_buffer(uint32_t glwe_dimension,
                                 uint32_t polynomial_size,
@@ -232,6 +238,7 @@ struct GPU_DFG {
 
 private:
   std::list<void *> to_free_list;
+  std::list<void *> to_free_list_gpu;
   std::mutex free_list_guard;
   std::list<Stream *> streams;
   PBS_buffer *pbs_buffer;
@@ -419,7 +426,7 @@ struct Dependence {
       if (immediate)
         free(host_data.allocated);
       else
-        dfg->register_stream_order_dependent_allocation(host_data.allocated);
+        dfg->register_stream_order_dependent_allocation(host_data.allocated, false);
     }
     for (auto c : chunks)
       c->free_data(dfg, immediate);
@@ -699,6 +706,7 @@ struct Stream {
             std::ceil((double)gpu_chunk_size / max_samples_per_chunk);
         num_chunks = num_cores * scale_factor;
         num_gpu_chunks = num_devices * scale_factor;
+	std::cout << "SCALE " << scale_factor << " - num_gpu_chunks " << num_gpu_chunks << "\n";
       }
     } else {
       num_chunks = std::min(num_cores, num_samples);
@@ -1012,8 +1020,11 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
   uint64_t glwe_ct_len =
       p->poly_size.val * (p->glwe_dim.val + 1) * num_lut_vectors;
   uint64_t glwe_ct_size = glwe_ct_len * sizeof(uint64_t);
-  //uint64_t *glwe_ct; cudaHostAlloc(&glwe_ct, glwe_ct_size, cudaHostAllocDefault);
-  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size);
+  uint64_t *glwe_ct;
+  //if (loc == host_location)
+    glwe_ct = (uint64_t *)malloc(glwe_ct_size);
+    //else
+    //cudaHostAlloc(&glwe_ct, glwe_ct_size, cudaHostAllocDefault);
   auto tlu = mtlu.aligned + mtlu.offset;
   // Glwe trivial encryption
   size_t pos = 0, postlu = 0;
@@ -1037,7 +1048,11 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
     // Move test vector indexes to the GPU, the test vector indexes is set of 0
     uint32_t lwe_idx = 0,
              test_vector_idxes_size = num_samples * sizeof(uint64_t);
-    uint64_t *test_vector_idxes = (uint64_t *)malloc(test_vector_idxes_size);
+    uint64_t *test_vector_idxes;
+    //if (loc == host_location)
+      test_vector_idxes = (uint64_t *)malloc(test_vector_idxes_size);
+      //else
+      //cudaHostAlloc(&test_vector_idxes, test_vector_idxes_size, cudaHostAllocDefault);
     if (lut_indexes.size() == 1) {
       memset((void *)test_vector_idxes, lut_indexes[0], test_vector_idxes_size);
     } else {
@@ -1074,8 +1089,9 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
             p->ctx.val);
       Dependence *dep =
           new Dependence(loc, out, nullptr, true, true, d0->chunk_id);
-      //free(glwe_ct);
-      cudaFreeHost(glwe_ct);
+      free(glwe_ct);
+      free(test_vector_idxes);
+      //cudaFreeHost(glwe_ct);
       return dep;
     } else {
       // Schedule the bootstrap kernel on the GPU
@@ -1104,8 +1120,8 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
       // As streams are not synchronized, we can only free this vector
       // after a later synchronization point where we are guaranteed that
       // this vector is no longer needed.
-      p->dfg->register_stream_order_dependent_allocation(test_vector_idxes);
-      p->dfg->register_stream_order_dependent_allocation(glwe_ct);
+      p->dfg->register_stream_order_dependent_allocation(test_vector_idxes, false);
+      p->dfg->register_stream_order_dependent_allocation(glwe_ct, false);
       return dep;
     }
   };
