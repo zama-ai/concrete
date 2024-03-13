@@ -54,7 +54,7 @@ Depending on your OS, Concrete may be installed with Docker or with pip:
 | macOS 11+ (Apple Silicon: M1, M2, etc.)     |      Coming soon    |       Yes        |
 
 
-#### Docker
+#### Pip
 The preferred way to install Concrete is through PyPI:
 
 ```shell
@@ -62,7 +62,7 @@ pip install -U pip wheel setuptools
 pip install concrete-python
 ```
 
-#### Pip
+#### Docker
 You can get the concrete-python docker image by pulling the latest docker image:
 
 ```shell
