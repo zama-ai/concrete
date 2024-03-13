@@ -30,7 +30,7 @@ env:
   RELEASE_TYPE: ${{ inputs.user_inputs }}
 
 jobs:
-  linux-x86:
+  build-linux-x86:
     continue-on-error: true
     strategy:
       matrix:
@@ -46,22 +46,14 @@ jobs:
           echo "Request ID: ${{ inputs.request_id }}"
           echo "User Inputs: ${{ inputs.user_inputs }}"
 
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
-
       - name: Set up GitHub environment
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
-          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
 
       - name: Checkout
         uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
@@ -77,9 +69,6 @@ jobs:
 
       - name: Expose release version from Python
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
-
-      - name: Create build directory
-        run: mkdir build
 
       - name: Build wheel
         uses: addnab/docker-run-action@v3
@@ -97,7 +86,6 @@ jobs:
             ${{ env.DOCKER_GPU_OPTION }}
           shell: bash
           run: |
-            set -e
             rustup toolchain install nightly-2024-01-31
             rm -rf /build/*
             
@@ -122,7 +110,6 @@ jobs:
             make whl
             
             deactivate
-
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
@@ -130,48 +117,7 @@ jobs:
           path: frontends/concrete-python/dist/*manylinux*.whl
           retention-days: 3
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Test wheel
-        run: |
-          set -e
-          
-          export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
-
-          cd $(mktemp -d)
-          
-          python -m venv .testenv
-          source .testenv/bin/activate
-          
-          sudo apt update -y
-          sudo apt install -y graphviz libgraphviz-dev
-          
-          pip install $CONCRETE_PYTHON/dist/*manylinux*.whl
-          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
-          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
-
-          expected_version=$(cat "$CONCRETE_PYTHON/version.txt")
-          actual_version=$(python -c "from concrete import fhe; print(f'__version__ = \"{fhe.__version__}\"')")
-          
-          if [ "$actual_version" != "$expected_version" ]; then
-            echo "Release version is not properly set"
-            exit 1
-          fi
-
-          cp -R $CONCRETE_PYTHON/tests .
-          cp -R $CONCRETE_PYTHON/pytest.ini .
-          cp $CONCRETE_PYTHON/Makefile .
-          
-          mkdir ./KeySetCache
-          KEY_CACHE_DIRECTORY=./KeySetCache make pytest
-          
-          deactivate
-
-  macos:
-    continue-on-error: true
+  build-macos:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
@@ -179,17 +125,10 @@ jobs:
 
     runs-on: ${{ matrix.runs-on }}
     steps:
-
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
-
       - name: Checkout
         uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
 
       - name: Install OS Dependencies
         run: |
@@ -209,44 +148,35 @@ jobs:
       - name: Expose release version from Python
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
 
-      - name: Create build directory
-        run: mkdir build
-
       - name: Build wheel
         run: |
-          set -e
-
-          cd frontends/concrete-python
+          export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
+          export CONCRETE_COMPILER=$(pwd)/compilers/concrete-compiler/compiler
+          export COMPILER_BUILD_DIRECTORY=$CONCRETE_COMPILER/build
+          export PYTHON=${{ format('python{0}', matrix.python-version) }}
+          echo "Using $PYTHON"
 
           # Setup pkg-config to find OpenBLAS (scipy need it)
           export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
 
+          # Setup vitual environment
           rm -rf .venv
-          ${{ format('python{0}', matrix.python-version) }} -m venv .venv
+          $PYTHON -m venv .venv && . .venv/bin/activate
 
-          . .venv/bin/activate
+          # Install requirements
+          pip install -r $CONCRETE_PYTHON/requirements.txt
+          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
           
-          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
-
-          pip install -r requirements.dev.txt
-          pip install -r requirements.txt
-
-          cd $GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
-
-          echo "Debug: ccache statistics (prior to the build):"
-          ccache -s
-
+          # Build python bindings of concrete compiler
+          cd $CONCRETE_COMPILER
+          echo "Debug: ccache statistics (prior to the build):" && ccache -s
           make Python3_EXECUTABLE=$(which python) python-bindings
+          echo "Debug: ccache statistics (after the build):" && ccache -s
 
-          echo "Debug: ccache statistics (after the build):"
-          ccache -s
-
-          export COMPILER_BUILD_DIRECTORY=$(pwd)/build
-          cd $GITHUB_WORKSPACE/frontends/concrete-python
-
+          # Build wheel
+          cd $CONCRETE_PYTHON
           rm -rf dist
           mkdir -p dist
-
           pip wheel -v --no-deps -w dist .
           delocate-wheel -v dist/*macos*.whl
 
@@ -259,126 +189,12 @@ jobs:
           path: frontends/concrete-python/dist/*macos*.whl
           retention-days: 3
 
-      - name: Test wheel
-        run: |
-          set -e
-
-          export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
-
-          export TEST_TMP_DIR=$(mktemp -d)
-          echo "TEST_TMP_DIR=$TEST_TMP_DIR" >> "${GITHUB_ENV}"
-          cd $TEST_TMP_DIR
-
-          export PYTHON_VERSION=${{ format('python{0}', matrix.python-version) }}
-
-          $PYTHON_VERSION -m venv .testenv
-          source .testenv/bin/activate
-          
-          CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
-
-          pip install $CONCRETE_PYTHON/dist/*macos*.whl
-          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
-          
-          expected_version=$(cat "$CONCRETE_PYTHON/version.txt")
-          actual_version=$(python -c "from concrete import fhe; print(f'__version__ = \"{fhe.__version__}\"')")
-          
-          if [ "$actual_version" != "$expected_version" ]; then
-            echo "Release version is not properly set"
-            exit 1
-          fi
-
-          # MacOS x86 have conflict between our OpenMP library, and one from torch
-          # we fix it by using a single one (from torch)
-          # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
-          export SITE_PACKAGES=$(pwd)/.testenv/lib/$PYTHON_VERSION/site-packages/
-          find $SITE_PACKAGES/site-packages -not \( -path $SITE_PACKAGES/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $SITE_PACKAGES/concrete/.dylibs/libomp.dylib
-
-          cp -R $CONCRETE_PYTHON/tests .
-          cp -R $CONCRETE_PYTHON/pytest.ini .
-          cp $CONCRETE_PYTHON/Makefile .
-
-          mkdir ./KeySetCache
-          KEY_CACHE_DIRECTORY=./KeySetCache PYTEST_MARKERS="not dataflow" make pytest
-
-      - name: Cleanup host
-        if: success() || failure()
-        run: |
-          rm -rf $TEST_TMP_DIR
-
   push:
-    needs: [linux-x86, macos]
+    needs: [build-linux-x86, build-macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
         with:
-          name: wheel-3.8-linux-x86
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.9-linux-x86
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.10-linux-x86
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.11-linux-x86
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.8-aws-mac1-metal
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.9-aws-mac1-metal
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.10-aws-mac1-metal
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.11-aws-mac1-metal
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.8-aws-mac2-metal
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.9-aws-mac2-metal
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.10-aws-mac2-metal
-          path: wheels
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: ${{ env.RELEASE_TYPE == 'nightly' }}
-        with:
-          name: wheel-3.11-aws-mac2-metal
           path: wheels
 
       - name: Push wheels to internal PyPI (nightly)
@@ -410,3 +226,109 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/zama-ai/concrete/actions/workflows/concrete_python_push_docker_image.yml/dispatches \
             -d '{"ref":"$TAG","inputs":{"tag":"$TAG"}}'
+
+  test-linux-x86:
+    needs: [build-linux-x86]
+    continue-on-error: true
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    runs-on: ${{ github.event.inputs.runner_name }}
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          path: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: repo
+      - name: Test wheel
+        run: |
+          WHEEL_DIR=$(pwd)/${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
+
+          # Initialize an empty test environment
+          cd $(mktemp -d)
+          python -m venv .testenv && source .testenv/bin/activate
+
+          # Install the concrete-python wheel
+          pip install $WHEEL_DIR/*.whl
+
+          # Install extra requirements for tests
+          sudo apt update -y
+          sudo apt install -y graphviz libgraphviz-dev
+          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
+          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
+
+          # TODO - check for version
+
+          # Copy test files
+          cp -R $CONCRETE_PYTHON/tests .
+          cp -R $CONCRETE_PYTHON/pytest.ini .
+
+          # Running tests
+          pytest tests -svv -n auto
+
+  test-macos:
+    needs: [build-macos]
+    continue-on-error: true
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
+          path: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: repo
+      - name: Test wheel
+        run: |
+          WHEEL_DIR=$(pwd)/${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
+          CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
+          PYTHON=${{ format('python{0}', matrix.python-version) }}
+
+          # Initialize an empty test environment
+          export TEST_TMP_DIR=$(mktemp -d)
+          echo "TEST_TMP_DIR=$TEST_TMP_DIR" >> "${GITHUB_ENV}"
+          cd $TEST_TMP_DIR
+
+          # Activate virtual environment
+          $PYTHON -m venv .testenv && source .testenv/bin/activate
+
+          # Install extra requirements for tests
+          pip install $WHEEL_DIR/*macos*.whl
+          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
+
+          # MacOS x86 have conflict between our OpenMP library, and one from torch
+          # we fix it by using a single one (from torch)
+          # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
+          export SITE_PACKAGES=$(pwd)/.testenv/lib/$PYTHON_VERSION/site-packages/
+          find $SITE_PACKAGES -not \( -path $SITE_PACKAGES/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $SITE_PACKAGES/concrete/.dylibs/libomp.dylib
+
+          # Copy test files
+          cp -R $CONCRETE_PYTHON/tests .
+          cp -R $CONCRETE_PYTHON/pytest.ini .
+          cp $CONCRETE_PYTHON/Makefile .
+
+          # Running tests
+          mkdir ./KeySetCache
+          pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
+
+      - name: Cleanup host
+        if: success() || failure()
+        run: |
+          rm -rf $TEST_TMP_DIR
