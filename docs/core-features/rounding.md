@@ -296,7 +296,7 @@ and displays:
 {% endhint %}
 
 
-## Exactness
+## Exactness
 
 One use of rounding is doing faster computation by ignoring the lower significant bits.
 For this usage, you can even get faster results if you accept the rounding it-self to be slighlty inexact.
