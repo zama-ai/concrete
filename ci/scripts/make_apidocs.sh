@@ -42,7 +42,7 @@ for f in $FILES
 do
     filename=$(echo "$f" | rev | cut -d '/' -f 1 | rev)
 
-    echo "  - [$filename]($f)" >> "$TMP_FILE"
+    echo "  * [$filename]($f)" >> "$TMP_FILE"
 done
 
 FINAL_FILE="docs/SUMMARY.md"

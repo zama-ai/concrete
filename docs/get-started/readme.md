@@ -1,6 +1,6 @@
 # What is Concrete?
 
-<figure><img src="../_static/zama_home_docs.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/concrete_doc_header.png" alt=""><figcaption></figcaption></figure>
 
 **Concrete** is an open source framework which simplifies the use of Fully Homomorphic Encryption (FHE).
 
