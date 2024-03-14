@@ -516,18 +516,10 @@ buildNormalizedIndexes(mlir::PatternRewriter &rewriter,
   rewriter.setInsertionPointToStart(innermost.getBody());
 
   for (mlir::scf::ForOp forOp : nest) {
+    mlir::ImplicitLocOpBuilder ilob(forOp.getLoc(), rewriter);
 
-    mlir::Value idxShifted =
-        isConstantIndexValue(forOp.getLowerBound(), 0)
-            ? forOp.getInductionVar()
-            : rewriter.create<mlir::arith::SubIOp>(innermost.getLoc(),
-                                                   forOp.getInductionVar(),
-                                                   forOp.getLowerBound());
-    mlir::Value idx =
-        isConstantIndexValue(forOp.getStep(), 1)
-            ? idxShifted
-            : rewriter.create<mlir::arith::DivSIOp>(
-                  innermost.getLoc(), idxShifted, forOp.getStep());
+    mlir::Value idx = normalizeInductionVar(
+        ilob, forOp.getInductionVar(), forOp.getLowerBound(), forOp.getStep());
 
     res.push_back(idx);
   }

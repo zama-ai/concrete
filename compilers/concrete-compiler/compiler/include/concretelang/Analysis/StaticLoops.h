@@ -7,6 +7,7 @@
 #define CONCRETELANG_ANALYSIS_STATIC_LOOPS_H
 
 #include <mlir/Dialect/SCF/IR/SCF.h>
+#include <mlir/IR/ImplicitLocOpBuilder.h>
 
 namespace mlir {
 namespace concretelang {
@@ -59,6 +60,10 @@ bool isStaticLoop(mlir::scf::ForOp forOp, int64_t *ilb = nullptr,
 bool isConstantIndexValue(mlir::Value v);
 int64_t getConstantIndexValue(mlir::Value v);
 bool isConstantIndexValue(mlir::Value v, int64_t i);
+
+mlir::Value normalizeInductionVar(mlir::ImplicitLocOpBuilder &builder,
+                                  mlir::Value iv, mlir::OpFoldResult lb,
+                                  mlir::OpFoldResult step);
 
 } // namespace concretelang
 } // namespace mlir

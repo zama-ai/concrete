@@ -5,6 +5,8 @@
 
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
+#include <mlir/Dialect/Arith/Utils/Utils.h>
+#include <mlir/Dialect/Utils/StaticValueUtils.h>
 
 #include <concretelang/Analysis/StaticLoops.h>
 #include <optional>
@@ -444,6 +446,30 @@ int64_t getConstantIndexValue(mlir::Value v) {
 // Checks whether `v` is a constant value of type index and its values is `i`
 bool isConstantIndexValue(mlir::Value v, int64_t i) {
   return isConstantIndexValue(v) && getConstantIndexValue(v) == i;
+}
+
+// Returns a `Value` corresponding to `iv`, normalized to the lower
+// bound `lb` and step `step` of a loop (i.e., (iv - lb) / step).
+mlir::Value normalizeInductionVar(mlir::ImplicitLocOpBuilder &builder,
+                                  mlir::Value iv, mlir::OpFoldResult lb,
+                                  mlir::OpFoldResult step) {
+  std::optional<int64_t> lbInt = mlir::getConstantIntValue(lb);
+  std::optional<int64_t> stepInt = mlir::getConstantIntValue(step);
+
+  mlir::Value idxShifted = lbInt.has_value() && *lbInt == 0
+                               ? iv
+                               : builder.create<mlir::arith::SubIOp>(
+                                     iv, mlir::getValueOrCreateConstantIndexOp(
+                                             builder, builder.getLoc(), lb));
+
+  mlir::Value normalizedIV =
+      stepInt.has_value() && *stepInt == 1
+          ? idxShifted
+          : builder.create<mlir::arith::DivSIOp>(
+                idxShifted, mlir::getValueOrCreateConstantIndexOp(
+                                builder, builder.getLoc(), step));
+
+  return normalizedIV;
 }
 
 } // namespace concretelang
