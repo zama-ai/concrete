@@ -451,6 +451,7 @@ disable=raw-checker-failed,
         wrong-import-order,
         unsubscriptable-object,
         no-else-continue,
+        no-else-return,
         unnecessary-comprehension
 
 # Enable the message, report, category or checker with the given id(s). You can

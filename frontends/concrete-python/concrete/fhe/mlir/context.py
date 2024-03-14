@@ -4,6 +4,7 @@ Declaration of `Context` class.
 
 # pylint: disable=import-error,no-name-in-module
 
+from copy import deepcopy
 from random import randint
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
@@ -39,6 +40,7 @@ from ..compilation.configuration import (
 )
 from ..dtypes import Integer
 from ..extensions.bits import MAX_EXTRACTABLE_BIT, MIN_EXTRACTABLE_BIT
+from ..extensions.synthesis import fhe_function as synth
 from ..representation import Graph, GraphProcessor, Node
 from ..tfhers.dtypes import TFHERSIntegerType
 from ..values import ValueDescription
@@ -2407,8 +2409,6 @@ class Context:
     def safe_reduce_precision(self, x: Conversion, bit_width: int) -> Conversion:
         assert bit_width > 0
         assert bit_width <= x.bit_width
-        if x.bit_width != x.original_bit_width:
-            assert bit_width >= x.original_bit_width
         if bit_width == x.bit_width:
             return x
         scaled_x = self.shift_left_at_constant_precision(x, x.type.bit_width - bit_width)
@@ -2420,6 +2420,8 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         bits: Union[int, np.integer, slice],
+        assume_many_extract=True,
+        refresh_all_bits=True,
     ) -> Conversion:
         if x.is_clear:
             highlights: Dict[Node, Union[str, List[str]]] = {
@@ -2454,7 +2456,7 @@ class Context:
         # we optimize bulk extract in low precision, used for identity
         cost_one_tlu = LUT_COSTS_V0_NORM2_0.get(x.bit_width, float("inf"))
         cost_many_lsbs = LUT_COSTS_V0_NORM2_0[1] * (max(bits, default=0) + 1)
-        if cost_one_tlu < cost_many_lsbs:
+        if cost_one_tlu < cost_many_lsbs and not assume_many_extract:
 
             def tlu_cell_with_positive_value(i):
                 return x.type.is_unsigned or i < 2 ** (x.bit_width - 1)
@@ -2489,6 +2491,7 @@ class Context:
                     bit == (max_bit - 1)
                     and x.bit_width == resulting_type.bit_width == 1
                     and x.is_unsigned
+                    and not refresh_all_bits
                 ):
                     lsb_bit_witdh = 1
                     lsb = x
@@ -2516,8 +2519,9 @@ class Context:
                     break
 
                 clearing_bit = self.safe_reduce_precision(lsb, x.bit_width)
-                cleared = self.sub(x.type, x, clearing_bit)
-                x = self.reinterpret(cleared, bit_width=(x.bit_width - 1))
+                if bit != (current_bit - 1) or bit != bits_and_their_positions[-1][0]:
+                    cleared = self.sub(x.type, x, clearing_bit)
+                    x = self.reinterpret(cleared, bit_width=(x.bit_width - 1))
 
             assert lsb is not None
             bit_value = self.to_signedness(lsb, of=resulting_type)
@@ -3755,7 +3759,13 @@ class Context:
             original_bit_width=x.original_bit_width,
         )
 
-    def tlu(self, resulting_type: ConversionType, on: Conversion, table: Sequence[int]):
+    def tlu(
+        self,
+        resulting_type: ConversionType,
+        on: Conversion,
+        table: Sequence[int],
+        no_synth: bool = True,
+    ):
         if on.is_clear:
             highlights = {
                 on.origin: "this clear value is used as an input to a table lookup",
@@ -3764,7 +3774,6 @@ class Context:
             self.error(highlights)
 
         assert resulting_type.is_encrypted
-
         offset_before_tlu = on.origin.properties.get("offset_before_tlu")
 
         if offset_before_tlu is not None:
@@ -3818,6 +3827,17 @@ class Context:
                 table += padding
             else:
                 table = table[: len(table) // 2] + padding + table[-len(table) // 2 :]
+
+        synth_config = self.configuration.synthesis_config
+        synth_try = synth_config.start_tlu_at_precision <= on.bit_width and not no_synth
+        if synth_try:
+            out_type = deepcopy(on.origin.output)
+            assert isinstance(out_type.dtype, Integer)
+            out_type.dtype.bit_width = resulting_type.bit_width
+            fhe_function = synth.lut(table, out_type=out_type)
+            synth_force = synth_config.force_tlu_at_precision <= on.bit_width
+            if synth_force or fhe_function.is_faster_than_1_tlu(LUT_COSTS_V0_NORM2_0):
+                return fhe_function.mlir(self, resulting_type, [on])
 
         dialect = fhe if on.is_scalar else fhelinalg
         operation = dialect.ApplyLookupTableEintOp

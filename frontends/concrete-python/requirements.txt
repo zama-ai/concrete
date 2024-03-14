@@ -4,4 +4,6 @@ networkx>=2.6
 numpy>=1.23,<2.0
 scipy>=1.10
 torch>=1.13
+yowasp-runtime==1.53
+yowasp-yosys==0.44.0.0.post760
 z3-solver>=4.12
