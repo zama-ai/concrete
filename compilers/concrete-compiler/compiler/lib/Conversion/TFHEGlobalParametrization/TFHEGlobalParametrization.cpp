@@ -397,14 +397,12 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
         mlir::concretelang::GenericTypeConverterPattern<
             mlir::concretelang::Tracing::TraceCiphertextOp>,
         mlir::concretelang::GenericTypeConverterPattern<mlir::func::ReturnOp>,
-        mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>>(
-        &getContext(), converter);
+        mlir::concretelang::GenericTypeConverterPattern<mlir::scf::YieldOp>,
+        mlir::concretelang::GenericTypeConverterPattern<
+            mlir::tensor::ParallelInsertSliceOp>>(&getContext(), converter);
 
     mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
                                                             converter);
-
-    mlir::concretelang::GenericTypeConverterPattern<
-        mlir::tensor::ParallelInsertSliceOp>(&getContext(), converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

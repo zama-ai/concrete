@@ -472,5 +472,19 @@ mlir::Value normalizeInductionVar(mlir::ImplicitLocOpBuilder &builder,
   return normalizedIV;
 }
 
+llvm::SmallVector<mlir::Value>
+normalizeInductionVars(mlir::ImplicitLocOpBuilder &builder,
+                       mlir::ValueRange ivs,
+                       llvm::ArrayRef<mlir::OpFoldResult> lbs,
+                       llvm::ArrayRef<mlir::OpFoldResult> steps) {
+  llvm::SmallVector<mlir::Value> normalizedIVs;
+
+  for (auto [iv, lb, step] : llvm::zip_equal(ivs, lbs, steps)) {
+    normalizedIVs.push_back(normalizeInductionVar(builder, iv, lb, step));
+  }
+
+  return normalizedIVs;
+}
+
 } // namespace concretelang
 } // namespace mlir

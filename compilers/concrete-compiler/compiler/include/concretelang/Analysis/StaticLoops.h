@@ -65,6 +65,12 @@ mlir::Value normalizeInductionVar(mlir::ImplicitLocOpBuilder &builder,
                                   mlir::Value iv, mlir::OpFoldResult lb,
                                   mlir::OpFoldResult step);
 
+llvm::SmallVector<mlir::Value>
+normalizeInductionVars(mlir::ImplicitLocOpBuilder &builder,
+                       mlir::ValueRange ivs,
+                       llvm::ArrayRef<mlir::OpFoldResult> lbs,
+                       llvm::ArrayRef<mlir::OpFoldResult> steps);
+
 } // namespace concretelang
 } // namespace mlir
 
