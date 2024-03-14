@@ -1,9 +1,11 @@
 add_mlir_dialect_library(
   RTDialectTransforms
   BufferizableOpInterfaceImpl.cpp
+  HoistAwaitFuturePass.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/RT
   DEPENDS
+  RTTransformsIncGen
   mlir-headers
   LINK_LIBS
   PUBLIC
