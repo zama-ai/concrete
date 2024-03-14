@@ -4,4 +4,5 @@ networkx>=2.6
 numpy>=1.23
 scipy>=1.10
 torch>=1.13
+yowasp-yosys>=0.39.0
 z3-solver>=4.12
