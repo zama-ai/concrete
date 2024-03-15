@@ -862,6 +862,21 @@ CompilerEngine::Library::emitCompilationFeedbackJSON() {
   return path;
 }
 
+CompilationOptions currentCompilationOptions;
+
+void setCurrentCompilationOptions(CompilationOptions options) {
+  currentCompilationOptions = options;
+}
+
+CompilationOptions getCurrentCompilationOptions() {
+  return currentCompilationOptions;
+}
+
+void printTluFusing(mlir::Value v1, mlir::Value v2, mlir::Value v1v2) {
+  llvm::outs() << "INFO: Fused `" << v1 << "` and `" << v2 << "` into `" << v1v2
+               << "`\n";
+}
+
 llvm::Expected<std::string>
 CompilerEngine::Library::setCompilationResult(CompilationResult &compilation) {
   llvm::Module *module = compilation.llvmModule.get();

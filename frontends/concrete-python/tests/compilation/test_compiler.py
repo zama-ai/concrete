@@ -389,3 +389,44 @@ def test_compiler_tampered_client_parameters(helpers):
     with pytest.raises(ValueError) as excinfo:
         helpers.check_execution(circuit, f, sample)
     assert str(excinfo.value) == "Expected a valid type in dict_keys([])"
+
+
+def test_compiler_enable_fusing(helpers):
+    """
+    Test compilation with and without TLU fusing.
+    """
+
+    def f(x):
+        return (x**2) // 2
+
+    # Fused Scalar
+    compiler1 = Compiler(f, {"x": "encrypted"})
+    circuit1 = compiler1.compile(
+        fhe.inputset(fhe.uint3),
+        helpers.configuration().fork(enable_tlu_fusing=True),
+    )
+    assert circuit1.programmable_bootstrap_count == 1
+
+    # Not Fused Scalar
+    compiler2 = Compiler(f, {"x": "encrypted"})
+    circuit2 = compiler2.compile(
+        fhe.inputset(fhe.uint3),
+        helpers.configuration().fork(enable_tlu_fusing=False),
+    )
+    assert circuit2.programmable_bootstrap_count == 2
+
+    # Fused Tensor
+    compiler3 = Compiler(f, {"x": "encrypted"})
+    circuit3 = compiler3.compile(
+        fhe.inputset(fhe.tensor[fhe.uint3, 3]),  # type: ignore
+        helpers.configuration().fork(enable_tlu_fusing=True),
+    )
+    assert circuit3.programmable_bootstrap_count == 3
+
+    # Not Fused Tensor
+    compiler4 = Compiler(f, {"x": "encrypted"})
+    circuit4 = compiler4.compile(
+        fhe.inputset(fhe.tensor[fhe.uint3, 3]),  # type: ignore
+        helpers.configuration().fork(enable_tlu_fusing=False),
+    )
+    assert circuit4.programmable_bootstrap_count == 6

@@ -13,6 +13,7 @@
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgTypes.h"
+#include "concretelang/Support/CompilerEngine.h"
 #include "llvm/ADT/SmallVector.h"
 
 namespace mlir {
@@ -1693,6 +1694,12 @@ fuseBackToBackTableLookups(mlir::Operation *currentOperation,
 
   using mlir::concretelang::FHE::FheIntegerInterface;
 
+  CompilationOptions currentCompilationOptions = getCurrentCompilationOptions();
+
+  if (!currentCompilationOptions.enableTluFusing) {
+    return std::nullopt;
+  }
+
   auto currentOperationAsTlu =
       llvm::dyn_cast<ApplyLookupTableEintOp>(currentOperation);
   auto currentOperationAsMappedTlu =
@@ -2099,6 +2106,13 @@ void ApplyLookupTableEintOp::getCanonicalizationPatterns(
                     mlir::PatternRewriter &rewriter) const override {
       auto replacement = fuseBackToBackTableLookups(currentOperation, rewriter);
       if (replacement) {
+        CompilationOptions currentCompilationOptions =
+            getCurrentCompilationOptions();
+        if (currentCompilationOptions.printTluFusing) {
+          printTluFusing(currentOperation.getT(),
+                         currentOperation->getResult(0), *replacement);
+        }
+
         rewriter.replaceAllUsesWith(currentOperation, *replacement);
         return mlir::success();
       }
@@ -2122,6 +2136,13 @@ void ApplyMappedLookupTableEintOp::getCanonicalizationPatterns(
                     mlir::PatternRewriter &rewriter) const override {
       auto replacement = fuseBackToBackTableLookups(currentOperation, rewriter);
       if (replacement) {
+        CompilationOptions currentCompilationOptions =
+            getCurrentCompilationOptions();
+        if (currentCompilationOptions.printTluFusing) {
+          printTluFusing(currentOperation.getT(),
+                         currentOperation->getResult(0), *replacement);
+        }
+
         rewriter.replaceAllUsesWith(currentOperation, *replacement);
         return mlir::success();
       }

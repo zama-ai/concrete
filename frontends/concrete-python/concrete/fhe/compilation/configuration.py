@@ -987,6 +987,8 @@ class Configuration:
     rounding_exactness: Exactness
     approximate_rounding_config: ApproximateRoundingConfig
     optimize_tlu_based_on_measured_bounds: bool
+    enable_tlu_fusing: bool
+    print_tlu_fusing: bool
 
     def __init__(
         self,
@@ -1049,6 +1051,8 @@ class Configuration:
         rounding_exactness: Exactness = Exactness.EXACT,
         approximate_rounding_config: Optional[ApproximateRoundingConfig] = None,
         optimize_tlu_based_on_measured_bounds: bool = False,
+        enable_tlu_fusing: bool = True,
+        print_tlu_fusing: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1144,6 +1148,9 @@ class Configuration:
         )
         self.optimize_tlu_based_on_measured_bounds = optimize_tlu_based_on_measured_bounds
 
+        self.enable_tlu_fusing = enable_tlu_fusing
+        self.print_tlu_fusing = print_tlu_fusing
+
         self._validate()
 
     class Keep:
@@ -1209,6 +1216,8 @@ class Configuration:
         rounding_exactness: Union[Keep, Exactness] = KEEP,
         approximate_rounding_config: Union[Keep, Optional[ApproximateRoundingConfig]] = KEEP,
         optimize_tlu_based_on_measured_bounds: Union[Keep, bool] = KEEP,
+        enable_tlu_fusing: Union[Keep, bool] = KEEP,
+        print_tlu_fusing: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
