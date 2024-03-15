@@ -179,6 +179,10 @@ class Server:
             ),
         }
         options.set_optimizer_multi_parameter_strategy(converter[multi_parameter_strategy])
+
+        options.set_enable_tlu_fusing(configuration.enable_tlu_fusing)
+        options.set_print_tlu_fusing(configuration.print_tlu_fusing)
+
         try:
             if configuration.compiler_debug_mode:  # pragma: no cover
                 set_llvm_debug_flag(True)

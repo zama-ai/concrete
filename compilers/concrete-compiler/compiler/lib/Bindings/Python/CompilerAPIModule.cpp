@@ -791,6 +791,14 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_batch_tfhe_ops",
            [](CompilationOptions &options, bool batch_tfhe_ops) {
              options.batchTFHEOps = batch_tfhe_ops;
+           })
+      .def("set_enable_tlu_fusing",
+           [](CompilationOptions &options, bool enableTluFusing) {
+             options.enableTluFusing = enableTluFusing;
+           })
+      .def("set_print_tlu_fusing",
+           [](CompilationOptions &options, bool printTluFusing) {
+             options.printTluFusing = printTluFusing;
            });
 
   pybind11::enum_<mlir::concretelang::PrimitiveOperation>(m,

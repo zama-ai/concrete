@@ -11,6 +11,7 @@
 
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
+#include "concretelang/Support/CompilerEngine.h"
 
 namespace mlir {
 namespace concretelang {
@@ -407,6 +408,13 @@ void ApplyLookupTableEintOp::getCanonicalizationPatterns(
     matchAndRewrite(ApplyLookupTableEintOp currentOperation,
                     mlir::PatternRewriter &rewriter) const override {
 
+      CompilationOptions currentCompilationOptions =
+          getCurrentCompilationOptions();
+
+      if (!currentCompilationOptions.enableTluFusing) {
+        return mlir::failure();
+      }
+
       auto intermediateValue = currentOperation.getA();
       auto intermediateOperation =
           llvm::dyn_cast_or_null<ApplyLookupTableEintOp>(
@@ -587,6 +595,11 @@ void ApplyLookupTableEintOp::getCanonicalizationPatterns(
       auto newOperation = rewriter.create<ApplyLookupTableEintOp>(
           currentOperation.getLoc(), currentOperation.getType(), inputValue,
           newTable);
+
+      if (currentCompilationOptions.printTluFusing) {
+        printTluFusing(currentOperation.getA(), currentOperation->getResult(0),
+                       newOperation.getResult());
+      }
 
       rewriter.replaceAllUsesWith(currentOperation, newOperation);
       return mlir::success();

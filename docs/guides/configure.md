@@ -130,3 +130,7 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
 * **optimize_tlu_based_on_measured_bounds** : bool = False
   * Enables TLU optimizations based on measured bounds.
   * Not enabled by default as it could result in unexpected overflows during runtime.
+* **enable_tlu_fusing** : bool = True
+  * Enables TLU fusing to reduce the number of table lookups.
+* **print_tlu_fusing** : bool = False
+  * Enables printing TLU fusing to see which table lookups are fused.

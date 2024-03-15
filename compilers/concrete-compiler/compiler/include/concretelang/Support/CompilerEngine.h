@@ -104,6 +104,9 @@ struct CompilationOptions {
 
   bool skipProgramInfo;
 
+  bool enableTluFusing;
+  bool printTluFusing;
+
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         /// Simulate options
@@ -121,7 +124,7 @@ struct CompilationOptions {
         batchTFHEOps(false), maxBatchSize(std::numeric_limits<int64_t>::max()),
         emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
         optimizeTFHE(true), chunkIntegers(false), chunkSize(4), chunkWidth(2),
-        encodings(std::nullopt){};
+        encodings(std::nullopt), enableTluFusing(true), printTluFusing(false){};
 
   /// @brief Constructor for CompilationOptions with default parameters for a
   /// specific backend.
@@ -141,6 +144,15 @@ struct CompilationOptions {
     }
   }
 };
+
+/// Set the global compilation options for the current compilation.
+void setCurrentCompilationOptions(CompilationOptions options);
+
+/// Get the global compilation options for the current compilation.
+CompilationOptions getCurrentCompilationOptions();
+
+/// Print table lookup fusing.
+void printTluFusing(mlir::Value v1, mlir::Value v2, mlir::Value v1v2);
 
 class CompilerEngine {
 public:
@@ -336,6 +348,7 @@ public:
           bool generateCompilationFeedback = true);
 
   void setCompilationOptions(CompilationOptions options) {
+    setCurrentCompilationOptions(options);
     compilerOptions = std::move(options);
     if (compilerOptions.v0FHEConstraints.has_value()) {
       setFHEConstraints(*compilerOptions.v0FHEConstraints);

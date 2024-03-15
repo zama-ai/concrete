@@ -455,3 +455,29 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(batch_tfhe_ops, bool):
             raise TypeError("batch_tfhe_ops must be boolean")
         self.cpp().set_batch_tfhe_ops(batch_tfhe_ops)
+
+    def set_enable_tlu_fusing(self, enable_tlu_fusing: bool):
+        """Enable or disable tlu fusing.
+
+        Args:
+            enable_tlu_fusing (bool): flag to enable or disable tlu fusing
+
+        Raises:
+            TypeError: if the value to set is not bool
+        """
+        if not isinstance(enable_tlu_fusing, bool):
+            raise TypeError("need to pass a boolean value")
+        self.cpp().set_enable_tlu_fusing(enable_tlu_fusing)
+
+    def set_print_tlu_fusing(self, print_tlu_fusing: bool):
+        """Enable or disable printing tlu fusing.
+
+        Args:
+            print_tlu_fusing (bool): flag to enable or disable printing tlu fusing
+
+        Raises:
+            TypeError: if the value to set is not bool
+        """
+        if not isinstance(print_tlu_fusing, bool):
+            raise TypeError("need to pass a boolean value")
+        self.cpp().set_print_tlu_fusing(print_tlu_fusing)
