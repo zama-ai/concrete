@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include "llvm/Support/TargetSelect.h"
@@ -188,12 +188,16 @@ mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass) {
+tileMarkedLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("TileMarkedFHELinalg", pm, context);
-  addPotentiallyNestedPass(pm, mlir::concretelang::createFHELinalgTilingPass(),
+  pipelinePrinting("TileMarkedLinalg", pm, context);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createLinalgTilingPass(),
                            enablePass);
+
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createLinalgFillToLinalgGenericPass(),
+      enablePass);
 
   return pm.run(module.getOperation());
 }
@@ -224,24 +228,24 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
 }
 
 mlir::LogicalResult
-lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass) {
+lowerFHELinalgToLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                       std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("FHELinalgToFHE", pm, context);
+  pipelinePrinting("FHELinalgToLinalg", pm, context);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createConvertFHETensorOpsToLinalg(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createLinalgGeneralizationPass(),
                            enablePass);
-
   return pm.run(module.getOperation());
 }
 
 mlir::LogicalResult
-lowerLinalgGenericToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                          std::function<bool(mlir::Pass *)> enablePass,
-                          bool parallelizeLoops) {
+lowerLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   bool parallelizeLoops) {
   mlir::PassManager pm(&context);
-  pipelinePrinting("LinalgGenericToLoops", pm, context);
+  pipelinePrinting("LinalgToLoops", pm, context);
+
   addPotentiallyNestedPass(
       pm,
       mlir::concretelang::createLinalgGenericOpWithTensorsToLoopsPass(
@@ -478,6 +482,9 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
   addPotentiallyNestedPass(
       pm, mlir::bufferization::createEmptyTensorToAllocTensorPass(),
       enablePass);
+
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createSCFForallToSCFForPass(), enablePass);
 
   // Bufferize
   mlir::bufferization::OneShotBufferizationOptions bufferizationOptions;

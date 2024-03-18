@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include "concretelang/Dialect/TFHE/IR/TFHEAttrs.h"
@@ -378,6 +378,12 @@ void TFHEKeyNormalizationPass::runOnOperation() {
                                               conversion::TypeConverter>>(
         &getContext(), typeConverter);
     patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForOp,
+                                              conversion::TypeConverter>>(
+        &getContext(), typeConverter);
+    patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForallOp,
+                                              conversion::TypeConverter>>(
+        &getContext(), typeConverter);
+    patterns.add<RegionOpTypeConverterPattern<mlir::scf::InParallelOp,
                                               conversion::TypeConverter>>(
         &getContext(), typeConverter);
     patterns.add<RegionOpTypeConverterPattern<mlir::func::ReturnOp,

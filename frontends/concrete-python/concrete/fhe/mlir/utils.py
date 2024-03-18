@@ -20,6 +20,7 @@ from mlir.ir import Value as MlirValue
 
 from ..compilation.configuration import (  # pylint: disable=unused-import  # noqa: F401
     MAXIMUM_TLU_BIT_WIDTH,
+    Configuration,
 )
 from ..dtypes import Integer
 from ..internal.utils import assert_that
@@ -138,7 +139,7 @@ def construct_table_multivariate(node: Node, preds: List[Node]) -> List[Any]:
     return table
 
 
-def construct_table(node: Node, preds: List[Node]) -> List[Any]:
+def construct_table(node: Node, preds: List[Node], configuration: Configuration) -> List[Any]:
     """
     Construct the lookup table for an Operation.Generic node.
 
@@ -148,6 +149,9 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
 
         preds (List[Node]):
             ordered predecessors to `node`
+
+        configuration (Configuration):
+            configuration to use
 
     Returns:
         List[Any]:
@@ -171,6 +175,8 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
 
     assert_that(isinstance(variable_input_dtype, Integer))
     variable_input_dtype = deepcopy(cast(Integer, variable_input_dtype))
+
+    offset_before_tlu = 0
 
     if (
         variable_input.operation == Operation.Generic
@@ -202,12 +208,37 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
         step = (2**original_bit_width) // expected_number_of_elements
 
     else:
+        original_bit_width = variable_input.properties["original_bit_width"]
+        variable_input_dtype.bit_width = original_bit_width
+
+        if configuration.optimize_tlu_based_on_measured_bounds:
+            bounds = variable_input.bounds
+            hint = variable_input.properties.get("bit_width_hint")
+            if bounds is not None and hint is None:
+                assert isinstance(bounds[0], (int, np.int64))
+                assert isinstance(bounds[1], (int, np.int64))
+
+                new_offset_before_tlu = -bounds[0]
+                new_bounds = [bounds[0] + new_offset_before_tlu, bounds[1] + new_offset_before_tlu]
+
+                new_variable_input_dtype = Integer.that_can_represent(new_bounds)
+                if new_variable_input_dtype.bit_width < variable_input_dtype.bit_width:
+                    variable_input_dtype = new_variable_input_dtype
+                    offset_before_tlu = new_offset_before_tlu
+                    variable_input.properties["offset_before_tlu"] = new_offset_before_tlu
+                    variable_input.properties["offset_bit_width"] = variable_input_dtype.bit_width
+
         step = 1
 
-    values = chain(
-        range(0, variable_input_dtype.max() + 1, step),
-        range(variable_input_dtype.min(), 0, step),
-    )
+    if offset_before_tlu == 0:
+        values = chain(
+            range(0, variable_input_dtype.max() + 1, step),
+            range(variable_input_dtype.min(), 0, step),
+        )
+    else:
+        values = chain(
+            range(-offset_before_tlu, variable_input_dtype.max() + 1 - offset_before_tlu, step),
+        )
 
     np.seterr(divide="ignore")
 
@@ -239,6 +270,7 @@ def construct_table(node: Node, preds: List[Node]) -> List[Any]:
 def construct_deduplicated_tables(
     node: Node,
     preds: List[Node],
+    configuration: Configuration,
 ) -> Tuple[Tuple[np.ndarray, Optional[List[Tuple[int, ...]]]], ...]:
     """
     Construct lookup tables for each cell of the input for an Operation.Generic node.
@@ -249,6 +281,9 @@ def construct_deduplicated_tables(
 
         preds (List[Node]):
             ordered predecessors to `node`
+
+        configuration (Configuration):
+            configuration to use
 
     Returns:
         Tuple[Tuple[numpy.ndarray, List[Tuple[int, ...]]], ...]:
@@ -274,7 +309,7 @@ def construct_deduplicated_tables(
                 [ [5, 8, 6, 7][input[2, 0]] , [3, 1, 2, 4][input[2, 1]] ]
     """
 
-    raw_table = construct_table(node, preds)
+    raw_table = construct_table(node, preds, configuration)
     if all(isinstance(value, int) for value in raw_table):
         return ((np.array(raw_table), None),)
 

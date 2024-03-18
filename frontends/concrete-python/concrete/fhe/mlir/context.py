@@ -1526,6 +1526,20 @@ class Context:
 
         return result
 
+    def cast_to_original_bit_width(self, value: Conversion) -> Conversion:
+        """
+        Cast a value to its original bit width using multiplication and reinterpretation.
+        """
+
+        if value.bit_width == value.original_bit_width:
+            return value
+
+        shift_amount = value.bit_width - value.original_bit_width
+        shifter = self.constant(self.i(value.bit_width + 1), 2**shift_amount)
+        shifted = self.mul(value.type, value, shifter)
+
+        return self.reinterpret(shifted, bit_width=value.original_bit_width)
+
     # operations
 
     # each operation is checked for compatibility
@@ -2856,9 +2870,36 @@ class Context:
             self.error(highlights)
 
         assert resulting_type.is_encrypted
-        assert on.bit_width <= MAXIMUM_TLU_BIT_WIDTH
 
         mapping = np.array(mapping, dtype=np.uint64)
+
+        offset_before_tlu = on.origin.properties.get("offset_before_tlu")
+
+        if offset_before_tlu is not None:
+            offset_bit_width = on.origin.properties["offset_bit_width"]
+
+            offset = self.constant(self.i(on.bit_width + 1), abs(offset_before_tlu))
+            if offset_before_tlu > 0:
+                offsetted = self.add(on.type, on, offset)
+            else:
+                offsetted = self.sub(on.type, on, offset)
+            offsetted.set_original_bit_width(offset_bit_width)
+
+            on = self.cast_to_original_bit_width(offsetted)
+
+        elif on.bit_width > on.original_bit_width:
+            if on.is_unsigned:
+                tables = [table[: 2**on.original_bit_width] for table in tables]
+            else:
+                tables = [
+                    (
+                        table[: 2 ** (on.original_bit_width - 1)]
+                        + table[-(2 ** (on.original_bit_width - 1)) :]
+                    )
+                    for table in tables
+                ]
+
+            on = self.cast_to_original_bit_width(on)
 
         on = self.broadcast_to(on, mapping.shape)
 
@@ -3582,7 +3623,32 @@ class Context:
             self.error(highlights)
 
         assert resulting_type.is_encrypted
-        assert on.bit_width <= MAXIMUM_TLU_BIT_WIDTH
+
+        offset_before_tlu = on.origin.properties.get("offset_before_tlu")
+
+        if offset_before_tlu is not None:
+            offset_bit_width = on.origin.properties["offset_bit_width"]
+
+            offset = self.constant(self.i(on.bit_width + 1), abs(offset_before_tlu))
+            if offset_before_tlu > 0:
+                offsetted = self.add(on.type, on, offset)
+            else:
+                offsetted = self.sub(on.type, on, offset)
+            offsetted.set_original_bit_width(offset_bit_width)
+
+            on = self.cast_to_original_bit_width(offsetted)
+
+        elif on.bit_width > on.original_bit_width:
+            if len(table) != 2**on.original_bit_width:
+                if on.is_unsigned:
+                    table = table[: 2**on.original_bit_width]
+                else:
+                    table = (
+                        table[: 2 ** (on.original_bit_width - 1)]
+                        + table[-(2 ** (on.original_bit_width - 1)) :]  # type: ignore
+                    )
+
+            on = self.cast_to_original_bit_width(on)
 
         table = list(table)
 

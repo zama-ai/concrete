@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include "mlir/Pass/Pass.h"
@@ -354,6 +354,9 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
         target, converter);
 
     patterns.add<RegionOpTypeConverterPattern<
+        mlir::scf::InParallelOp, TFHEGlobalParametrizationTypeConverter>>(
+        &getContext(), converter);
+    patterns.add<RegionOpTypeConverterPattern<
         mlir::linalg::GenericOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
     patterns.add<RegionOpTypeConverterPattern<
@@ -361,6 +364,9 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
         &getContext(), converter);
     patterns.add<RegionOpTypeConverterPattern<
         mlir::scf::ForOp, TFHEGlobalParametrizationTypeConverter>>(
+        &getContext(), converter);
+    patterns.add<RegionOpTypeConverterPattern<
+        mlir::scf::ForallOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);
     patterns.add<RegionOpTypeConverterPattern<
         mlir::func::ReturnOp, TFHEGlobalParametrizationTypeConverter>>(
@@ -372,6 +378,8 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
         &getContext(), converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::linalg::YieldOp>(
         target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<
+        mlir::tensor::ParallelInsertSliceOp>(target, converter);
 
     mlir::concretelang::populateWithTensorTypeConverterPatterns(
         patterns, target, converter);
@@ -388,6 +396,9 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
 
     mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
                                                             converter);
+
+    mlir::concretelang::GenericTypeConverterPattern<
+        mlir::tensor::ParallelInsertSliceOp>(&getContext(), converter);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

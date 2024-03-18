@@ -512,7 +512,7 @@ class Compiler:
 
             # in-memory MLIR module
             mlir_context = self.compilation_context.mlir_context()
-            mlir_module = GraphConverter().convert(self.graph, self.configuration, mlir_context)
+            mlir_module = GraphConverter(self.configuration).convert(self.graph, mlir_context)
             # textual representation of the MLIR module
             mlir_str = str(mlir_module).strip()
             if self.artifacts is not None:

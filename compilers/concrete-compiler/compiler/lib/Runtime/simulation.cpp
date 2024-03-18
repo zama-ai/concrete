@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include "concretelang/Runtime/simulation.h"
@@ -16,6 +16,8 @@
 
 using concretelang::csprng::SoftCSPRNG;
 
+thread_local auto csprng = SoftCSPRNG(0);
+
 inline concrete::SecurityCurve *security_curve() {
   return concrete::getSecurityCurve(128, concrete::BINARY);
 }
@@ -29,7 +31,7 @@ uint64_t from_torus(double torus) {
 // single one?
 uint64_t gaussian_noise(double mean, double variance) {
   uint64_t random_gaussian_buff[2];
-  auto csprng = SoftCSPRNG(0);
+
   concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, variance,
                                          csprng.ptr);
   return random_gaussian_buff[0];

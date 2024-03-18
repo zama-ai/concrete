@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include <iostream>
@@ -34,6 +34,7 @@
 #include <mlir/Dialect/LLVMIR/FunctionCallUtils.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/Attributes.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinAttributes.h>
@@ -275,7 +276,18 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
           use.getOwner()->getParentOfType<RT::DataflowTaskOp>() == nullptr) {
         // Wait for this future before its uses
         OpBuilder::InsertionGuard guard(builder);
-        builder.setInsertionPoint(use.getOwner());
+
+        // If the user is in an scf.forall.in_parallel op, the
+        // RT.await_future op must be created in the parent region of
+        // the in_parallel op, since scf.forall.in_parallel only
+        // allows certain ops in its region.
+        if (llvm::dyn_cast_or_null<mlir::scf::InParallelOp>(
+                use.getOwner()->getParentOp())) {
+          builder.setInsertionPoint(use.getOwner()->getParentOp());
+        } else {
+          builder.setInsertionPoint(use.getOwner());
+        }
+
         auto af = builder.create<RT::AwaitFutureOp>(
             DFTOp.getLoc(), result.getType(), drpp.getResult());
         assert(opBody.isAncestor(use.getOwner()->getParentRegion()));

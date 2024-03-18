@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include <cassert>
@@ -136,12 +136,13 @@ ProgramCompilationFeedback::load(std::string jsonPath) {
   return expectedCompFeedback.get();
 }
 
-llvm::json::Object
-memoryUsageToJson(const std::map<std::string, int64_t> &memoryUsagePerLoc) {
+llvm::json::Object memoryUsageToJson(
+    const std::map<std::string, std::optional<int64_t>> &memoryUsagePerLoc) {
   auto object = llvm::json::Object();
   for (auto key : memoryUsagePerLoc) {
     object.insert({key.first, key.second});
   }
+
   return object;
 }
 

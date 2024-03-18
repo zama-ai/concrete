@@ -1,4 +1,5 @@
 #include "concretelang/Support/CompilationFeedback.h"
+#include <concretelang/Analysis/StaticLoops.h>
 #include <concretelang/Analysis/Utils.h>
 #include <concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h>
 
@@ -33,7 +34,8 @@ namespace TFHE {
   }
 
 struct ExtractTFHEStatisticsPass
-    : public PassWrapper<ExtractTFHEStatisticsPass, OperationPass<ModuleOp>> {
+    : public PassWrapper<ExtractTFHEStatisticsPass, OperationPass<ModuleOp>>,
+      public TripCountTracker {
 
   ProgramCompilationFeedback &feedback;
   CircuitCompilationFeedback *circuitFeedback;
@@ -100,25 +102,22 @@ struct ExtractTFHEStatisticsPass
 
   static std::optional<StringError> on_enter(scf::ForOp &op,
                                              ExtractTFHEStatisticsPass &pass) {
-    auto numberOfIterations = calculateNumberOfIterations(op);
-    if (!numberOfIterations) {
-      return numberOfIterations.error();
+    std::optional<int64_t> tripCount = tryGetStaticTripCount(op);
+
+    if (!tripCount.has_value()) {
+      emitWarning(op.getLoc(), "Cannot determine static trip count");
     }
 
-    assert(numberOfIterations.value() > 0);
-    pass.iterations *= (uint64_t)numberOfIterations.value();
+    pass.pushTripCount(op, tripCount);
+
     return std::nullopt;
   }
 
   static std::optional<StringError> on_exit(scf::ForOp &op,
                                             ExtractTFHEStatisticsPass &pass) {
-    auto numberOfIterations = calculateNumberOfIterations(op);
-    if (!numberOfIterations) {
-      return numberOfIterations.error();
-    }
+    std::optional<int64_t> tripCount = tryGetStaticTripCount(op);
+    pass.popTripCount(op, tripCount);
 
-    assert(numberOfIterations.value() > 0);
-    pass.iterations /= (uint64_t)numberOfIterations.value();
     return std::nullopt;
   }
 
@@ -133,7 +132,7 @@ struct ExtractTFHEStatisticsPass
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::ENCRYPTED_ADDITION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -160,7 +159,7 @@ struct ExtractTFHEStatisticsPass
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::CLEAR_ADDITION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -187,7 +186,7 @@ struct ExtractTFHEStatisticsPass
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::PBS;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::BOOTSTRAP, (int64_t)bsk.getIndex());
@@ -214,7 +213,7 @@ struct ExtractTFHEStatisticsPass
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::KEY_SWITCH;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::KEY_SWITCH, (int64_t)ksk.getIndex());
@@ -241,7 +240,7 @@ struct ExtractTFHEStatisticsPass
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::CLEAR_MULTIPLICATION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -268,7 +267,7 @@ struct ExtractTFHEStatisticsPass
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -294,7 +293,7 @@ struct ExtractTFHEStatisticsPass
 
     auto location = locationString(op.getLoc());
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -334,7 +333,7 @@ struct ExtractTFHEStatisticsPass
     auto location = locationString(op.getLoc());
     auto operation = PrimitiveOperation::WOP_PBS;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
-    auto count = pass.iterations;
+    auto count = pass.getTripCount();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::BOOTSTRAP, (int64_t)bsk.getIndex());
@@ -355,8 +354,6 @@ struct ExtractTFHEStatisticsPass
 
     return std::nullopt;
   }
-
-  int64_t iterations = 1;
 };
 
 } // namespace TFHE

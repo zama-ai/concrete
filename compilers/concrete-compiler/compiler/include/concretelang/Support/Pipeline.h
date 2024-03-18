@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #ifndef CONCRETELANG_SUPPORT_PIPELINE_H_
@@ -30,10 +30,6 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-tileMarkedFHELinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass);
-
-mlir::LogicalResult
 markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
                        llvm::ArrayRef<int64_t> tileSizes,
                        std::function<bool(mlir::Pass *)> enablePass);
@@ -43,13 +39,17 @@ transformHighLevelFHEOps(mlir::MLIRContext &context, mlir::ModuleOp &module,
                          std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-lowerFHELinalgToFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                    std::function<bool(mlir::Pass *)> enablePass);
+lowerFHELinalgToLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                       std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult
-lowerLinalgGenericToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
-                          std::function<bool(mlir::Pass *)> enablePass,
-                          bool parallelizeLoops);
+tileMarkedLinalg(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass);
+
+mlir::LogicalResult
+lowerLinalgToLoops(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                   std::function<bool(mlir::Pass *)> enablePass,
+                   bool parallelizeLoops);
 
 mlir::LogicalResult
 transformFHEBoolean(mlir::MLIRContext &context, mlir::ModuleOp &module,

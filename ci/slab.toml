@@ -28,6 +28,12 @@ instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
 security_group= ["sg-0f8b52622a2669491", ]
 
+[profile.slurm-cluster]
+region = "eu-west-3"
+image_id = "ami-0bb5bb9cb747b5ddd"
+instance_id = "i-0e5ae2a14134d6275"
+instance_type = "m6i.8xlarge"
+
 #################################################
 # Compiler commands
 #################################################
@@ -36,6 +42,12 @@ security_group= ["sg-0f8b52622a2669491", ]
 workflow = "compiler_build_and_test_cpu.yml"
 profile = "m7i-cpu-test"
 check_run_name = "Compiler Build and Test (CPU)"
+
+[command.compiler-cpu-build-distributed]
+workflow = "compiler_build_and_test_cpu.yml"
+profile = "slurm-cluster"
+check_run_name = "Compiler Distributed Build and Test (CPU)"
+runner_name = "distributed-ci"
 
 [command.compiler-gpu-build]
 workflow = "compiler_build_and_test_gpu.yml"

@@ -45,7 +45,7 @@ pytest-default:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
 	export PYTHONPATH=$(BINDINGS_DIRECTORY)
 	pytest tests -svv -n auto \
-		--cov=concrete \
+		--cov=concrete.fhe \
 		--cov-fail-under=95 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
@@ -70,7 +70,7 @@ pytest-multi:
 	pytest tests -svv -n auto \
 		--precision=multi \
 		--strategy=multi \
-		--cov=concrete \
+		--cov=concrete.fhe \
 		--cov-fail-under=95 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
@@ -88,7 +88,7 @@ pytest-gpu:
 	# test multi precision
 	pytest tests -svv -n0 --use_gpu \
 		--precision=multi \
-		--cov=concrete \
+		--cov=concrete.fhe \
 		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \

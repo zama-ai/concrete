@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #ifndef CONCRETELANG_SUPPORT_COMPILATIONFEEDBACK_H_
@@ -45,7 +45,7 @@ struct Statistic {
   std::string location;
   PrimitiveOperation operation;
   std::vector<std::pair<KeyType, int64_t>> keys;
-  int64_t count;
+  std::optional<int64_t> count;
 };
 
 struct CircuitCompilationFeedback {
@@ -65,7 +65,7 @@ struct CircuitCompilationFeedback {
   std::vector<Statistic> statistics;
 
   /// @brief memory usage per location
-  std::map<std::string, int64_t> memoryUsagePerLoc;
+  std::map<std::string, std::optional<int64_t>> memoryUsagePerLoc;
 
   /// Fill the sizes from the program info.
   void fillFromCircuitInfo(concreteprotocol::CircuitInfo::Reader params);

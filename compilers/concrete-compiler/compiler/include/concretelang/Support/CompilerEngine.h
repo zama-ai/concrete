@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #ifndef CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
@@ -235,6 +235,10 @@ public:
 
     /// Read sources and exit before any lowering
     FHE,
+
+    /// Read sources, lower all FHELinalg operations to operations
+    /// from the Linalg dialect
+    FHE_LINALG_GENERIC,
 
     /// Read sources and lower all the FHELinalg operations to FHE operations
     /// and scf loops

@@ -127,3 +127,6 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Provide more fine control on [approximate rounding](../core-features/rounding.md#approximate-rounding-features):
   * to enable exact cliping,
   * or/and approximate clipping which make overflow protection faster.
+* **optimize_tlu_based_on_measured_bounds** : bool = False
+  * Enables TLU optimizations based on measured bounds.
+  * Not enabled by default as it could result in unexpected overflows during runtime.

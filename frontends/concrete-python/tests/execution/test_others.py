@@ -213,13 +213,14 @@ def copy_modify(x):
 
 
 @pytest.mark.parametrize(
-    "function,parameters",
+    "function,parameters,configuration_overrides",
     [
         pytest.param(
             lambda x: x // 3,
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
+            {},
             id="x // 3",
         ),
         pytest.param(
@@ -227,6 +228,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [1, 127]},
             },
+            {},
             id="127 // x",
         ),
         pytest.param(
@@ -234,6 +236,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
+            {},
             id="(x / 3).astype(np.int64)",
         ),
         pytest.param(
@@ -241,6 +244,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [1, 127]},
             },
+            {},
             id="(127 / x).astype(np.int64)",
         ),
         pytest.param(
@@ -248,6 +252,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 11]},
             },
+            {},
             id="x ** 2",
         ),
         pytest.param(
@@ -255,6 +260,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 6]},
             },
+            {},
             id="2 ** x",
         ),
         pytest.param(
@@ -262,6 +268,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
+            {},
             id="x % 10",
         ),
         pytest.param(
@@ -269,6 +276,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [1, 127]},
             },
+            {},
             id="121 % x",
         ),
         pytest.param(
@@ -276,6 +284,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
+            {},
             id="+x",
         ),
         pytest.param(
@@ -283,6 +292,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 84]},
             },
+            {},
             id="abs(42 - x)",
         ),
         pytest.param(
@@ -290,6 +300,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="~x",
         ),
         pytest.param(
@@ -297,6 +308,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="x & 10",
         ),
         pytest.param(
@@ -304,6 +316,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="5 & x",
         ),
         pytest.param(
@@ -311,6 +324,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="x | 6",
         ),
         pytest.param(
@@ -318,6 +332,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="11 | x",
         ),
         pytest.param(
@@ -325,6 +340,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="x ^ 9",
         ),
         pytest.param(
@@ -332,6 +348,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="13 ^ x",
         ),
         pytest.param(
@@ -339,6 +356,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="x << 2",
         ),
         pytest.param(
@@ -346,6 +364,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 5]},
             },
+            {},
             id="2 << x",
         ),
         pytest.param(
@@ -353,6 +372,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 120]},
             },
+            {},
             id="x >> 2",
         ),
         pytest.param(
@@ -360,6 +380,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 16]},
             },
+            {},
             id="120 >> x",
         ),
         pytest.param(
@@ -367,6 +388,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="x > 50",
         ),
         pytest.param(
@@ -374,6 +396,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="50 > x",
         ),
         pytest.param(
@@ -381,6 +404,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="x < 50",
         ),
         pytest.param(
@@ -388,6 +412,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="50 < x",
         ),
         pytest.param(
@@ -395,6 +420,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="x >= 50",
         ),
         pytest.param(
@@ -402,6 +428,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="50 >= x",
         ),
         pytest.param(
@@ -409,6 +436,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="x <= 50",
         ),
         pytest.param(
@@ -416,6 +444,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="50 <= x",
         ),
         pytest.param(
@@ -423,6 +452,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="x == 50",
         ),
         pytest.param(
@@ -430,6 +460,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="50 == x",
         ),
         pytest.param(
@@ -437,6 +468,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="x != 50",
         ),
         pytest.param(
@@ -444,6 +476,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="50 != x",
         ),
         pytest.param(
@@ -451,6 +484,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 15]},
             },
+            {},
             id="x.clip(5, 10)",
         ),
         pytest.param(
@@ -458,6 +492,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
+            {},
             id="(60 * np.sin(x)).astype(np.int64) + 60",
         ),
         pytest.param(
@@ -465,6 +500,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 127]},
             },
+            {},
             id="((np.sin(x) ** 2) + (np.cos(x) ** 2)).round().astype(np.int64)",
         ),
         pytest.param(
@@ -472,6 +508,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 127], "shape": (3, 2)},
             },
+            {},
             id="np.maximum(x, [[10, 20], [30, 40], [50, 60]])",
         ),
         pytest.param(
@@ -480,6 +517,7 @@ def copy_modify(x):
                 "x": {"status": "encrypted", "range": [5, 10]},
                 "y": {"status": "encrypted", "range": [5, 10]},
             },
+            {},
             id="fusable_with_bigger_search",
         ),
         pytest.param(
@@ -488,6 +526,7 @@ def copy_modify(x):
                 "x": {"status": "encrypted", "range": [5, 10]},
                 "y": {"status": "encrypted", "range": [5, 10]},
             },
+            {},
             id="fusable_with_bigger_search_needs_second_iteration",
         ),
         pytest.param(
@@ -495,6 +534,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 4], "shape": (1, 10)},
             },
+            {},
             id="fusable_with_one_of_the_start_nodes_is_lca",
         ),
         pytest.param(
@@ -502,6 +542,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="fusable_with_hard_to_find_lca",
         ),
         pytest.param(
@@ -509,6 +550,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 4], "shape": (2, 2)},
             },
+            {},
             id="fusable_with_hard_to_find_lca_used_twice",
         ),
         pytest.param(
@@ -516,6 +558,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="fusable_additional_1",
         ),
         pytest.param(
@@ -523,6 +566,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="fusable_additional_2",
         ),
         pytest.param(
@@ -530,6 +574,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 15], "shape": (3, 2)},
             },
+            {},
             id="x + x.shape[0] + x.ndim + x.size + len(x)",
         ),
         pytest.param(
@@ -537,6 +582,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 15], "shape": (3, 2)},
             },
+            {},
             id="(50 * np.sin(x.transpose())).astype(np.int64)",
         ),
         pytest.param(
@@ -544,6 +590,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="np.where(x < 5, x * 3, x)",
         ),
         pytest.param(
@@ -551,6 +598,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="x + np.ones_like(x)",
         ),
         pytest.param(
@@ -558,6 +606,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="x + np.zeros_like(x)",
         ),
         pytest.param(
@@ -565,6 +614,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="fhe.univariate(deterministic_unary_function)(x)",
         ),
         pytest.param(
@@ -572,6 +622,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100], "shape": ()},
             },
+            {},
             id="round(np.sqrt(x))",
         ),
         pytest.param(
@@ -579,6 +630,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100]},
             },
+            {},
             id="np.sqrt(x).round().astype(np.int64)",
         ),
         pytest.param(
@@ -586,6 +638,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 100], "shape": ()},
             },
+            {},
             id="(2.5 * round(np.sqrt(x), decimals=4)).astype(np.int64)",
         ),
         pytest.param(
@@ -594,6 +647,7 @@ def copy_modify(x):
                 "x": {"status": "encrypted", "range": [-10, 10]},
                 "y": {"status": "encrypted", "range": [-10, 10]},
             },
+            {},
             id="fhe.LookupTable(list(range(32)))[x + y]",
         ),
         pytest.param(
@@ -601,6 +655,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, 0)",
         ),
         pytest.param(
@@ -608,6 +663,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, axis=0)",
         ),
         pytest.param(
@@ -615,6 +671,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, axis=1)",
         ),
         pytest.param(
@@ -622,6 +679,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, axis=2)",
         ),
         pytest.param(
@@ -629,6 +687,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, axis=(0, 1))",
         ),
         pytest.param(
@@ -636,6 +695,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, axis=(0, 2))",
         ),
         pytest.param(
@@ -643,6 +703,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, axis=(1, 2))",
         ),
         pytest.param(
@@ -650,6 +711,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (3, 2)},
             },
+            {},
             id="np.expand_dims(x, axis=(0, 1, 2))",
         ),
         pytest.param(
@@ -657,6 +719,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-30, 30]},
             },
+            {},
             id="x ** 3",
         ),
         pytest.param(
@@ -664,6 +727,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": ()},
             },
+            {},
             id="np.squeeze(x)",
         ),
         pytest.param(
@@ -671,6 +735,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 2, 1, 3, 1, 4)},
             },
+            {},
             id="np.squeeze(x)",
         ),
         pytest.param(
@@ -678,6 +743,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 2, 1, 3, 1, 4)},
             },
+            {},
             id="np.squeeze(x, axis=2)",
         ),
         pytest.param(
@@ -685,6 +751,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 2, 1, 3, 1, 4)},
             },
+            {},
             id="np.squeeze(x, axis=(0, 4))",
         ),
         pytest.param(
@@ -692,6 +759,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 1, 1)},
             },
+            {},
             id="np.squeeze(x) where x.shape == (1, 1, 1)",
         ),
         pytest.param(
@@ -699,6 +767,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 1, 1)},
             },
+            {},
             id="np.squeeze(x, axis=1) where x.shape == (1, 1, 1)",
         ),
         pytest.param(
@@ -706,6 +775,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10]},
             },
+            {},
             id="fhe.LookupTable([10, 5])[x > 5]",
         ),
         pytest.param(
@@ -713,6 +783,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 10], "shape": (3,)},
             },
+            {},
             id="copy_modify",
         ),
         pytest.param(
@@ -720,6 +791,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 4]},
             },
+            {},
             id="fhe.ones_like(x) + x",
         ),
         pytest.param(
@@ -727,6 +799,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [0, 4]},
             },
+            {},
             id="fhe.zeros_like(x) + x",
         ),
         pytest.param(
@@ -734,6 +807,7 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10]},
             },
+            {},
             id="np.minimum(x, 0)",
         ),
         pytest.param(
@@ -741,11 +815,126 @@ def copy_modify(x):
             {
                 "x": {"status": "encrypted", "range": [-10, 10]},
             },
+            {},
             id="np.maximum(x, 0)",
+        ),
+        pytest.param(
+            lambda x: x + np.zeros_like(x),
+            {
+                "x": {"status": "encrypted", "range": [0, 10]},
+            },
+            {},
+            id="x + np.zeros_like(x)",
+        ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [12, 13], "status": "encrypted", "shape": ()},
+            },
+            {},
+            id="(x**2, x + 100) [x: [12, 13]] ",
+        ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [12, 13], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id="(x**2, x + 100) [x: [12, 13]] {optimize_tlu_based_on_measured_bounds: True}",
+        ),
+        pytest.param(
+            lambda x: fhe.univariate(lambda x: x // np.array([2, 3]))(x),
+            {
+                "x": {"range": [12, 15], "status": "encrypted", "shape": (2,)},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id=(
+                "fhe.univariate(lambda x: x // np.array([2, 3]))(x) "
+                "[x: [12, 15]] "
+                "{optimize_tlu_based_on_measured_bounds: True}"
+            ),
+        ),
+        pytest.param(
+            lambda x: (fhe.hint(x, bit_width=5) ** 2, x + 100),
+            {
+                "x": {"range": [12, 13], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id=(
+                "(fhe.hint(x, bit_width=5)**2, x + 100) "
+                "[x: [12, 15]] "
+                "{optimize_tlu_based_on_measured_bounds: True}"
+            ),
+        ),
+        pytest.param(
+            lambda x: fhe.univariate(lambda x: x // np.array([2, 3]))(fhe.hint(x, bit_width=5)),
+            {
+                "x": {"range": [12, 15], "status": "encrypted", "shape": (2,)},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id=(
+                "fhe.univariate(lambda x: x // np.array([2, 3]))(fhe.hint(x, bit_width=5)) "
+                "[x: [12, 15]] "
+                "{optimize_tlu_based_on_measured_bounds: True}"
+            ),
+        ),
+        pytest.param(
+            lambda x: (x // 2, x + 100),
+            {
+                "x": {"range": [1, 63], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id=("(x // 2, x + 100) [x: [1, 63]] {optimize_tlu_based_on_measured_bounds: True}"),
+        ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [-13, -12], "status": "encrypted", "shape": ()},
+            },
+            {},
+            id=("(x**2, x + 100) [x: [-13, -12]]"),
+        ),
+        pytest.param(
+            lambda x: (x**2, x + 100),
+            {
+                "x": {"range": [-13, -12], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id=(
+                "(x**2, x + 100) "
+                "[x: [-13, -12]] "
+                "{optimize_tlu_based_on_measured_bounds: True}"
+            ),
+        ),
+        pytest.param(
+            lambda x: (x // 2, x + 100),
+            {
+                "x": {"range": [-32, 31], "status": "encrypted", "shape": ()},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id=(
+                "(x // 2, x + 100) "
+                "[x: [-32, 31]] "
+                "{optimize_tlu_based_on_measured_bounds: True}"
+            ),
         ),
     ],
 )
-def test_others(function, parameters, helpers):
+def test_others(function, parameters, configuration_overrides, helpers):
     """
     Test others.
     """
@@ -775,7 +964,7 @@ def test_others(function, parameters, helpers):
         return
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    configuration = helpers.configuration()
+    configuration = helpers.configuration().fork(**configuration_overrides)
 
     compiler = fhe.Compiler(function, parameter_encryption_statuses)
 

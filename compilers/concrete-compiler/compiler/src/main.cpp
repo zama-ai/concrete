@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include <cstdint>
@@ -51,6 +51,7 @@ namespace optimizer = mlir::concretelang::optimizer;
 enum Action {
   ROUND_TRIP,
   DUMP_FHE,
+  DUMP_FHE_LINALG_GENERIC,
   DUMP_FHE_NO_LINALG,
   DUMP_TFHE,
   DUMP_NORMALIZED_TFHE,
@@ -138,6 +139,9 @@ static llvm::cl::opt<enum Action> action(
                    "Parse input module and regenerate textual representation")),
     llvm::cl::values(clEnumValN(Action::DUMP_FHE, "dump-fhe",
                                 "Dump FHE module")),
+    llvm::cl::values(clEnumValN(Action::DUMP_FHE_LINALG_GENERIC,
+                                "dump-fhe-linalg-generic",
+                                "Lower FHELinalg to Linalg and dump result")),
     llvm::cl::values(clEnumValN(Action::DUMP_FHE_NO_LINALG,
                                 "dump-fhe-no-linalg",
                                 "Lower FHELinalg to FHE and dump result")),
@@ -572,6 +576,9 @@ mlir::LogicalResult processInputBuffer(
     break;
   case Action::DUMP_FHE:
     target = mlir::concretelang::CompilerEngine::Target::FHE;
+    break;
+  case Action::DUMP_FHE_LINALG_GENERIC:
+    target = mlir::concretelang::CompilerEngine::Target::FHE_LINALG_GENERIC;
     break;
   case Action::DUMP_FHE_NO_LINALG:
     target = mlir::concretelang::CompilerEngine::Target::FHE_NO_LINALG;

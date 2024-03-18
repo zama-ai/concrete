@@ -1,6 +1,6 @@
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
-// https://github.com/zama-ai/concrete-compiler-internal/blob/main/LICENSE.txt
+// https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
@@ -995,13 +995,13 @@ struct FHELinalgMatmulToLinalgGeneric
     };
 
     auto resultTypes = llvm::SmallVector<mlir::Type, 1>{outType};
-    mlir::Value result =
-        rewriter
-            .create<linalg::GenericOp>(location, resultTypes, ins, outs, maps,
-                                       iteratorTypes, regionBuilder)
-            .getResult(0);
+    mlir::linalg::GenericOp genericOp = rewriter.create<linalg::GenericOp>(
+        location, resultTypes, ins, outs, maps, iteratorTypes, regionBuilder);
 
-    rewriter.replaceOp(matmulOp, {result});
+    if (matmulOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", matmulOp->getAttr("tile-sizes"));
+
+    rewriter.replaceOp(matmulOp, genericOp.getResults());
     return mlir::success();
   };
 
