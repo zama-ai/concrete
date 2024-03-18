@@ -31,15 +31,6 @@ func.func @main(%a0: tensor<2x2x3x4x!FHE.eint<2>>, %a1: tensor<2x2x2x4xi3>) -> t
 
 // -----
 
-// Incompatible width between clear and encrypted witdh
-func.func @main(%a0: tensor<2x3x4x!FHE.eint<2>>, %a1: tensor<2x3x4xi4>) -> tensor<2x3x4x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.add_eint_int' op should have the width of integer values less or equals than the width of encrypted values + 1}}
-  %1 = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<2x3x4x!FHE.eint<2>>, tensor<2x3x4xi4>) -> tensor<2x3x4x!FHE.eint<2>>
-  return %1 : tensor<2x3x4x!FHE.eint<2>>
-}
-
-// -----
-
 /////////////////////////////////////////////////
 // FHELinalg.add_eint
 /////////////////////////////////////////////////
@@ -106,15 +97,6 @@ func.func @main(%a0: tensor<2x2x3x4x!FHE.eint<2>>, %a1: tensor<2x2x2x4xi3>) -> t
 func.func @main(%a0: tensor<2x2x3x4x!FHE.eint<2>>, %a1: tensor<2x2x2x4xi3>) -> tensor<2x3x4x!FHE.eint<2>> {
   // expected-error @+1 {{'FHELinalg.mul_eint_int' op should have the number of dimensions of the result equal to the highest number of dimensions of operands, got 3 expect 4}}
   %1 = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<2x2x3x4x!FHE.eint<2>>, tensor<2x2x2x4xi3>) -> tensor<2x3x4x!FHE.eint<2>>
-  return %1 : tensor<2x3x4x!FHE.eint<2>>
-}
-
-// -----
-
-// Incompatible width between clear and encrypted witdh
-func.func @main(%a0: tensor<2x3x4x!FHE.eint<2>>, %a1: tensor<2x3x4xi4>) -> tensor<2x3x4x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.mul_eint_int' op should have the width of integer values less or equals than the width of encrypted values + 1}}
-  %1 = "FHELinalg.mul_eint_int"(%a0, %a1) : (tensor<2x3x4x!FHE.eint<2>>, tensor<2x3x4xi4>) -> tensor<2x3x4x!FHE.eint<2>>
   return %1 : tensor<2x3x4x!FHE.eint<2>>
 }
 
@@ -321,24 +303,6 @@ func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x
 func.func @conv2d(%input: tensor<101x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
   // expected-error @+1 {{'FHELinalg.conv2d' op expected result batch size to be equal to input batch size (101) but got 100}}
   %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0 ,0, 0, 0]> : tensor<4xi64>}: (tensor<101x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
-  return %1 : tensor<100x4x15x15x!FHE.eint<2>>
-}
-
-// -----
-
-
-func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi4>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.conv2d' op expected weight element type to have width 3 but got 4}}
-  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0, 0, 0]> : tensor<4xi64>}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi4>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>
-  return %1 : tensor<100x4x15x15x!FHE.eint<2>>
-}
-
-// -----
-
-
-func.func @conv2d(%input: tensor<100x3x28x28x!FHE.eint<2>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi4>) -> tensor<100x4x15x15x!FHE.eint<2>> {
-  // expected-error @+1 {{'FHELinalg.conv2d' op expected bias element type to have width 3 but got 4}}
-  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0, 0, 0]> : tensor<4xi64>}: (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi4>) -> tensor<100x4x15x15x!FHE.eint<2>>
   return %1 : tensor<100x4x15x15x!FHE.eint<2>>
 }
 

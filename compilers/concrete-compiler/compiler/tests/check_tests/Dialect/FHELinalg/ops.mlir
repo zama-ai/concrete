@@ -4,6 +4,16 @@
 // FHELinalg.add_eint_int
 /////////////////////////////////////////////////
 
+// Small clear width
+// CHECK: func.func @add_eint_int_1D_small_clear(%[[a0:.*]]: tensor<4x!FHE.eint<6>>, %[[a1:.*]]: tensor<4xi3>) -> tensor<4x!FHE.eint<6>> {
+// CHECK-NEXT: %[[V0:.*]] = "FHELinalg.add_eint_int"(%[[a0]], %[[a1]]) : (tensor<4x!FHE.eint<6>>, tensor<4xi3>) -> tensor<4x!FHE.eint<6>>
+// CHECK-NEXT: return %[[V0]] : tensor<4x!FHE.eint<6>>
+// CHECK-NEXT: }
+func.func @add_eint_int_1D_small_clear(%a0: tensor<4x!FHE.eint<6>>, %a1: tensor<4xi3>) -> tensor<4x!FHE.eint<6>> {
+  %1 = "FHELinalg.add_eint_int"(%a0, %a1) : (tensor<4x!FHE.eint<6>>, tensor<4xi3>) -> tensor<4x!FHE.eint<6>>
+  return %1: tensor<4x!FHE.eint<6>>
+}
+
 // 1D tensor
 // CHECK: func.func @add_eint_int_1D(%[[a0:.*]]: tensor<4x!FHE.eint<2>>, %[[a1:.*]]: tensor<4xi3>) -> tensor<4x!FHE.eint<2>> {
 // CHECK-NEXT: %[[V0:.*]] = "FHELinalg.add_eint_int"(%[[a0]], %[[a1]]) : (tensor<4x!FHE.eint<2>>, tensor<4xi3>) -> tensor<4x!FHE.eint<2>>
@@ -112,6 +122,16 @@ func.func @add_eint_broadcast_2(%a0: tensor<4x!FHE.eint<2>>, %a1: tensor<3x4x!FH
 /////////////////////////////////////////////////
 // FHELinalg.sub_int_eint
 /////////////////////////////////////////////////
+
+// Small clear width
+// CHECK: func.func @sub_int_eint_1D_small_clear(%[[a0:.*]]: tensor<4x!FHE.esint<3>>, %[[a1:.*]]: tensor<4xi2>) -> tensor<4x!FHE.esint<3>> {
+// CHECK-NEXT: %[[V0:.*]] = "FHELinalg.sub_int_eint"(%[[a1]], %[[a0]]) : (tensor<4xi2>, tensor<4x!FHE.esint<3>>) -> tensor<4x!FHE.esint<3>>
+// CHECK-NEXT: return %[[V0]] : tensor<4x!FHE.esint<3>>
+// CHECK-NEXT: }
+func.func @sub_int_eint_1D_small_clear(%a0: tensor<4x!FHE.esint<3>>, %a1: tensor<4xi2>) -> tensor<4x!FHE.esint<3>> {
+  %1 = "FHELinalg.sub_int_eint"(%a1, %a0) : (tensor<4xi2>, tensor<4x!FHE.esint<3>>) -> tensor<4x!FHE.esint<3>>
+  return %1: tensor<4x!FHE.esint<3>>
+}
 
 // 1D tensor
 // CHECK: func.func @sub_int_eint_1D(%[[a0:.*]]: tensor<4xi3>, %[[a1:.*]]: tensor<4x!FHE.eint<2>>) -> tensor<4x!FHE.eint<2>> {
@@ -472,6 +492,18 @@ func.func @apply_mapped_lookup_table(
 // FHELinalg.dot_eint_int
 /////////////////////////////////////////////////
 
+// CHECK-LABEL: func.func @dot_eint_int_small_clear(%arg0: tensor<2x!FHE.eint<8>>, %arg1: tensor<2xi3>) -> !FHE.eint<8>
+func.func @dot_eint_int_small_clear(%arg0: tensor<2x!FHE.eint<8>>,
+                   %arg1: tensor<2xi3>) -> !FHE.eint<8>
+{
+  // CHECK-NEXT: %[[RET:.*]] = "FHELinalg.dot_eint_int"(%arg0, %arg1) : (tensor<2x!FHE.eint<8>>, tensor<2xi3>) -> !FHE.eint<8>
+  %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
+    (tensor<2x!FHE.eint<8>>, tensor<2xi3>) -> !FHE.eint<8>
+
+  //CHECK-NEXT: return %[[RET]] : !FHE.eint<8>
+  return %ret : !FHE.eint<8>
+}
+
 // CHECK-LABEL: func.func @dot_eint_int(%arg0: tensor<2x!FHE.eint<2>>, %arg1: tensor<2xi3>) -> !FHE.eint<2>
 func.func @dot_eint_int(%arg0: tensor<2x!FHE.eint<2>>,
                    %arg1: tensor<2xi3>) -> !FHE.eint<2>
@@ -504,6 +536,15 @@ func.func @dot_eint_eint(%arg0: tensor<2x!FHE.eint<2>>,
 /////////////////////////////////////////////////
 // FHELinalg.conv2d
 /////////////////////////////////////////////////
+
+// CHECK:       func.func @conv2d_small_clears(%[[ARG0:.*]]: tensor<100x3x28x28x!FHE.eint<7>>, %[[ARG1:.*]]: tensor<4x3x14x14xi3>, %[[ARG2:.*]]: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<7>> {
+// CHECK-NEXT:    %[[V0:.*]] = "FHELinalg.conv2d"(%[[ARG0]], %[[ARG1]], %[[ARG2]]) {dilations = dense<1> : tensor<2xi64>, group = 1 : i64, padding = dense<0> : tensor<4xi64>, strides = dense<1> : tensor<2xi64>} : (tensor<100x3x28x28x!FHE.eint<7>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<7>>
+// CHECK-NEXT:    return %[[V0]] : tensor<100x4x15x15x!FHE.eint<7>>
+// CHECK-NEXT:  }
+func.func @conv2d_small_clears(%input: tensor<100x3x28x28x!FHE.eint<7>>, %weight: tensor<4x3x14x14xi3>, %bias: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<7>> {
+  %1 = "FHELinalg.conv2d"(%input, %weight, %bias){strides = dense<[1,1]> : tensor<2xi64>, dilations = dense<[1,1]> : tensor<2xi64>, padding = dense<[0,0, 0, 0]> : tensor<4xi64>, group = 1 : i64}: (tensor<100x3x28x28x!FHE.eint<7>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<7>>
+  return %1 : tensor<100x4x15x15x!FHE.eint<7>>
+}
 
 // CHECK:       func.func @conv2d(%[[ARG0:.*]]: tensor<100x3x28x28x!FHE.eint<2>>, %[[ARG1:.*]]: tensor<4x3x14x14xi3>, %[[ARG2:.*]]: tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>> {
 // CHECK-NEXT:    %[[V0:.*]] = "FHELinalg.conv2d"(%[[ARG0]], %[[ARG1]], %[[ARG2]]) {dilations = dense<1> : tensor<2xi64>, group = 1 : i64, padding = dense<0> : tensor<4xi64>, strides = dense<1> : tensor<2xi64>} : (tensor<100x3x28x28x!FHE.eint<2>>, tensor<4x3x14x14xi3>, tensor<4xi3>) -> tensor<100x4x15x15x!FHE.eint<2>>

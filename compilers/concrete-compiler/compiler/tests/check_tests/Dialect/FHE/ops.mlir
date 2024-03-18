@@ -65,6 +65,17 @@ func.func @add_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   return %1: !FHE.eint<2>
 }
 
+// CHECK-LABEL: func.func @add_eint_int_small_clear(%arg0: !FHE.eint<8>) -> !FHE.eint<8>
+func.func @add_eint_int_small_clear(%arg0: !FHE.eint<8>) -> !FHE.eint<8> {
+  // CHECK-NEXT: %[[V1:.*]] = arith.constant 1 : i2
+  // CHECK-NEXT: %[[V2:.*]] = "FHE.add_eint_int"(%arg0, %[[V1]]) : (!FHE.eint<8>, i2) -> !FHE.eint<8>
+  // CHECK-NEXT: return %[[V2]] : !FHE.eint<8>
+
+  %0 = arith.constant 1 : i2
+  %1 = "FHE.add_eint_int"(%arg0, %0): (!FHE.eint<8>, i2) -> (!FHE.eint<8>)
+  return %1: !FHE.eint<8>
+}
+
 // CHECK-LABEL: func.func @add_eint_int_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2>
 func.func @add_eint_int_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2> {
   // CHECK-NEXT: %[[V1:.*]] = arith.constant 1 : i3
@@ -105,6 +116,17 @@ func.func @sub_int_eint(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   return %1: !FHE.eint<2>
 }
 
+// CHECK-LABEL: func.func @sub_int_eint_small_clear(%arg0: !FHE.esint<4>) -> !FHE.esint<4>
+func.func @sub_int_eint_small_clear(%arg0: !FHE.esint<4>) -> !FHE.esint<4> {
+  // CHECK-NEXT: %[[V1:.*]] = arith.constant 3 : i3
+  // CHECK-NEXT: %[[V2:.*]] = "FHE.sub_int_eint"(%[[V1]], %arg0) : (i3, !FHE.esint<4>) -> !FHE.esint<4>
+  // CHECK-NEXT: return %[[V2]] : !FHE.esint<4>
+
+  %0 = arith.constant 3 : i3
+  %1 = "FHE.sub_int_eint"(%0, %arg0): (i3, !FHE.esint<4>) -> (!FHE.esint<4>)
+  return %1: !FHE.esint<4>
+}
+
 // CHECK-LABEL: func.func @sub_int_eint_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2>
 func.func @sub_int_eint_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2> {
   // CHECK-NEXT: %[[V1:.*]] = arith.constant 1 : i3
@@ -125,6 +147,17 @@ func.func @sub_eint_int(%arg0: !FHE.eint<2>) -> !FHE.eint<2> {
   %0 = arith.constant 1 : i3
   %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.eint<2>, i3) -> (!FHE.eint<2>)
   return %1: !FHE.eint<2>
+}
+
+// CHECK-LABEL: func.func @sub_eint_int_small_clear(%arg0: !FHE.esint<4>) -> !FHE.esint<4>
+func.func @sub_eint_int_small_clear(%arg0: !FHE.esint<4>) -> !FHE.esint<4> {
+  // CHECK-NEXT: %[[V1:.*]] = arith.constant 3 : i3
+  // CHECK-NEXT: %[[V2:.*]] = "FHE.sub_eint_int"(%arg0, %[[V1]]) : (!FHE.esint<4>, i3) -> !FHE.esint<4>
+  // CHECK-NEXT: return %[[V2]] : !FHE.esint<4>
+
+  %0 = arith.constant 3 : i3
+  %1 = "FHE.sub_eint_int"(%arg0, %0): (!FHE.esint<4>, i3) -> (!FHE.esint<4>)
+  return %1: !FHE.esint<4>
 }
 
 // CHECK-LABEL: func.func @sub_eint_int_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2>
@@ -183,6 +216,17 @@ func.func @mul_eint(%arg0: !FHE.eint<2>, %arg1: !FHE.eint<2>) -> !FHE.eint<2> {
 
   %0 = "FHE.mul_eint"(%arg0, %arg1): (!FHE.eint<2>, !FHE.eint<2>) -> (!FHE.eint<2>)
   return %0: !FHE.eint<2>
+}
+
+// CHECK-LABEL: func.func @mul_eint_int_small_clear(%arg0: !FHE.eint<4>) -> !FHE.eint<4>
+func.func @mul_eint_int_small_clear(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+  // CHECK-NEXT: %[[V1:.*]] = arith.constant 3 : i3
+  // CHECK-NEXT: %[[V2:.*]] = "FHE.mul_eint_int"(%arg0, %[[V1]]) : (!FHE.eint<4>, i3) -> !FHE.eint<4>
+  // CHECK-NEXT: return %[[V2]] : !FHE.eint<4>
+
+  %0 = arith.constant 3 : i3
+  %1 = "FHE.mul_eint_int"(%arg0, %0): (!FHE.eint<4>, i3) -> (!FHE.eint<4>)
+  return %1: !FHE.eint<4>
 }
 
 // CHECK-LABEL: func.func @mul_eint_int_signed(%arg0: !FHE.esint<2>) -> !FHE.esint<2>

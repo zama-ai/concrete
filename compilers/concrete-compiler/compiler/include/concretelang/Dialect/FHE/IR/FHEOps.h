@@ -21,10 +21,6 @@ namespace FHE {
 bool verifyEncryptedIntegerInputAndResultConsistency(
     Operation &op, FheIntegerInterface &input, FheIntegerInterface &result);
 
-bool verifyEncryptedIntegerAndIntegerInputsConsistency(Operation &op,
-                                                       FheIntegerInterface &a,
-                                                       IntegerType &b);
-
 // Checks the consistency between two integer inputs of an operation
 bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
                                              FheIntegerInterface &a,
