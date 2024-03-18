@@ -137,13 +137,6 @@ LogicalResult verifyTensorBinaryEintInt(mlir::Operation *op) {
     return mlir::failure();
   }
 
-  if (el1Ty.getWidth() > el0Ty.getWidth() + 1) {
-    op->emitOpError()
-        << "should have the width of integer values less or equals "
-           "than the width of encrypted values + 1";
-    return mlir::failure();
-  }
-
   return mlir::success();
 }
 
@@ -174,13 +167,6 @@ LogicalResult verifyTensorBinaryIntEint(mlir::Operation *op) {
     op->emitOpError()
         << "should have !FHE.eint or !FHE.esint as the element type of the "
            "tensor of operand #1";
-    return mlir::failure();
-  }
-
-  if (el1Ty.getWidth() > el0Ty.getWidth() + 1) {
-    op->emitOpError()
-        << "should have the width of integer values less or equals "
-           "than the width of encrypted values + 1";
     return mlir::failure();
   }
 
@@ -439,11 +425,6 @@ verifyDotInputsOutputsConsistency(mlir::concretelang::FHELinalg::Dot &op,
                                   FHE::FheIntegerInterface &lhsEltType,
                                   mlir::IntegerType &rhsEltType,
                                   FHE::FheIntegerInterface &resultType) {
-  if (!mlir::concretelang::FHE::
-          verifyEncryptedIntegerAndIntegerInputsConsistency(
-              *op.getOperation(), lhsEltType, rhsEltType)) {
-    return ::mlir::failure();
-  }
   if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
           *op.getOperation(), lhsEltType, resultType)) {
     return ::mlir::failure();
@@ -921,17 +902,6 @@ mlir::LogicalResult Conv2dOp::verify() {
   auto weightShape = weightTy.getShape();
   auto resultShape = resultTy.getShape();
 
-  Type inputElTy = inputTy.getElementType();
-  auto p = inputElTy.cast<FHE::FheIntegerInterface>().getWidth();
-
-  auto weightElementTyWidth =
-      weightTy.getElementType().cast<mlir::IntegerType>().getWidth();
-  if (weightElementTyWidth != p + 1) {
-    this->emitOpError() << "expected weight element type to have width "
-                        << p + 1 << " but got " << weightElementTyWidth;
-    return mlir::failure();
-  }
-
   // Checking dimensions
   if (inputShape.size() != 4) {
     this->emitOpError() << "input should have 4 dimensions (N*C*H*W) but got "
@@ -1050,13 +1020,6 @@ mlir::LogicalResult Conv2dOp::verify() {
     if (biasShape[0] != weightF) {
       this->emitOpError() << "expected bias vector to have size " << weightF
                           << " but got " << biasShape[0];
-      return mlir::failure();
-    }
-    auto biasElementTyWidth =
-        biasTy.getElementType().cast<mlir::IntegerType>().getWidth();
-    if (biasElementTyWidth != p + 1) {
-      this->emitOpError() << "expected bias element type to have width "
-                          << p + 1 << " but got " << biasElementTyWidth;
       return mlir::failure();
     }
   }

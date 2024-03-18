@@ -207,6 +207,36 @@ func.func @single_dyn_mul_eint_int(%e: !FHE.eint<2>, %i: i3) -> !FHE.eint<2>
 
 // -----
 
+func.func @single_dyn_mul_eint_int_6b_3b(%e: !FHE.eint<6>, %i: i3) -> !FHE.eint<6>
+{
+  // CHECK: MANP = 3 : ui{{[0-9]+}}
+  %0 = "FHE.mul_eint_int"(%e, %i) : (!FHE.eint<6>, i3) -> !FHE.eint<6>
+
+  return %0 : !FHE.eint<6>
+}
+
+// -----
+
+func.func @single_dyn_mul_eint_int_6b_4b(%e: !FHE.eint<6>, %i: i4) -> !FHE.eint<6>
+{
+  // CHECK: MANP = 7 : ui{{[0-9]+}}
+  %0 = "FHE.mul_eint_int"(%e, %i) : (!FHE.eint<6>, i4) -> !FHE.eint<6>
+
+  return %0 : !FHE.eint<6>
+}
+
+// -----
+
+func.func @single_dyn_mul_eint_int_6b_5b(%e: !FHE.eint<6>, %i: i5) -> !FHE.eint<6>
+{
+  // CHECK: MANP = 15 : ui{{[0-9]+}}
+  %0 = "FHE.mul_eint_int"(%e, %i) : (!FHE.eint<6>, i5) -> !FHE.eint<6>
+
+  return %0 : !FHE.eint<6>
+}
+
+// -----
+
 func.func @single_apply_lookup_table(%arg0: !FHE.eint<2>, %arg1: tensor<4xi64>) -> !FHE.eint<2> {
   // CHECK: MANP = 1 : ui{{[0-9]+}}
   %1 = "FHE.apply_lookup_table"(%arg0, %arg1): (!FHE.eint<2>, tensor<4xi64>) -> !FHE.eint<2>

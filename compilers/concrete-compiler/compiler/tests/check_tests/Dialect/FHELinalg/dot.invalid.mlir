@@ -53,17 +53,3 @@ func.func @dot_incompatible_return(
 
   return %ret : !FHE.eint<3>
 }
-
-// -----
-
-// Wrong integer size
-func.func @dot_incompatible_int(
-    %arg0: tensor<4x!FHE.eint<2>>,
-    %arg1: tensor<4xi4>) -> !FHE.eint<2>
-{
-  // expected-error @+1 {{'FHELinalg.dot_eint_int' op should have the width of plain input equal to width of encrypted input + 1}}
-  %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) :
-    (tensor<4x!FHE.eint<2>>, tensor<4xi4>) -> !FHE.eint<2>
-
-  return %ret : !FHE.eint<2>
-}

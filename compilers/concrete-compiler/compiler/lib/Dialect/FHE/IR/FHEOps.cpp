@@ -36,18 +36,6 @@ bool verifyEncryptedIntegerInputAndResultConsistency(
   return true;
 }
 
-bool verifyEncryptedIntegerAndIntegerInputsConsistency(mlir::Operation &op,
-                                                       FheIntegerInterface &a,
-                                                       IntegerType &b) {
-  if (a.getWidth() + 1 != b.getWidth()) {
-    op.emitOpError("should have the width of plain input equal to width of "
-                   "encrypted input + 1");
-    return false;
-  }
-
-  return true;
-}
-
 bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
                                              FheIntegerInterface &a,
                                              FheIntegerInterface &b) {
@@ -66,16 +54,10 @@ bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
 
 mlir::LogicalResult AddEintIntOp::verify() {
   auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->getB().getType().cast<IntegerType>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
                                                        out)) {
-    return mlir::failure();
-  }
-
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
-                                                         a, b)) {
     return mlir::failure();
   }
 
@@ -100,7 +82,6 @@ mlir::LogicalResult AddEintOp::verify() {
 }
 
 mlir::LogicalResult SubIntEintOp::verify() {
-  auto a = this->getA().getType().cast<IntegerType>();
   auto b = this->getB().getType().dyn_cast<FheIntegerInterface>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
@@ -109,26 +90,15 @@ mlir::LogicalResult SubIntEintOp::verify() {
     return mlir::failure();
   }
 
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
-                                                         b, a)) {
-    return mlir::failure();
-  }
-
   return mlir::success();
 }
 
 mlir::LogicalResult SubEintIntOp::verify() {
   auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->getB().getType().cast<IntegerType>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
                                                        out)) {
-    return mlir::failure();
-  }
-
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
-                                                         a, b)) {
     return mlir::failure();
   }
 
@@ -164,16 +134,10 @@ mlir::LogicalResult NegEintOp::verify() {
 
 mlir::LogicalResult MulEintIntOp::verify() {
   auto a = this->getA().getType().dyn_cast<FheIntegerInterface>();
-  auto b = this->getB().getType().cast<IntegerType>();
   auto out = this->getResult().getType().dyn_cast<FheIntegerInterface>();
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(), a,
                                                        out)) {
-    return mlir::failure();
-  }
-
-  if (!verifyEncryptedIntegerAndIntegerInputsConsistency(*this->getOperation(),
-                                                         a, b)) {
     return mlir::failure();
   }
 
