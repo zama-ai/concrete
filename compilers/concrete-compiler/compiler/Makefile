@@ -28,8 +28,9 @@ KEYSETCACHENAME ?= KeySetCacheV4
 
 HPX_VERSION?=1.9.1
 HPX_URL=https://github.com/STEllAR-GROUP/hpx/archive/refs/tags/v$(HPX_VERSION).tar.gz
-HPX_TARBALL=$(shell pwd)/hpx-$(HPX_VERSION).tar.gz
-HPX_LOCAL_DIR=$(shell pwd)/hpx-$(HPX_VERSION)
+HPX_DIR?=$(shell pwd)
+HPX_TARBALL=hpx-$(HPX_VERSION).tar.gz
+HPX_LOCAL_DIR=$(HPX_DIR)/hpx-$(HPX_VERSION)
 HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)/build
 
 ML_BENCH_SUBSET_ID=
@@ -133,10 +134,11 @@ install-hpx-from-source: $(HPX_LOCAL_DIR)
 	cd $(HPX_LOCAL_DIR)/build && make -j2
 
 $(HPX_TARBALL):
-	curl -L $(HPX_URL) -o $(HPX_TARBALL)
+	mkdir -p $(HPX_DIR)
+	cd $(HPX_DIR) && curl -L $(HPX_URL) -o $(HPX_TARBALL)
 
 $(HPX_LOCAL_DIR): $(HPX_TARBALL)
-	tar xzvf $(HPX_TARBALL)
+	cd $(HPX_DIR) && tar xzvf $(HPX_TARBALL)
 
 $(BUILD_DIR)/configured.stamp:
 	mkdir -p $(BUILD_DIR)
@@ -338,9 +340,11 @@ run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
 	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
 
-run-end-to-end-distributed-tests: build-end-to-end-dataflow-tests
-	srun -n4 -c8 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
-	srun -n4 -c8 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
+run-end-to-end-distributed-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
+	srun -n4 -c8 --kill-on-bad-exit=1 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
+	srun -n4 -c8 --kill-on-bad-exit=1 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
+	  --optimizer-strategy=dag-mono --dataflow-parallelize=1 \
+	  $(FIXTURE_CPU_DIR)/*round*.yaml $(FIXTURE_CPU_DIR)/*relu*.yaml $(FIXTURE_CPU_DIR)/*linalg*.yaml
 
 # benchmark
 

@@ -79,7 +79,9 @@ func.func @main(%arg0: tensor<200x4x!FHE.eint<4>>) -> tensor<200x8x!FHE.eint<4>>
   return %res_P : tensor<200x8x!FHE.eint<4>>
 }
 )XXX",
-             "main", false, true, true);
+             "main", false, true, true, DEFAULT_batchTFHEOps,
+             DEFAULT_global_p_error, DEFAULT_chunkedIntegers, DEFAULT_chunkSize,
+             DEFAULT_chunkWidth, DEFAULT_composable, false);
 
   const size_t dim0 = 200;
   const size_t dim1 = 4;
@@ -100,7 +102,7 @@ func.func @main(%arg0: tensor<200x4x!FHE.eint<4>>) -> tensor<200x8x!FHE.eint<4>>
     ASSERT_EQ(result.dimensions, outputShape);
     distributed_results = result.values;
   } else {
-    ASSERT_OUTCOME_HAS_FAILURE(lambda.call({}));
+    ASSERT_OUTCOME_HAS_VALUE(lambda.call({}));
   }
 }
 
@@ -117,7 +119,10 @@ TEST(Distributed, nn_med_sequential) {
     return %2 : tensor<200x8x!FHE.eint<4>>
   }
 )XXX",
-               "main", false, false, false);
+               "main", false, false, false, DEFAULT_batchTFHEOps,
+               DEFAULT_global_p_error, DEFAULT_chunkedIntegers,
+               DEFAULT_chunkSize, DEFAULT_chunkWidth, DEFAULT_composable,
+               false);
 
     const size_t dim0 = 200;
     const size_t dim1 = 4;
