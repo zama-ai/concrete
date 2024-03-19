@@ -225,13 +225,15 @@ int cuda_get_max_shared_memory(uint32_t gpu_index) {
     return -2;
   }
   cudaSetDevice(gpu_index);
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, gpu_index);
-  int max_shared_memory = 0;
-  if (prop.major >= 6) {
-    max_shared_memory = prop.sharedMemPerMultiprocessor;
-  } else {
-    max_shared_memory = prop.sharedMemPerBlock;
+  static int max_shared_memory = 0;
+  if (max_shared_memory == 0) {
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, gpu_index);
+    if (prop.major >= 6) {
+      max_shared_memory = prop.sharedMemPerMultiprocessor;
+    } else {
+      max_shared_memory = prop.sharedMemPerBlock;
+    }
   }
   return max_shared_memory;
 }

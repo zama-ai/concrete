@@ -348,16 +348,20 @@ __host__ void host_bootstrap_amortized(
 template <typename Torus, class params>
 int cuda_get_pbs_per_gpu(int polynomial_size) {
 
+  static int mpCount = 0;
+  if (mpCount == 0) {
+    cudaGetDeviceCount(0);
+    cudaDeviceProp device_properties;
+    cudaGetDeviceProperties(&device_properties, 0);
+    mpCount = device_properties.multiProcessorCount;
+  }
   int blocks_per_sm = 0;
   int num_threads = polynomial_size / params::opt;
-  cudaGetDeviceCount(0);
-  cudaDeviceProp device_properties;
-  cudaGetDeviceProperties(&device_properties, 0);
   cudaOccupancyMaxActiveBlocksPerMultiprocessor(
       &blocks_per_sm, device_bootstrap_amortized<Torus, params>, num_threads,
       0);
 
-  return device_properties.multiProcessorCount * blocks_per_sm;
+  return mpCount * blocks_per_sm;
 }
 
 #endif // CNCRT_PBS_H
