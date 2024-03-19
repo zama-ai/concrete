@@ -113,14 +113,17 @@ class AssignBitWidths(MultiGraphProcessor):
         for node, bit_width in bit_widths.items():
             assert isinstance(node.output.dtype, Integer)
             new_bit_width = model[bit_width].as_long()
-
-            if node.output.is_clear:
-                new_bit_width += 1
-
-            node.properties["original_bit_width"] = node.properties.get(
+            original_bit_width = node.properties.get(
                 "bit_width_hint",
                 node.output.dtype.bit_width,
             )
+
+            if node.output.is_clear:
+                new_bit_width = original_bit_width
+                if not node.output.dtype.is_signed:
+                    new_bit_width += 1
+
+            node.properties["original_bit_width"] = original_bit_width
             node.output.dtype.bit_width = new_bit_width
         for graph in graphs.values():
             graph.bit_width_constraints = optimizer

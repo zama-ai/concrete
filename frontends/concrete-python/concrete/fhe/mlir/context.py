@@ -187,15 +187,9 @@ class Context:
         args = tuple(arg.type if isinstance(arg, Conversion) else arg for arg in args)
 
         def check(type1, type2):
-            return (
-                (type1.bit_width + 1) == type2.bit_width
-                if type1.is_encrypted and type2.is_clear
-                else (
-                    type1.bit_width == (type2.bit_width + 1)
-                    if type1.is_clear and type2.is_encrypted
-                    else type1.bit_width == type2.bit_width
-                )
-            )
+            if type1.is_encrypted and type2.is_encrypted:
+                return type1.bit_width == type2.bit_width
+            return True
 
         reference = args[0]
 
