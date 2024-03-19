@@ -196,6 +196,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: wheels
+          merge-multiple: true
 
       - name: Push wheels to internal PyPI (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
