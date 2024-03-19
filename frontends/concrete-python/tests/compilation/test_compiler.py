@@ -396,6 +396,10 @@ def test_compiler_enable_fusing(helpers):
     Test compilation with and without TLU fusing.
     """
 
+    # Make sure it's enabled by default
+    default_configuration = fhe.Configuration()
+    assert default_configuration.enable_tlu_fusing
+
     def f(x):
         return (x**2) // 2
 
