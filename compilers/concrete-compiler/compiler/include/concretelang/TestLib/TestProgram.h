@@ -245,7 +245,7 @@ private:
         }
       } else {
         llvm::errs() << "TestProgram: directory(" << pathString
-                     << ") successfuly created\n";
+                     << ") successfully created\n";
         return pathString;
       }
     }

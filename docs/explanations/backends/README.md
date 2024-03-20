@@ -20,7 +20,7 @@ Server features are homomorphic operations on ciphertexts:
 
 There are currently 2 backends:
 - `concrete-cpu` which implements both client and server features targeting the CPU.
-- `concrete-cuda` which implements only server features targeting GPUs to accelerate homomorphic circuit evalutation.
+- `concrete-cuda` which implements only server features targeting GPUs to accelerate homomorphic circuit evaluation.
 
 
 The compiler uses `concrete-cpu` for the client and can use either `concrete-cpu` or `concrete-cuda` for the server.

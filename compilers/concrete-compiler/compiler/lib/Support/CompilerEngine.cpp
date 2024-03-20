@@ -984,7 +984,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
     // it during load time. To solve this, we change the dep in the generated
     // library to be relative to the rpath which should be set correctly
     // during linking. This shouldn't have an impact when
-    // /DLC/concrete/.dylibs/* isn't a dependecy in the first place (when not
+    // /DLC/concrete/.dylibs/* isn't a dependency in the first place (when not
     // using python).
     if (fixRuntimeDep) {
       std::string fixRuntimeDepCmd = "install_name_tool -change "

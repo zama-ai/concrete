@@ -257,7 +257,7 @@ def construct_table(node: Node, preds: List[Node], configuration: Configuration)
             )
         except Exception:  # pylint: disable=broad-except
             # here we try our best to fill the table
-            # if it fails, we append None and let flooding algoritm replace None values below
+            # if it fails, we append None and let flooding algorithm replace None values below
             table.append(None)
 
     np.seterr(divide="warn")

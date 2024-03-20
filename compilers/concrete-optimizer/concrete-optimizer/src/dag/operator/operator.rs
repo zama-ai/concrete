@@ -89,7 +89,7 @@ pub enum Operator {
         out_shape: Shape,
         comment: String,
     },
-    // Used to reduced or increase precision when the cyphertext is compatible with different precision
+    // Used to reduced or increase precision when the ciphertext is compatible with different precision
     // This is done without any checking
     UnsafeCast {
         input: OperatorIndex,

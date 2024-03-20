@@ -8,11 +8,11 @@ In order to be integrated in a C-based project like the `concrete-compiler` runt
 
 ### Prerequisites
 
-The `concrete-cpu` project is implemented thanks Rust, thus as the main prerequiste the rust toolchain must be installed. You can install from the official [Install Rust instructions](https://www.rust-lang.org/tools/install). Some of features like the use of avx512 instructions are available only with a nightly rust toolchain so if you want to use it you need to install it following those [instructions](https://rust-lang.github.io/rustup/concepts/channels.html).
+The `concrete-cpu` project is implemented thanks Rust, thus as the main prerequisite the rust toolchain must be installed. You can install from the official [Install Rust instructions](https://www.rust-lang.org/tools/install). Some of features like the use of avx512 instructions are available only with a nightly rust toolchain so if you want to use it you need to install it following those [instructions](https://rust-lang.github.io/rustup/concepts/channels.html).
 
 ### Setting RUSTFLAGS
 
-As mentionned before the `concrete-cpu` project aims to use moderns CPU features, to be sure to activate all that is available in your machine you can export the following rust flags:
+As mentioned before the `concrete-cpu` project aims to use moderns CPU features, to be sure to activate all that is available in your machine you can export the following rust flags:
 
 ```
 export RUSTFLAGS="-C target-cpu=native"

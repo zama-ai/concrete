@@ -3205,7 +3205,7 @@ class Context:
         if exactness is Exactness.APPROXIMATE:
             approx_conf = self.configuration.approximate_rounding_config
             # 1. Unskew TLU's futur error distribution on approximated value
-            # this balances agains all leading zeros in the noise (ignoring symetric noise)
+            # this balances agains all leading zeros in the noise (ignoring symmetric noise)
             unskewed = x
             if approx_conf.symetrize_deltas:
                 highest_supported_precision = 62

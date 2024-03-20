@@ -40,7 +40,7 @@ class Adjusting(BaseException):
 
 class AutoRounder:
     """
-    AutoRounder class, to optimize for number of msbs to keep druing round bit pattern operation.
+    AutoRounder class, to optimize for number of msbs to keep during round bit pattern operation.
     """
 
     target_msbs: int
@@ -221,7 +221,7 @@ def round_bit_pattern(
 
     Returns:
         Union[int, np.integer, np.ndarray, Tracer]:
-            Tracer that respresents the operation during tracing
+            Tracer that represents the operation during tracing
             rounded value(s) otherwise
     """
 

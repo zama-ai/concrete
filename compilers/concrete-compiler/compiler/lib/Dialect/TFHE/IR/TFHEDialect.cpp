@@ -37,7 +37,7 @@ void TFHEDialect::initialize() {
       >();
 }
 
-/// Verify that GLWE parameter are consistant
+/// Verify that GLWE parameter are consistent
 ::mlir::LogicalResult GLWECipherTextType::verify(
     ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
     GLWESecretKey key) {

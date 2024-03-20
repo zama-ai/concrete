@@ -26,6 +26,6 @@ Create an encrypted array from either encrypted or clear values.
 
 
 **Returns:**
-  Union[np.ndarray, Tracer]:  Tracer that respresents the operation during tracing  ndarray with values otherwise 
+  Union[np.ndarray, Tracer]:  Tracer that represents the operation during tracing  ndarray with values otherwise 
 
 

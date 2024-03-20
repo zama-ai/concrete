@@ -483,7 +483,7 @@ void ApplyLookupTableEintOp::getCanonicalizationPatterns(
           if (resultOfFirstLookup < 0) {
             // e.g., imagine first table resulted in -100_000
             // (which can exist in tables...)
-            // then we set it to the smalles possible value
+            // then we set it to the smallest possible value
             // of the input to the table
 
             // So if -100 is encountered on a signed 7-bit tlu

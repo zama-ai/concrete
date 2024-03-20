@@ -762,7 +762,7 @@ struct FunctionToDag {
     mlir::SmallVector<int32_t, 3> operatorIndexes = {(int32_t)subNode.index,
                                                      (int32_t)tluNode.index,
                                                      (int32_t)resultNode.index};
-    // TODO : The substraction of the signed case is not given to the optimizer
+    // TODO : The subtraction of the signed case is not given to the optimizer
     // which could lead to some issue with the dag partitioning of the
     // optimizer.
     // Note: Should not be an issue while the partition are computed

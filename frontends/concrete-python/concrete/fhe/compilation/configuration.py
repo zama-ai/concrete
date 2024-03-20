@@ -104,7 +104,7 @@ class ApproximateRoundingConfig:
     """Actively avoid the overflow using a `k`-1 precision TLU.
     This is similar to logical clipping but less accurate and faster.
     Effect on:
-    * accuracy: the upper values of the rounding range are sligtly decreased,
+    * accuracy: the upper values of the rounding range are slightly decreased,
     * cost: adds an extra `k`-1 bits TLU to guarantee that the precision after rounding is `k`.
             This is usually a win when `k` >= 5 .
     This is enabled by default for `k` >= 5.

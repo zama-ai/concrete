@@ -12,9 +12,9 @@ pub(crate) type UnparameterizedOperator = Operator;
 #[must_use]
 pub struct OperationDag {
     pub(crate) operators: Vec<UnparameterizedOperator>,
-    // Collect all operators ouput shape
+    // Collect all operators output shape
     pub(crate) out_shapes: Vec<Shape>,
-    // Collect all operators ouput precision
+    // Collect all operators output precision
     pub(crate) out_precisions: Vec<Precision>,
     // Collect whether operators are tagged as outputs
     pub(crate) output_tags: Vec<bool>,
@@ -186,7 +186,7 @@ impl OperationDag {
     }
 
     fn add_isolate_lowest_bit(&mut self, input: OperatorIndex) -> OperatorIndex {
-        // The lowest bit is converted to a cyphertext of same precision as input.
+        // The lowest bit is converted to a ciphertext of same precision as input.
         // Introduce a pbs of input precision but this precision is only used on 1 levelled op and converted to lower precision
         // Noise is reduced by a pbs.
         let out_precision = self.out_precisions[input.i];
@@ -208,12 +208,12 @@ impl OperationDag {
         input: OperatorIndex,
         rounded_precision: Precision,
     ) -> OperatorIndex {
-        // Round such that the ouput has precision out_precision.
+        // Round such that the output has precision out_precision.
         // We round by adding 2**(removed_precision - 1) to the last remaining bit to clear (this step is a no-op).
         // Than all lower bits are cleared.
         // Note: this is a simplified graph, some constant additions are missing without consequence on crypto parameter choice.
         // Note: reset and rounds could be done by 4, 3, 2 and 1 bits groups for efficiency.
-        //       bit efficiency is better for 4 precision then 3, but the feasability is lower for high noise
+        //       bit efficiency is better for 4 precision then 3, but the feasibility is lower for high noise
         let in_precision = self.out_precisions[input.i];
         assert!(rounded_precision <= in_precision);
         if in_precision == rounded_precision {
