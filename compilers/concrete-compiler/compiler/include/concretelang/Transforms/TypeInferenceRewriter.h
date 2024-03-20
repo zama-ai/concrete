@@ -175,7 +175,7 @@ protected:
       // parent operation, which, at this point, has already been
       // partially rewritten before recursing into this rewrite call.
       //
-      // Functions are a bit diffent though, since the types of the
+      // Functions are a bit different though, since the types of the
       // results are contained in a function type and not in the
       // result types.
       mlir::Operation *newParent = mapping.lookup(op->getParentOp());
@@ -187,7 +187,7 @@ protected:
             llvm::to_vector(newParentFunc.getFunctionType().getResults());
       } else {
         // Look up new parent op and use the return types, since these
-        // are the authorative types obtained from the last invocation
+        // are the authoritative types obtained from the last invocation
         // of the type resolver
         resolvedOperandTypes = llvm::to_vector(newParent->getResultTypes());
       }

@@ -23,7 +23,7 @@ def array(values: Any) -> Union[np.ndarray, Tracer]:
 
     Returns:
         Union[np.ndarray, Tracer]:
-            Tracer that respresents the operation during tracing
+            Tracer that represents the operation during tracing
             ndarray with values otherwise
     """
 

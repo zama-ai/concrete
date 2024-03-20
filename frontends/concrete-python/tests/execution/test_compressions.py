@@ -7,7 +7,7 @@ from concrete import fhe
 
 def test_circuit_compress_input_ciphertexts(helpers):
     """
-    Test running circuit with compressed inpu ciphertexts
+    Test running circuit with compressed input ciphertexts
     """
 
     configuration = helpers.configuration()

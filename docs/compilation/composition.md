@@ -198,7 +198,7 @@ Here we use a while loop that keeps iterating as long as the decryption of the r
 
 ## Limitations
 
-Depending on the circuit, supporting composition may add a non-negligeable overhead when compared to a non-composable version. Indeed, to be composable a circuit must verify two conditions:
+Depending on the circuit, supporting composition may add a non-negligible overhead when compared to a non-composable version. Indeed, to be composable a circuit must verify two conditions:
 1) All inputs and outputs must share the same precision and the same crypto-parameters: the most expensive parameters that would otherwise be used for a single input or output, are generalized to all inputs and outputs.
 2) There must be a noise refresh in every path between an input and an output: some circuits will need extra PBSes to be added to allow composability.
 

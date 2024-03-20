@@ -213,7 +213,7 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
     io.mapOptional("v0-parameter", v0parameter);
     if (!v0parameter.empty()) {
       if (v0parameter.size() != 7) {
-        io.setError("v0-parameter expect to be a list 7 elemnts "
+        io.setError("v0-parameter expect to be a list 7 elements "
                     "[glweDimension, logPolynomialSize, nSmall, brLevel, "
                     "brLobBase, ksLevel, ksLogBase]");
       }
@@ -226,7 +226,7 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
     io.mapOptional("v0-constraint", v0constraint);
     if (!v0constraint.empty()) {
       if (v0constraint.size() != 2) {
-        io.setError("v0-constraint expect to be a list 2 elemnts "
+        io.setError("v0-constraint expect to be a list 2 elements "
                     "[p, norm2]");
       }
       desc.v0Constraint = mlir::concretelang::V0FHEConstraint();

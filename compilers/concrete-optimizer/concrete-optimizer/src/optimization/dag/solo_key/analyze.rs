@@ -124,7 +124,7 @@ fn variance_origin(inputs: &[OperatorIndex], out_variances: &[SymbolicVariance])
 #[derive(Clone, Debug)]
 pub struct OperationDag {
     pub operators: Vec<Op>,
-    // Collect all operators ouput variances
+    // Collect all operators output variances
     pub out_variances: Vec<SymbolicVariance>,
     pub nb_luts: u64,
     // The full dag levelled complexity

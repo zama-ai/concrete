@@ -4,7 +4,7 @@ include(AddMLIRPython)
 add_compile_options(-fexceptions)
 
 # ######################################################################################################################
-# Decalare native Python extension
+# Declare native Python extension
 # ######################################################################################################################
 
 declare_mlir_python_sources(ConcretelangBindingsPythonExtension)

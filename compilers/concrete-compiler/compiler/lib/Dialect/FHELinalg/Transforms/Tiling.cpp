@@ -153,7 +153,7 @@ public:
   }
 };
 
-/// Perfoms the actual tiling of `FHELinalg.matmul_eint_int`
+/// Performs the actual tiling of `FHELinalg.matmul_eint_int`
 /// operations that have been marked with a "tile-sizes" attribute.
 class LinalgTilingPass : public LinalgTilingBase<LinalgTilingPass> {
 public:

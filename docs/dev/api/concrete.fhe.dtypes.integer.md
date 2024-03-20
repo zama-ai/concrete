@@ -78,12 +78,12 @@ Get the maximum value that can be represented by the `Integer`.
 min() → int
 ```
 
-Get the minumum value that can be represented by the `Integer`. 
+Get the minimum value that can be represented by the `Integer`. 
 
 
 
 **Returns:**
-  int:  minumum value that can be represented by the `Integer` 
+  int:  minimum value that can be represented by the `Integer` 
 
 ---
 

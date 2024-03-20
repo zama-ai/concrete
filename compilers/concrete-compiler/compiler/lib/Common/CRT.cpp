@@ -79,7 +79,7 @@ uint64_t iCrt(std::vector<int64_t> moduli, std::vector<int64_t> remainders) {
 
 uint64_t encode(int64_t plaintext, uint64_t modulus, uint64_t product) {
   // values are represented on the interval [0; product[ so we represent
-  // plantext on this interval
+  // plaintext on this interval
   if (plaintext < 0) {
     plaintext = product + plaintext;
   }

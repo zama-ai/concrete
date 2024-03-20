@@ -11,7 +11,7 @@ endfunction()
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   link_libraries(
-    # usefull for old gcc versions
+    # useful for old gcc versions
     -Wl,--allow-multiple-definition # static concrete-optimizer and concrete shares some code
   )
 endif()

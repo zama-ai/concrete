@@ -1,7 +1,7 @@
 # Concrete optimizer
 
 Concrete Optimizer is a Rust library that find the best cryptographic parameters for a given TFHE homomorphic circuit.
-The goal if to minimize computation time under security and error constaints.
+The goal if to minimize computation time under security and error constraints.
 Its main client is Concrete Compiler.
 It is implemented in Rust and offers a C++ API.
 It also provides a CLI tool to provide parameters for simplified circuits.

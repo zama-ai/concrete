@@ -177,7 +177,7 @@ unsigned getOperandIndexForValue(mlir::Operation *op, mlir::Value v) {
 }
 
 // Walks up the use-def-chain of of the value `v`, executing `cb`
-// for any value not previsouly encountered un `visited`.
+// for any value not previously encountered un `visited`.
 static void walkUseDefChainRec(mlir::DenseSet<mlir::Value> &visited,
                                mlir::Value v,
                                llvm::function_ref<void(mlir::Value)> cb) {
@@ -473,7 +473,7 @@ static void rewritePerfectLoopNestWithReplacedNthResult(
 
       rewriter.replaceOp(currFor, newResults);
     } else {
-      // An inner loop has been rewriten -> remap uses of results of
+      // An inner loop has been rewritten -> remap uses of results of
       // the old loop to the new loop
       mlir::scf::ForOp parentFor =
           llvm::dyn_cast<mlir::scf::ForOp>(currFor->getParentOp());
@@ -492,7 +492,7 @@ static void rewritePerfectLoopNestWithReplacedNthResult(
 }
 
 /// Checks if the value `v` is defined outside of the `loop` or a pure
-/// operation that can be safely replicated ouside the loop (i.e., all
+/// operation that can be safely replicated outside the loop (i.e., all
 /// of its operands are also recursively either defined outside of the
 /// loop or pure).
 static bool isHoistable(mlir::Value v, mlir::scf::ForOp loop) {
@@ -1839,7 +1839,7 @@ public:
       mlir::Type currOrigElementType = currConstantType.getElementType();
       mlir::Type currFoldedElementType = currOrigElementType;
 
-      // Walk down the def-use chain from the extract operaion until
+      // Walk down the def-use chain from the extract operation until
       // an operation is found that is not foldable
       while (true) {
         if (!isFoldableOp(currOp))
@@ -1864,7 +1864,7 @@ public:
         return mlir::WalkResult::skip();
 
       // Check constraints on the index space of the extract
-      // operation. I.e., if the type changes during teh folding,
+      // operation. I.e., if the type changes during the folding,
       // ensure that the index space covers the entire tensor and that
       // there are no out-of-bounds accesses.
       for (auto it : llvm::enumerate(currExtractOp.getIndices())) {
@@ -1913,7 +1913,7 @@ public:
                          .cast<mlir::DenseElementsAttr>()
                          .getValues<mlir::Attribute>();
 
-    // Updated tensor of constants intialized with original values
+    // Updated tensor of constants initialized with original values
     SmallVector<mlir::Attribute> newDenseVals(denseVals.begin(),
                                               denseVals.end());
 

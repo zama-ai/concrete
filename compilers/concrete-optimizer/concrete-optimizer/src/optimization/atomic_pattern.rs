@@ -151,7 +151,7 @@ pub fn optimize_one(
     assert!(config.maximum_acceptable_error_probability < 1.0);
 
     // this assumed the noise level is equal at input/output
-    // the security of the noise level of ouput is controlled by
+    // the security of the noise level of output is controlled by
     // the blind rotate decomposition
 
     let ciphertext_modulus_log = config.ciphertext_modulus_log;

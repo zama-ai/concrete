@@ -5,7 +5,7 @@ computation without prior knowledge of the crypto-parameter optimization.
 
 For a given (`precision`, `log2(norm2)`), these parameters can be used in a TFHE integer circuit where the maximal integer precision is `precision` and the maximal norm2 between table lookups is `2^log2(norm2)`.
 The norm2 is the sum of the square of weights in multisum between table lookups or graph inputs (weights on the same input must first be combined as a single weight).
-The probablity of error is the maximal acceptable probability of error of each table lookup.
+The probability of error is the maximal acceptable probability of error of each table lookup.
 
 It can also be used to explore the crypto-parameter space w.r.t. the 2-norm of the dot product, the
 precision or even the failure probability.
