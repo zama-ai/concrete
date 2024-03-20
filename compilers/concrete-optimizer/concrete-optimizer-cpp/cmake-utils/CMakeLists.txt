@@ -1,5 +1,5 @@
 # In your project CMakeLists.txt:
-# 1. define the path containing concrete-optimizer repository, builded.
+# 1. define the path containing concrete-optimizer repository, built.
 # CONCRETE_OPTIMIZER_DIR
 # 2. add lines:
 # add_subdirectory(${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/cmake-utils)

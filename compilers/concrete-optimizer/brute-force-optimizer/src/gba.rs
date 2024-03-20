@@ -163,7 +163,7 @@ impl Problem for GBAConstraint {
         let complexity_packing_ks = message_modulus
             * (complexity_model.ks_complexity(pp_keyswitch_parameter, 64)
                 + (1 << param.log_poly_size) as f64 * (k + 1.));
-        // additon for packing ks
+        // addition for packing ks
         // );
 
         let complexity_all_ppks = self.nb_inputs as f64

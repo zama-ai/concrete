@@ -11,7 +11,7 @@
 #include "concretelang/Support/LibrarySupport.h"
 
 /// Add a mechanism to go from Cpp objects to C-struct, with the ability to
-/// represent errors. Also the other way arround.
+/// represent errors. Also the other way around.
 #define DEFINE_C_API_PTR_METHODS_WITH_ERROR(name, cpptype)                     \
   static inline name wrap(cpptype *cpp) { return name{cpp, (char *)NULL}; }    \
   static inline name wrap(cpptype *cpp, std::string errorStr) {                \

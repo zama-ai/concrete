@@ -1963,7 +1963,7 @@ struct TensorPartitionFrontierOpToLinalgGeneric
     mlir::Value init = rewriter.create<mlir::tensor::EmptyOp>(
         pfOp.getLoc(), resultTy, mlir::ValueRange{});
 
-    // Create affine maps and iterator types for an embarassingly
+    // Create affine maps and iterator types for an embarrassingly
     // parallel op
     llvm::SmallVector<mlir::AffineMap, 2> maps{
         mlir::AffineMap::getMultiDimIdentityMap(tensorTy.getShape().size(),

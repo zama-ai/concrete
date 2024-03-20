@@ -162,7 +162,7 @@ static llvm::APInt APIntWidthExtendUMul(const llvm::APInt &lhs,
   return lhs.zext(targetWidth) * rhs.zext(targetWidth);
 }
 
-/// Returns the maximum value beetwen `lhs` and `rhs`, where both values are
+/// Returns the maximum value between `lhs` and `rhs`, where both values are
 /// assumed to be positive. The bit width of the smaller `APInt` is extended
 /// before comparison via `APInt::ult`.
 static llvm::APInt APIntUMax(const llvm::APInt &lhs, const llvm::APInt &rhs) {

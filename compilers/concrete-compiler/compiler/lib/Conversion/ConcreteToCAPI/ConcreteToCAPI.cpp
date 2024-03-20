@@ -224,7 +224,7 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
          rewriter.getI32Type(), rewriter.getI32Type()},
         {});
   } else {
-    op->emitError("unknwon external function") << funcName;
+    op->emitError("unknown external function") << funcName;
     return mlir::failure();
   }
 

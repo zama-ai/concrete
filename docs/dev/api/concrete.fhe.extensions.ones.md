@@ -26,7 +26,7 @@ Create an encrypted array of ones.
 
 
 **Returns:**
-  Union[np.ndarray, Tracer]:  Tracer that respresents the operation during tracing  ndarray filled with ones otherwise 
+  Union[np.ndarray, Tracer]:  Tracer that represents the operation during tracing  ndarray filled with ones otherwise 
 
 
 ---
@@ -44,7 +44,7 @@ Create an encrypted scalar with the value of one.
 
 
 **Returns:**
-  Union[np.ndarray, Tracer]:  Tracer that respresents the operation during tracing  ndarray with one otherwise 
+  Union[np.ndarray, Tracer]:  Tracer that represents the operation during tracing  ndarray with one otherwise 
 
 
 ---

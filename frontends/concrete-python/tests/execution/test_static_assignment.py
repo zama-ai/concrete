@@ -510,7 +510,7 @@ def test_static_assignment(shape, function, helpers):
 
 def test_bad_static_assignment(helpers):
     """
-    Test static assingment with bad parameters.
+    Test static assignment with bad parameters.
     """
 
     configuration = helpers.configuration()

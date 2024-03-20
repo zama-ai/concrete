@@ -113,10 +113,10 @@ fn optimize_many_independant_ks(
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
 ) -> Option<(Vec<(KsDst, KsComplexityNoise)>, OperationsCV)> {
-    // all ks are independant since they appears in mutually exclusive variance constraints
+    // all ks are independent since they appears in mutually exclusive variance constraints
     // only one ks can appear in a variance constraint,
     // we can obtain the best feasible by optimizing them separately since everything else is already chosen
-    // at this point feasability and minimal complexity has already been checked on lower bound
+    // at this point feasibility and minimal complexity has already been checked on lower bound
     // we know there a feasible solution and a better complexity solution
     // we just need to check if both properties at the same time occur
     debug_assert!(feasible.feasible(&operations.variance));

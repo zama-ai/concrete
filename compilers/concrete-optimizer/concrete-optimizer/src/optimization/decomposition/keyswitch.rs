@@ -26,7 +26,7 @@ impl KsComplexityNoise {
     }
 }
 
-/* This is stricly variance decreasing and strictly complexity increasing */
+/* This is strictly variance decreasing and strictly complexity increasing */
 pub fn pareto_quantities(
     complexity_model: &dyn ComplexityModel,
     ciphertext_modulus_log: u32,

@@ -26,7 +26,7 @@ Create an encrypted array of zeros.
 
 
 **Returns:**
-  Union[np.ndarray, Tracer]:  Tracer that respresents the operation during tracing  ndarray filled with zeros otherwise 
+  Union[np.ndarray, Tracer]:  Tracer that represents the operation during tracing  ndarray filled with zeros otherwise 
 
 
 ---
@@ -44,7 +44,7 @@ Create an encrypted scalar with the value of zero.
 
 
 **Returns:**
-  Union[np.ndarray, Tracer]:  Tracer that respresents the operation during tracing  ndarray with zero otherwise 
+  Union[np.ndarray, Tracer]:  Tracer that represents the operation during tracing  ndarray with zero otherwise 
 
 
 ---

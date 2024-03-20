@@ -21,7 +21,7 @@ def ones(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
 
     Returns:
         Union[np.ndarray, Tracer]:
-            Tracer that respresents the operation during tracing
+            Tracer that represents the operation during tracing
             ndarray filled with ones otherwise
     """
 
@@ -49,7 +49,7 @@ def one() -> Union[np.ndarray, Tracer]:
 
     Returns:
         Union[np.ndarray, Tracer]:
-            Tracer that respresents the operation during tracing
+            Tracer that represents the operation during tracing
             ndarray with one otherwise
     """
 

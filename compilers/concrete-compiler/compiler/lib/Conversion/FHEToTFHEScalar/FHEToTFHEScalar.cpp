@@ -479,7 +479,7 @@ std::vector<mlir::Value> extractBitWithClearedLowerBits(
                                            rewriter.getIntegerType(64)),
                rawLut));
 
-  //-------------------------------------------------- CIPHERTEXT ALIGNEMENT
+  //-------------------------------------------------- CIPHERTEXT ALIGNMENT
   // In practice, TFHE ciphertexts are normally distributed around a value.
   // That means that if the lookup is performed _as is_, we have almost .5
   // probability to return the wrong value. Imagine a ciphertext centered

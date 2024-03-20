@@ -299,7 +299,7 @@ and displays:
 ## Exactness
 
 One use of rounding is doing faster computation by ignoring the lower significant bits.
-For this usage, you can even get faster results if you accept the rounding it-self to be slighlty inexact.
+For this usage, you can even get faster results if you accept the rounding it-self to be slightly inexact.
 The speedup is usually around 2x-3x but can be higher for big precision reduction.
 This also enable higher precisions values that are not possible otherwise.
 
@@ -326,7 +326,7 @@ In approximate mode the rounding threshold up or down is not perfectly centered:
 The off-centering is:
 * is bounded, i.e. at worst an off-by-one on the reduced precision value compared to the exact result,
 * is pseudo-random, i.e. it will be different on each call,
-* almost symetrically distributed,
+* almost symmetrically distributed,
 * depends on cryptographic properties like the encryption mask, the encryption noise and the crypto-parameters.
 
 | ![approximate-off-by-one-error.png](../_static/rounding/approximate-off-by-one-error.png) |

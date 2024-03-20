@@ -85,7 +85,7 @@ pub struct CircuitKeys {
 
 #[derive(Debug, Clone)]
 pub struct InstructionKeys {
-    /* Describe for each intructions what is the key of inputs/outputs.
+    /* Describe for each instructions what is the key of inputs/outputs.
        For tlus, it gives the internal keyswitch/pbs keys.
        It also express if the output need to be converted to other keys. */
     /* Note: Levelled instructions doesn't need to use any keys.*/
