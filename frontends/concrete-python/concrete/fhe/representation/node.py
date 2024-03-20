@@ -172,15 +172,15 @@ class Node:
         fhe_directory = os.path.dirname(fhe.__file__)
 
         # pylint: enable=cyclic-import,import-outside-toplevel
-
         for frame in reversed(traceback.extract_stack()):
+            self.location = f"{frame.filename}:{frame.lineno}"
             if frame.filename == "<__array_function__ internals>":
                 continue
 
             if frame.filename.startswith(fhe_directory):
+                self.location = f"{frame.filename}:{frame.lineno}"
                 continue
 
-            self.location = f"{frame.filename}:{frame.lineno}"
             break
 
         # pylint: disable=cyclic-import,import-outside-toplevel
