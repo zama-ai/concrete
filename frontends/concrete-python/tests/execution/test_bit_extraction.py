@@ -152,6 +152,7 @@ def test_bad_plain_bit_extraction(
     "input_bit_width,input_is_signed,operation",
     [
         # unsigned
+        pytest.param(3, False, lambda x: fhe.bits(x)[0:3], id="unsigned-3b[0:3]"),
         pytest.param(5, False, lambda x: fhe.bits(x)[0], id="unsigned-5b[0]"),
         pytest.param(5, False, lambda x: fhe.bits(x)[1], id="unsigned-5b[1]"),
         pytest.param(5, False, lambda x: fhe.bits(x)[2], id="unsigned-5b[2]"),
@@ -166,6 +167,7 @@ def test_bad_plain_bit_extraction(
         pytest.param(5, False, lambda x: fhe.bits(x)[2::-1], id="unsigned-5b[2::-1]"),
         pytest.param(5, False, lambda x: fhe.bits(x)[1:30:10], id="unsigned-5b[1:30:10]"),
         # signed
+        pytest.param(3, True, lambda x: fhe.bits(x)[0:3], id="signed-3b[0:3]"),
         pytest.param(5, True, lambda x: fhe.bits(x)[0], id="signed-5b[0]"),
         pytest.param(5, True, lambda x: fhe.bits(x)[1], id="signed-5b[1]"),
         pytest.param(5, True, lambda x: fhe.bits(x)[2], id="signed-5b[2]"),
@@ -179,9 +181,11 @@ def test_bad_plain_bit_extraction(
         pytest.param(5, True, lambda x: fhe.bits(x)[2::-1], id="signed-5b[2::-1]"),
         pytest.param(5, True, lambda x: fhe.bits(x)[1:30:10], id="signed-5b[1:30:10]"),
         # unsigned (result bit-width increased)
+        pytest.param(3, False, lambda x: fhe.bits(x)[0:3] + 100, id="unsigned-3b[0:3] + 100"),
         pytest.param(5, False, lambda x: fhe.bits(x)[0] + 100, id="unsigned-5b[0] + 100"),
         pytest.param(5, False, lambda x: fhe.bits(x)[1:3] + 100, id="unsigned-5b[1:3] + 100"),
         # signed (result bit-width increased)
+        pytest.param(3, True, lambda x: fhe.bits(x)[0:3], id="signed-3b[0:3] + 100"),
         pytest.param(5, True, lambda x: fhe.bits(x)[0] + 100, id="signed-5b[0] + 100"),
         pytest.param(5, True, lambda x: fhe.bits(x)[1:3] + 100, id="signed-5b[1:3] + 100"),
     ],
@@ -203,7 +207,143 @@ def test_bit_extraction(input_bit_width, input_is_signed, operation, helpers):
 
         compiler = fhe.Compiler(operation, {"x": "encrypted"})
         circuit = compiler.compile(inputset, helpers.configuration())
-
         values = inputset if len(inputset) <= 8 else random.sample(inputset, 8)
         for value in values:
             helpers.check_execution(circuit, operation, value, retries=3)
+
+
+def mlir_count_ops(mlir, operation):
+    """
+    Count op in mlir.
+    """
+    return sum(operation in line for line in mlir.splitlines())
+
+
+def test_highest_bit_extraction_mlir(helpers):
+    """
+    Test bit extraction of the highest bit. Saves one lsb.
+    """
+
+    precision = 8
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):
+        return fhe.bits(x)[precision - 1]
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    assert mlir_count_ops(circuit.mlir, "lsb") == precision - 1
+    assert mlir_count_ops(circuit.mlir, "lookup") == 0
+
+
+def test_bits_extraction_to_same_bitwidth_mlir(helpers):
+    """
+    Test bit extraction to same.
+    """
+
+    precision = 8
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):
+        return tuple(fhe.bits(x)[i] for i in range(precision))
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    assert mlir_count_ops(circuit.mlir, "lsb") == precision - 1
+    assert mlir_count_ops(circuit.mlir, "lookup") == 0
+
+
+def test_bits_extraction_to_bigger_bitwidth_mlir(helpers):
+    """
+    Test bit extraction to bigger bitwidth.
+    """
+
+    precision = 8
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):
+        return tuple(fhe.bits(x)[i] + (2**precision + 1) for i in range(precision))
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    print(circuit.mlir)
+    assert mlir_count_ops(circuit.mlir, "lsb") == precision
+    assert mlir_count_ops(circuit.mlir, "lookup") == 0
+
+
+def test_seq_bits_extraction_to_same_bitwidth_mlir(helpers):
+    """
+    Test sequential bit extraction to smaller bitwidth.
+    """
+
+    precision = 8
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):
+        return tuple(fhe.bits(x)[i] + (2**precision - 2) for i in range(precision))
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    assert mlir_count_ops(circuit.mlir, "lsb") == precision
+    assert mlir_count_ops(circuit.mlir, "lookup") == 0
+
+
+def test_seq_bits_extraction_to_smaller_bitwidth_mlir(helpers):
+    """
+    Test sequential bit extraction to smaller bitwidth.
+    """
+
+    precision = 8
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):
+        return tuple(fhe.bits(x)[i] for i in range(precision))
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    assert mlir_count_ops(circuit.mlir, "lsb") == precision - 1
+    assert mlir_count_ops(circuit.mlir, "lookup") == 0
+
+
+def test_seq_bits_extraction_to_bigger_bitwidth_mlir(helpers):
+    """
+    Test sequential bit extraction to bigger bitwidth.
+    """
+
+    precision = 8
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):
+        return tuple(fhe.bits(x)[i] + 2 ** (precision + 1) for i in range(precision))
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    assert mlir_count_ops(circuit.mlir, "lsb") == precision
+    assert mlir_count_ops(circuit.mlir, "lookup") == 0
+
+
+def test_bit_extract_to_1_tlu(helpers):
+    """
+    Test bit extract as 1 tlu for small precision.
+    """
+    precision = 3
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):
+        return fhe.bits(x)[0:2]
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    assert mlir_count_ops(circuit.mlir, "lsb") == 0
+    assert mlir_count_ops(circuit.mlir, "lookup") == 1
+
+    precision = 4
+    inputset = list(range(2**precision))
+
+    @fhe.compiler({"x": "encrypted"})
+    def operation(x):  # pylint: disable=function-redefined
+        return fhe.bits(x)[0:2]
+
+    circuit = operation.compile(inputset, helpers.configuration())
+    assert mlir_count_ops(circuit.mlir, "lsb") == 2
+    assert mlir_count_ops(circuit.mlir, "lookup") == 0

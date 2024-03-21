@@ -41,6 +41,21 @@ from .utils import MAXIMUM_TLU_BIT_WIDTH, Comparison, _FromElementsOp
 # pylint: enable=import-error,no-name-in-module
 
 
+LUT_COSTS = {
+    1: 29,
+    2: 33,
+    3: 45,
+    4: 74,
+    5: 101,
+    6: 231,
+    7: 535,
+    8: 1721,
+    9: 3864,
+    10: 8697,
+    11: 19522,
+}
+
+
 class Context:
     """
     Context class, to perform operations on conversions.
@@ -2173,6 +2188,22 @@ class Context:
     def equal(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.EQUAL})
 
+    def shift_left(self, x: Conversion, rank):
+        assert rank >= 0
+        assert rank < x.bit_width
+        shifter = 2**rank
+        shifter = self.constant(self.i(x.bit_width + 1), shifter)
+        return self.mul(x.type, x, shifter)
+
+    def reduce_precision(self, x: Conversion, bit_width):
+        assert bit_width > 0
+        assert bit_width <= x.type.bit_width
+        if bit_width == x.type.bit_width:
+            return x
+        scaled_x = self.shift_left(x, x.type.bit_width - bit_width)
+        x = self.reinterpret(scaled_x, bit_width=bit_width)
+        return x
+
     def extract_bits(
         self,
         resulting_type: ConversionType,
@@ -2200,66 +2231,116 @@ class Context:
         start = bits.start or MIN_EXTRACTABLE_BIT
         stop = bits.stop or (MAX_EXTRACTABLE_BIT if step > 0 else (MIN_EXTRACTABLE_BIT - 1))
 
-        bits_and_their_positions = []
-        for position, bit in enumerate(range(start, stop, step)):
-            bits_and_their_positions.append((bit, position))
+        bits = list(range(start, stop, step))
+
+        bits_and_their_positions = ((bit, position) for position, bit in enumerate(bits))
 
         bits_and_their_positions = sorted(
             bits_and_their_positions,
             key=lambda bit_and_its_position: bit_and_its_position[0],
         )
 
+        # we optimize bulk extract in low precision, used for identity
+        if (
+            len(bits) > 1
+            and LUT_COSTS.get(x.type.bit_width, float("inf")) <= (max(bits) + 1) * LUT_COSTS[1]
+        ):
+
+            def is_positive(v):
+                return x.type.is_unsigned or v < 2 ** (x.type.bit_width - 1)
+
+            def to_signed(v):
+                if is_positive(v):
+                    return v
+                return -(2 ** (x.type.bit_width) - v)
+
+            table = [
+                sum(
+                    ((to_signed(v) >> bit) & 1) << position
+                    for bit, position in bits_and_their_positions
+                )
+                + (0 if is_positive(v) else 2 ** (resulting_type.bit_width + 1))
+                for v in range(2**x.type.bit_width)
+            ]
+            tlu_result = self.tlu(resulting_type, x, table)
+            return self.to_signedness(tlu_result, of=resulting_type)
+
+        def same_type_as(type_, bit_width):
+            return self.typeof(
+                ValueDescription(
+                    dtype=Integer(is_signed=type_.is_signed, bit_width=bit_width),
+                    shape=type_.shape,
+                    is_encrypted=type_.is_encrypted,
+                )
+            )
+
+        def reduce_precision(x, delta):
+            assert delta < x.type.bit_width
+            new_bit_witdh = x.type.bit_width - delta
+            return self.reduce_precision(x, new_bit_witdh)
+
         current_bit = 0
         max_bit = x.original_bit_width
 
         lsb: Optional[Conversion] = None
         result: Optional[Conversion] = None
-
-        for index, (bit, position) in enumerate(bits_and_their_positions):
+        for bit, position in bits_and_their_positions:
             if bit >= max_bit and x.is_unsigned:
                 break
 
-            last = index == len(bits_and_their_positions) - 1
             while bit != (current_bit - 1):
-                if bit == (max_bit - 1) and x.bit_width == 1 and x.is_unsigned:
+                if (
+                    bit == (max_bit - 1)
+                    and x.bit_width == resulting_type.bit_width == 1
+                    and x.is_unsigned
+                ):
+                    lsb_bit_witdh = 1
                     lsb = x
-                elif last and bit == current_bit:
-                    lsb = self.lsb(resulting_type, x)
                 else:
-                    lsb = self.lsb(x.type, x)
+                    lsb_bit_witdh = max(resulting_type.bit_width - position, x.type.bit_width)
+                    lsb_type = same_type_as(x.type, lsb_bit_witdh)
+                    lsb = self.lsb(lsb_type, x)
+
+                # check that we only need to shift to emulate the initial and final position
+                # position are expressed for the final bit_width
+                initial_position = resulting_type.bit_width - x.type.bit_width
+                actual_position = resulting_type.bit_width - lsb.type.bit_width
+                assert (
+                    actual_position <= initial_position
+                ), "extract_bits: Cannot get back to initial precision"
+                assert (
+                    actual_position <= position
+                ), "extract_bits: Cannot get back to final precision"
 
                 current_bit += 1
 
                 if current_bit >= max_bit:
                     break
 
-                if not last or bit != (current_bit - 1):
-                    cleared = self.sub(x.type, x, lsb)
-                    x = self.reinterpret(cleared, bit_width=(x.bit_width - 1))
+                delta_precision = initial_position - actual_position
+                assert 0 <= delta_precision < resulting_type.bit_width
+                clearing_bit = reduce_precision(lsb, delta_precision)
+                cleared = self.sub(x.type, x, clearing_bit)
+                x = self.reinterpret(cleared, bit_width=(x.bit_width - 1))
 
             assert lsb is not None
-            lsb = self.to_signedness(lsb, of=resulting_type)
+            bit_value = self.to_signedness(lsb, of=resulting_type)
+            bit_value = self.reinterpret(
+                bit_value, bit_width=max(resulting_type.bit_width, max_bit)
+            )
 
-            if lsb.bit_width > resulting_type.bit_width:
-                difference = (lsb.bit_width - resulting_type.bit_width) + position
-                shifter = self.constant(self.i(lsb.bit_width + 1), 2**difference)
-                shifted = self.mul(lsb.type, lsb, shifter)
-                lsb = self.reinterpret(shifted, bit_width=resulting_type.bit_width)
+            delta_precision = position - actual_position
+            assert actual_position < 0 or 0 <= delta_precision < resulting_type.bit_width, (
+                position,
+                actual_position,
+                resulting_type.bit_width,
+            )
+            if delta_precision:
+                bit_value = self.shift_left(bit_value, delta_precision)
 
-            elif lsb.bit_width < resulting_type.bit_width:
-                shift = 2 ** (lsb.bit_width - 1)
-                if shift != 1:
-                    shifter = self.constant(self.i(lsb.bit_width + 1), shift)
-                    shifted = self.mul(lsb.type, lsb, shifter)
-                    lsb = self.reinterpret(shifted, bit_width=1)
-                lsb = self.tlu(resulting_type, lsb, [0 << position, 1 << position])
+            bit_value = self.reinterpret(bit_value, bit_width=resulting_type.bit_width)
 
-            elif position != 0:
-                shifter = self.constant(self.i(lsb.bit_width + 1), 2**position)
-                lsb = self.mul(lsb.type, lsb, shifter)
-
-            assert lsb is not None
-            result = lsb if result is None else self.add(resulting_type, result, lsb)
+            result = bit_value if result is None else self.add(resulting_type, result, bit_value)
 
         return result if result is not None else self.zeros(resulting_type)
 
@@ -3763,11 +3844,12 @@ class Context:
     ) -> Conversion:
         assert x.is_encrypted
 
-        if x.bit_width == bit_width:
+        result_unsigned = x.is_unsigned if signed is None else not signed
+
+        if x.bit_width == bit_width and x.is_unsigned == result_unsigned:
             return x
 
-        result_signed = x.is_unsigned if signed is None else signed
-        resulting_element_type = (self.eint if result_signed else self.esint)(bit_width)
+        resulting_element_type = (self.eint if result_unsigned else self.esint)(bit_width)
         resulting_type = self.tensor(resulting_element_type, shape=x.shape)
 
         operation = (
