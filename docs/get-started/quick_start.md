@@ -10,18 +10,22 @@ from concrete import fhe
 def add(x, y):
     return x + y
 
-compiler = fhe.Compiler(add, {"x": "encrypted", "y": "clear"})
+compiler = fhe.Compiler(add, {"x": "encrypted", "y": "encrypted"})
 
-inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]
+inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
+
+print(f"Compilation...")
 circuit = compiler.compile(inputset)
 
-x = 4
-y = 4
+print(f"Key generation...")
+circuit.keygen()
 
-clear_evaluation = add(x, y)
-homomorphic_evaluation = circuit.encrypt_run_decrypt(x, y)
+print(f"Homomorphic evaluation...")
+encrypted_x, encrypted_y = circuit.encrypt(2, 6)
+encrypted_result = circuit.run(encrypted_x, encrypted_y)
+result = circuit.decrypt(encrypted_result)
 
-print(x, "+", y, "=", clear_evaluation, "=", homomorphic_evaluation)
+assert result == add(2, 6)
 ```
 
 ## Importing the library
@@ -49,6 +53,13 @@ To compile the function, you need to create a `Compiler` by specifying the funct
 
 <!--pytest-codeblocks:skip-->
 ```python
+compiler = fhe.Compiler(add, {"x": "encrypted", "y": "encrypted"})
+```
+
+To set that e.g. `y` is in the clear, it would be
+
+<!--pytest-codeblocks:skip-->
+```python
 compiler = fhe.Compiler(add, {"x": "encrypted", "y": "clear"})
 ```
 
@@ -60,11 +71,13 @@ It should be in iterable, yielding tuples, of the same length as the number of a
 
 <!--pytest-codeblocks:skip-->
 ```python
-inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1)]
+inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
 ```
 
+Here, our inputset is made of 10 pairs of integers, whose the minimum pair is `(0, 0)` and the maximum is `(7, 7)`.
+
 {% hint style="warning" %}
-All inputs in the inputset will be evaluated in the graph, which takes time. If you're experiencing long compilation times, consider providing a smaller inputset.
+Choosing a representative inputset is critical to allow the compiler to find accurate bounds of all the intermediate values (find more details [here](https://docs.zama.ai/concrete/explanations/compilation#bounds-measurement). Later if you evaluate the circuit with values that make under or overflows it results to an undefined behavior.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -74,22 +87,36 @@ There is a utility function called `fhe.inputset(...)` for easily creating rando
 
 ## Compiling the function
 
-You can use the `compile` method of a `Compiler` class with an inputset to perform the compilation and get the resulting circuit back:
+You can use the `compile` method of the `Compiler` class with an inputset to perform the compilation and get the resulting circuit back:
 
 <!--pytest-codeblocks:skip-->
 ```python
+print(f"Compilation...")
 circuit = compiler.compile(inputset)
 ```
 
-## Performing homomorphic evaluation
+## Generating the keys
 
-You can use the `encrypt_run_decrypt` method of a `Circuit` class to perform homomorphic evaluation:
+You can use the `keygen` method of the `Circuit` class to generate the keys (public and private):
 
 <!--pytest-codeblocks:skip-->
 ```python
-homomorphic_evaluation = circuit.encrypt_run_decrypt(4, 4)
+print(f"Key generation...")
+circuit.keygen()
 ```
 
 {% hint style="info" %}
-`circuit.encrypt_run_decrypt(*args)` is just a convenient way to do everything at once. It is implemented as `circuit.decrypt(circuit.run(circuit.encrypt(*args)))`.
+If you don't call the key generation explicitly keys will be generated lazily when it needed.
 {% endhint %}
+
+## Performing homomorphic evaluation
+
+Now you can easily perform the homomorphic evaluation using the `encrypt`, `run` and `decrypt` methods of the `Circuit`:
+
+<!--pytest-codeblocks:skip-->
+```python
+print(f"Homomorphic evaluation...")
+encrypted_x, encrypted_y = circuit.encrypt(2, 6)
+encrypted_result = circuit.run(encrypted_x, encrypted_y)
+result = circuit.decrypt(encrypted_result)
+```
