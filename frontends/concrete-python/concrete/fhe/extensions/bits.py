@@ -105,7 +105,7 @@ class Bits:
 
         def evaluator(x, bits):  # pylint: disable=redefined-outer-name
             if isinstance(bits, (int, np.integer)):
-                return (x & (1 << bits)) >> bits
+                return (x >> bits) & 1
 
             assert isinstance(bits, slice)
 
@@ -126,7 +126,7 @@ class Bits:
 
             result = 0
             for i, bit in enumerate(range(start, stop, step)):
-                value = (x & (1 << bit)) >> bit
+                value = (x >> bit) & 1
                 result += value << i
 
             return result
