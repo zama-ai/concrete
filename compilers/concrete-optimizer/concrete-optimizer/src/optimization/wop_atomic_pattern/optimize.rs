@@ -146,8 +146,10 @@ fn estimate_complexity(
     let complexity_1_ggsw_to_fft = cb_decomp.complexity_one_ggsw_to_fft;
     // BitExtract use br
     let complexity_bit_extract_1_pbs = br_cost;
-    let complexity_bit_extract_wo_ks =
-        (precisions_sum - nb_blocks) as f64 * complexity_bit_extract_1_pbs;
+
+    let complexity_bit_extract =
+        // Assuming the last one is not done, this lets the noise goes to the CB and adds a constraint
+        (precisions_sum - nb_blocks) as f64 * (complexity_bit_extract_1_pbs + ks_cost);
 
     // Hybrid packing
     // Circuit bs: fp-ks
@@ -156,37 +158,34 @@ fn estimate_complexity(
         ((glwe_params.glwe_dimension + 1) * cb_level * precisions_sum) as f64 * complexity_ppks;
 
     // Circuit bs: pbs
-    let complexity_all_pbs = (precisions_sum * cb_level) as f64 * br_cost;
+    let complexity_cbs_ks = precisions_sum as f64 * ks_cost;
+    let complexity_cbs_pbs = (precisions_sum * cb_level) as f64 * br_cost;
 
-    let complexity_circuit_bs = complexity_all_pbs + complexity_all_ppks;
+    let complexity_circuit_bs = complexity_cbs_ks + complexity_cbs_pbs + complexity_all_ppks;
 
     // Hybrid packing (Do we have 1 or 2 groups)
     let log2_polynomial_size = glwe_params.log2_polynomial_size;
-    // Size of cmux_group, can be zero
-    let cmux_group_count = if precisions_sum > log2_polynomial_size {
-        2f64.powi((precisions_sum - log2_polynomial_size) as i32) - 1.0
-    } else {
-        0.0
-    };
-    let complexity_cmux_tree = cmux_group_count * complexity_1_cmux_hp;
+    let hybrid_packing_blind_rotate_bits = log2_polynomial_size.min(precisions_sum);
 
+    let hybrid_packing_cmux_tree_bits = precisions_sum - hybrid_packing_blind_rotate_bits;
+    // Size of cmux_group, can be zero
+    let hybrid_packing_cmux_tree_size = 2f64.powi(hybrid_packing_cmux_tree_bits as i32) - 1.0;
+    let hybrid_packing_blind_rotate_tree_size =
+        2f64.powi(hybrid_packing_blind_rotate_bits as i32) - 1.0;
     let complexity_all_ggsw_to_fft = precisions_sum as f64 * complexity_1_ggsw_to_fft;
 
+    // Hybrid packing cmux tree
+    let complexity_cmux_tree = complexity_1_cmux_hp * hybrid_packing_cmux_tree_size;
+
     // Hybrid packing blind rotate
-    let complexity_g_br =
-        complexity_1_cmux_hp * u64::min(glwe_params.log2_polynomial_size, precisions_sum) as f64;
+    let complexity_g_br = complexity_1_cmux_hp * hybrid_packing_blind_rotate_tree_size;
 
     let complexity_hybrid_packing = complexity_cmux_tree + complexity_g_br;
 
     let complexity_multi_hybrid_packing =
         n_functions as f64 * complexity_hybrid_packing + complexity_all_ggsw_to_fft;
 
-    let complexity_all_ks = precisions_sum as f64 * ks_cost;
-
-    complexity_bit_extract_wo_ks
-        + complexity_circuit_bs
-        + complexity_multi_hybrid_packing
-        + complexity_all_ks
+    complexity_bit_extract + complexity_circuit_bs + complexity_multi_hybrid_packing
 }
 
 #[allow(clippy::too_many_lines)]
