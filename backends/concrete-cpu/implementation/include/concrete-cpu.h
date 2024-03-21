@@ -70,6 +70,13 @@ extern const size_t SECRET_CSPRNG_ALIGN;
 
 extern const size_t SECRET_CSPRNG_SIZE;
 
+void concrete_cpu_add_ifft(uint64_t *out,
+                           c64 *inp,
+                           size_t polynomial_size,
+                           const struct Fft *fft,
+                           uint8_t *stack,
+                           size_t stack_size);
+
 void concrete_cpu_add_lwe_ciphertext_u64(uint64_t *ct_out,
                                          const uint64_t *ct_in0,
                                          const uint64_t *ct_in1,
@@ -266,6 +273,13 @@ ScratchStatus concrete_cpu_extract_bit_lwe_ciphertext_u64_scratch(size_t *stack_
                                                                   size_t bsk_glwe_dimension,
                                                                   size_t bsk_polynomial_size,
                                                                   const struct Fft *fft);
+
+void concrete_cpu_fft(c64 *out,
+                      const uint64_t *inp,
+                      size_t polynomial_size,
+                      const struct Fft *fft,
+                      uint8_t *stack,
+                      size_t stack_size);
 
 void concrete_cpu_fill_with_random_gaussian(uint64_t *buffer,
                                             size_t size,

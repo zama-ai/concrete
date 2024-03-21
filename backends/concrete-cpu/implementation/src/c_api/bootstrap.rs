@@ -344,6 +344,53 @@ pub unsafe extern "C" fn concrete_cpu_bootstrap_lwe_ciphertext_u64_scratch(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_fft(
+    out: *mut c64,
+    inp: *const u64,
+    // bootstrap parameters
+    polynomial_size: usize,
+    // side resources
+    fft: *const Fft,
+    stack: *mut u8,
+    stack_size: usize,
+) {
+    nounwind(||{
+        let out = FourierPolynomial{
+            data: slice::from_raw_parts_mut(out, polynomial_size/2)
+        };
+        let inp = Polynomial::from_container(
+            slice::from_raw_parts(inp, polynomial_size)
+        );
+        let stack = PodStack::new(slice::from_raw_parts_mut(stack as _, stack_size));
+        (*fft).as_view().forward_as_integer(out, inp, stack);
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_add_ifft(
+    out: *mut u64,
+    inp: *mut c64,
+    // bootstrap parameters
+    polynomial_size: usize,
+    // side resources
+    fft: *const Fft,
+    stack: *mut u8,
+    stack_size: usize,
+) {
+    nounwind(||{
+        let out = Polynomial::from_container(
+            slice::from_raw_parts_mut(out, polynomial_size)
+        );
+        let inp = FourierPolynomial{
+            data: slice::from_raw_parts_mut(inp, polynomial_size/2)
+        };
+        let stack = PodStack::new(slice::from_raw_parts_mut(stack as _, stack_size));
+        (*fft).as_view().add_backward_in_place_as_torus(out, inp, stack);
+    })
+}
+
+
+#[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_bootstrap_lwe_ciphertext_u64(
     // ciphertexts
     ct_out: *mut u64,
