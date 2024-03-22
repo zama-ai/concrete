@@ -760,7 +760,7 @@ class Converter:
                 variable_input.origin.properties["exactness"]
                 or ctx.configuration.rounding_exactness
             )
-            if exactness == Exactness.APPROXIMATE:
+            if exactness is Exactness.APPROXIMATE:
                 # we clip values to enforce input precision exactly as queried
                 original_bit_width = variable_input.origin.properties["original_bit_width"]
                 lsbs_to_remove = variable_input.origin.properties["kwargs"]["lsbs_to_remove"]
