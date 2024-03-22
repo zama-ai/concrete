@@ -1258,6 +1258,7 @@ struct CircuitSolution final {
   double global_p_error;
   bool is_feasible;
   ::rust::String error_msg;
+  ::rust::Vec<::std::size_t> error_nodes;
 
   ::rust::String dump() const noexcept;
   ::rust::String short_dump() const noexcept;

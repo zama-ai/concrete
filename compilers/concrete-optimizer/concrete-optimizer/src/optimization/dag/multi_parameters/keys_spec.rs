@@ -117,16 +117,18 @@ pub struct CircuitSolution {
     pub crt_decomposition: Vec<u64>, // empty in native case
     pub is_feasible: bool,
     pub error_msg: String,
+    pub error_nodes: Vec<usize>,
 }
 
 impl CircuitSolution {
-    pub fn no_solution(error_msg: impl Into<String>) -> Self {
+    pub fn no_solution(error_msg: impl Into<String>, error_nodes: Vec<usize>) -> Self {
         Self {
             is_feasible: false,
             complexity: f64::INFINITY,
             p_error: 1.0,
             global_p_error: 1.0,
             error_msg: error_msg.into(),
+            error_nodes: error_nodes,
             ..Self::default()
         }
     }
@@ -216,6 +218,7 @@ impl CircuitSolution {
             crt_decomposition: sol.crt_decomposition,
             is_feasible: true,
             error_msg,
+            error_nodes: vec![],
         }
     }
 
@@ -260,6 +263,7 @@ impl CircuitSolution {
                 global_p_error: sol.global_p_error,
                 is_feasible,
                 error_msg,
+                error_nodes: vec![],
             };
         }
         let small_key = SecretLweKey {
@@ -315,6 +319,7 @@ impl CircuitSolution {
             global_p_error: sol.global_p_error,
             is_feasible,
             error_msg,
+            error_nodes: vec![],
         }
     }
 }

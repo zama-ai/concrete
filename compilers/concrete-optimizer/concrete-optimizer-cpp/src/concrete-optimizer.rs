@@ -319,6 +319,7 @@ fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &Dag) -> ffi::Circui
         global_p_error: sol.global_p_error,
         is_feasible,
         error_msg,
+        error_nodes: vec![],
     }
 }
 
@@ -333,6 +334,7 @@ impl From<CircuitSolution> for ffi::CircuitSolution {
             global_p_error: v.global_p_error,
             is_feasible: v.is_feasible,
             error_msg: v.error_msg,
+            error_nodes: v.error_nodes,
         }
     }
 }
@@ -966,6 +968,7 @@ mod ffi {
         pub global_p_error: f64,
         pub is_feasible: bool,
         pub error_msg: String,
+        pub error_nodes: Vec<usize>,
     }
 }
 

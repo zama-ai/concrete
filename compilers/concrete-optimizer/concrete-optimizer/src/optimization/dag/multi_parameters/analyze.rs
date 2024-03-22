@@ -330,6 +330,7 @@ fn variance_constraint(
         nb_constraints,
         safe_variance_bound,
         variance,
+        nodes: vec![op_i],
     }
 }
 

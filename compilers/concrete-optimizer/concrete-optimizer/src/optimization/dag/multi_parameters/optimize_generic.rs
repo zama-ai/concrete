@@ -35,6 +35,7 @@ fn crt_optimize(
     if analyze::has_round(dag) || analyze::has_unsafe_cast(dag) {
         return CircuitSolution::no_solution(
             "Crt does not support round/reinterpret_precision operator",
+            vec![], // TODO: report round and reinterpret
         );
     } // TODO: dag to params
     let max_precision = max_precision(dag);

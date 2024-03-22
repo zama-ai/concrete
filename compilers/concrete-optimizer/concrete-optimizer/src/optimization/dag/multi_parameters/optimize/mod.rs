@@ -60,6 +60,7 @@ pub struct Parameters {
     pub p_error: f64,
     pub global_p_error: f64,
     pub complexity: f64,
+    pub worst_nodes: Vec<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -778,6 +779,8 @@ fn optimize_macro(
                     continue;
                 }
                 best_partition_p_error = partition_p_error;
+                // retain non satisfied constraint
+                let (_, _, worst_constraint) = feasible.worst_constraint(&operations.variance);
                 let p_error = feasible.p_error(&operations.variance);
                 let global_p_error = feasible.global_p_error(&operations.variance);
                 let mut pbs = init_parameters.micro_params.pbs.clone();
@@ -795,6 +798,7 @@ fn optimize_macro(
                     macro_params,
                     is_lower_bound: true,
                     is_feasible: false,
+                    worst_nodes: worst_constraint.nodes.clone(),
                 };
                 continue;
             }
@@ -880,6 +884,7 @@ fn optimize_macro(
                     macro_params,
                     is_lower_bound,
                     is_feasible: true,
+                    worst_nodes: vec![],
                 };
             } else {
                 // the macro parameters are feasible
@@ -941,6 +946,7 @@ pub fn optimize(
         p_error: 1.0,
         global_p_error: 1.0,
         complexity: f64::INFINITY,
+        worst_nodes: vec![],
     };
 
     let mut params = init_parameters;
@@ -973,7 +979,7 @@ pub fn optimize(
             params = new_params;
             if !params.is_feasible {
                 if nb_partitions == 1 {
-                    return Err(NoParametersFound);
+                    return Err(NoParametersFound(params.worst_nodes));
                 }
                 if DEBUG {
                     eprintln!(
@@ -1021,7 +1027,7 @@ pub fn optimize(
         fix_point = params.clone();
     }
     if best_params.is_none() {
-        return Err(NoParametersFound);
+        return Err(NoParametersFound(params.worst_nodes));
     }
     let best_params = best_params.unwrap();
     sanity_check(
@@ -1167,6 +1173,7 @@ pub fn optimize_to_circuit_solution(
         if config.composable {
             return keys_spec::CircuitSolution::no_solution(
                 NotComposable("No luts in the circuit.".into()).to_string(),
+                vec![],
             );
         }
         let nb_instr = dag.operators.len();
@@ -1174,7 +1181,8 @@ pub fn optimize_to_circuit_solution(
         {
             return keys_spec::CircuitSolution::from_native_solution(sol, nb_instr);
         }
-        return keys_spec::CircuitSolution::no_solution(NoParametersFound.to_string());
+        let err = NoParametersFound(vec![]);
+        return keys_spec::CircuitSolution::no_solution(err.to_string(), err.error_nodes());
     }
     let default_partition = 0;
     let dag_and_params = optimize(
@@ -1187,7 +1195,7 @@ pub fn optimize_to_circuit_solution(
     );
     #[allow(clippy::option_if_let_else)]
     match dag_and_params {
-        Err(e) => keys_spec::CircuitSolution::no_solution(e.to_string()),
+        Err(e) => keys_spec::CircuitSolution::no_solution(e.to_string(), e.error_nodes()),
         Ok((dag, params)) => {
             let ext_keys = keys_spec::ExpandedCircuitKeys::of(&params);
             let instructions_keys = analyze::original_instrs_partition(&dag, &ext_keys);
@@ -1209,6 +1217,7 @@ pub fn optimize_to_circuit_solution(
                 global_p_error: params.global_p_error,
                 is_feasible: true,
                 error_msg: String::default(),
+                error_nodes: vec![],
             }
         }
     }

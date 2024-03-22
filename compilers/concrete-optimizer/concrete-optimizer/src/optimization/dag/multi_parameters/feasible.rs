@@ -213,7 +213,7 @@ impl Feasible {
         }
         let compress = |c: &VarianceConstraint| VarianceConstraint {
             variance: c.variance.compress(&detect_used),
-            ..(*c)
+            ..c.clone()
         };
         let constraints = self.constraints.iter().map(compress).collect();
         let undominated_constraints = self.undominated_constraints.iter().map(compress).collect();

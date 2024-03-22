@@ -548,6 +548,7 @@ pub fn optimize_to_circuit_solution(
     let Ok(coprimes) = crt_decomposition::default_coprimes(precision as Precision) else {
         return keys_spec::CircuitSolution::no_solution(
             "Crt decomposition is not unknown for {precision}:bits",
+            vec![],
         );
     };
     let n_functions = 1;
@@ -569,7 +570,7 @@ pub fn optimize_to_circuit_solution(
     } else {
         keys_spec::CircuitSolution {
             crt_decomposition: coprimes,
-            ..keys_spec::CircuitSolution::no_solution("No crypto parameters")
+            ..keys_spec::CircuitSolution::no_solution("No crypto parameters", vec![])
         }
     }
 }

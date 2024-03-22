@@ -11,6 +11,7 @@ pub struct VarianceConstraint {
     pub nb_constraints: u64,
     pub safe_variance_bound: f64,
     pub variance: SymbolicVariance,
+    pub nodes: Vec<usize>,
 }
 
 impl fmt::Display for VarianceConstraint {
