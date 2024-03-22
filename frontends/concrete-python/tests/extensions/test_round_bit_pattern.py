@@ -2,6 +2,8 @@
 Tests of 'round_bit_pattern' extension.
 """
 
+import pytest
+
 from concrete import fhe
 
 
@@ -35,3 +37,16 @@ def test_dump_load_auto_rounder():
     assert loaded.input_max == 20
     assert loaded.input_bit_width == 5
     assert loaded.lsbs_to_remove == 2
+
+
+def test_bad_exactness():
+    """
+    Test for incorrect 'exactness' argument.
+    """
+
+    @fhe.compiler({"a": "encrypted"})
+    def f(a):
+        return fhe.round_bit_pattern(a, lsbs_to_remove=1, exactness=True)
+
+    with pytest.raises(TypeError):
+        f.compile([0])
