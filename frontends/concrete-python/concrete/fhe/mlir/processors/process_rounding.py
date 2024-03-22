@@ -40,7 +40,7 @@ class ProcessRounding(GraphProcessor):
                 exactness = self.rounding_exactness
 
             if original_lsbs_to_remove != 0 and final_lsbs_to_remove == 0:
-                if exactness != Exactness.APPROXIMATE:
+                if exactness is not Exactness.APPROXIMATE:
                     self.replace_with_tlu(graph, node)
                 continue
 

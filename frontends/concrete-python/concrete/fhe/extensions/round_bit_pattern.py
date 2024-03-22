@@ -242,6 +242,10 @@ def round_bit_pattern(
 
         lsbs_to_remove = lsbs_to_remove.lsbs_to_remove
 
+    if exactness is not None and not isinstance(exactness, Exactness):
+        msg = "exactness should be of type fhe.Exactness"
+        raise TypeError(msg)
+
     assert isinstance(lsbs_to_remove, int)
 
     def evaluator(
