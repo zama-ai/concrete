@@ -165,6 +165,22 @@ protected:
       : KeyWithBuffer(info){};
 };
 
+class LwePublicKey
+    : public KeyWithBuffer<concreteprotocol::LwePublicKey,
+                           concreteprotocol::LwePublicKeyInfo, LwePublicKey> {
+
+public:
+  LwePublicKey(Message<concreteprotocol::LwePublicKeyInfo> info,
+               LweSecretKey &secretKey,
+               concretelang::csprng::EncryptionCSPRNG &csprng);
+
+protected:
+  friend class KeyWithBuffer;
+
+  LwePublicKey(Message<concreteprotocol::LwePublicKeyInfo> info)
+      : KeyWithBuffer(info){};
+};
+
 class LweBootstrapKey
     : public KeyWithCompression<concreteprotocol::LweBootstrapKey,
                                 concreteprotocol::LweBootstrapKeyInfo,

@@ -144,6 +144,49 @@ struct LweSecretKey {
   payload @1 :Payload; # The payload
 }
 
+################################################################################# LWE public keys ##
+
+struct LwePublicKeyParams {
+  # A public key is parameterized by a few quantities of cryptographic importance. This structure
+  # represents those parameters.
+
+  lweDimension @0 :UInt32; # The LWE dimension, e.g. the length of the corresponding secret key.
+  integerPrecision @1 :UInt32; # The bitwidth of the integers used for storage.
+  zeroEncryptionCount @2 :UInt32; # The number of LWE encryptions of 0 in a public key.
+  variance @3 :Float64; # The variance used to encrypt the ciphertexts.
+}
+
+struct LweCompactPublicKeyParams {
+  # A public key is parameterized by a few quantities of cryptographic importance. This structure
+  # represents those parameters.
+
+  lweDimension @0 :UInt32; # The LWE dimension, e.g. the length of the corresponding secret key.
+  integerPrecision @1 :UInt32; # The bitwidth of the integers used for storage.
+  variance @2 :Float64; # The variance used to encrypt the ciphertexts.
+}
+
+struct LwePublicKeyInfo {
+  # A public key value is uniquely described by cryptographic parameters and an identifier. This
+  # structure represents this description of a public key.
+
+  id @0 :UInt32; # The identifier of the key.
+
+  params :union {
+    # The cryptographic parameters of the keys.
+
+    classic @1 :LwePublicKeyParams;
+    compact @2 :LweCompactPublicKeyParams;
+  }
+}
+
+struct LwePublicKey {
+  # A public key value is a payload and a description to interpret this payload. This structure
+  # can be used to store and communicate a public key.
+
+  info @0 :LwePublicKeyInfo; # The description of the public key.
+  payload @1 :Payload; # The payload
+}
+
 ############################################################################## LWE bootstrap keys ##
 
 struct LweBootstrapKeyParams {

@@ -63,6 +63,60 @@ LweSecretKey::LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
 #endif
 }
 
+LwePublicKey::LwePublicKey(Message<concreteprotocol::LwePublicKeyInfo> info,
+                           LweSecretKey &secretKey, EncryptionCSPRNG &csprng)
+    : LwePublicKey(info) {
+  auto params = info.asReader().getParams();
+  if (params.hasClassic()) {
+    auto classic = params.getClassic();
+    auto lweDimension = classic.getLweDimension();
+    auto zeroEncryptionCount = classic.getZeroEncryptionCount();
+    auto variance = classic.getVariance();
+    // Allocate the buffer
+    buffer = std::make_shared<std::vector<uint64_t>>(
+        concrete_cpu_lwe_public_key_size_u64(lweDimension,
+                                             zeroEncryptionCount));
+    // Initialize the lwe secret key buffer
+    concrete_cpu_init_lwe_public_key_u64(
+        secretKey.getBuffer().data(), buffer->data(), lweDimension,
+        zeroEncryptionCount, variance, csprng.ptr);
+  } else if (params.hasCompact()) {
+    auto compact = params.getCompact();
+    auto lweDimension = compact.getLweDimension();
+    auto variance = compact.getVariance();
+    // Allocate the buffer
+    buffer = std::make_shared<std::vector<uint64_t>>(
+        concrete_cpu_lwe_compact_public_key_size_u64(lweDimension));
+    // Initialize the lwe secret key buffer
+    concrete_cpu_init_lwe_compact_public_key_u64(secretKey.getBuffer().data(),
+                                                 buffer->data(), lweDimension,
+                                                 variance, csprng.ptr);
+  }
+}
+
+void LwePublicKey::encrypt(uint64_t *lwe_ciphertext_buffer,
+                           const uint64_t input,
+                           csprng::SecretCSPRNG &secretCsprng) const {
+  auto params = info.asReader().getParams();
+  if (params.hasClassic()) {
+    auto classic = params.getClassic();
+    auto lweDimension = classic.getLweDimension();
+    auto zeroEncryptionCount = classic.getZeroEncryptionCount();
+    concrete_cpu_encrypt_lwe_ciphertext_with_lwe_public_key_u64(
+        buffer->data(), lwe_ciphertext_buffer, input, lweDimension,
+        zeroEncryptionCount, secretCsprng.ptr);
+  } else if (params.hasCompact()) {
+    auto compact = params.getCompact();
+    auto lweDimension = compact.getLweDimension();
+    auto variance = compact.getVariance();
+    // TODO - argument
+    csprng::EncryptionCSPRNG encryptionCSPRNG(0);
+    concrete_cpu_encrypt_lwe_ciphertext_with_compact_lwe_public_key_u64(
+        buffer->data(), lwe_ciphertext_buffer, input, lweDimension, variance,
+        secretCsprng.ptr, encryptionCSPRNG.ptr);
+  }
+}
+
 LweBootstrapKey::LweBootstrapKey(
     Message<concreteprotocol::LweBootstrapKeyInfo> info, LweSecretKey &inputKey,
     LweSecretKey &outputKey, EncryptionCSPRNG &csprng)
