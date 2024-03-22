@@ -4,7 +4,7 @@ Declaration of `Configuration` class.
 
 import platform
 from dataclasses import dataclass
-from enum import Enum, IntEnum
+from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Tuple, Union, get_type_hints
 
@@ -74,13 +74,13 @@ class MultiParameterStrategy(str, Enum):
         raise ValueError(message)
 
 
-class Exactness(IntEnum):
+class Exactness(Enum):
     """
     Exactness, to specify for specific operator the implementation preference (default and local).
     """
 
-    EXACT = 0
-    APPROXIMATE = 1
+    APPROXIMATE = "approximate"
+    EXACT = "exact"
 
 
 @dataclass
