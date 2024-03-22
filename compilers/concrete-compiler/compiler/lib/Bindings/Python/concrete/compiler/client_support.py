@@ -87,12 +87,12 @@ class ClientSupport(WrapperCpp):
 
         if secret_seed < 0 or secret_seed >= 2**128:
             raise ValueError("secret_seed must be a positive 128 bits integer")
-        if encryption_seed < 0 or secret_seed >= 2**128:
+        if encryption_seed < 0 or encryption_seed >= 2**128:
             raise ValueError("encryption_seed must be a positive 128 bits integer")
         secret_seed_msb = (secret_seed >> 64) & 0xFFFFFFFFFFFFFFFF
         secret_seed_lsb = (secret_seed) & 0xFFFFFFFFFFFFFFFF
-        encryption_seed_msb = (secret_seed >> 64) & 0xFFFFFFFFFFFFFFFF
-        encryption_seed_lsb = (secret_seed) & 0xFFFFFFFFFFFFFFFF
+        encryption_seed_msb = (encryption_seed >> 64) & 0xFFFFFFFFFFFFFFFF
+        encryption_seed_lsb = (encryption_seed) & 0xFFFFFFFFFFFFFFFF
 
         if keyset_cache is not None and not isinstance(keyset_cache, KeySetCache):
             raise TypeError(
