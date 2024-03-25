@@ -63,6 +63,24 @@ LweSecretKey::LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
 #endif
 }
 
+void LweSecretKey::encrypt(uint64_t *lwe_ciphertext_buffer,
+                           const uint64_t input, double variance,
+                           csprng::EncryptionCSPRNG &csprng) const {
+  auto params = info.asReader().getParams();
+  auto lweDimension = params.getLweDimension();
+  concrete_cpu_encrypt_lwe_ciphertext_u64(buffer->data(), lwe_ciphertext_buffer,
+                                          input, lweDimension, variance,
+                                          csprng.ptr);
+}
+
+void LweSecretKey::decrypt(uint64_t &output,
+                           const uint64_t *lwe_ciphertext_buffer) const {
+  auto params = info.asReader().getParams();
+  auto lweDimension = params.getLweDimension();
+  concrete_cpu_decrypt_lwe_ciphertext_u64(buffer->data(), lwe_ciphertext_buffer,
+                                          lweDimension, &output);
+}
+
 LwePublicKey::LwePublicKey(Message<concreteprotocol::LwePublicKeyInfo> info,
                            LweSecretKey &secretKey, EncryptionCSPRNG &csprng)
     : LwePublicKey(info) {

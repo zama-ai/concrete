@@ -73,7 +73,6 @@ public:
                               __uint128_t encryptionSeed = 0,
                               bool tryCache = true) {
     if (isSimulation()) {
-      Keyset keyset{};
       return outcome::success();
     }
     OUTCOME_TRY(auto lib, getLibrary());

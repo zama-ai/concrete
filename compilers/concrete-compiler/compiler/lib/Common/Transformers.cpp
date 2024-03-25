@@ -488,6 +488,29 @@ Result<Transformer> getCrtModeIntegerDecodingTransformer(
 }
 
 Result<Transformer> getEncryptionTransformer(
+    keysets::ClientPublicKeyset keyset,
+    const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info,
+    std::shared_ptr<csprng::SecretCSPRNG> csprng) {
+  OUTCOME_TRY(auto key, keyset.getLwePublicKey(info.asReader().getKeyId()));
+  auto lweDimension = info.asReader().getLweDimension();
+  auto lweSize = lweDimension + 1;
+
+  return [=](Value input) {
+    auto inputTensor = input.getTensor<uint64_t>().value();
+    auto outputTensor = Tensor<uint64_t>(inputTensor);
+    outputTensor.dimensions.push_back(lweSize);
+    outputTensor.values.resize(outputTensor.values.size() * lweSize);
+
+    for (size_t i = 0; i < inputTensor.values.size(); i++) {
+      key.encrypt(&outputTensor.values[i * lweSize], inputTensor.values[i],
+                  *csprng);
+    }
+
+    return Value{outputTensor};
+  };
+}
+
+Result<Transformer> getEncryptionTransformer(
     ClientKeyset keyset,
     const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info,
     std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
@@ -504,9 +527,8 @@ Result<Transformer> getEncryptionTransformer(
     outputTensor.values.resize(outputTensor.values.size() * lweSize);
 
     for (size_t i = 0; i < inputTensor.values.size(); i++) {
-      concrete_cpu_encrypt_lwe_ciphertext_u64(
-          key.getBufferConst().data(), &outputTensor.values[i * lweSize],
-          inputTensor.values[i], lweDimension, variance, csprng->ptr);
+      key.encrypt(&outputTensor.values[i * lweSize], inputTensor.values[i],
+                  variance, *csprng);
     }
 
     return Value{outputTensor};
@@ -576,9 +598,7 @@ Result<Transformer> getDecryptionTransformer(
     outputTensor.values.resize(outputTensor.values.size() / lweSize);
 
     for (size_t i = 0; i < outputTensor.values.size(); i++) {
-      concrete_cpu_decrypt_lwe_ciphertext_u64(
-          key.getBufferConst().data(), &inputTensor.values[i * lweSize],
-          lweDimension, &outputTensor.values[i]);
+      key.decrypt(outputTensor.values[i], &inputTensor.values[i * lweSize]);
     }
 
     return Value{outputTensor};
@@ -747,24 +767,12 @@ Result<ReturnTransformer> TransformerFactory::getPlaintextReturnTransformer(
   return getPlaintextInputTransformer(std::move(gateInfo));
 }
 
-Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
-    ClientKeyset keyset, Message<concreteprotocol::GateInfo> gateInfo,
-    std::shared_ptr<csprng::EncryptionCSPRNG> csprng, bool useSimulation) {
+Result<InputTransformer>
+getLweCiphertextInputTransformer(Message<concreteprotocol::GateInfo> gateInfo,
+                                 Transformer encryptionTransformer) {
   if (!gateInfo.asReader().getTypeInfo().hasLweCiphertext()) {
     return StringError("Tried to get lwe ciphertext input transformer from "
                        "non-ciphertext gate info.");
-  }
-  if (!useSimulation) {
-    auto keyid = gateInfo.asReader()
-                     .getTypeInfo()
-                     .getLweCiphertext()
-                     .getEncryption()
-                     .getKeyId();
-    if (keyid >= keyset.lweSecretKeys.size()) {
-      return StringError(
-          "Tried to generate lwe ciphertext input transformer with "
-          "key id unavailable");
-    }
   }
 
   /// Generating the encoding transformer.
@@ -790,6 +798,32 @@ Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
     return StringError("Malformed gate info");
   }
 
+  OUTCOME_TRY(auto verify, getLweCiphertextInputValueVerifier(gateInfo));
+  return [=](Value val) -> Result<TransportValue> {
+    OUTCOME_TRYV(verify(val));
+    auto output =
+        encryptionTransformer(encodingTransformer(val)).intoRawTransportValue();
+    output.asBuilder().initTypeInfo().setLweCiphertext(
+        gateInfo.asReader().getTypeInfo().getLweCiphertext());
+    return output;
+  };
+}
+
+Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
+    ClientKeyset keyset, Message<concreteprotocol::GateInfo> gateInfo,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng, bool useSimulation) {
+  if (!useSimulation) {
+    auto keyid = gateInfo.asReader()
+                     .getTypeInfo()
+                     .getLweCiphertext()
+                     .getEncryption()
+                     .getKeyId();
+    if (keyid >= keyset.lweSecretKeys.size()) {
+      return StringError(
+          "Tried to generate lwe ciphertext input transformer with "
+          "key id unavailable");
+    }
+  }
   /// Generating the encryption transformer.
   Transformer encryptionTransformer;
   if (useSimulation) {
@@ -822,16 +856,20 @@ Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
           "currently.");
     }
   }
+  return concretelang::transformers::getLweCiphertextInputTransformer(
+      gateInfo, encryptionTransformer);
+}
 
-  OUTCOME_TRY(auto verify, getLweCiphertextInputValueVerifier(gateInfo));
-  return [=](Value val) -> Result<TransportValue> {
-    OUTCOME_TRYV(verify(val));
-    auto output =
-        encryptionTransformer(encodingTransformer(val)).intoRawTransportValue();
-    output.asBuilder().initTypeInfo().setLweCiphertext(
-        gateInfo.asReader().getTypeInfo().getLweCiphertext());
-    return output;
-  };
+Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
+    keysets::ClientPublicKeyset keyset,
+    Message<concreteprotocol::GateInfo> gateInfo,
+    std::shared_ptr<concretelang::csprng::SecretCSPRNG> csprng) {
+  auto encryptionInfo =
+      gateInfo.asReader().getTypeInfo().getLweCiphertext().getEncryption();
+  OUTCOME_TRY(auto encryptionTransformer,
+              getEncryptionTransformer(keyset, encryptionInfo, csprng));
+  return concretelang::transformers::getLweCiphertextInputTransformer(
+      gateInfo, encryptionTransformer);
 }
 
 Result<Transformer> getSeededLweCiphertextDecompressionTransformer(

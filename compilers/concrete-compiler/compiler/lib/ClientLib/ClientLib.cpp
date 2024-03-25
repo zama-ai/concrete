@@ -33,12 +33,10 @@ using concretelang::values::Value;
 namespace concretelang {
 namespace clientlib {
 
-Result<ValueExporter>
-ValueExporter::create(const Message<concreteprotocol::CircuitInfo> &info,
-                      const ClientKeyset &keyset,
-                      std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
-                      bool useSimulation) {
-
+Result<ValueExporter> ValueExporter::create(
+    const Message<concreteprotocol::CircuitInfo> &info,
+    std::function<Result<InputTransformer>(Message<concreteprotocol::GateInfo>)>
+        getCiphertextTransformer) {
   auto inputTransformers = std::vector<InputTransformer>();
 
   for (auto gateInfo : info.asReader().getInputs()) {
@@ -50,16 +48,36 @@ ValueExporter::create(const Message<concreteprotocol::CircuitInfo> &info,
       OUTCOME_TRY(transformer,
                   TransformerFactory::getPlaintextInputTransformer(gateInfo));
     } else if (gateInfo.getTypeInfo().hasLweCiphertext()) {
-      OUTCOME_TRY(transformer,
-                  TransformerFactory::getLweCiphertextInputTransformer(
-                      keyset, gateInfo, csprng, useSimulation));
+      OUTCOME_TRY(transformer, getCiphertextTransformer(gateInfo));
     } else {
       return StringError("Malformed input gate info.");
     }
     inputTransformers.push_back(transformer);
   }
   return ValueExporter(info, inputTransformers);
+}
+
+Result<ValueExporter>
+ValueExporter::create(const Message<concreteprotocol::CircuitInfo> &info,
+                      const ClientKeyset &keyset,
+                      std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
+                      bool useSimulation) {
+
+  return create(info, [=](Message<concreteprotocol::GateInfo> gateInfo) {
+    return TransformerFactory::getLweCiphertextInputTransformer(
+        keyset, gateInfo, csprng, useSimulation);
+  });
 };
+
+Result<ValueExporter>
+ValueExporter::createPublic(const Message<concreteprotocol::CircuitInfo> &info,
+                            const keysets::ClientPublicKeyset &keyset,
+                            std::shared_ptr<csprng::SecretCSPRNG> csprng) {
+  return create(info, [=](Message<concreteprotocol::GateInfo> gateInfo) {
+    return TransformerFactory::getLweCiphertextInputTransformer(
+        keyset, gateInfo, csprng);
+  });
+}
 
 Result<TransportValue> ValueExporter::prepareInput(Value arg, size_t pos) {
   if (pos >= inputTransformers.size()) {
@@ -107,28 +125,36 @@ ClientProgram::create(const Message<concreteprotocol::ProgramInfo> &info) {
   return ClientProgram(info);
 }
 
+Result<concreteprotocol::CircuitInfo::Reader>
+ClientProgram::getCircuitInfo(std::string circuitName) {
+  for (auto circuit : info.asReader().getCircuits()) {
+    if (circuit.getName() == circuitName) {
+      return circuit;
+    }
+  }
+  return StringError("Tried to get unknown client circuit: `" + circuitName +
+                     "`");
+}
+
 Result<ValueExporter> ClientProgram::getValueExporter(
     std::string circuitName, const ClientKeyset &keyset,
     std::shared_ptr<csprng::EncryptionCSPRNG> csprng, bool useSimulation) {
-  auto circuits = info.asReader().getCircuits();
-  auto circuitInfo = circuits.begin();
-  if (circuitInfo == circuits.end()) {
-    return StringError("Tried to get unknown client circuit: `" + circuitName +
-                       "`");
-  }
-  return ValueExporter::create(*circuitInfo, keyset, csprng, useSimulation);
+  OUTCOME_TRY(auto circuitInfo, getCircuitInfo(circuitName));
+  return ValueExporter::create(circuitInfo, keyset, csprng, useSimulation);
+}
+
+Result<ValueExporter> ClientProgram::getPublicValueExporter(
+    std::string circuitName, const keysets::ClientPublicKeyset &keyset,
+    std::shared_ptr<csprng::SecretCSPRNG> csprng) {
+  OUTCOME_TRY(auto circuitInfo, getCircuitInfo(circuitName));
+  return ValueExporter::createPublic(circuitInfo, keyset, csprng);
 }
 
 Result<ValueDecrypter> ClientProgram::getValueDecrypter(
     std::string circuitName, const ClientKeyset &keyset,
     std::shared_ptr<csprng::EncryptionCSPRNG> csprng, bool useSimulation) {
-  auto circuits = info.asReader().getCircuits();
-  auto circuitInfo = circuits.begin();
-  if (circuitInfo == circuits.end()) {
-    return StringError("Tried to get unknown client circuit: `" + circuitName +
-                       "`");
-  }
-  return ValueDecrypter::create(*circuitInfo, keyset, useSimulation);
+  OUTCOME_TRY(auto circuitInfo, getCircuitInfo(circuitName));
+  return ValueDecrypter::create(circuitInfo, keyset, useSimulation);
 }
 
 } // namespace clientlib

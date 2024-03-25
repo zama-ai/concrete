@@ -39,6 +39,41 @@ const capnp::ReaderOptions KEY_READER_OPTS =
 namespace concretelang {
 namespace keysets {
 
+ClientPublicKeyset ClientPublicKeyset::fromProto(
+    const Message<concreteprotocol::ClientPublicKeyset> &proto) {
+  auto output = ClientPublicKeyset();
+  for (auto pkProto : proto.asReader().getLwePublicKeys()) {
+    output.lwePublicKeys.push_back(keys::LwePublicKey::fromProto(pkProto));
+  }
+
+  return output;
+}
+
+Message<concreteprotocol::ClientPublicKeyset>
+ClientPublicKeyset::toProto() const {
+  auto output = Message<concreteprotocol::ClientPublicKeyset>();
+  auto builder = output.asBuilder();
+  builder.initLwePublicKeys(lwePublicKeys.size());
+  for (size_t i = 0; i < lwePublicKeys.size(); i++) {
+    builder.getLwePublicKeys().setWithCaveats(
+        i, lwePublicKeys[i].toProto().asReader());
+  }
+
+  return output;
+}
+
+Result<keys::LwePublicKey>
+ClientPublicKeyset::getLwePublicKey(uint32_t secretKeyId) const {
+  auto sk =
+      std::find_if(lwePublicKeys.begin(), lwePublicKeys.end(), [=](auto &sk) {
+        return sk.getInfo().asReader().getId() == secretKeyId;
+      });
+  if (sk == lwePublicKeys.end()) {
+    return StringError("Cannot find public key #") << secretKeyId;
+  }
+  return *sk;
+}
+
 ClientKeyset
 ClientKeyset::fromProto(const Message<concreteprotocol::ClientKeyset> &proto) {
   auto output = ClientKeyset();
@@ -58,6 +93,17 @@ Message<concreteprotocol::ClientKeyset> ClientKeyset::toProto() const {
   }
 
   return output;
+}
+
+Result<LweSecretKey> ClientKeyset::getLweSecretKey(uint32_t secretKeyId) const {
+  auto sk =
+      std::find_if(lweSecretKeys.begin(), lweSecretKeys.end(), [=](auto &sk) {
+        return sk.getInfo().asReader().getId() == secretKeyId;
+      });
+  if (sk == lweSecretKeys.end()) {
+    return StringError("Cannot find secret key #") << secretKeyId;
+  }
+  return *sk;
 }
 
 ServerKeyset
@@ -103,7 +149,8 @@ Message<concreteprotocol::ServerKeyset> ServerKeyset::toProto() const {
 }
 
 Keyset::Keyset(const Message<concreteprotocol::KeysetInfo> &info,
-               SecretCSPRNG &secretCsprng, EncryptionCSPRNG &encryptionCsprng) {
+               SecretCSPRNG &secretCsprng, EncryptionCSPRNG &encryptionCsprng)
+    : publicKeysInfo(info.asReader().getLwePublicKeys()) {
   for (auto keyInfo : info.asReader().getLweSecretKeys()) {
     client.lweSecretKeys.push_back(LweSecretKey(keyInfo, secretCsprng));
   }
@@ -127,8 +174,9 @@ Keyset::Keyset(const Message<concreteprotocol::KeysetInfo> &info,
 Keyset Keyset::fromProto(const Message<concreteprotocol::Keyset> &proto) {
   auto server = ServerKeyset::fromProto(proto.asReader().getServer());
   auto client = ClientKeyset::fromProto(proto.asReader().getClient());
+  auto publicKeysInfo = proto.asReader().getLwePublicKeysInfo();
 
-  return {server, client};
+  return Keyset(publicKeysInfo, server, client);
 }
 
 Message<concreteprotocol::Keyset> Keyset::toProto() const {
@@ -138,6 +186,17 @@ Message<concreteprotocol::Keyset> Keyset::toProto() const {
   output.asBuilder().setServer(serverProto.asReader());
   output.asBuilder().setClient(clientProto.asReader());
   return output;
+}
+
+Result<ClientPublicKeyset>
+Keyset::generateClientPublicKeyset(csprng::EncryptionCSPRNG &encryptionCsprng) {
+  ClientPublicKeyset publicKeySet;
+  for (auto pkInfo : publicKeysInfo.asReader()) {
+    OUTCOME_TRY(auto sk, client.getLweSecretKey(pkInfo.getId()));
+    publicKeySet.lwePublicKeys.push_back(
+        keys::LwePublicKey(pkInfo, sk, encryptionCsprng));
+  }
+  return publicKeySet;
 }
 
 template <typename ProtoKey>
@@ -246,7 +305,7 @@ loadKeysFromFiles(const Message<concreteprotocol::KeysetInfo> &keysetInfo,
   ClientKeyset clientKeyset = ClientKeyset{secretKeys};
   ServerKeyset serverKeyset =
       ServerKeyset{bootstrapKeys, keyswitchKeys, packingKeyswitchKeys};
-  Keyset keyset = Keyset{serverKeyset, clientKeyset};
+  Keyset keyset = Keyset(keysetInfo, serverKeyset, clientKeyset);
 
   return keyset;
 }

@@ -73,6 +73,11 @@ public:
       std::shared_ptr<concretelang::csprng::EncryptionCSPRNG> csprng,
       bool useSimulation);
 
+  static Result<InputTransformer> getLweCiphertextInputTransformer(
+      keysets::ClientPublicKeyset keyset,
+      Message<concreteprotocol::GateInfo> gateInfo,
+      std::shared_ptr<concretelang::csprng::SecretCSPRNG> csprng);
+
   static Result<OutputTransformer> getLweCiphertextOutputTransformer(
       ClientKeyset keyset, Message<concreteprotocol::GateInfo> gateInfo,
       bool useSimulation);

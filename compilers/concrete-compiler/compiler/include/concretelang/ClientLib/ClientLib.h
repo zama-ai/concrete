@@ -38,8 +38,12 @@ public:
   static Result<ValueExporter>
   create(const Message<concreteprotocol::CircuitInfo> &info,
          const ClientKeyset &keyset,
-         std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
-         bool useSimulation = false);
+         std::shared_ptr<csprng::EncryptionCSPRNG> csprng, bool useSimulation);
+
+  static Result<ValueExporter>
+  createPublic(const Message<concreteprotocol::CircuitInfo> &info,
+               const keysets::ClientPublicKeyset &keyset,
+               std::shared_ptr<csprng::SecretCSPRNG> csprng);
 
   Result<TransportValue> prepareInput(Value arg, size_t pos);
 
@@ -49,6 +53,12 @@ private:
   ValueExporter(const Message<concreteprotocol::CircuitInfo> &info,
                 std::vector<InputTransformer> inputTransformers)
       : info(info), inputTransformers(inputTransformers){};
+
+  static Result<ValueExporter>
+  create(const Message<concreteprotocol::CircuitInfo> &info,
+         std::function<
+             Result<InputTransformer>(Message<concreteprotocol::GateInfo>)>
+             getCiphertextTransformer);
   const Message<concreteprotocol::CircuitInfo> info;
   std::vector<InputTransformer> inputTransformers;
 };
@@ -80,11 +90,20 @@ public:
                    std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
                    bool useSimulation);
 
+  Result<ValueExporter>
+  getPublicValueExporter(std::string circuitName,
+                         const keysets::ClientPublicKeyset &keyset,
+                         std::shared_ptr<csprng::SecretCSPRNG> csprng);
+
   /// Returns a reference to the named client circuit if it exists.
   Result<ValueDecrypter>
   getValueDecrypter(std::string circuitName, const ClientKeyset &keyset,
                     std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
                     bool useSimulation);
+
+private:
+  Result<concreteprotocol::CircuitInfo::Reader>
+  getCircuitInfo(std::string circuitName);
 
 private:
   ClientProgram(const Message<concreteprotocol::ProgramInfo> &info)
