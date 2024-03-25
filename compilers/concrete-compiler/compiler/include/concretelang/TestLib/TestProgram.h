@@ -24,8 +24,6 @@
 #include <string>
 #include <thread>
 
-using concretelang::clientlib::ClientCircuit;
-using concretelang::clientlib::ClientProgram;
 using concretelang::error::Result;
 using concretelang::keysets::Keyset;
 using concretelang::serverlib::ServerCircuit;
@@ -75,20 +73,22 @@ public:
                               __uint128_t encryptionSeed = 0,
                               bool tryCache = true) {
     if (isSimulation()) {
-      keyset = Keyset{};
+      Keyset keyset{};
       return outcome::success();
     }
     OUTCOME_TRY(auto lib, getLibrary());
     if (tryCache) {
-      OUTCOME_TRY(keyset, getTestKeySetCachePtr()->getKeyset(
-                              lib.getProgramInfo().asReader().getKeyset(),
-                              secretSeed, encryptionSeed));
+      OUTCOME_TRY(auto cachedKeyset,
+                  getTestKeySetCachePtr()->getKeyset(
+                      lib.getProgramInfo().asReader().getKeyset(), secretSeed,
+                      encryptionSeed));
+      keyset.emplace(cachedKeyset);
     } else {
       auto encryptionCsprng = csprng::EncryptionCSPRNG(encryptionSeed);
       auto secretCsprng = csprng::SecretCSPRNG(secretSeed);
       Message<concreteprotocol::KeysetInfo> keysetInfo =
           lib.getProgramInfo().asReader().getKeyset();
-      keyset = Keyset(keysetInfo, secretCsprng, encryptionCsprng);
+      keyset.emplace(Keyset(keysetInfo, secretCsprng, encryptionCsprng));
     }
     return outcome::success();
   }
@@ -97,18 +97,18 @@ public:
                                   std::string name = "main") {
     // preprocess arguments
     auto preparedArgs = std::vector<TransportValue>();
-    OUTCOME_TRY(auto clientCircuit, getClientCircuit(name));
+    OUTCOME_TRY(auto exporter, getValueExporter(name));
     for (size_t i = 0; i < inputs.size(); i++) {
-      OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
+      OUTCOME_TRY(auto preparedInput, exporter.prepareInput(inputs[i], i));
       preparedArgs.push_back(preparedInput);
     }
     // Call server
     OUTCOME_TRY(auto returns, callServer(preparedArgs, name));
     // postprocess arguments
+    OUTCOME_TRY(auto decrypter, getValueDecrypter(name));
     std::vector<Value> processedOutputs(returns.size());
     for (size_t i = 0; i < processedOutputs.size(); i++) {
-      OUTCOME_TRY(processedOutputs[i],
-                  clientCircuit.processOutput(returns[i], i));
+      OUTCOME_TRY(processedOutputs[i], decrypter.processOutput(returns[i], i));
     }
     return processedOutputs;
   }
@@ -118,9 +118,9 @@ public:
                                              std::string name = "main") {
     // preprocess arguments
     auto preparedArgs = std::vector<TransportValue>();
-    OUTCOME_TRY(auto clientCircuit, getClientCircuit(name));
+    OUTCOME_TRY(auto exporter, getValueExporter(name));
     for (size_t i = 0; i < inputs.size(); i++) {
-      OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
+      OUTCOME_TRY(auto preparedInput, exporter.prepareInput(inputs[i], i));
       preparedArgs.push_back(preparedInput);
     }
     // Call server multiple times in a row
@@ -128,10 +128,11 @@ public:
       OUTCOME_TRY(preparedArgs, callServer(preparedArgs, name));
     }
     // postprocess arguments
+    OUTCOME_TRY(auto decrypter, getValueDecrypter(name));
     std::vector<Value> processedOutputs(preparedArgs.size());
     for (size_t i = 0; i < processedOutputs.size(); i++) {
       OUTCOME_TRY(processedOutputs[i],
-                  clientCircuit.processOutput(preparedArgs[i], i));
+                  decrypter.processOutput(preparedArgs[i], i));
     }
     return processedOutputs;
   }
@@ -148,7 +149,7 @@ public:
     return returns;
   }
 
-  Result<ClientCircuit> getClientCircuit(std::string name = "main") {
+  Result<clientlib::ValueExporter> getValueExporter(std::string name = "main") {
     OUTCOME_TRY(auto lib, getLibrary());
     Keyset ks{};
     if (!isSimulation()) {
@@ -156,10 +157,24 @@ public:
     }
     auto programInfo = lib.getProgramInfo();
     OUTCOME_TRY(auto clientProgram,
-                ClientProgram::create(programInfo, ks.client, encryptionCsprng,
-                                      isSimulation()));
-    OUTCOME_TRY(auto clientCircuit, clientProgram.getClientCircuit(name));
-    return clientCircuit;
+                clientlib::ClientProgram::create(programInfo));
+    OUTCOME_TRY(auto exporter, clientProgram.getValueExporter(name, ks.client,
+                                                              encryptionCsprng,
+                                                              isSimulation()));
+    return exporter;
+  }
+
+  Result<clientlib::ValueDecrypter>
+  getValueDecrypter(std::string name = "main") {
+    OUTCOME_TRY(auto lib, getLibrary());
+    OUTCOME_TRY(auto ks, getKeyset());
+    auto programInfo = lib.getProgramInfo();
+    OUTCOME_TRY(auto clientProgram,
+                clientlib::ClientProgram::create(programInfo));
+    OUTCOME_TRY(auto decrypter,
+                clientProgram.getValueDecrypter(
+                    name, ks.client, encryptionCsprng, isSimulation()));
+    return decrypter;
   }
 
   Result<ServerCircuit> getServerCircuit(std::string name = "main") {

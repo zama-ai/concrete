@@ -30,6 +30,8 @@
 using mlir::concretelang::CompilationOptions;
 using mlir::concretelang::LambdaArgument;
 
+namespace clientlib = concretelang::clientlib;
+
 class SignalGuard {
 public:
   SignalGuard() { previousHandler = signal(SIGINT, SignalGuard::handler); }
@@ -56,6 +58,18 @@ struct executionArguments {
   size_t size;
 };
 typedef struct executionArguments executionArguments;
+
+/// A transition structure that preserver the current API of the library
+/// support.
+struct SimulatedValueExporter {
+  clientlib::ValueExporter exporter;
+};
+
+/// A transition structure that preserver the current API of the library
+/// support.
+struct SimulatedValueDecrypter {
+  clientlib::ValueDecrypter decrypter;
+};
 
 // Library Support bindings ///////////////////////////////////////////////////
 
@@ -182,17 +196,21 @@ encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
                   llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args,
                   const std::string &circuitName) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
+      clientParameters.programInfo.asReader());
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto circuit = maybeProgram.value().getClientCircuit(circuitName).value();
+  auto circuit =
+      maybeProgram.value()
+          .getValueExporter(
+              circuitName, keySet.keyset.client,
+              std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+                  ::concretelang::csprng::EncryptionCSPRNG(0)),
+              false)
+          .value();
   std::vector<TransportValue> output;
   for (size_t i = 0; i < args.size(); i++) {
-    auto info = circuit.getCircuitInfo().asReader().getInputs()[i];
+    auto info = circuit.getInfo().asReader().getInputs()[i];
     auto typeTransformer = getPythonTypeTransformer(info);
     auto input = typeTransformer(args[i]->value);
     auto maybePrepared = circuit.prepareInput(input, i);
@@ -213,17 +231,21 @@ decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
                concretelang::clientlib::PublicResult &publicResult,
                const std::string &circuitName) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
+      clientParameters.programInfo.asReader());
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto circuit = maybeProgram.value().getClientCircuit(circuitName).value();
+  auto decrypter =
+      maybeProgram.value()
+          .getValueDecrypter(
+              circuitName, keySet.keyset.client,
+              std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+                  ::concretelang::csprng::EncryptionCSPRNG(0)),
+              false)
+          .value();
   std::vector<lambdaArgument> results;
   for (auto e : llvm::enumerate(publicResult.values)) {
-    auto maybeProcessed = circuit.processOutput(e.value(), e.index());
+    auto maybeProcessed = decrypter.processOutput(e.value(), e.index());
     if (maybeProcessed.has_failure()) {
       throw std::runtime_error(maybeProcessed.as_failure().error().mesg);
     }
@@ -374,32 +396,33 @@ createValueExporter(concretelang::clientlib::KeySet &keySet,
                     concretelang::clientlib::ClientParameters &clientParameters,
                     const std::string &circuitName) {
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
+      clientParameters.programInfo.asReader());
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::ValueExporter{maybeCircuit.value()};
+  auto maybeExporter = maybeProgram.value().getValueExporter(
+      circuitName, keySet.keyset.client,
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      false);
+  return maybeExporter.value();
 }
 
-concretelang::clientlib::SimulatedValueExporter createSimulatedValueExporter(
+concretelang::clientlib::ValueExporter createSimulatedValueExporter(
     concretelang::clientlib::ClientParameters &clientParameters,
     const std::string &circuitName) {
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo, ::concretelang::keysets::ClientKeyset(),
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      true);
+      clientParameters.programInfo);
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::SimulatedValueExporter{
-      maybeCircuit.value()};
+  auto maybeExporter = maybeProgram.value().getValueExporter(
+      circuitName, ::concretelang::keysets::ClientKeyset(),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      true);
+  return maybeExporter.value();
 }
 
 concretelang::clientlib::ValueDecrypter createValueDecrypter(
@@ -408,33 +431,33 @@ concretelang::clientlib::ValueDecrypter createValueDecrypter(
     const std::string &circuitName) {
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
+      clientParameters.programInfo.asReader());
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::ValueDecrypter{maybeCircuit.value()};
+  auto maybeDecrypter = maybeProgram.value().getValueDecrypter(
+      circuitName, keySet.keyset.client,
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      false);
+  return maybeDecrypter.value();
 }
 
-concretelang::clientlib::SimulatedValueDecrypter createSimulatedValueDecrypter(
+concretelang::clientlib::ValueDecrypter createSimulatedValueDecrypter(
     concretelang::clientlib::ClientParameters &clientParameters,
     const std::string &circuitName) {
 
   auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(),
-      ::concretelang::keysets::ClientKeyset(),
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      true);
+      clientParameters.programInfo.asReader());
   if (maybeProgram.has_failure()) {
     throw std::runtime_error(maybeProgram.as_failure().error().mesg);
   }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::SimulatedValueDecrypter{
-      maybeCircuit.value()};
+  auto maybeDecrypter = maybeProgram.value().getValueDecrypter(
+      circuitName, ::concretelang::keysets::ClientKeyset(),
+      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
+          ::concretelang::csprng::EncryptionCSPRNG(0)),
+      true);
+  return maybeDecrypter.value();
 }
 
 concretelang::clientlib::ClientParameters
@@ -1257,11 +1280,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               size_t position, int64_t value) {
              SignalGuard signalGuard;
 
-             auto info = exporter.circuit.getCircuitInfo()
-                             .asReader()
-                             .getInputs()[position];
+             auto info = exporter.getInfo().asReader().getInputs()[position];
              auto typeTransformer = getPythonTypeTransformer(info);
-             auto result = exporter.circuit.prepareInput(
+             auto result = exporter.prepareInput(
                  typeTransformer({Tensor<int64_t>(value)}), position);
 
              if (result.has_error()) {
@@ -1271,43 +1292,42 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return ::concretelang::clientlib::SharedScalarOrTensorData{
                  result.value()};
            })
-      .def("export_tensor", [](::concretelang::clientlib::ValueExporter
-                                   &exporter,
-                               size_t position, std::vector<int64_t> values,
-                               std::vector<int64_t> shape) {
-        SignalGuard signalGuard;
-        std::vector<size_t> dimensions(shape.begin(), shape.end());
-        auto info =
-            exporter.circuit.getCircuitInfo().asReader().getInputs()[position];
-        auto typeTransformer = getPythonTypeTransformer(info);
-        auto result = exporter.circuit.prepareInput(
-            typeTransformer({Tensor<int64_t>(values, dimensions)}), position);
+      .def("export_tensor",
+           [](::concretelang::clientlib::ValueExporter &exporter,
+              size_t position, std::vector<int64_t> values,
+              std::vector<int64_t> shape) {
+             SignalGuard signalGuard;
+             std::vector<size_t> dimensions(shape.begin(), shape.end());
+             auto info = exporter.getInfo().asReader().getInputs()[position];
+             auto typeTransformer = getPythonTypeTransformer(info);
+             auto result = exporter.prepareInput(
+                 typeTransformer({Tensor<int64_t>(values, dimensions)}),
+                 position);
 
-        if (result.has_error()) {
-          throw std::runtime_error(result.error().mesg);
-        }
+             if (result.has_error()) {
+               throw std::runtime_error(result.error().mesg);
+             }
 
-        return ::concretelang::clientlib::SharedScalarOrTensorData{
-            result.value()};
-      });
+             return ::concretelang::clientlib::SharedScalarOrTensorData{
+                 result.value()};
+           });
 
-  pybind11::class_<::concretelang::clientlib::SimulatedValueExporter>(
-      m, "SimulatedValueExporter")
+  pybind11::class_<::SimulatedValueExporter>(m, "SimulatedValueExporter")
       .def_static(
           "create",
           [](::concretelang::clientlib::ClientParameters &clientParameters,
              const std::string &circuitName) {
-            return createSimulatedValueExporter(clientParameters, circuitName);
+            return SimulatedValueExporter{
+                createSimulatedValueExporter(clientParameters, circuitName)};
           })
       .def("export_scalar",
-           [](::concretelang::clientlib::SimulatedValueExporter &exporter,
-              size_t position, int64_t value) {
+           [](::SimulatedValueExporter &wrapper, size_t position,
+              int64_t value) {
              SignalGuard signalGuard;
-             auto info = exporter.circuit.getCircuitInfo()
-                             .asReader()
-                             .getInputs()[position];
+             auto exporter = wrapper.exporter;
+             auto info = exporter.getInfo().asReader().getInputs()[position];
              auto typeTransformer = getPythonTypeTransformer(info);
-             auto result = exporter.circuit.prepareInput(
+             auto result = exporter.prepareInput(
                  typeTransformer({Tensor<int64_t>(value)}), position);
 
              if (result.has_error()) {
@@ -1317,16 +1337,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return ::concretelang::clientlib::SharedScalarOrTensorData{
                  result.value()};
            })
-      .def("export_tensor", [](::concretelang::clientlib::SimulatedValueExporter
-                                   &exporter,
+      .def("export_tensor", [](::SimulatedValueExporter &wrapper,
                                size_t position, std::vector<int64_t> values,
                                std::vector<int64_t> shape) {
         SignalGuard signalGuard;
+        auto exporter = wrapper.exporter;
         std::vector<size_t> dimensions(shape.begin(), shape.end());
-        auto info =
-            exporter.circuit.getCircuitInfo().asReader().getInputs()[position];
+        auto info = exporter.getInfo().asReader().getInputs()[position];
         auto typeTransformer = getPythonTypeTransformer(info);
-        auto result = exporter.circuit.prepareInput(
+        auto result = exporter.prepareInput(
             typeTransformer({Tensor<int64_t>(values, dimensions)}), position);
 
         if (result.has_error()) {
@@ -1352,8 +1371,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               ::concretelang::clientlib::SharedScalarOrTensorData &value) {
              SignalGuard signalGuard;
 
-             auto result =
-                 decrypter.circuit.processOutput(value.value, position);
+             auto result = decrypter.processOutput(value.value, position);
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }
@@ -1363,22 +1381,20 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                      mlir::concretelang::LambdaArgument{result.value()})};
            });
 
-  pybind11::class_<::concretelang::clientlib::SimulatedValueDecrypter>(
-      m, "SimulatedValueDecrypter")
+  pybind11::class_<::SimulatedValueDecrypter>(m, "SimulatedValueDecrypter")
       .def_static(
           "create",
           [](::concretelang::clientlib::ClientParameters &clientParameters,
              const std::string &circuitName) {
-            return createSimulatedValueDecrypter(clientParameters, circuitName);
+            return ::SimulatedValueDecrypter{
+                createSimulatedValueDecrypter(clientParameters, circuitName)};
           })
       .def("decrypt",
-           [](::concretelang::clientlib::SimulatedValueDecrypter &decrypter,
-              size_t position,
+           [](::SimulatedValueDecrypter &wrapper, size_t position,
               ::concretelang::clientlib::SharedScalarOrTensorData &value) {
              SignalGuard signalGuard;
-
-             auto result =
-                 decrypter.circuit.processOutput(value.value, position);
+             auto decrypter = wrapper.decrypter;
+             auto result = decrypter.processOutput(value.value, position);
              if (result.has_error()) {
                throw std::runtime_error(result.error().mesg);
              }

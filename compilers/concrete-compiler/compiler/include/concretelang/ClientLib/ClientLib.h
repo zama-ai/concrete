@@ -33,10 +33,9 @@ using concretelang::values::Value;
 namespace concretelang {
 namespace clientlib {
 
-class ClientCircuit {
-
+class ValueExporter {
 public:
-  static Result<ClientCircuit>
+  static Result<ValueExporter>
   create(const Message<concreteprotocol::CircuitInfo> &info,
          const ClientKeyset &keyset,
          std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
@@ -44,23 +43,27 @@ public:
 
   Result<TransportValue> prepareInput(Value arg, size_t pos);
 
+  const Message<concreteprotocol::CircuitInfo> &getInfo() { return info; }
+
+private:
+  ValueExporter(const Message<concreteprotocol::CircuitInfo> &info,
+                std::vector<InputTransformer> inputTransformers)
+      : info(info), inputTransformers(inputTransformers){};
+  const Message<concreteprotocol::CircuitInfo> info;
+  std::vector<InputTransformer> inputTransformers;
+};
+
+class ValueDecrypter {
+public:
+  static Result<ValueDecrypter>
+  create(const Message<concreteprotocol::CircuitInfo> &info,
+         const ClientKeyset &keyset, bool useSimulation = false);
+
   Result<Value> processOutput(TransportValue result, size_t pos);
 
-  std::string getName();
-
-  const Message<concreteprotocol::CircuitInfo> &getCircuitInfo();
-
 private:
-  ClientCircuit() = delete;
-  ClientCircuit(const Message<concreteprotocol::CircuitInfo> &circuitInfo,
-                std::vector<InputTransformer> inputTransformers,
-                std::vector<OutputTransformer> outputTransformers)
-      : circuitInfo(circuitInfo), inputTransformers(inputTransformers),
-        outputTransformers(outputTransformers){};
-
-private:
-  Message<concreteprotocol::CircuitInfo> circuitInfo;
-  std::vector<InputTransformer> inputTransformers;
+  ValueDecrypter(std::vector<OutputTransformer> outputTransformers)
+      : outputTransformers(outputTransformers){};
   std::vector<OutputTransformer> outputTransformers;
 };
 
@@ -70,19 +73,23 @@ class ClientProgram {
 public:
   /// Generates a fresh client program with fresh keyset on the first use.
   static Result<ClientProgram>
-  create(const Message<concreteprotocol::ProgramInfo> &info,
-         const ClientKeyset &keyset,
-         std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
-         bool useSimulation = false);
+  create(const Message<concreteprotocol::ProgramInfo> &info);
+
+  Result<ValueExporter>
+  getValueExporter(std::string circuitName, const ClientKeyset &keyset,
+                   std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
+                   bool useSimulation);
 
   /// Returns a reference to the named client circuit if it exists.
-  Result<ClientCircuit> getClientCircuit(std::string circuitName);
+  Result<ValueDecrypter>
+  getValueDecrypter(std::string circuitName, const ClientKeyset &keyset,
+                    std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
+                    bool useSimulation);
 
 private:
-  ClientProgram() = default;
-
-private:
-  std::vector<ClientCircuit> circuits;
+  ClientProgram(const Message<concreteprotocol::ProgramInfo> &info)
+      : info(info){};
+  Message<concreteprotocol::ProgramInfo> info;
 };
 
 } // namespace clientlib

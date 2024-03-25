@@ -53,11 +53,12 @@ static void BM_ExportArguments(benchmark::State &state,
   auto inputArguments = std::vector<TransportValue>();
   inputArguments.reserve(test.inputs.size());
 
-  auto client = tc.getClientCircuit().value();
+  auto exporter = tc.getValueExporter().value();
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     for (auto _ : state) {
       for (size_t i = 0; i < test.inputs.size(); i++) {
-        auto input = client.prepareInput(test.inputs[i].getValue(), i).value();
+        auto input =
+            exporter.prepareInput(test.inputs[i].getValue(), i).value();
         inputArguments.push_back(input);
       }
     }
@@ -71,7 +72,7 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   TestProgram tc(options);
   assert(tc.compile(description.program));
   assert(tc.generateKeyset());
-  auto clientCircuit = tc.getClientCircuit().value();
+  auto exporter = tc.getValueExporter().value();
 
   assert(description.tests.size() > 0);
   auto test = description.tests[0];
@@ -80,8 +81,7 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
 
   if (mlir::concretelang::dfr::_dfr_is_root_node()) {
     for (size_t i = 0; i < test.inputs.size(); i++) {
-      auto input =
-          clientCircuit.prepareInput(test.inputs[i].getValue(), i).value();
+      auto input = exporter.prepareInput(test.inputs[i].getValue(), i).value();
       inputArguments.push_back(input);
     }
   }
