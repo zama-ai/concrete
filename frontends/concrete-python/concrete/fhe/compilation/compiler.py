@@ -615,6 +615,13 @@ class Compiler:
 
                         if isinstance(value, dict):
                             pretty(value, indent + 1)
+                        elif isinstance(value, int):
+                            print(f"{value:_}")
+                        elif isinstance(value, float):
+                            if round(value) == value:
+                                print(f"{int(value):_}")
+                            else:
+                                print(f"{value:_}")
                         else:
                             print(value)
 

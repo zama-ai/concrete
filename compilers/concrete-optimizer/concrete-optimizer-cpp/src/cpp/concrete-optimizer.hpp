@@ -1121,6 +1121,7 @@ struct BootstrapKey final {
   ::concrete_optimizer::dag::SecretLweKey input_key;
   ::concrete_optimizer::dag::SecretLweKey output_key;
   ::concrete_optimizer::dag::BrDecompositionParameters br_decomposition_parameter;
+  double unitary_cost;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;
@@ -1229,6 +1230,16 @@ struct CircuitSolution final {
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
 } // namespace dag
+
+namespace utils {
+double levelled_cost() noexcept;
+
+double ks_cost() noexcept;
+
+double pbs_cost() noexcept;
+
+double woppbs_cost() noexcept;
+} // namespace utils
 
 namespace v0 {
 ::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;

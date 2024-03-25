@@ -575,7 +575,9 @@ class Graph:
             if len(node.bit_width_constraints) > 0:
                 result += f"%{i}:\n"
                 for constraint in node.bit_width_constraints:
-                    result += f"    {constraint.arg(0)} {constraint.decl()} {constraint.arg(1)}\n"
+                    lhs_id = str(constraint.arg(0)).split(".")[-1]
+                    rhs_id = str(constraint.arg(1)).split(".")[-1]
+                    result += f"    {lhs_id} {constraint.decl()} {rhs_id}\n"
         return result[:-1]
 
     def format_bit_width_assignments(self) -> str:
@@ -591,10 +593,11 @@ class Graph:
         for variable in self.bit_width_assignments.decls():  # type: ignore
             if variable.name().startswith(f"{self.name}.") or variable.name() == "input_output":
                 width = self.bit_width_assignments.get_interp(variable)  # type: ignore
-                lines.append(f"{variable} = {width}")
+                variable_id = variable.name().split(".")[-1]
+                lines.append(f"{variable_id} = {width}")
 
         def sorter(line: str) -> int:
-            if line.startswith(f"{self.name}.max"):
+            if line.startswith(f"max"):
                 # we won't have 4 million nodes...
                 return 2**32
             if line.startswith("input_output"):
@@ -602,7 +605,7 @@ class Graph:
                 return 2**32
 
             equals_position = line.find("=")
-            index = line[len(self.name) + 2 : equals_position - 1]
+            index = line[1 : equals_position - 1]
             return int(index)
 
         result = ""

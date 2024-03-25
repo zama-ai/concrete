@@ -136,7 +136,7 @@ class Context:
 
         tag = "" if self.converting.tag == "" else f"@{self.converting.tag} | "
         return MlirLocation.file(
-            f"{tag}{path}",
+            f"{self.converting.properties['id']} | {tag}{path}",
             line=int(lineno),
             col=0,
             context=self.context,

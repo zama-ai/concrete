@@ -253,6 +253,7 @@ fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &OperationDag) -> ff
             log2_base: sol.br_decomposition_base_log,
         },
         description: "tlu bootstrap".into(),
+        unitary_cost: 0.0,
     };
     let circuit_bootstrap_keys = if sol.use_wop_pbs {
         vec![ffi::CircuitBoostrapKey {
@@ -408,6 +409,7 @@ impl From<keys_spec::BootstrapKey> for ffi::BootstrapKey {
             input_key: v.input_key.into(),
             output_key: v.output_key.into(),
             br_decomposition_parameter: v.br_decomposition_parameter.into(),
+            unitary_cost: v.unitary_cost,
             description: v.description,
         }
     }
@@ -677,11 +679,38 @@ impl Into<Encoding> for ffi::Encoding {
     }
 }
 
+fn levelled_cost() -> f64 {
+    0.00
+}
+
+fn ks_cost() -> f64 {
+    0.00
+}
+
+fn pbs_cost() -> f64 {
+    0.00
+}
+
+fn woppbs_cost() -> f64 {
+    0.00
+}
+
 #[allow(unused_must_use)]
 #[cxx::bridge]
 mod ffi {
     #[namespace = "concrete_optimizer"]
     extern "Rust" {
+        #[namespace = "concrete_optimizer::utils"]
+        fn levelled_cost() -> f64;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn ks_cost() -> f64;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn pbs_cost() -> f64;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn woppbs_cost() -> f64;
 
         #[namespace = "concrete_optimizer::v0"]
         fn optimize_bootstrap(precision: u64, noise_factor: f64, options: Options) -> Solution;
@@ -785,14 +814,22 @@ mod ffi {
     #[namespace = "concrete_optimizer::v0"]
     #[derive(Debug, Clone, Copy, Default)]
     pub struct Solution {
-        pub input_lwe_dimension: u64,              //n_big
-        pub internal_ks_output_lwe_dimension: u64, //n_small
-        pub ks_decomposition_level_count: u64,     //l(KS)
-        pub ks_decomposition_base_log: u64,        //b(KS)
-        pub glwe_polynomial_size: u64,             //N
-        pub glwe_dimension: u64,                   //k
-        pub br_decomposition_level_count: u64,     //l(BR)
-        pub br_decomposition_base_log: u64,        //b(BR)
+        pub input_lwe_dimension: u64,
+        //n_big
+        pub internal_ks_output_lwe_dimension: u64,
+        //n_small
+        pub ks_decomposition_level_count: u64,
+        //l(KS)
+        pub ks_decomposition_base_log: u64,
+        //b(KS)
+        pub glwe_polynomial_size: u64,
+        //N
+        pub glwe_dimension: u64,
+        //k
+        pub br_decomposition_level_count: u64,
+        //l(BR)
+        pub br_decomposition_base_log: u64,
+        //b(BR)
         pub complexity: f64,
         pub noise_max: f64,
         pub p_error: f64, // error probability
@@ -801,17 +838,26 @@ mod ffi {
     #[namespace = "concrete_optimizer::dag"]
     #[derive(Debug, Clone, Default)]
     pub struct DagSolution {
-        pub input_lwe_dimension: u64,              //n_big
-        pub internal_ks_output_lwe_dimension: u64, //n_small
-        pub ks_decomposition_level_count: u64,     //l(KS)
-        pub ks_decomposition_base_log: u64,        //b(KS)
-        pub glwe_polynomial_size: u64,             //N
-        pub glwe_dimension: u64,                   //k
-        pub br_decomposition_level_count: u64,     //l(BR)
-        pub br_decomposition_base_log: u64,        //b(BR)
+        pub input_lwe_dimension: u64,
+        //n_big
+        pub internal_ks_output_lwe_dimension: u64,
+        //n_small
+        pub ks_decomposition_level_count: u64,
+        //l(KS)
+        pub ks_decomposition_base_log: u64,
+        //b(KS)
+        pub glwe_polynomial_size: u64,
+        //N
+        pub glwe_dimension: u64,
+        //k
+        pub br_decomposition_level_count: u64,
+        //l(BR)
+        pub br_decomposition_base_log: u64,
+        //b(BR)
         pub complexity: f64,
         pub noise_max: f64,
-        pub p_error: f64, // error probability
+        pub p_error: f64,
+        // error probability
         pub global_p_error: f64,
         pub use_wop_pbs: bool,
         pub cb_decomposition_level_count: u64,
@@ -875,6 +921,7 @@ mod ffi {
         pub input_key: SecretLweKey,
         pub output_key: SecretLweKey,
         pub br_decomposition_parameter: BrDecompositionParameters,
+        pub unitary_cost: f64,
         pub description: String,
     }
 

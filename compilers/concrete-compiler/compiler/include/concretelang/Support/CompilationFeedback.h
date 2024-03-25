@@ -46,6 +46,7 @@ struct Statistic {
   PrimitiveOperation operation;
   std::vector<std::pair<KeyType, int64_t>> keys;
   std::optional<int64_t> count;
+  double complexity;
 };
 
 struct CircuitCompilationFeedback {

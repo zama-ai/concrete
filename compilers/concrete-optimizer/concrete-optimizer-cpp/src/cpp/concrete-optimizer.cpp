@@ -1140,6 +1140,7 @@ struct BootstrapKey final {
   ::concrete_optimizer::dag::SecretLweKey input_key;
   ::concrete_optimizer::dag::SecretLweKey output_key;
   ::concrete_optimizer::dag::BrDecompositionParameters br_decomposition_parameter;
+  double unitary_cost;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;
@@ -1249,6 +1250,18 @@ struct CircuitSolution final {
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
 } // namespace dag
 
+namespace utils {
+extern "C" {
+double concrete_optimizer$utils$cxxbridge1$levelled_cost() noexcept;
+
+double concrete_optimizer$utils$cxxbridge1$ks_cost() noexcept;
+
+double concrete_optimizer$utils$cxxbridge1$pbs_cost() noexcept;
+
+double concrete_optimizer$utils$cxxbridge1$woppbs_cost() noexcept;
+} // extern "C"
+} // namespace utils
+
 namespace v0 {
 extern "C" {
 ::concrete_optimizer::v0::Solution concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;
@@ -1322,6 +1335,24 @@ void concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(::concrete_optimi
 
 ::std::uint64_t concrete_optimizer$cxxbridge1$NO_KEY_ID() noexcept;
 } // extern "C"
+
+namespace utils {
+double levelled_cost() noexcept {
+  return concrete_optimizer$utils$cxxbridge1$levelled_cost();
+}
+
+double ks_cost() noexcept {
+  return concrete_optimizer$utils$cxxbridge1$ks_cost();
+}
+
+double pbs_cost() noexcept {
+  return concrete_optimizer$utils$cxxbridge1$pbs_cost();
+}
+
+double woppbs_cost() noexcept {
+  return concrete_optimizer$utils$cxxbridge1$woppbs_cost();
+}
+} // namespace utils
 
 namespace v0 {
 ::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept {

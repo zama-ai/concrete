@@ -22,22 +22,23 @@ from .wrapper import WrapperCpp
 
 
 # matches (@tag, separator( | ), filename)
-REGEX_LOCATION = re.compile(r"loc\(\"(@[\w\.]+)?( \| )?(.+)\"")
+REGEX_LOCATION = re.compile(r"loc\(\"(%\d*) \| (@[\w\.]+)?( \| )?(.+)\"")
 
 
-def tag_from_location(location):
+def id_and_tag_from_location(location):
     """
     Extract tag of the operation from its location.
     """
 
     match = REGEX_LOCATION.match(location)
     if match is not None:
-        tag, _, _ = match.groups()
+        id_, tag, _, _ = match.groups()
         # remove the @
         tag = tag[1:] if tag else ""
     else:
+        id_ = ""
         tag = ""
-    return tag
+    return id_, tag
 
 
 class CircuitCompilationFeedback(WrapperCpp):
@@ -149,7 +150,7 @@ class CircuitCompilationFeedback(WrapperCpp):
             if statistic.operation not in operations:
                 continue
 
-            tag = tag_from_location(statistic.location)
+            _, tag = id_and_tag_from_location(statistic.location)
 
             tag_components = tag.split(".")
             for i in range(1, len(tag_components) + 1):
@@ -194,7 +195,7 @@ class CircuitCompilationFeedback(WrapperCpp):
             if statistic.operation not in operations:
                 continue
 
-            tag = tag_from_location(statistic.location)
+            _, tag = id_and_tag_from_location(statistic.location)
 
             tag_components = tag.split(".")
             for i in range(1, len(tag_components) + 1):
@@ -214,6 +215,49 @@ class CircuitCompilationFeedback(WrapperCpp):
                         result[current_tag][parameter] = 0
                     result[current_tag][parameter] += statistic.count
 
+        return result
+
+    def complexity_per_tag(self) -> Dict[str, float]:
+        """
+        Compute the complexity of each tag in the computation graph.
+
+        Returns:
+            Dict[str, float]:
+                complexity per tag
+        """
+
+        result = {}
+        for statistic in self.statistics:
+            _, tag = id_and_tag_from_location(statistic.location)
+
+            tag_components = tag.split(".")
+            for i in range(1, len(tag_components) + 1):
+                current_tag = ".".join(tag_components[0:i])
+                if current_tag == "":
+                    continue
+
+                if current_tag not in result:
+                    result[current_tag] = 0.0
+
+                result[current_tag] += statistic.complexity
+
+        return result
+
+    def complexity_per_node(self) -> Dict[str, float]:
+        """
+        Compute the complexity of each node in the computation graph.
+
+        Returns:
+            Dict[str, float]:
+                complexity per node
+        """
+
+        result = {}
+        for statistic in self.statistics:
+            node_id, _ = id_and_tag_from_location(statistic.location)
+            if node_id not in result:
+                result[node_id] = 0.0
+            result[node_id] += statistic.complexity
         return result
 
 

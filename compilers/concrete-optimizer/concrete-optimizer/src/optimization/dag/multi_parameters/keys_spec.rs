@@ -24,7 +24,13 @@ pub struct SecretLweKey {
     pub description: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl SecretLweKey {
+    pub fn size(&self) -> u64 {
+        self.polynomial_size * self.glwe_dimension
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct BootstrapKey {
     /* Public TLU bootstrap keys */
     pub identifier: BootstrapKeyId,
@@ -32,6 +38,7 @@ pub struct BootstrapKey {
     pub output_key: SecretLweKey,
     pub br_decomposition_parameter: BrDecompositionParameters,
     pub description: String,
+    pub unitary_cost: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -162,6 +169,7 @@ impl CircuitSolution {
                 level: sol.br_decomposition_level_count,
                 log2_base: sol.br_decomposition_base_log,
             },
+            unitary_cost: 0.0,
             description: "tlu bootstrap".into(),
         };
         let circuit_bootstrap_key = CircuitBoostrapKey {
@@ -286,6 +294,7 @@ impl CircuitSolution {
                 level: sol.br_decomposition_level_count,
                 log2_base: sol.br_decomposition_base_log,
             },
+            unitary_cost: 0.0,
             description: "tlu bootstrap".into(),
         };
         let instruction_keys = InstructionKeys {
@@ -373,13 +382,18 @@ impl ExpandedCircuitKeys {
             .iter()
             .enumerate()
             .map(|(i, v): (usize, &Option<_>)| {
-                let br_decomposition_parameter = v.unwrap().decomp;
+                let bs = v.unwrap();
+                let br_decomposition_parameter = bs.decomp;
+                let input_key = small_secret_keys[i].clone();
+                #[allow(clippy::cast_sign_loss)]
+                let unitary_cost = bs.complexity_br(input_key.size());
                 BootstrapKey {
                     identifier: i as Id,
-                    input_key: small_secret_keys[i].clone(),
+                    input_key,
                     output_key: big_secret_keys[i].clone(),
                     br_decomposition_parameter,
                     description: format!("pbs[{i}]"),
+                    unitary_cost,
                 }
             })
             .collect();

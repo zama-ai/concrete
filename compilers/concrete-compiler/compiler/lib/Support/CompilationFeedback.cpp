@@ -198,6 +198,7 @@ llvm::json::Object statisticToJson(const Statistic &statistic) {
     keysJson.push_back(std::move(keyJson));
   }
   object.insert({"keys", std::move(keysJson)});
+  object.insert({"complexity", statistic.complexity});
   return object;
 }
 
@@ -333,7 +334,8 @@ bool fromJSON(const llvm::json::Value j, mlir::concretelang::Statistic &v,
 
   return O && O.map("location", v.location) &&
          O.map("operation", v.operation) && O.map("operation", v.operation) &&
-         O.map("keys", v.keys) && O.map("count", v.count);
+         O.map("keys", v.keys) && O.map("count", v.count) &&
+         O.map("complexity", v.complexity);
 }
 
 bool fromJSON(const llvm::json::Value j,

@@ -1,14 +1,15 @@
-#include "concretelang/Support/CompilationFeedback.h"
 #include <concretelang/Analysis/StaticLoops.h>
 #include <concretelang/Analysis/Utils.h>
 #include <concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h>
+#include <concretelang/Dialect/TFHE/IR/TFHEOps.h>
+#include <concretelang/Support/CompilationFeedback.h>
+
+#include <concrete-optimizer.hpp>
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Operation.h>
-
-#include <concretelang/Dialect/TFHE/IR/TFHEOps.h>
 
 using namespace mlir::concretelang;
 using namespace mlir;
@@ -133,6 +134,7 @@ struct ExtractTFHEStatisticsPass
     auto operation = PrimitiveOperation::ENCRYPTED_ADDITION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.getTripCount();
+    auto complexity = concrete_optimizer::utils::levelled_cost();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -143,6 +145,7 @@ struct ExtractTFHEStatisticsPass
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -160,6 +163,7 @@ struct ExtractTFHEStatisticsPass
     auto operation = PrimitiveOperation::CLEAR_ADDITION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.getTripCount();
+    auto complexity = concrete_optimizer::utils::levelled_cost();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -170,6 +174,7 @@ struct ExtractTFHEStatisticsPass
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -187,6 +192,7 @@ struct ExtractTFHEStatisticsPass
     auto operation = PrimitiveOperation::PBS;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.getTripCount();
+    auto complexity = concrete_optimizer::utils::pbs_cost();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::BOOTSTRAP, (int64_t)bsk.getIndex());
@@ -197,6 +203,7 @@ struct ExtractTFHEStatisticsPass
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -214,6 +221,7 @@ struct ExtractTFHEStatisticsPass
     auto operation = PrimitiveOperation::KEY_SWITCH;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.getTripCount();
+    auto complexity = concrete_optimizer::utils::ks_cost();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::KEY_SWITCH, (int64_t)ksk.getIndex());
@@ -224,6 +232,7 @@ struct ExtractTFHEStatisticsPass
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -241,6 +250,7 @@ struct ExtractTFHEStatisticsPass
     auto operation = PrimitiveOperation::CLEAR_MULTIPLICATION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.getTripCount();
+    auto complexity = concrete_optimizer::utils::levelled_cost();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -251,6 +261,7 @@ struct ExtractTFHEStatisticsPass
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -268,6 +279,7 @@ struct ExtractTFHEStatisticsPass
     auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.getTripCount();
+    auto complexity = concrete_optimizer::utils::levelled_cost();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
@@ -278,6 +290,7 @@ struct ExtractTFHEStatisticsPass
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -302,19 +315,25 @@ struct ExtractTFHEStatisticsPass
     // clear - encrypted = clear + neg(encrypted)
 
     auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
+    auto complexity = concrete_optimizer::utils::levelled_cost();
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     operation = PrimitiveOperation::CLEAR_ADDITION;
+    complexity = concrete_optimizer::utils::levelled_cost();
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -334,6 +353,7 @@ struct ExtractTFHEStatisticsPass
     auto operation = PrimitiveOperation::WOP_PBS;
     auto keys = std::vector<std::pair<KeyType, int64_t>>();
     auto count = pass.getTripCount();
+    auto complexity = concrete_optimizer::utils::woppbs_cost();
 
     std::pair<KeyType, int64_t> key =
         std::make_pair(KeyType::BOOTSTRAP, (int64_t)bsk.getIndex());
@@ -350,6 +370,7 @@ struct ExtractTFHEStatisticsPass
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
