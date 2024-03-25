@@ -24,7 +24,13 @@ pub struct SecretLweKey {
     pub description: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl SecretLweKey {
+    pub fn size(&self) -> u64 {
+        self.polynomial_size * self.glwe_dimension
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct BootstrapKey {
     /* Public TLU bootstrap keys */
     pub identifier: BootstrapKeyId,
@@ -32,19 +38,21 @@ pub struct BootstrapKey {
     pub output_key: SecretLweKey,
     pub br_decomposition_parameter: BrDecompositionParameters,
     pub description: String,
+    pub unitary_cost: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct KeySwitchKey {
     /* Public TLU keyswitch keys */
     pub identifier: KeySwitchKeyId,
     pub input_key: SecretLweKey,
     pub output_key: SecretLweKey,
     pub ks_decomposition_parameter: KsDecompositionParameters,
+    pub unitary_cost: f64,
     pub description: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ConversionKeySwitchKey {
     /* Public conversion to make compatible ciphertext with incompatible keys.
     It's currently only between two big secret keys. */
@@ -53,6 +61,7 @@ pub struct ConversionKeySwitchKey {
     pub output_key: SecretLweKey,
     pub ks_decomposition_parameter: KsDecompositionParameters,
     pub fast_keyswitch: bool,
+    pub unitary_cost: f64,
     pub description: String,
 }
 
@@ -153,6 +162,7 @@ impl CircuitSolution {
                 log2_base: sol.ks_decomposition_base_log,
             },
             description: "tlu keyswitch".into(),
+            unitary_cost: 0.0,
         };
         let bootstrap_key = BootstrapKey {
             identifier: 0,
@@ -162,6 +172,7 @@ impl CircuitSolution {
                 level: sol.br_decomposition_level_count,
                 log2_base: sol.br_decomposition_base_log,
             },
+            unitary_cost: 0.0,
             description: "tlu bootstrap".into(),
         };
         let circuit_bootstrap_key = CircuitBoostrapKey {
@@ -206,7 +217,7 @@ impl CircuitSolution {
         } else {
             "No crypto-parameters for the given constraints"
         }
-        .into();
+            .into();
         Self {
             circuit_keys,
             instructions_keys,
@@ -226,7 +237,7 @@ impl CircuitSolution {
         } else {
             "No crypto-parameters for the given constraints"
         }
-        .into();
+            .into();
         let big_key = SecretLweKey {
             identifier: 0,
             polynomial_size: sol.glwe_polynomial_size,
@@ -277,6 +288,7 @@ impl CircuitSolution {
                 log2_base: sol.ks_decomposition_base_log,
             },
             description: "tlu keyswitch".into(),
+            unitary_cost: 0.0,
         };
         let bootstrap_key = BootstrapKey {
             identifier: 0,
@@ -286,6 +298,7 @@ impl CircuitSolution {
                 level: sol.br_decomposition_level_count,
                 log2_base: sol.br_decomposition_base_log,
             },
+            unitary_cost: 0.0,
             description: "tlu bootstrap".into(),
         };
         let instruction_keys = InstructionKeys {
@@ -373,13 +386,18 @@ impl ExpandedCircuitKeys {
             .iter()
             .enumerate()
             .map(|(i, v): (usize, &Option<_>)| {
-                let br_decomposition_parameter = v.unwrap().decomp;
+                let bs = v.unwrap();
+                let br_decomposition_parameter = bs.decomp;
+                let input_key = small_secret_keys[i].clone();
+                #[allow(clippy::cast_sign_loss)]
+                    let unitary_cost = bs.complexity_br(input_key.size());
                 BootstrapKey {
                     identifier: i as Id,
-                    input_key: small_secret_keys[i].clone(),
+                    input_key,
                     output_key: big_secret_keys[i].clone(),
                     br_decomposition_parameter,
                     description: format!("pbs[{i}]"),
+                    unitary_cost,
                 }
             })
             .collect();
@@ -399,12 +417,18 @@ impl ExpandedCircuitKeys {
                 };
                 if let Some(ks) = params.micro_params.ks[src][dst] {
                     let identifier = identifier_ks;
+
+                    let input_key = big_secret_keys[src].clone();
+                    #[allow(clippy::cast_sign_loss)]
+                        let unitary_cost = ks.complexity(input_key.size());
+
                     keyswitch_keys[src][dst] = Some(KeySwitchKey {
                         identifier,
                         input_key: big_secret_keys[src].clone(),
                         output_key: small_secret_keys[dst].clone(),
                         ks_decomposition_parameter: ks.decomp,
                         description: cross_key("ks"),
+                        unitary_cost,
                     });
                     identifier_ks += 1;
                 }
@@ -416,6 +440,7 @@ impl ExpandedCircuitKeys {
                         output_key: big_secret_keys[dst].clone(),
                         ks_decomposition_parameter: fks.decomp,
                         fast_keyswitch: REAL_FAST_KS,
+                        unitary_cost: 0.0,
                         description: cross_key("fks"),
                     });
                     identifier_fks += 1;
@@ -449,7 +474,7 @@ impl ExpandedCircuitKeys {
             let final_id_out = final_key_id(&key.output_key);
             let canon_key = (final_id_in, final_id_out, key.br_decomposition_parameter);
             #[allow(clippy::option_if_let_else)]
-            let final_bootstrap =
+                let final_bootstrap =
                 if let Some(final_bootstrap) = canon_final_bootstraps.get(&canon_key) {
                     final_bootstrap.clone()
                 } else {
@@ -489,7 +514,7 @@ impl ExpandedCircuitKeys {
                     let final_id_out = final_key_id(&key.output_key);
                     let canon_key = (final_id_in, final_id_out, key.ks_decomposition_parameter);
                     #[allow(clippy::option_if_let_else)]
-                    let final_keyswitch = if let Some(final_keyswitch) =
+                        let final_keyswitch = if let Some(final_keyswitch) =
                         canon_final_keyswitchs.get(&canon_key)
                     {
                         keyswitch_keys[i][j] = None;
@@ -544,7 +569,7 @@ impl ExpandedCircuitKeys {
                     }
                     let canon_key = (final_id_in, final_id_out, key.ks_decomposition_parameter);
                     #[allow(clippy::option_if_let_else)]
-                    let final_c_keyswitch = if let Some(final_c_keyswitch) =
+                        let final_c_keyswitch = if let Some(final_c_keyswitch) =
                         canon_final_c_keyswitchs.get(&canon_key)
                     {
                         conversion_keyswitch_keys[i][j] = None;

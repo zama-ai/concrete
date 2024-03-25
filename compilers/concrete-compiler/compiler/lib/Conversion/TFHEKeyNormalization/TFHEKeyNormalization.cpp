@@ -51,7 +51,7 @@ public:
         bsk.getContext(), convertSecretKey(bsk.getInputKey()),
         convertSecretKey(bsk.getOutputKey()), bsk.getPolySize(),
         bsk.getGlweDim(), bsk.getLevels(), bsk.getBaseLog(),
-        circuitKeys.getBootstrapKeyIndex(bsk).value());
+        bsk.getComplexity(), circuitKeys.getBootstrapKeyIndex(bsk).value());
   }
 
   TFHE::GLWEKeyswitchKeyAttr
@@ -59,7 +59,7 @@ public:
     return TFHE::GLWEKeyswitchKeyAttr::get(
         ksk.getContext(), convertSecretKey(ksk.getInputKey()),
         convertSecretKey(ksk.getOutputKey()), ksk.getLevels(), ksk.getBaseLog(),
-        circuitKeys.getKeyswitchKeyIndex(ksk).value());
+        ksk.getComplexity(), circuitKeys.getKeyswitchKeyIndex(ksk).value());
   }
 
   TFHE::GLWEPackingKeyswitchKeyAttr

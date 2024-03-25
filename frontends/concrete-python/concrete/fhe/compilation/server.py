@@ -432,6 +432,33 @@ class Server:
         """
         return self._compilation_feedback.complexity
 
+    @property
+    def complexity(self) -> float:
+        """
+        Get complexity of the compiled program.
+        """
+        return self._compilation_feedback.complexity
+
+    def complexity_per_tag(self, function: str = "main") -> Dict[str, float]:
+        """
+        Get the complexity of each tag in the computation graph.
+
+        Returns:
+            Dict[str, float]:
+                complexity per tag
+        """
+        return self._compilation_feedback.circuit(function).complexity_per_tag()
+
+    def complexity_per_node(self, function: str = "main") -> Dict[str, float]:
+        """
+        Get the complexity of each node in the computation graph.
+
+        Returns:
+            Dict[str, float]:
+                complexity per node
+        """
+        return self._compilation_feedback.circuit(function).complexity_per_node()
+
     def size_of_inputs(self, function: str = "main") -> int:
         """
         Get size of the inputs of the compiled program.
@@ -772,6 +799,8 @@ class Server:
             "encrypted_negation_count_per_parameter",
             "encrypted_negation_count_per_tag",
             "encrypted_negation_count_per_tag_per_parameter",
+            "complexity_per_tag",
+            "complexity_per_node",
         ]
         output = {attribute: getattr(self, attribute)() for attribute in attributes}
         output["size_of_secret_keys"] = self.size_of_secret_keys

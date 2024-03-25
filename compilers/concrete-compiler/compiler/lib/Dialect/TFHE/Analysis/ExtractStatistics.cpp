@@ -1,14 +1,15 @@
-#include "concretelang/Support/CompilationFeedback.h"
 #include <concretelang/Analysis/StaticLoops.h>
 #include <concretelang/Analysis/Utils.h>
 #include <concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h>
+#include <concretelang/Dialect/TFHE/IR/TFHEOps.h>
+#include <concretelang/Support/CompilationFeedback.h>
+
+#include <concrete-optimizer.hpp>
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Operation.h>
-
-#include <concretelang/Dialect/TFHE/IR/TFHEOps.h>
 
 using namespace mlir::concretelang;
 using namespace mlir;
@@ -32,6 +33,16 @@ namespace TFHE {
       return error;                                                            \
     }                                                                          \
   }
+
+double levelledComplexity(GLWESecretKey key, std::optional<int64_t> count) {
+  double complexity = 0.0;
+  if (key.isNormalized()) {
+    complexity = key.getNormalized()->dimension;
+  } else if (key.isParameterized()) {
+    complexity = key.getParameterized()->dimension;
+  }
+  return complexity * count.value_or(1.0);
+}
 
 struct ExtractTFHEStatisticsPass
     : public PassWrapper<ExtractTFHEStatisticsPass, OperationPass<ModuleOp>>,
@@ -138,11 +149,15 @@ struct ExtractTFHEStatisticsPass
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
+    double complexity =
+        levelledComplexity(op.getResult().getType().getKey(), count);
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -165,11 +180,15 @@ struct ExtractTFHEStatisticsPass
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
+    double complexity =
+        levelledComplexity(op.getResult().getType().getKey(), count);
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -192,11 +211,15 @@ struct ExtractTFHEStatisticsPass
         std::make_pair(KeyType::BOOTSTRAP, (int64_t)bsk.getIndex());
     keys.push_back(key);
 
+    auto complexity =
+        (double)op.getKeyAttr().getComplexity() * (double)count.value_or(1);
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -219,11 +242,15 @@ struct ExtractTFHEStatisticsPass
         std::make_pair(KeyType::KEY_SWITCH, (int64_t)ksk.getIndex());
     keys.push_back(key);
 
+    auto complexity =
+        (double)op.getKeyAttr().getComplexity() * (double)count.value_or(1);
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -246,11 +273,15 @@ struct ExtractTFHEStatisticsPass
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
+    double complexity =
+        levelledComplexity(op.getResult().getType().getKey(), count);
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -273,11 +304,15 @@ struct ExtractTFHEStatisticsPass
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
+    double complexity =
+        levelledComplexity(op.getResult().getType().getKey(), count);
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -299,22 +334,33 @@ struct ExtractTFHEStatisticsPass
         std::make_pair(KeyType::SECRET, (int64_t)resultingKey->index);
     keys.push_back(key);
 
+    double complexity =
+        levelledComplexity(op.getResult().getType().getKey(), count);
+
+    // TODO: I though subtraction was implemented like this but it's complexity
+    // seems to be the same as either `neg(encrypted)` or the addition, not
+    // both. What should we do here?
+
     // clear - encrypted = clear + neg(encrypted)
 
     auto operation = PrimitiveOperation::ENCRYPTED_NEGATION;
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     operation = PrimitiveOperation::CLEAR_ADDITION;
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;
@@ -345,11 +391,15 @@ struct ExtractTFHEStatisticsPass
     key = std::make_pair(KeyType::PACKING_KEY_SWITCH, (int64_t)pksk.getIndex());
     keys.push_back(key);
 
+    // TODO
+    double complexity = 0.0;
+
     pass.circuitFeedback->statistics.push_back(concretelang::Statistic{
         location,
         operation,
         keys,
         count,
+        complexity,
     });
 
     return std::nullopt;

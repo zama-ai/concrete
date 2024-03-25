@@ -84,7 +84,7 @@ public:
     return TFHE::GLWEKeyswitchKeyAttr::get(
         ctx, toGLWESecretKey(ksk.input_key), toGLWESecretKey(ksk.output_key),
         ksk.ks_decomposition_parameter.level,
-        ksk.ks_decomposition_parameter.log2_base, -1);
+        ksk.ks_decomposition_parameter.log2_base, ksk.unitary_cost, -1);
   }
 
   // Returns a `GLWEKeyswitchKeyAttr` for the keyswitch key of an
@@ -108,7 +108,7 @@ public:
         ctx, toGLWESecretKey(bsk.input_key), toGLWESecretKey(bsk.output_key),
         bsk.output_key.polynomial_size, bsk.output_key.glwe_dimension,
         bsk.br_decomposition_parameter.level,
-        bsk.br_decomposition_parameter.log2_base, -1);
+        bsk.br_decomposition_parameter.log2_base, bsk.unitary_cost, -1);
   }
 
   // Looks up the keyswitch key for an operation tagged with a given
