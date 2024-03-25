@@ -44,6 +44,7 @@
 #include "concretelang/Dialect/FHE/Transforms/Optimizer/Optimizer.h"
 #include "concretelang/Dialect/FHELinalg/Transforms/Tiling.h"
 #include "concretelang/Dialect/RT/Analysis/Autopar.h"
+#include "concretelang/Dialect/RT/Transforms/Passes.h"
 #include "concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h"
 #include "concretelang/Dialect/TFHE/Transforms/Transforms.h"
 #include "concretelang/Support/CompilerEngine.h"
@@ -183,6 +184,8 @@ mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
       pm, mlir::concretelang::createBuildDataflowTaskGraphPass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createLowerDataflowTasksPass(), enablePass);
+  addPotentiallyNestedPass(pm, mlir::concretelang::createHoistAwaitFuturePass(),
+                           enablePass);
 
   return pm.run(module.getOperation());
 }

@@ -185,8 +185,12 @@ public:
     mlir::ArrayAttr tileAttr =
         mlir::Builder(&this->getContext()).getI64ArrayAttr(tileSizes);
 
-    op->walk([&](mlir::concretelang::FHELinalg::MatMulEintIntOp matmulOp) {
-      matmulOp.getOperation()->setAttr("tile-sizes", tileAttr);
+    op->walk([&](mlir::Operation *op) {
+      if (llvm::isa<mlir::concretelang::FHELinalg::ApplyLookupTableEintOp>(
+              op) ||
+          llvm::isa<mlir::concretelang::FHELinalg::MatMulEintIntOp>(op)) {
+        op->setAttr("tile-sizes", tileAttr);
+      }
     });
   }
 

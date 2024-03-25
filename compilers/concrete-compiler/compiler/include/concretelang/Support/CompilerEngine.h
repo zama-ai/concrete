@@ -252,6 +252,10 @@ public:
     /// from the Linalg dialect
     FHE_LINALG_GENERIC,
 
+    /// Read sources and lower all the FHELinalg operations to FHE
+    /// operations, dump after data-flow parallelization
+    FHE_DF_PARALLELIZED,
+
     /// Read sources and lower all the FHELinalg operations to FHE operations
     /// and scf loops
     FHE_NO_LINALG,

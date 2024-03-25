@@ -459,6 +459,9 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     return StreamStringError("Dataflow parallelization failed");
   }
 
+  if (target == Target::FHE_DF_PARALLELIZED)
+    return std::move(res);
+
   if (mlir::concretelang::pipeline::lowerLinalgToLoops(
           mlirContext, module, enablePass, loopParallelize)
           .failed()) {
