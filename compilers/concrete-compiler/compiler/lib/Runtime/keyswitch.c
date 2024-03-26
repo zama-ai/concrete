@@ -90,6 +90,49 @@ void keyswitch_lwe_generic(uint64_t *output_ct, uint64_t out_size,
     }
   }
 }
+
+#define OPT_INPUT_DIMENSION 1536
+#define OPT_DECOMPOSITION_LEVEL_COUNT 3
+#define OPT_OUTPUT_SIZE 709
+
+static inline uint64_t dec_state_init(uint64_t input_ct_elem,
+                                      uint64_t non_rep_bit_count) {
+  uint64_t shift = non_rep_bit_count - 1;
+  uint64_t closest = input_ct_elem >> shift;
+  closest += (uint64_t)1;
+  closest &= (uint64_t)-2;
+  closest = closest << shift;
+
+  return closest >> non_rep_bit_count;
+}
+
+static inline uint64_t dec_state_shift(uint64_t dec_state,
+                                       uint64_t decomposition_base_log) {
+  return dec_state >> decomposition_base_log;
+}
+
+static inline uint64_t dec_state_update(uint64_t dec_state, uint64_t carry) {
+  return dec_state + carry;
+}
+
+static inline uint64_t decomposed_init(uint64_t dec_state,
+                                       uint64_t dec_mod_b_mask) {
+  return dec_state & dec_mod_b_mask;
+}
+
+static inline uint64_t decomposed_update(uint64_t decomposed, uint64_t carry,
+                                         uint64_t decomposition_base_log) {
+  return decomposed - (carry << decomposition_base_log);
+}
+
+static inline uint64_t carry_init(uint64_t decomposed, uint64_t dec_state,
+                                  uint64_t decomposition_base_log) {
+  uint64_t carry = ((decomposed - (uint64_t)1) | dec_state) & decomposed;
+  carry = carry >> (decomposition_base_log - 1);
+
+  return carry;
+}
+
 void keyswitch_lwe_optimized(uint64_t *output_ct, uint64_t out_size,
                              uint64_t *input_ct, uint64_t ct0_size,
                              uint32_t decomposition_level_count,
@@ -99,47 +142,39 @@ void keyswitch_lwe_optimized(uint64_t *output_ct, uint64_t out_size,
                              const uint64_t ksk3d[1536][3][709]) {
   puts("keyswitch_lwe_optimized");
 
-  uint64_t input_size = 1536 + 1;
+  uint64_t input_size = OPT_INPUT_DIMENSION + 1;
 
-  uint64_t non_rep_bit_count = 64 - 3 * decomposition_base_log;
-  uint64_t shift = non_rep_bit_count - 1;
+  uint64_t non_rep_bit_count =
+      64 - OPT_DECOMPOSITION_LEVEL_COUNT * decomposition_base_log;
+
   uint64_t dec_mod_b_mask =
       ((uint64_t)1 << decomposition_base_log) - (uint64_t)1;
 
   // We begin by zeroing out the output ct
-  for (size_t i = 0; i < 709; i++) {
+  for (size_t i = 0; i < OPT_OUTPUT_SIZE; i++) {
     output_ct[i] = 0;
   }
 
   // We copy the body of the input ct to the body of the output ct
-  output_ct[709 - 1] = input_ct[input_size - 1];
+  output_ct[OPT_OUTPUT_SIZE - 1] = input_ct[input_size - 1];
 
-  size_t i, j, k;
-  uint64_t closest;
+  uint64_t carry;
+  uint64_t decomposed;
+  uint64_t dec_state;
 
   //#pragma scop
-  for (i = 0; i < 1536; i++) {
-    // We retrieve the mask element
-    closest = input_ct[i] >> shift;
-    closest += (uint64_t)1;
-    closest &= (uint64_t)-2;
-    closest = closest << shift;
+  for (uint64_t i = 0; i < OPT_INPUT_DIMENSION; i++) {
+    dec_state = dec_state_init(input_ct[i], non_rep_bit_count);
 
-    // We initialize the decomposition
-    uint64_t dec_state = closest >> non_rep_bit_count;
+    for (uint64_t j = 0; j < OPT_DECOMPOSITION_LEVEL_COUNT; j++) {
+      decomposed = decomposed_init(dec_state, dec_mod_b_mask);
+      dec_state = dec_state_shift(dec_state, decomposition_base_log);
+      carry = carry_init(decomposed, dec_state, decomposition_base_log);
 
-    // We loop through the levels of the decomposition
-    for (j = 0; j < 3; j++) {
-      // We get the decomposed iterate
-      uint64_t decomposed = dec_state & dec_mod_b_mask;
-      dec_state = dec_state >> decomposition_base_log;
-      uint64_t carry = ((decomposed - (uint64_t)1) | dec_state) & decomposed;
-      carry = carry >> (decomposition_base_log - 1);
-      dec_state += carry;
-      decomposed -= carry << decomposition_base_log;
+      dec_state = dec_state_update(dec_state, carry);
+      decomposed = decomposed_update(decomposed, carry, decomposition_base_log);
 
-      // We accumulate in the output ct
-      for (k = 0; k < 709; k++) {
+      for (uint64_t k = 0; k < OPT_OUTPUT_SIZE; k++) {
         output_ct[k] -= ksk3d[i][j][k] * decomposed;
       }
     }
