@@ -212,6 +212,22 @@ def copy_modify(x):
     return np.concatenate((x, y))
 
 
+def issue650(x):
+    """
+    Function of a reported bug in which bit widths assigned to clear values were wrong.
+    """
+    tmp0 = x
+    tmp1 = [[1], [-1], [-1], [-1], [-1], [-1], [-2], [-1], [0], [0]]
+    tmp2 = np.matmul(tmp0, tmp1)
+    tmp3 = np.sum(tmp0, axis=1, keepdims=True)
+    tmp4 = -1
+    tmp5 = np.multiply(tmp4, tmp3)
+    tmp6 = np.subtract(tmp2, tmp5)
+    tmp7 = [[11]]
+    tmp8 = np.add(tmp6, tmp7)
+    return tmp8
+
+
 @pytest.mark.parametrize(
     "function,parameters,configuration_overrides",
     [
@@ -931,6 +947,14 @@ def copy_modify(x):
                 "[x: [-32, 31]] "
                 "{optimize_tlu_based_on_measured_bounds: True}"
             ),
+        ),
+        pytest.param(
+            issue650,
+            {
+                "x": {"range": [-2, 1], "status": "encrypted", "shape": (1, 10)},
+            },
+            {},
+            id="issue-650",
         ),
     ],
 )
