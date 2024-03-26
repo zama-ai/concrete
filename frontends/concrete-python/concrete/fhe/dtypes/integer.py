@@ -114,11 +114,11 @@ class Integer(BaseDataType):
 
     def min(self) -> int:
         """
-        Get the minumum value that can be represented by the `Integer`.
+        Get the minimum value that can be represented by the `Integer`.
 
         Returns:
             int:
-                minumum value that can be represented by the `Integer`
+                minimum value that can be represented by the `Integer`
         """
 
         return 0 if not self.is_signed else -(2 ** (self.bit_width - 1))

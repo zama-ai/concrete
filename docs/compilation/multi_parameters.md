@@ -11,4 +11,4 @@ When multi parameters are enabled, a different set of parameters are selected fo
 
 To disable it, you can use `parameter_selection_strategy=fhe.ParameterSelectionStrategy.MONO` configuration option.
 
-When enabled, you can select the level of circuit partitionning, with **multi\_parameter\_strategy** in [configuration](../guides/configure.md#options).
+When enabled, you can select the level of circuit partitioning, with **multi\_parameter\_strategy** in [configuration](../guides/configure.md#options).

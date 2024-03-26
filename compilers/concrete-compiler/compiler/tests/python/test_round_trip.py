@@ -88,6 +88,6 @@ def test_valid_mlir_inputs(mlir_input):
 
 @pytest.mark.parametrize("mlir_input", INVALID_INPUTS)
 def test_invalid_mlir_inputs(mlir_input):
-    # We need to check that invalud inputs are raising an error
+    # We need to check that invalid inputs are raising an error
     with pytest.raises(RuntimeError, match=r"MLIR parsing failed:"):
         compiler.round_trip(mlir_input)

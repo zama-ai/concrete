@@ -145,7 +145,7 @@ public:
   }
 };
 
-/// Perfoms the transformation of boolean operations
+/// Performs the transformation of boolean operations
 class FHEBooleanTransformPass
     : public FHEBooleanTransformBase<FHEBooleanTransformPass> {
 public:

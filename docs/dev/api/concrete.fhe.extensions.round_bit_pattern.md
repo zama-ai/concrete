@@ -47,7 +47,7 @@ x = 0b_1011_1000 , lsbs_to_remove = 3 => 0b_1011_1000 x = 0b_1011_1001 , lsbs_to
 
 
 **Returns:**
-  Union[int, np.integer, np.ndarray, Tracer]:  Tracer that respresents the operation during tracing  rounded value(s) otherwise 
+  Union[int, np.integer, np.ndarray, Tracer]:  Tracer that represents the operation during tracing  rounded value(s) otherwise 
 
 
 ---
@@ -78,7 +78,7 @@ __init__(rounder: 'AutoRounder', input_min: int, input_max: int)
 <a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/extensions/round_bit_pattern.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `AutoRounder`
-AutoRounder class, to optimize for number of msbs to keep druing round bit pattern operation. 
+AutoRounder class, to optimize for number of msbs to keep during round bit pattern operation. 
 
 <a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/extensions/round_bit_pattern.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 

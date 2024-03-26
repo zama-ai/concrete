@@ -43,14 +43,14 @@
 // constraints (e.g., if two values must have the same type or the
 // same element type). These exist both as static constraints and as
 // dynamic constraints. Some pre-defined type constraints depend on a
-// class that yields a pair of values for which the contraints shall
+// class that yields a pair of values for which the constraints shall
 // be applied (e.g., yielding two operands or an operand and a result,
 // etc.).
 //
 // The global state of type inference after running the type inference
 // analyses is contained in the `DataFlowSolver` to which the analyses
 // where added. The local state of inference for an operation can be
-// obtained at any stage of the anlysis via the helper methods of
+// obtained at any stage of the analysis via the helper methods of
 // `TypeInferenceUtils`.
 
 #ifndef CONCRETELANG_ANALYSIS_TYPEINFERENCEANALYSIS_H
@@ -550,7 +550,7 @@ public:
     bool rightUnresolved = resolver.isUnresolvedType(rightType);
 
     // Priority is given from left to right, i.e., the type of the
-    // first value yielded by `yield()` takes precendence over the
+    // first value yielded by `yield()` takes precedence over the
     // type for the second value
     if (!leftUnresolved && rightUnresolved) {
       currState.set(leftValue, leftType);
@@ -615,7 +615,7 @@ public:
     bool rightUnresolved = resolver.isUnresolvedType(rightType);
 
     // Priority is given from left to right, i.e., the type of the
-    // first value yielded by `yield()` takes precendence over the
+    // first value yielded by `yield()` takes precedence over the
     // type for the second value
     if (!leftUnresolved && rightUnresolved) {
       currState.set(leftValue, leftType);

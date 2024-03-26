@@ -845,7 +845,7 @@ void memref_wop_pbs_crt_buffer(
     uint32_t polynomial_size,
     // Key Indices,
     uint32_t ksk_index, uint32_t bsk_index, uint32_t pksk_index,
-    // runtime context that hold evluation keys
+    // runtime context that hold evaluation keys
     mlir::concretelang::RuntimeContext *context) {
 
   // The compiler should only generates 2D memref<BxS>, where B is the number of

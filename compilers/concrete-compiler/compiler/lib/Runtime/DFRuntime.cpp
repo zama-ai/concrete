@@ -104,7 +104,7 @@ void _dfr_create_async_task(wfnptr wfn, void *ctx, size_t num_params,
                              param_types, outputs, output_sizes, output_types);
 }
 
-/// Runtime generic async_task with vector parametres.  Each first
+/// Runtime generic async_task with vector parameters.  Each first
 /// NUM_OUTPUTS quadruplets of arguments in the variadic list
 /// corresponds to a size_t for the number of elements in the
 /// following array, a void * pointer on an array of
@@ -112,7 +112,7 @@ void _dfr_create_async_task(wfnptr wfn, void *ctx, size_t num_params,
 /// of each output.  After that come NUM_PARAMS quadruplets of
 /// arguments in the variadic list that correspond to a size_t for the
 /// number of elements in the following array, a void* pointer on an
-/// array of hpx::future<void*> and the same two size_t parametres
+/// array of hpx::future<void*> and the same two size_t parameters
 /// (size and type).
 void _dfr_create_async_task_vec(wfnptr wfn, void *ctx, size_t num_params,
                                 size_t num_outputs, ...) {
@@ -349,7 +349,7 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
   BEGIN_TIME(&whole_timer);
   if (use_dfr_p) {
     // The first invocation will initialise the runtime. As each call to
-    // _dfr_start is matched with _dfr_stop, if this is not hte first,
+    // _dfr_start is matched with _dfr_stop, if this is not the first,
     // we need to resume the HPX runtime.
     assert(init_guard != terminated &&
            "DFR runtime: attempting to start runtime after it has been "

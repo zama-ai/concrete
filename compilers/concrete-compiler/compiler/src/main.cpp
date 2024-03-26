@@ -630,7 +630,7 @@ mlir::LogicalResult processInputBuffer(
   }
 
   if (retOrErr->llvmModule) {
-    // At least usefull for intermediate binary object files naming
+    // At least useful for intermediate binary object files naming
     retOrErr->llvmModule->setSourceFileName(sourceFileName);
     retOrErr->llvmModule->setModuleIdentifier(sourceFileName);
   }

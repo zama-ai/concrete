@@ -47,7 +47,7 @@ LweSecretKey::LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
   buffer = std::make_shared<std::vector<uint64_t>>(
       info.asReader().getParams().getLweDimension());
 
-  // We copy the informations.
+  // We copy the information.
   this->info = info;
 
 #ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
@@ -349,7 +349,7 @@ PackingKeyswitchKey::PackingKeyswitchKey(
   buffer = std::make_shared<std::vector<uint64_t>>();
   (*buffer).resize(bufferSize);
 
-  // We copy the informations.
+  // We copy the information.
   this->info = info;
 
   // Initialize the keyswitch key buffer

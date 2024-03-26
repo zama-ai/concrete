@@ -169,7 +169,7 @@ private:
   unsigned int chunkSize, chunkWidth;
 };
 
-/// Perfoms the transformation of big integer operations
+/// Performs the transformation of big integer operations
 class FHEBigIntTransformPass
     : public FHEBigIntTransformBase<FHEBigIntTransformPass> {
 public:

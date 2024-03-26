@@ -71,7 +71,7 @@ def estimate_stddev_with_current_curve(curve, lwe_dimension, log_q):
 def compare_curve_and_estimator(security_level, log_q, curves_dir):
     """
     For a subset of every lwe dimension possibles, estimate the security of those lwe dimension
-    associated with the stddev recommanded by our current curve.
+    associated with the stddev recommended by our current curve.
 
 
     Test whether some (lwe_dimension, std dev) that are assumed to be secure with

@@ -14,9 +14,9 @@ use crate::optimization::dag::multi_parameters::operations_value::OperationsValu
  *  - partition keyswitch,
  *  - modulus switching
  *
- * We only kown that the fresh <= lut ouput in the same partition.
+ * We only known that the fresh <= lut output in the same partition.
  * Each linear coefficient is a variance factor.
- * There are homogenious to squared weight (or summed square weights or squared norm2).
+ * There are homogeneous to squared weight (or summed square weights or squared norm2).
  */
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct SymbolicVariance {
