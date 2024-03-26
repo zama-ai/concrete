@@ -79,8 +79,8 @@ class Exactness(IntEnum):
     Exactness, to specify for specific operator the implementation preference (default and local).
     """
 
-    EXACT = 0
-    APPROXIMATE = 1
+    APPROXIMATE = 0
+    EXACT = 1
 
 
 @dataclass
