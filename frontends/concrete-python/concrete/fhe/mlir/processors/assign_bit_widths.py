@@ -119,9 +119,7 @@ class AssignBitWidths(MultiGraphProcessor):
             )
 
             if node.output.is_clear:
-                new_bit_width = original_bit_width
-                if not node.output.dtype.is_signed:
-                    new_bit_width += 1
+                new_bit_width = original_bit_width + 1
 
             node.properties["original_bit_width"] = original_bit_width
             node.output.dtype.bit_width = new_bit_width
