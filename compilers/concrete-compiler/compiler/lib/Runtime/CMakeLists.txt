@@ -1,11 +1,11 @@
-add_compile_options(-fsized-deallocation)
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fsized-deallocation>)
 
 if(CONCRETELANG_CUDA_SUPPORT)
   add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
                                          GPUDFG.cpp)
   target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 else()
-  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
+  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp keyswitch.c DFRuntime.cpp key_manager.cpp
                                          StreamEmulator.cpp)
 endif()
 
