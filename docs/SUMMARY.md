@@ -165,7 +165,7 @@
 * [Call FHE circuits from other languages](explanations/call_from_other_language.md)
 * [Project layout](explanations/layout.md)
 
-## Developer
+## Developers
 
 * [Contributing](dev/contributing.md)
 * [Release note](https://github.com/zama-ai/concrete/releases)
