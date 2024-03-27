@@ -1,6 +1,10 @@
 <p align="center">
 <!-- product name logo -->
-  <img width=600 src="https://user-images.githubusercontent.com/5758427/231207493-62676aea-4cb9-4bb4-92b0-20309c8a933a.png">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/concrete/assets/157474013/d4680525-2371-454e-97d3-ba39c809a074">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/concrete/assets/157474013/95d02fb1-de48-4bb7-b175-d536bb13091c">
+  <img width=600 alt="Zama Concrete">
+</picture>
 </p>
 <hr/>
 
@@ -141,7 +145,7 @@ for example in examples:
 - [Encrypted Key-value Database Using Homomorphic Encryption](https://www.zama.ai/post/encrypted-key-value-database-using-homomorphic-encryption)
 - [SHA-256 Implementation Using Concrete](https://github.com/zama-ai/concrete/blob/main/docs/application-tutorial/sha256.ipynb)
 
-*Explore more useful resources in [Concrete tutorials](https://docs.zama.ai/concrete/tutorials/) and [Awesome Zama repo](https://github.com/zama-ai/awesome-zama). If you have built awesome projects using Concrete, please let us know and we will be happy to showcase them here!*
+*Explore more useful resources in [Concrete tutorials](https://docs.zama.ai/concrete/v/main-1/tutorials/see-all-tutorials) and [Awesome Zama repo](https://github.com/zama-ai/awesome-zama?tab=readme-ov-file#concrete). If you have built awesome projects using Concrete, please let us know and we will be happy to showcase them here!*
 
 
 
@@ -189,11 +193,16 @@ If you have any questions, please contact us at hello@zama.ai.
 
 ## Support
 
-<a target="_blank" href="https://community.zama.ai">
-  <img src="https://github.com/zama-ai/concrete/assets/157474013/3b24f84e-416c-44c2-9f93-42ccb04f0f33">
+<a target="_blank" href="https://community.zama.ai/c/concrete/7">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zama-ai/concrete/assets/157474013/204c349f-b9c7-41d6-b93a-48ecd6977ff6">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zama-ai/concrete/assets/157474013/588b6aae-9677-463a-8542-209bb8106366">
+  <img alt="Support">
+</picture>
 </a>
 
-🌟 If you find this project helpful or interesting, please consider giving it a star on Github ! Your support helps to grow the community and motivates further development. 
+
+🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development. 
 
 
 <p align="right">
