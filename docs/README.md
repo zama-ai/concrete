@@ -27,7 +27,7 @@ Learn the basics of Concrete, set it up, and make it run with ease.
 
 Start building with Concrete by exploring its core features, discovering essential guides, and learning more with step-by-step tutorials.
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-cover data-type="files"></th></tr></thead><tbody><tr><td><strong>Fundamentals</strong></td><td>Explore the core features and basics of Concrete.<br><br></td><td><ul><li><a href="broken-reference/">Core features</a></li><li><a href="broken-reference/">Compilation</a></li><li><a href="broken-reference/">Execution/Analysis</a></li></ul></td><td><a href=".gitbook/assets/orange1.png">orange1.png</a></td></tr><tr><td><strong>Guides</strong></td><td>Discover essential guides to work with Concrete.<br><br></td><td><ul><li><a href="guides/configure.md">Configure</a></li><li><a href="guides/manage_keys.md">Manage keys</a></li><li><a href="howto/debug.md">Deploy</a></li></ul></td><td><a href=".gitbook/assets/orange2.png">orange2.png</a></td></tr><tr><td><strong>Tutorials</strong></td><td>Learn more about TFHE-rs with our tutorials.<br><br></td><td><ul><li><a href="tutorials/see-all-tutorials.md#start-here">Start here</a></li><li><a href="tutorials/see-all-tutorials.md#go-further">Go further</a></li><li><a href="tutorials/see-all-tutorials.md">See all tutorials</a></li></ul></td><td><a href=".gitbook/assets/orange3.png">orange3.png</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-cover data-type="files"></th></tr></thead><tbody><tr><td><strong>Fundamentals</strong></td><td>Explore the core features and basics of Concrete.<br><br></td><td><ul><li><a href="broken-reference">Core features</a></li><li><a href="broken-reference">Compilation</a></li><li><a href="broken-reference">Execution/Analysis</a></li></ul></td><td><a href=".gitbook/assets/orange1.png">orange1.png</a></td></tr><tr><td><strong>Guides</strong></td><td>Discover essential guides to work with Concrete.<br><br></td><td><ul><li><a href="guides/configure.md">Configure</a></li><li><a href="guides/manage_keys.md">Manage keys</a></li><li><a href="guides/deploy.md">Deploy</a></li></ul></td><td><a href=".gitbook/assets/orange2.png">orange2.png</a></td></tr><tr><td><strong>Tutorials</strong></td><td>Learn more about TFHE-rs with our tutorials.<br><br></td><td><ul><li><a href="tutorials/see-all-tutorials.md#start-here">Start here</a></li><li><a href="tutorials/see-all-tutorials.md#go-further">Go further</a></li><li><a href="tutorials/see-all-tutorials.md">See all tutorials</a></li></ul></td><td><a href=".gitbook/assets/orange3.png">orange3.png</a></td></tr></tbody></table>
 
 ## Explore more
 
@@ -46,7 +46,7 @@ Refer to the API, review product architecture, and access additional resources f
 
 Ask technical questions and discuss with the community. Our team of experts usually answers within 24 hours in working days.
 
-* [Community forum](https://community.zama.ai/)
+* [Community forum](https://community.zama.ai/c/concrete/)
 * [Discord channel](https://discord.fhe.org/)
 
 ### Developers
