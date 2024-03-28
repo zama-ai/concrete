@@ -131,3 +131,58 @@ Then, decrypt the result:
 decrypted_result = client.decrypt(deserialized_result)
 assert decrypted_result == 49
 ```
+
+# Deployment of modules
+
+Deploying a [module](../compilation/modules.md#modules) follows the same logic as the deployment of circuits. Assuming a module compiled in the following way:
+
+<!--pytest-codeblocks:skip-->
+```python
+from concrete import fhe
+
+@fhe.module()
+class MyModule:
+    @fhe.function({"x": "encrypted"})
+    def inc(x):
+        return x + 1
+
+    @fhe.function({"x": "encrypted"})
+    def dec(x):
+        return x - 1
+
+inputset = list(range(20))
+my_module = MyModule.compile({"inc": inputset, "dec": inputset})
+)
+```
+
+You can extract the server from the module and save it in a file:
+
+<!--pytest-codeblocks:skip-->
+```python
+my_module.server.save("server.zip")
+```
+
+The only noticeable difference between the deployment of modules and the deployment of circuits is that the methods `Client::encrypt`, `Client::decrypt` and `Server::run` must contain an extra `function_name` argument specifying the name of the targeted function.
+
+The encryption of an argument for the `inc` function of the module would be:
+
+<!--pytest-codeblocks:skip-->
+```python
+arg = client.encrypt(7, function_name="inc")
+serialized_arg = arg.serialize()
+```
+
+The execution of the `inc` function would be :
+
+<!--pytest-codeblocks:skip-->
+```python
+result = server.run(deserialized_arg, evaluation_keys=deserialized_evaluation_keys, function_name="inc")
+serialized_result = result.serialize()
+```
+
+Finally, decrypting a result from the execution of `dec` would be:
+
+<!--pytest-codeblocks:skip-->
+```python
+decrypted_result = client.decrypt(deserialized_result, function_name="dec")
+```
