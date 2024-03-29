@@ -134,3 +134,7 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Enables TLU fusing to reduce the number of table lookups.
 * **print_tlu_fusing** : bool = False
   * Enables printing TLU fusing to see which table lookups are fused.
+* **compress\_evaluation\_keys**: bool = False,
+    - This specifies that serialization takes the compressed form of evaluation keys.
+* **compress\_input\_ciphertexts**: bool = False,
+    * This specifies that serialization takes the compressed form of input ciphertexts.

@@ -28,6 +28,7 @@
 ## Compilation
 
 * [Composition](compilation/composition.md)
+* [Compression](compilation/compression.md)
 * [Reuse arguments](compilation/reuse_arguments.md)
 * [Multi precision](compilation/multi_precision.md)
 * [Multi parameters](compilation/multi_parameters.md)
