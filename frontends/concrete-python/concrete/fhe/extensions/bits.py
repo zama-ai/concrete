@@ -132,10 +132,18 @@ class Bits:
             return result
 
         if isinstance(self.value, Tracer):
+            output_value = deepcopy(self.value.output)
+            direct_single_bit = (
+                Tracer._is_direct
+                and isinstance(index, int)
+                and isinstance(output_value.dtype, Integer)
+            )
+            if direct_single_bit:
+                output_value.dtype.bit_width = 1  # type: ignore[attr-defined]
             computation = Node.generic(
                 "extract_bit_pattern",
                 [deepcopy(self.value.output)],
-                deepcopy(self.value.output),
+                output_value,
                 evaluator,
                 kwargs={"bits": index},
             )
