@@ -670,6 +670,13 @@ class FheModule:
         }
         return statistics
 
+    @property
+    def server(self) -> Server:
+        """
+        Get the server used by the runtime.
+        """
+        return self.runtime.server
+
     def functions(self) -> Dict[str, FheFunction]:
         """
         Return a dictionnary containing all the functions of the module.

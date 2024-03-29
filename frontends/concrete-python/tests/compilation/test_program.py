@@ -71,10 +71,11 @@ def test_compile(helpers):
         composable=True,
         verbose=True,
     )
-    Module.compile(
+    compiled = Module.compile(
         {"inc": inputset, "dec": inputset},
         configuration,
     )
+    assert isinstance(compiled.server, fhe.Server)
 
 
 def test_compiled_clear_call(helpers):
