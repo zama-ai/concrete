@@ -703,12 +703,8 @@ class Converter:
             table = tables[0][0]
             assert tables[0][1] is None
 
-            # The reduction on 63b is to avoid problems like doing a TLU of
-            # the form T[j] = 2<<j, for j which is supposed to be 7b as per
-            # constraint of the compiler, while in practice, it is a small
-            # value. Reducing on 64b was not ok for some reason
             lut_shape = (len(table),)
-            lut_values = np.array(table % (2 << 63), dtype=np.uint64)
+            lut_values = np.array(table, dtype=np.int64)
 
             map_shape = ()
             map_values = None
