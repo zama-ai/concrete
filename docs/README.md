@@ -60,4 +60,4 @@ Collaborate with us to advance the FHE spaces and drive innovation together.
 
 ***
 
-We value your feedback! [Take a 5-question developer survey](https://zama-project.webflow.io/developer-survey) to improve the Concrete library and the documentation and help other developers use FHE.
+We value your feedback! [Take a 5-question developer survey](http://zama.ai/developer-survey) to improve the Concrete library and the documentation and help other developers use FHE.
