@@ -956,6 +956,16 @@ def issue650(x):
             {},
             id="issue-650",
         ),
+        pytest.param(
+            lambda x: fhe.univariate(lambda x: (-3) * (1.0 - (x.astype(np.float64) * 0.0)))(
+                x
+            ).astype(np.int64),
+            {
+                "x": {"range": [-64, 63], "status": "encrypted", "shape": (1,)},
+            },
+            {},
+            id="issue-651",
+        ),
     ],
 )
 def test_others(function, parameters, configuration_overrides, helpers):
