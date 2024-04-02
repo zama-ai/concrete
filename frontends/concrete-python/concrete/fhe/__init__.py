@@ -193,3 +193,26 @@ from .tracing.typing import (
 from .version import __version__
 
 # pylint: enable=import-error,no-name-in-module
+
+import warnings
+from cpuinfo import get_cpu_info
+
+def _is_cpu_compatible() -> bool:
+    """Check if CPU can run Concrete
+
+    Returns:
+        bool: if the CPU does support required features to run Concrete
+    """
+    flags = get_cpu_info()["flags"]
+    if "aes" in flags:
+        return True
+    else:
+        return False
+
+# Print a warning if the CPU can't run Concrete
+if not _is_cpu_compatible():
+    warnings.warn(
+        "compiler could not find required CPU flags. "
+        "This could lead to 'Illegal Instruction' failures later on",
+        category=RuntimeWarning
+    )
