@@ -674,9 +674,12 @@ class FheModule:
         """
         Return a dictionnary containing all the functions of the module.
         """
-        return {name: getattr(self, name) for name in self.graphs.keys()}
+        return {
+            name: FheFunction(name, self.runtime, self.graphs[name]) for name in self.graphs.keys()
+        }
 
     def __getattr__(self, item):
         if item not in list(self.graphs.keys()):
-            self.__getattribute__(item)
+            error = f"No attribute {item}"
+            raise AttributeError(error)
         return FheFunction(item, self.runtime, self.graphs[item])

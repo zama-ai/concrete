@@ -179,7 +179,7 @@ def module():
         if not functions:
             error = "Tried to define an @fhe.module without any @fhe.function"
             raise RuntimeError(error)
-        return functools.wraps(class_)(ModuleCompiler([f for (_, f) in functions]))
+        return ModuleCompiler([f for (_, f) in functions])
 
     return decoration
 

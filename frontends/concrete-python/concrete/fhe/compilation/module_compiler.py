@@ -39,8 +39,6 @@ class FunctionDef:
     parameter_encryption_statuses: Dict[str, EncryptionStatus]
     inputset: List[Any]
     graph: Optional[Graph]
-    artifacts: Optional[FunctionDebugArtifacts]
-    _is_direct: bool
     _parameter_values: Dict[str, ValueDescription]
 
     def __init__(
@@ -95,26 +93,30 @@ class FunctionDef:
             param: EncryptionStatus(status.lower())
             for param, status in parameter_encryption_statuses.items()
         }
-        self.artifacts = None
         self.inputset = []
         self.graph = None
         self.name = function.__name__
-        self._is_direct = False
         self._parameter_values = {}
 
-    def trace(self, sample: Union[Any, Tuple[Any, ...]]):
+    def trace(
+        self,
+        sample: Union[Any, Tuple[Any, ...]],
+        artifacts: Optional[FunctionDebugArtifacts] = None,
+    ):
         """
         Trace the function and fuse the resulting graph with a sample input.
 
         Args:
             sample (Union[Any, Tuple[Any, ...]]):
                 sample to use for tracing
+            artifacts: Optiona[FunctionDebugArtifacts]:
+                the object to store artifacts in
         """
 
-        if self.artifacts is not None:
-            self.artifacts.add_source_code(self.function)
+        if artifacts is not None:
+            artifacts.add_source_code(self.function)
             for param, encryption_status in self.parameter_encryption_statuses.items():
-                self.artifacts.add_parameter_encryption_status(param, encryption_status)
+                artifacts.add_parameter_encryption_status(param, encryption_status)
 
         parameters = {
             param: ValueDescription.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
@@ -129,10 +131,10 @@ class FunctionDef:
         }
 
         self.graph = Tracer.trace(self.function, parameters, name=self.name)
-        if self.artifacts is not None:
-            self.artifacts.add_graph("initial", self.graph)
+        if artifacts is not None:
+            artifacts.add_graph("initial", self.graph)
 
-        fuse(self.graph, self.artifacts)
+        fuse(self.graph, artifacts)
 
     def evaluate(
         self,
@@ -157,15 +159,6 @@ class FunctionDef:
             artifacts (FunctionDebugArtifacts):
                 artifact object to store informations in
         """
-
-        if self._is_direct:
-            self.graph = Tracer.trace(
-                self.function, self._parameter_values, is_direct=True, name=self.name
-            )
-            artifacts.add_graph("initial", self.graph)  # pragma: no cover
-            fuse(self.graph, artifacts)
-            artifacts.add_graph("final", self.graph)  # pragma: no cover
-            return
 
         if inputset is not None:
             previous_inputset_length = len(self.inputset)
@@ -209,7 +202,7 @@ class FunctionDef:
                 )
                 raise RuntimeError(message) from error
 
-            self.trace(first_sample)
+            self.trace(first_sample, artifacts)
             assert self.graph is not None
 
         bounds = self.graph.measure_bounds(self.inputset)
@@ -504,10 +497,12 @@ class ModuleCompiler:
             raise RuntimeError(error)
 
         module_artifacts = (
-            module_artifacts
-            if module_artifacts is not None
-            else ModuleDebugArtifacts(list(self.functions.keys()))
+            module_artifacts if module_artifacts is not None else ModuleDebugArtifacts()
         )
+        if not module_artifacts.functions:
+            module_artifacts.functions = {
+                f: FunctionDebugArtifacts() for f in self.functions.keys()
+            }
 
         dbg = DebugManager(configuration)
 
@@ -524,9 +519,7 @@ class ModuleCompiler:
             mlir_context = self.compilation_context.mlir_context()
             graphs = {}
             for name, function in self.functions.items():
-                if function.graph is None:
-                    error = "Expected graph to be set."
-                    raise RuntimeError(error)
+                assert function.graph is not None
                 graphs[name] = function.graph
             mlir_module = GraphConverter(configuration).convert_many(graphs, mlir_context)
             mlir_str = str(mlir_module).strip()
@@ -558,7 +551,7 @@ class ModuleCompiler:
             if configuration.dump_artifacts_on_unexpected_failures:
                 module_artifacts.export()
 
-                traceback_path = self.artifacts.output_directory.joinpath("traceback.txt")
+                traceback_path = module_artifacts.output_directory.joinpath("traceback.txt")
                 with open(traceback_path, "w", encoding="utf-8") as f:
                     f.write(traceback.format_exc())
 
