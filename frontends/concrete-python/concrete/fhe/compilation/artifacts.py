@@ -88,13 +88,15 @@ class ModuleDebugArtifacts:
 
     def __init__(
         self,
-        function_names: List[str],
+        function_names: Optional[List[str]] = None,
         output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY,
     ):
         self.output_directory = Path(output_directory)
         self.mlir_to_compile = None
         self.client_parameters = None
-        self.functions = {name: FunctionDebugArtifacts() for name in function_names}
+        self.functions = (
+            {name: FunctionDebugArtifacts() for name in function_names} if function_names else {}
+        )
 
     def add_mlir_to_compile(self, mlir: str):
         """
