@@ -53,13 +53,8 @@ public:
       }
     });
     addConversion([&](mlir::RankedTensorType type) {
-      auto glwe = type.getElementType().dyn_cast_or_null<GLWECipherTextType>();
-      if (glwe == nullptr || !glwe.getKey().isNone()) {
-        return (mlir::Type)(type);
-      }
-      mlir::Type r = mlir::RankedTensorType::get(type.getShape(),
-                                                 this->glweInterPBSType(glwe));
-      return r;
+      return mlir::RankedTensorType::get(
+          type.getShape(), this->convertType(type.getElementType()));
     });
     addConversion([&](mlir::concretelang::RT::FutureType type) {
       return mlir::concretelang::RT::FutureType::get(
