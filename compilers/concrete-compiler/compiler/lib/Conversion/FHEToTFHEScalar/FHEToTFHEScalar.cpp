@@ -84,29 +84,6 @@ TFHE::GLWECipherTextType convertEncrypted(mlir::MLIRContext *context,
   return TFHE::GLWECipherTextType::get(context, TFHE::GLWESecretKey());
 }
 
-/// Converts `Tensor<FHE::AnyEncryptedInteger>` into a
-/// `Tensor<TFHE::GlweCiphertext>` if the element type is appropriate.
-/// Otherwise return the input type.
-mlir::Type
-maybeConvertEncryptedTensor(mlir::MLIRContext *context,
-                            mlir::RankedTensorType maybeEncryptedTensor) {
-  if (!maybeEncryptedTensor.getElementType().isa<FHE::FheIntegerInterface>()) {
-    return (mlir::Type)(maybeEncryptedTensor);
-  }
-  auto currentShape = maybeEncryptedTensor.getShape();
-  return mlir::RankedTensorType::get(
-      currentShape,
-      TFHE::GLWECipherTextType::get(context, TFHE::GLWESecretKey()));
-}
-
-/// Converts any encrypted type to `TFHE::GlweCiphetext` if the
-/// input type is appropriate. Otherwise return the input type.
-mlir::Type maybeConvertEncrypted(mlir::MLIRContext *context, mlir::Type t) {
-  if (auto eint = t.dyn_cast<FHE::FheIntegerInterface>())
-    return convertEncrypted(context, eint);
-  return t;
-}
-
 /// The type converter used to convert `FHE` to `TFHE` types using the scalar
 /// strategy.
 class TypeConverter : public mlir::TypeConverter {
@@ -114,6 +91,21 @@ class TypeConverter : public mlir::TypeConverter {
 public:
   TypeConverter() {
     addConversion([](mlir::Type type) { return type; });
+    addConversion([&](mlir::FunctionType type) {
+      llvm::SmallVector<mlir::Type> inputTypes;
+      llvm::SmallVector<mlir::Type> resultTypes;
+
+      for (mlir::Type inputType : type.getInputs())
+        inputTypes.push_back(this->convertType(inputType));
+
+      for (mlir::Type resultType : type.getResults())
+        resultTypes.push_back(this->convertType(resultType));
+
+      mlir::Type res =
+          mlir::FunctionType::get(type.getContext(), inputTypes, resultTypes);
+
+      return res;
+    });
     addConversion([](FHE::FheIntegerInterface type) {
       return convertEncrypted(type.getContext(), type);
     });
@@ -121,8 +113,9 @@ public:
       return TFHE::GLWECipherTextType::get(type.getContext(),
                                            TFHE::GLWESecretKey());
     });
-    addConversion([](mlir::RankedTensorType type) {
-      return maybeConvertEncryptedTensor(type.getContext(), type);
+    addConversion([&](mlir::RankedTensorType type) {
+      return mlir::RankedTensorType::get(
+          type.getShape(), this->convertType(type.getElementType()));
     });
     addConversion([&](mlir::concretelang::RT::FutureType type) {
       return mlir::concretelang::RT::FutureType::get(
