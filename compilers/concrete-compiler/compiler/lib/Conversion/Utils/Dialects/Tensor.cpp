@@ -4,8 +4,7 @@
 // for license information.
 
 #include "concretelang/Conversion/Utils/Dialects/Tensor.h"
-#include "mlir/Transforms/RegionUtils.h"
-#include "llvm/ADT/STLExtras.h"
+#include "concretelang/Conversion/Utils/Utils.h"
 
 namespace mlir {
 namespace concretelang {
@@ -79,26 +78,8 @@ TypeConvertingReinstantiationPattern<tensor::GenerateOp, true>::matchAndRewrite(
     mlir::ConversionPatternRewriter &rewriter) const {
   mlir::SmallVector<mlir::Type> resultTypes = convertResultTypes(oldOp);
 
-  rewriter.setInsertionPointAfter(oldOp);
-  tensor::GenerateOp newGenerateOp = rewriter.create<tensor::GenerateOp>(
-      oldOp.getLoc(), resultTypes, adaptor.getOperands(), oldOp->getAttrs());
-
-  mlir::Block &oldBlock = oldOp.getBody().getBlocks().front();
-  mlir::Block &newBlock = newGenerateOp.getBody().getBlocks().front();
-  auto begin = oldBlock.begin();
-  auto nOps = oldBlock.getOperations().size();
-
-  newBlock.getOperations().splice(newBlock.getOperations().begin(),
-                                  oldBlock.getOperations(), begin,
-                                  std::next(begin, nOps - 1));
-
-  for (auto argsPair : llvm::zip(oldOp.getRegion().getArguments(),
-                                 newGenerateOp.getRegion().getArguments())) {
-    replaceAllUsesInRegionWith(std::get<0>(argsPair), std::get<1>(argsPair),
-                               newGenerateOp.getRegion());
-  }
-
-  rewriter.replaceOp(oldOp, newGenerateOp.getResult());
+  convertOpWithBlocks(oldOp, adaptor.getOperands(), resultTypes,
+                      *getTypeConverter(), rewriter);
 
   return mlir::success();
 }

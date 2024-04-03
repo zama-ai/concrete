@@ -22,6 +22,12 @@ mlir::Value globalMemrefFromArrayAttr(mlir::RewriterBase &rewriter,
                                       mlir::Location loc,
                                       mlir::ArrayAttr arrAttr);
 
+mlir::Operation *convertOpWithBlocks(mlir::Operation *op,
+                                     mlir::ValueRange newOperands,
+                                     mlir::TypeRange newResultTypes,
+                                     mlir::TypeConverter &typeConverter,
+                                     mlir::ConversionPatternRewriter &rewriter);
+
 } // namespace concretelang
 } // namespace mlir
 #endif

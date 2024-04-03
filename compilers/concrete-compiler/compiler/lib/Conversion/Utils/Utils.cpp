@@ -6,6 +6,7 @@
 #include "concretelang/Conversion/Utils/Utils.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/Transforms/BufferUtils.h"
+#include "mlir/Transforms/RegionUtils.h"
 
 namespace mlir {
 namespace concretelang {
@@ -56,5 +57,32 @@ mlir::Value globalMemrefFromArrayAttr(mlir::RewriterBase &rewriter,
   return mlir::concretelang::getCastedMemRef(rewriter, globalRef);
 }
 
+// Converts an operation `op` with nested blocks using a type
+// converter and a conversion pattern rewriter, such that the newly
+// created operation uses the operands specified in `newOperands` and
+// returns a value of the types `newResultTypes`.
+mlir::Operation *
+convertOpWithBlocks(mlir::Operation *op, mlir::ValueRange newOperands,
+                    mlir::TypeRange newResultTypes,
+                    mlir::TypeConverter &typeConverter,
+                    mlir::ConversionPatternRewriter &rewriter) {
+  mlir::OperationState state(op->getLoc(), op->getName().getStringRef(),
+                             newOperands, newResultTypes, op->getAttrs(),
+                             op->getSuccessors());
+
+  for (Region &region : op->getRegions()) {
+    Region *newRegion = state.addRegion();
+    rewriter.inlineRegionBefore(region, *newRegion, newRegion->begin());
+    TypeConverter::SignatureConversion result(newRegion->getNumArguments());
+    (void)typeConverter.convertSignatureArgs(newRegion->getArgumentTypes(),
+                                             result);
+    rewriter.applySignatureConversion(newRegion, result);
+  }
+
+  Operation *newOp = rewriter.create(state);
+  rewriter.replaceOp(op, newOp->getResults());
+
+  return newOp;
+}
 } // namespace concretelang
 } // namespace mlir
