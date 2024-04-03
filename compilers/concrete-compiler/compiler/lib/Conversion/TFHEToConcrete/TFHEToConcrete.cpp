@@ -59,7 +59,9 @@ public:
     addConversion([&](mlir::RankedTensorType type) {
       auto glwe = type.getElementType().dyn_cast_or_null<GLWECipherTextType>();
       if (glwe == nullptr) {
-        return (mlir::Type)(type);
+        return mlir::RankedTensorType::get(
+                   type.getShape(), this->convertType(type.getElementType()))
+            .cast<mlir::Type>();
       }
       mlir::SmallVector<int64_t> newShape;
       newShape.reserve(type.getShape().size() + 1);
@@ -458,9 +460,21 @@ struct ExtractOpPattern
       return mlir::failure();
     }
 
-    auto newResultType = this->getTypeConverter()
-                             ->convertType(extractOp.getType())
-                             .cast<mlir::RankedTensorType>();
+    auto newResultType =
+        this->getTypeConverter()->convertType(extractOp.getType());
+
+    // If the extraction is not on a tensor of ciphertexts, just
+    // convert the type and keep the rest as-is.
+    if (!extractOp.getType().isa<GLWECipherTextType>()) {
+      rewriter.replaceOpWithNewOp<mlir::tensor::ExtractOp>(
+          extractOp, newResultType, adaptor.getTensor(), adaptor.getIndices());
+
+      return mlir::success();
+    }
+
+    mlir::RankedTensorType newResultTensorType =
+        newResultType.cast<mlir::RankedTensorType>();
+
     auto tensorRank =
         adaptor.getTensor().getType().cast<mlir::RankedTensorType>().getRank();
 
@@ -473,14 +487,15 @@ struct ExtractOpPattern
     // [1..., nbBlock, lweDimension+1]
     mlir::SmallVector<int64_t> staticSizes(tensorRank, 1);
     staticSizes[staticSizes.size() - 1] =
-        newResultType.getDimSize(newResultType.getRank() - 1);
+        newResultTensorType.getDimSize(newResultTensorType.getRank() - 1);
 
     // [1...] for static_strides
     mlir::SmallVector<int64_t> staticStrides(tensorRank, 1);
 
     rewriter.replaceOpWithNewOp<mlir::tensor::ExtractSliceOp>(
-        extractOp, newResultType, adaptor.getTensor(), adaptor.getIndices(),
-        mlir::SmallVector<mlir::Value>{}, mlir::SmallVector<mlir::Value>{},
+        extractOp, newResultTensorType, adaptor.getTensor(),
+        adaptor.getIndices(), mlir::SmallVector<mlir::Value>{},
+        mlir::SmallVector<mlir::Value>{},
         rewriter.getDenseI64ArrayAttr(staticOffsets),
         rewriter.getDenseI64ArrayAttr(staticSizes),
         rewriter.getDenseI64ArrayAttr(staticStrides));
@@ -503,24 +518,34 @@ struct InsertSliceOpPattern : public mlir::OpConversionPattern<OpTy> {
   ::mlir::LogicalResult
   matchAndRewrite(OpTy insertSliceOp, typename OpTy::Adaptor adaptor,
                   ::mlir::ConversionPatternRewriter &rewriter) const override {
+    bool needsExtraDimension = insertSliceOp.getDest()
+                                   .getType()
+                                   .getElementType()
+                                   .template isa<GLWECipherTextType>();
+
     mlir::RankedTensorType newDestTy = ((mlir::Type)adaptor.getDest().getType())
                                            .cast<mlir::RankedTensorType>();
 
-    // add 0 to offsets
     mlir::SmallVector<mlir::OpFoldResult> offsets = getMixedValues(
         adaptor.getStaticOffsets(), adaptor.getOffsets(), rewriter);
-    offsets.push_back(rewriter.getI64IntegerAttr(0));
 
-    // add lweDimension+1 to sizes
     mlir::SmallVector<mlir::OpFoldResult> sizes =
         getMixedValues(adaptor.getStaticSizes(), adaptor.getSizes(), rewriter);
-    sizes.push_back(rewriter.getI64IntegerAttr(
-        newDestTy.getDimSize(newDestTy.getRank() - 1)));
 
-    // add 1 to the strides
     mlir::SmallVector<mlir::OpFoldResult> strides = getMixedValues(
         adaptor.getStaticStrides(), adaptor.getStrides(), rewriter);
-    strides.push_back(rewriter.getI64IntegerAttr(1));
+
+    if (needsExtraDimension) {
+      // add 0 to offsets
+      offsets.push_back(rewriter.getI64IntegerAttr(0));
+
+      // add lweDimension+1 to sizes
+      sizes.push_back(rewriter.getI64IntegerAttr(
+          newDestTy.getDimSize(newDestTy.getRank() - 1)));
+
+      // add 1 to the strides
+      strides.push_back(rewriter.getI64IntegerAttr(1));
+    }
 
     // replace insert slice-like operation with the new one
     rewriter.replaceOpWithNewOp<OpTy>(insertSliceOp, adaptor.getSource(),
@@ -528,7 +553,7 @@ struct InsertSliceOpPattern : public mlir::OpConversionPattern<OpTy> {
                                       strides);
 
     return ::mlir::success();
-  };
+  }
 };
 
 /// Pattern that rewrites the Insert operation, taking into account the
@@ -599,13 +624,23 @@ struct FromElementsOpPattern
   matchAndRewrite(mlir::tensor::FromElementsOp fromElementsOp,
                   mlir::tensor::FromElementsOp::Adaptor adaptor,
                   ::mlir::ConversionPatternRewriter &rewriter) const override {
+    auto converter = this->getTypeConverter();
 
     // is not a tensor of GLWEs that need to be extended with the LWE dimension
-    if (this->getTypeConverter()->isLegal(fromElementsOp.getType())) {
+    if (converter->isLegal(fromElementsOp.getType())) {
       return mlir::failure();
     }
 
-    auto converter = this->getTypeConverter();
+    // If the element type is not directly a cipher text type, the
+    // shape of the output does not change. In this case, the op type
+    // can be preserved and only type conversion is necessary.
+    if (!fromElementsOp.getType().getElementType().isa<GLWECipherTextType>()) {
+      rewriter.replaceOpWithNewOp<mlir::tensor::FromElementsOp>(
+          fromElementsOp, converter->convertType(fromElementsOp.getType()),
+          adaptor.getOperands());
+
+      return mlir::success();
+    }
 
     auto resultTy = fromElementsOp.getResult().getType();
     if (converter->isLegal(resultTy)) {
