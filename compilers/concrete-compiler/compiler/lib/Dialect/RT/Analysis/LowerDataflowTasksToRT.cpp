@@ -568,11 +568,22 @@ struct FinalizeTaskCreationPass
                        .setLayout(AffineMapAttr::get(
                            builder.getMultiDimIdentityMap(rank)));
         }
+
+        llvm::SmallVector<mlir::Value> dynamicDimSizes;
+
+        for (auto dimSizeIt : llvm::enumerate(mrType.getShape())) {
+          if (mlir::ShapedType::isDynamic(dimSizeIt.value())) {
+            mlir::memref::DimOp dimOp = builder.create<mlir::memref::DimOp>(
+                val.getLoc(), val, dimSizeIt.index());
+            dynamicDimSizes.push_back(dimOp.getResult());
+          }
+        }
+
         // We need to make a copy of this MemRef to allow deallocation
         // based on refcounting
-        Value newval =
-            builder.create<mlir::memref::AllocOp>(val.getLoc(), mrType)
-                .getResult();
+        mlir::memref::AllocOp newval = builder.create<mlir::memref::AllocOp>(
+            val.getLoc(), mrType, dynamicDimSizes);
+
         builder.create<mlir::memref::CopyOp>(val.getLoc(), val, newval);
         clone = builder.create<arith::ConstantOp>(op.getLoc(),
                                                   builder.getI64IntegerAttr(1));
