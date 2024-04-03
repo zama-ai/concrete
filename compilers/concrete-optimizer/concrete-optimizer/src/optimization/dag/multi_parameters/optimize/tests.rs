@@ -845,3 +845,17 @@ fn test_maximal_multi() {
     // note: we have a 5% relative margin since dag complexity is slightly better than v0
     assert!(sol.complexity < 1.05 * (sol_ref.complexity / expected_speedup));
 }
+
+#[test]
+fn test_bug_with_zero_noise() {
+    let complexity = LevelledComplexity::ZERO;
+    let out_shape = Shape::number();
+    let mut dag = unparametrized::OperationDag::new();
+    let v0 = dag.add_input(2, &out_shape);
+    let v1 = dag.add_levelled_op([v0], complexity, 0.0, &out_shape, "comment");
+    let v2 = dag.add_levelled_op([v1], complexity, 1.0, &out_shape, "comment");
+    let v3 = dag.add_unsafe_cast(v2, 1);
+    let _ = dag.add_lut(v3, FunctionTable { values: vec![] }, 1);
+    let sol = optimize(&dag, &None, 0);
+    assert!(sol.is_some());
+}
