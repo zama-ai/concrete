@@ -123,6 +123,26 @@ struct BufferizeDataflowTaskOpsPass
     mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
                                                             typeConverter);
 
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::memref::AllocOp, true>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::memref::LoadOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::memref::StoreOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::memref::CopyOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::memref::SubViewOp, true>>(&getContext(),
+                                                     typeConverter);
+
+    target.addDynamicallyLegalOp<mlir::memref::AllocOp, mlir::memref::LoadOp,
+                                 mlir::memref::StoreOp, mlir::memref::CopyOp,
+                                 mlir::memref::SubViewOp>(
+        [&](mlir::Operation *op) {
+          return typeConverter.isLegal(op->getResultTypes()) &&
+                 typeConverter.isLegal(op->getOperandTypes());
+        });
+
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
       signalPassFailure();
   }
