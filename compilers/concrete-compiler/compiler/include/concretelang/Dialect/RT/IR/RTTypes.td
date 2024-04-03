@@ -7,7 +7,7 @@ include "mlir/IR/BuiltinTypes.td"
 class RT_Type<string name, list<Trait> traits = []> :
   TypeDef<RT_Dialect, name, traits> { }
 
-def RT_Future : RT_Type<"Future"> {
+def RT_Future : RT_Type<"Future", [MemRefElementTypeInterface]> {
   let mnemonic = "future";
 
   let summary = "Future with a parameterized element type";
