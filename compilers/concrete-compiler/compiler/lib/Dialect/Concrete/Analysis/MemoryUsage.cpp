@@ -2,6 +2,7 @@
 #include <concretelang/Analysis/Utils.h>
 #include <concretelang/Dialect/Concrete/Analysis/MemoryUsage.h>
 #include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
+#include <concretelang/Dialect/RT/IR/RTTypes.h>
 #include <concretelang/Support/logging.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -17,15 +18,28 @@ using namespace mlir::concretelang;
 using namespace mlir;
 
 namespace {
+outcome::checked<int64_t, StringError>
+getBufferSize(mlir::MemRefType bufferType);
 
-int64_t getElementTypeSize(mlir::Type elementType) {
+outcome::checked<int64_t, StringError>
+getElementTypeSize(mlir::Type elementType) {
   if (auto integerType = mlir::dyn_cast<mlir::IntegerType>(elementType)) {
     auto width = integerType.getWidth();
     return std::ceil((double)width / 8);
-  }
-  if (mlir::dyn_cast<mlir::IndexType>(elementType)) {
+  } else if (mlir::dyn_cast<mlir::IndexType>(elementType)) {
     return 8;
+  } else if (auto memrefType = mlir::dyn_cast<mlir::MemRefType>(elementType)) {
+    return getBufferSize(memrefType);
+  } else if (auto futureType = mlir::dyn_cast<RT::FutureType>(elementType)) {
+    auto recSize = getElementTypeSize(futureType.getElementType());
+
+    if (!recSize)
+      return recSize.error();
+
+    // FIXME: Hardcoded size of 8 bytes for a pointer
+    return 8 * recSize.value();
   }
+
   return -1;
 }
 
@@ -33,7 +47,13 @@ outcome::checked<int64_t, StringError>
 getBufferSize(mlir::MemRefType bufferType) {
   auto shape = bufferType.getShape();
   auto elementType = bufferType.getElementType();
-  auto elementSize = getElementTypeSize(elementType);
+  auto maybeElementSize = getElementTypeSize(elementType);
+
+  if (!maybeElementSize)
+    return maybeElementSize.error();
+
+  auto elementSize = maybeElementSize.value();
+
   if (elementSize == -1)
     return StringError(
         "allocation of buffer with a non-supported element-type");
