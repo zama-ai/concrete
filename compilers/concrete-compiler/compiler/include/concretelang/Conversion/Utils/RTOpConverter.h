@@ -6,8 +6,8 @@
 #ifndef CONCRETELANG_CONVERSION_RTOPCONVERTER_H_
 #define CONCRETELANG_CONVERSION_RTOPCONVERTER_H_
 
-#include "concretelang/Conversion/Utils/GenericOpTypeConversionPattern.h"
 #include "concretelang/Conversion/Utils/Legality.h"
+#include "concretelang/Conversion/Utils/ReinstantiatingOpTypeConversion.h"
 #include "concretelang/Dialect/RT/IR/RTOps.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -20,25 +20,25 @@ populateWithRTTypeConverterPatterns(mlir::RewritePatternSet &patterns,
                                     mlir::ConversionTarget &target,
                                     mlir::TypeConverter &converter) {
   patterns.add<
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::DataflowTaskOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::DataflowYieldOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::MakeReadyFutureOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::AwaitFutureOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
-          mlir::concretelang::RT::CreateAsyncTaskOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
+          mlir::concretelang::RT::CreateAsyncTaskOp, true>,
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::BuildReturnPtrPlaceholderOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::DerefWorkFunctionArgumentPtrPlaceholderOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::DerefReturnPtrPlaceholderOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::WorkFunctionReturnOp>,
-      mlir::concretelang::GenericTypeConverterPattern<
+      mlir::concretelang::TypeConvertingReinstantiationPattern<
           mlir::concretelang::RT::RegisterTaskWorkFunctionOp>>(
       patterns.getContext(), converter);
 
