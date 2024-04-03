@@ -157,6 +157,9 @@ impl SymbolicVariance {
         // replace all current_max by new_coeff
         // multiply everything else by new_coeff / current_max
         let mut new = self.clone();
+        if current_max == 0.0 {
+            return new;
+        }
         for cell in &mut new.coeffs.values {
             if *cell == current_max {
                 *cell = new_coeff;
