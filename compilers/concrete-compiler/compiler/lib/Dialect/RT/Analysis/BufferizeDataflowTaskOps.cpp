@@ -35,26 +35,54 @@ namespace concretelang {
 
 namespace {
 
-class BufferizeRTTypesConverter
-    : public mlir::bufferization::BufferizeTypeConverter {
+class BufferizeRTTypesConverter : public mlir::TypeConverter {
+protected:
+  bufferization::BufferizeTypeConverter btc;
+
 public:
   BufferizeRTTypesConverter() {
+    addConversion([&](mlir::Type type) { return btc.convertType(type); });
+
+    addConversion([&](mlir::RankedTensorType type) {
+      return mlir::MemRefType::get(type.getShape(),
+                                   this->convertType(type.getElementType()));
+    });
+
+    addConversion([&](mlir::UnrankedTensorType type) {
+      return mlir::UnrankedMemRefType::get(
+          this->convertType(type.getElementType()), 0);
+    });
+
+    addConversion([&](mlir::MemRefType type) {
+      return mlir::MemRefType::get(type.getShape(),
+                                   this->convertType(type.getElementType()),
+                                   type.getLayout(), type.getMemorySpace());
+    });
+
+    addConversion([&](mlir::UnrankedMemRefType type) {
+      return mlir::UnrankedMemRefType::get(
+          this->convertType(type.getElementType()), type.getMemorySpace());
+    });
+
     addConversion([&](mlir::concretelang::RT::FutureType type) {
       return mlir::concretelang::RT::FutureType::get(
-          this->convertType(type.dyn_cast<mlir::concretelang::RT::FutureType>()
-                                .getElementType()));
+          this->convertType(type.getElementType()));
     });
+
     addConversion([&](mlir::concretelang::RT::PointerType type) {
       return mlir::concretelang::RT::PointerType::get(
-          this->convertType(type.dyn_cast<mlir::concretelang::RT::PointerType>()
-                                .getElementType()));
+          this->convertType(type.getElementType()));
     });
+
     addConversion([&](mlir::FunctionType type) {
       SignatureConversion result(type.getNumInputs());
       mlir::SmallVector<mlir::Type, 1> newResults;
+
       if (failed(this->convertSignatureArgs(type.getInputs(), result)) ||
-          failed(this->convertTypes(type.getResults(), newResults)))
+          failed(this->convertTypes(type.getResults(), newResults))) {
         return type;
+      }
+
       return mlir::FunctionType::get(type.getContext(),
                                      result.getConvertedTypes(), newResults);
     });
