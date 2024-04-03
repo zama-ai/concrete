@@ -348,6 +348,17 @@ void TFHEGlobalParametrizationPass::runOnOperation() {
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
         target, converter);
 
+    patterns.add<
+        mlir::concretelang::GenericTypeConverterPattern<mlir::tensor::DimOp>>(
+        &getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::DimOp>(
+        target, converter);
+
+    patterns.add<mlir::concretelang::GenericTypeConverterPattern<
+        mlir::tensor::FromElementsOp>>(&getContext(), converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::FromElementsOp>(
+        target, converter);
+
     patterns.add<RegionOpTypeConverterPattern<
         mlir::scf::InParallelOp, TFHEGlobalParametrizationTypeConverter>>(
         &getContext(), converter);

@@ -854,6 +854,10 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
                  mlir::concretelang::TypeConvertingReinstantiationPattern<
                      mlir::tensor::EmptyOp>,
                  mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::tensor::FromElementsOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
+                     mlir::tensor::DimOp>,
+                 mlir::concretelang::TypeConvertingReinstantiationPattern<
                      mlir::tensor::ParallelInsertSliceOp, true>>(&getContext(),
                                                                  converter);
     mlir::concretelang::populateWithTensorTypeConverterPatterns(
@@ -874,6 +878,8 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::scf::ForallOp>(
         target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
+        target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::FromElementsOp>(
         target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::tensor::ParallelInsertSliceOp>(target, converter);
@@ -908,6 +914,9 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
         mlir::tensor::EmptyOp>>(&getContext(), converter);
 
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
+        target, converter);
+
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::DimOp>(
         target, converter);
 
     mlir::concretelang::populateWithRTTypeConverterPatterns(patterns, target,
