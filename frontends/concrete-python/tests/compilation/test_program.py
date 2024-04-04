@@ -49,7 +49,7 @@ def test_call_clear_circuits():
     assert Module.mul(3, 4) == 12
 
 
-def test_compile(helpers):
+def test_compile():
     """
     Test that compiling a module works.
     """
@@ -65,19 +65,10 @@ def test_compile(helpers):
             return x - 1
 
     inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
-    configuration = helpers.configuration().fork(
-        p_error=0.1,
-        parameter_selection_strategy="v0",
-        composable=True,
-        verbose=True,
-    )
-    Module.compile(
-        {"inc": inputset, "dec": inputset},
-        configuration,
-    )
+    Module.compile({"inc": inputset, "dec": inputset}, verbose=True)
 
 
-def test_compiled_clear_call(helpers):
+def test_compiled_clear_call():
     """
     Test that cleartext execution works on compiled objects.
     """
@@ -93,21 +84,15 @@ def test_compiled_clear_call(helpers):
             return x - 1
 
     inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
-    configuration = helpers.configuration().fork(
-        p_error=0.1,
-        parameter_selection_strategy="v0",
-        composable=True,
-    )
     module = Module.compile(
         {"inc": inputset, "dec": inputset},
-        configuration,
     )
 
     assert module.inc(5) == 6
     assert module.dec(5) == 4
 
 
-def test_encrypted_execution(helpers):
+def test_encrypted_execution():
     """
     Test that encrypted execution works.
     """
@@ -123,14 +108,8 @@ def test_encrypted_execution(helpers):
             return x - 1 % 20
 
     inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
-    configuration = helpers.configuration().fork(
-        p_error=0.1,
-        parameter_selection_strategy="v0",
-        composable=True,
-    )
     module = Module.compile(
         {"inc": inputset, "dec": inputset},
-        configuration,
     )
 
     x = 5
