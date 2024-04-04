@@ -459,7 +459,11 @@ class ModuleCompiler:
     compilation_context: CompilationContext
 
     def __init__(self, functions: List[FunctionDef]):
-        self.configuration = Configuration(composable=True)
+        self.default_configuration = Configuration(
+            p_error=0.00001,
+            composable=True,
+            parameter_selection_strategy="v0",
+        )
         self.functions = {function.name: function for function in functions}
         self.compilation_context = CompilationContext.new()
 
@@ -512,7 +516,7 @@ class ModuleCompiler:
             for name, function in self.functions.items():
                 inputset = inputsets[name] if inputsets is not None else None
                 function_artifacts = module_artifacts.functions[name]
-                function.evaluate("Compiling", inputset, self.configuration, function_artifacts)
+                function.evaluate("Compiling", inputset, configuration, function_artifacts)
                 assert function.graph is not None
                 dbg.debug_computation_graph(name, function.graph)
 
@@ -524,7 +528,7 @@ class ModuleCompiler:
                     error = "Expected graph to be set."
                     raise RuntimeError(error)
                 graphs[name] = function.graph
-            mlir_module = GraphConverter(self.configuration).convert_many(graphs, mlir_context)
+            mlir_module = GraphConverter(configuration).convert_many(graphs, mlir_context)
             mlir_str = str(mlir_module).strip()
             dbg.debug_mlir(mlir_str)
             module_artifacts.add_mlir_to_compile(mlir_str)
@@ -551,7 +555,7 @@ class ModuleCompiler:
             # if the user desires so,
             # we need to export all the information we have about the compilation
 
-            if self.configuration.dump_artifacts_on_unexpected_failures:
+            if configuration.dump_artifacts_on_unexpected_failures:
                 module_artifacts.export()
 
                 traceback_path = self.artifacts.output_directory.joinpath("traceback.txt")
