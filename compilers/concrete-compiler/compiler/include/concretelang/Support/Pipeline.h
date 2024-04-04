@@ -108,6 +108,7 @@ transformTFHEOperations(mlir::MLIRContext &context, mlir::ModuleOp &module,
 
 mlir::LogicalResult simulateTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
+                                 std::optional<V0FHEContext> &fheContext,
                                  std::function<bool(mlir::Pass *)> enablePass);
 
 mlir::LogicalResult extractSDFGOps(mlir::MLIRContext &context,
