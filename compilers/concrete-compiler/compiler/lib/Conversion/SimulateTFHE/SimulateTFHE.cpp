@@ -92,6 +92,67 @@ struct NegOpPattern : public mlir::OpConversionPattern<TFHE::NegGLWEOp> {
   }
 };
 
+template <typename AddOp, typename AddOpAdaptor>
+struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
+
+  AddOpPattern(mlir::MLIRContext *context, mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<AddOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(AddOp addOp, AddOpAdaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    const std::string funcName = "sim_add_lwe_u64";
+
+    if (insertForwardDeclaration(
+            addOp, rewriter, funcName,
+            rewriter.getFunctionType(
+                {rewriter.getIntegerType(64), rewriter.getIntegerType(64)},
+                {rewriter.getIntegerType(64)}))
+            .failed()) {
+      return mlir::failure();
+    }
+
+    rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
+        addOp, funcName, mlir::TypeRange{rewriter.getIntegerType(64)},
+        mlir::ValueRange({adaptor.getA(), adaptor.getB()}));
+
+    return mlir::success();
+  }
+};
+
+struct MulOpPattern : public mlir::OpConversionPattern<TFHE::MulGLWEIntOp> {
+
+  MulOpPattern(mlir::MLIRContext *context, mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<TFHE::MulGLWEIntOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(TFHE::MulGLWEIntOp mulOp, TFHE::MulGLWEIntOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    const std::string funcName = "sim_mul_lwe_u64";
+
+    if (insertForwardDeclaration(
+            mulOp, rewriter, funcName,
+            rewriter.getFunctionType(
+                {rewriter.getIntegerType(64), rewriter.getIntegerType(64)},
+                {rewriter.getIntegerType(64)}))
+            .failed()) {
+      return mlir::failure();
+    }
+
+    rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
+        mulOp, funcName, mlir::TypeRange{rewriter.getIntegerType(64)},
+        mlir::ValueRange({adaptor.getA(), adaptor.getB()}));
+
+    return mlir::success();
+  }
+};
+
 struct SubIntGLWEOpPattern : public mlir::OpRewritePattern<TFHE::SubGLWEIntOp> {
 
   SubIntGLWEOpPattern(mlir::MLIRContext *context)
@@ -579,14 +640,6 @@ void SimulateTFHEPass::runOnOperation() {
 
   mlir::RewritePatternSet patterns(&getContext());
 
-  // Replace ops and convert operand and result types
-  patterns.insert<mlir::concretelang::GenericOneToOneOpConversionPattern<
-                      TFHE::AddGLWEIntOp, mlir::arith::AddIOp>,
-                  mlir::concretelang::GenericOneToOneOpConversionPattern<
-                      TFHE::AddGLWEOp, mlir::arith::AddIOp>,
-                  mlir::concretelang::GenericOneToOneOpConversionPattern<
-                      TFHE::MulGLWEIntOp, mlir::arith::MulIOp>>(&getContext(),
-                                                                converter);
   // Convert operand and result types
   patterns.insert<mlir::concretelang::TypeConvertingReinstantiationPattern<
                       mlir::bufferization::AllocTensorOp, true>,
@@ -643,8 +696,10 @@ void SimulateTFHEPass::runOnOperation() {
                   BootstrapGLWEOpPattern, WopPBSGLWEOpPattern,
                   EncodeExpandLutForBootstrapOpPattern,
                   EncodeLutForCrtWopPBSOpPattern,
-                  EncodePlaintextWithCrtOpPattern, NegOpPattern>(&getContext(),
-                                                                 converter);
+                  EncodePlaintextWithCrtOpPattern, NegOpPattern,
+                  AddOpPattern<TFHE::AddGLWEOp, TFHE::AddGLWEOp::Adaptor>,
+                  AddOpPattern<TFHE::AddGLWEIntOp, TFHE::AddGLWEIntOp::Adaptor>,
+                  MulOpPattern>(&getContext(), converter);
   patterns.insert<SubIntGLWEOpPattern>(&getContext());
 
   patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<

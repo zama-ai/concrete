@@ -183,6 +183,10 @@ void sim_wop_pbs_crt(
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }
 
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs) { return lhs + rhs; }
+
+uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs) { return lhs * rhs; }
+
 void sim_encode_expand_lut_for_boostrap(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
     uint64_t out_size, uint64_t out_stride, uint64_t *in_allocated,
