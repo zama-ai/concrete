@@ -2153,6 +2153,24 @@ tests:
       shape: [8,2]
 
 ---
+description: tiled_matmul_eint_int_1_1_7_partial_tiles
+program: |
+  func.func @main(%a: tensor<8x4x!FHE.eint<6>>, %b: tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>> {
+    %0 = "FHELinalg.matmul_eint_int"(%a, %b) { "tile-sizes" = [0,0,7] } : (tensor<8x4x!FHE.eint<6>>, tensor<4x2xi7>) -> tensor<8x2x!FHE.eint<6>>
+    return %0 : tensor<8x2x!FHE.eint<6>>
+  }
+tests:
+  - inputs:
+    - tensor: [1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]
+      shape: [8,4]
+    - tensor: [1,2,3,4,3,1,0,2]
+      shape: [4,2]
+      width: 8
+    outputs:
+    - tensor: [16,21,44,57,12,23,30,39,58,55,16,21,44,57,12,23]
+      shape: [8,2]
+
+---
 description: extract_slice_parametric_2x2
 program: |
   func.func @main(%t: tensor<8x4x!FHE.eint<6>>, %y: index, %x: index) -> tensor<2x2x!FHE.eint<6>> {
