@@ -635,6 +635,24 @@ struct FixupBufferDeallocationPass
     for (auto op : ops) {
       op->erase();
     }
+
+    // For all task return ops, ensure that the return value is
+    // allocated - or make a copy otherwise
+    module.walk([&](RT::WorkFunctionReturnOp op) {
+      Value val = op.getOperand(0);
+      Operation *defOp = val.getDefiningOp();
+      if (!isa<mlir::memref::AllocOp>(defOp)) {
+        assert(val.getType().isa<mlir::MemRefType>());
+        OpBuilder builder(op);
+        MemRefType mrType = val.getType().dyn_cast<mlir::MemRefType>();
+        assert(mrType.getLayout().isIdentity());
+        Value newval =
+            builder.create<mlir::memref::AllocOp>(val.getLoc(), mrType)
+                .getResult();
+        builder.create<mlir::memref::CopyOp>(val.getLoc(), val, newval);
+        op->setOperand(0, newval);
+      }
+    });
   }
   FixupBufferDeallocationPass(bool debug) : debug(debug){};
 
