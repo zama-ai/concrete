@@ -149,6 +149,8 @@ template <typename MessageType> struct Message {
     } catch (const kj::Exception &e) {
       return StringError("Failed to write message to file descriptor: ")
              << e.getDescription().cStr();
+    } catch (...) {
+      return StringError("Failed to write message to file descriptor.");
     }
   }
 
@@ -159,6 +161,8 @@ template <typename MessageType> struct Message {
     } catch (const kj::Exception &e) {
       return StringError("Failed to write message to ostream: ")
              << e.getDescription().cStr();
+    } catch (...) {
+      return StringError("Failed to write message to ostream.");
     }
     ostream.flush();
     if (!ostream.good()) {
@@ -183,6 +187,9 @@ template <typename MessageType> struct Message {
       return outcome::failure(
           StringError("Failed to write message to json string: ")
           << e.getDescription().cStr());
+    } catch (...) {
+      return outcome::failure(
+          StringError("Failed to write message to json string."));
     }
   }
 
@@ -194,6 +201,8 @@ template <typename MessageType> struct Message {
     } catch (const kj::Exception &e) {
       return StringError("Failed to read message from file descriptor: ")
              << e.getDescription().cStr();
+    } catch (...) {
+      return StringError("Failed to read message from file descriptor.");
     }
   }
 
@@ -208,6 +217,8 @@ template <typename MessageType> struct Message {
     } catch (const kj::Exception &e) {
       return StringError("Failed to read message from istream: ")
              << e.getDescription().cStr();
+    } catch (...) {
+      return StringError("Failed to read message from istream.");
     }
   }
 
@@ -228,6 +239,8 @@ template <typename MessageType> struct Message {
     } catch (const kj::Exception &e) {
       return StringError("Failed to read message from json string: ")
              << e.getDescription().cStr();
+    } catch (...) {
+      return StringError("Failed to read message from json string.");
     }
   }
 
