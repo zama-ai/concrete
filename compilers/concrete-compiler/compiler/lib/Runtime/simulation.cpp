@@ -18,6 +18,8 @@ using concretelang::csprng::SoftCSPRNG;
 
 thread_local auto csprng = SoftCSPRNG(0);
 
+const uint64_t UINT63_MAX = UINT64_MAX >> 1;
+
 inline concrete::SecurityCurve *security_curve() {
   return concrete::getSecurityCurve(128, concrete::BINARY);
 }
@@ -94,7 +96,11 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
   double variance = concrete_cpu_variance_blind_rotate(
       input_lwe_dim, glwe_dim, poly_size, base_log, level, 64,
       mlir::concretelang::optimizer::DEFAULT_FFT_PRECISION, variance_bsk);
-  return out + gaussian_noise(0, variance);
+  out = out + gaussian_noise(0, variance);
+  if (out > UINT63_MAX) {
+    printf("WARNING: overflow happened during LUT\n");
+  }
+  return out;
 }
 
 void sim_wop_pbs_crt(
@@ -183,9 +189,19 @@ void sim_wop_pbs_crt(
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }
 
-uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs) { return lhs + rhs; }
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs) {
+  if (lhs > UINT63_MAX - rhs) {
+    printf("WARNING: overflow happened during addition in simulation\n");
+  }
+  return lhs + rhs;
+}
 
-uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs) { return lhs * rhs; }
+uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs) {
+  if (rhs != 0 && lhs > UINT63_MAX / rhs) {
+    printf("WARNING: overflow happened during multiplication in simulation\n");
+  }
+  return lhs * rhs;
+}
 
 void sim_encode_expand_lut_for_boostrap(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,

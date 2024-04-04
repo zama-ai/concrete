@@ -11,7 +11,8 @@
 namespace mlir {
 namespace concretelang {
 /// Create a pass that simulates TFHE operations
-std::unique_ptr<OperationPass<ModuleOp>> createSimulateTFHEPass();
+std::unique_ptr<OperationPass<ModuleOp>>
+createSimulateTFHEPass(bool enableOverflowDetection);
 } // namespace concretelang
 } // namespace mlir
 

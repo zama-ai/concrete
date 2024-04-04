@@ -622,6 +622,10 @@ struct ZeroTensorOpPattern
 };
 
 struct SimulateTFHEPass : public SimulateTFHEBase<SimulateTFHEPass> {
+  bool enableOverflowDetection;
+  SimulateTFHEPass(bool enableOverflowDetection)
+      : enableOverflowDetection(enableOverflowDetection) {}
+
   void runOnOperation() final;
 };
 
@@ -696,11 +700,26 @@ void SimulateTFHEPass::runOnOperation() {
                   BootstrapGLWEOpPattern, WopPBSGLWEOpPattern,
                   EncodeExpandLutForBootstrapOpPattern,
                   EncodeLutForCrtWopPBSOpPattern,
-                  EncodePlaintextWithCrtOpPattern, NegOpPattern,
-                  AddOpPattern<TFHE::AddGLWEOp, TFHE::AddGLWEOp::Adaptor>,
-                  AddOpPattern<TFHE::AddGLWEIntOp, TFHE::AddGLWEIntOp::Adaptor>,
-                  MulOpPattern>(&getContext(), converter);
+                  EncodePlaintextWithCrtOpPattern, NegOpPattern>(&getContext(),
+                                                                 converter);
   patterns.insert<SubIntGLWEOpPattern>(&getContext());
+
+  // if overflow detection is enable, then rewrite to CAPI functions that
+  // performs the detection, otherwise, rewrite as simple arithmetic ops
+  if (enableOverflowDetection) {
+    patterns
+        .insert<AddOpPattern<TFHE::AddGLWEOp, TFHE::AddGLWEOp::Adaptor>,
+                AddOpPattern<TFHE::AddGLWEIntOp, TFHE::AddGLWEIntOp::Adaptor>,
+                MulOpPattern>(&getContext(), converter);
+  } else {
+    patterns.insert<mlir::concretelang::GenericOneToOneOpConversionPattern<
+                        TFHE::AddGLWEIntOp, mlir::arith::AddIOp>,
+                    mlir::concretelang::GenericOneToOneOpConversionPattern<
+                        TFHE::AddGLWEOp, mlir::arith::AddIOp>,
+                    mlir::concretelang::GenericOneToOneOpConversionPattern<
+                        TFHE::MulGLWEIntOp, mlir::arith::MulIOp>>(&getContext(),
+                                                                  converter);
+  }
 
   patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
                    mlir::func::ReturnOp>,
@@ -743,8 +762,9 @@ void SimulateTFHEPass::runOnOperation() {
 
 namespace mlir {
 namespace concretelang {
-std::unique_ptr<OperationPass<ModuleOp>> createSimulateTFHEPass() {
-  return std::make_unique<SimulateTFHEPass>();
+std::unique_ptr<OperationPass<ModuleOp>>
+createSimulateTFHEPass(bool enableOverflowDetection) {
+  return std::make_unique<SimulateTFHEPass>(enableOverflowDetection);
 }
 } // namespace concretelang
 } // namespace mlir
