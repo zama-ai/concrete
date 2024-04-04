@@ -24,6 +24,25 @@ uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim, void *csprng);
 /// \return uint64_t
 uint64_t sim_neg_lwe_u64(uint64_t plaintext);
 
+/// \brief simulate the addition of a noisy plaintext with another
+/// plaintext (noisy or not)
+///
+/// The function also checks for overflow and print a warning when it happens
+///
+/// \param lhs left operand
+/// \param rhs right operand
+/// \return uint64_t
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs);
+
+/// \brief simulate the multiplication of a noisy plaintext with an integer
+///
+/// The function also checks for overflow and print a warning when it happens
+///
+/// \param lhs left operand
+/// \param rhs right operand
+/// \return uint64_t
+uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs);
+
 /// \brief simulate a keyswitch on a noisy plaintext
 ///
 /// \param plaintext noisy plaintext
