@@ -92,6 +92,21 @@ struct NegOpPattern : public mlir::OpConversionPattern<TFHE::NegGLWEOp> {
   }
 };
 
+mlir::Value globalStringValueFromLoc(mlir::ConversionPatternRewriter &rewriter,
+                                     mlir::Location loc) {
+  std::string locString;
+  auto ros = llvm::raw_string_ostream(locString);
+  loc.print(ros);
+
+  std::string msgName;
+  std::stringstream stream;
+  stream << "loc_" << rand();
+  stream >> msgName;
+  return mlir::LLVM::createGlobalString(loc, rewriter, msgName, locString,
+                                        mlir::LLVM::linkage::Linkage::Linkonce,
+                                        false);
+}
+
 template <typename AddOp, typename AddOpAdaptor>
 struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
 
@@ -106,10 +121,13 @@ struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
 
     const std::string funcName = "sim_add_lwe_u64";
 
+    auto locString = globalStringValueFromLoc(rewriter, addOp.getLoc());
+
     if (insertForwardDeclaration(
             addOp, rewriter, funcName,
             rewriter.getFunctionType(
-                {rewriter.getIntegerType(64), rewriter.getIntegerType(64)},
+                {rewriter.getIntegerType(64), rewriter.getIntegerType(64),
+                 mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type())},
                 {rewriter.getIntegerType(64)}))
             .failed()) {
       return mlir::failure();
@@ -117,7 +135,7 @@ struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
 
     rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         addOp, funcName, mlir::TypeRange{rewriter.getIntegerType(64)},
-        mlir::ValueRange({adaptor.getA(), adaptor.getB()}));
+        mlir::ValueRange({adaptor.getA(), adaptor.getB(), locString}));
 
     return mlir::success();
   }
@@ -136,10 +154,13 @@ struct MulOpPattern : public mlir::OpConversionPattern<TFHE::MulGLWEIntOp> {
 
     const std::string funcName = "sim_mul_lwe_u64";
 
+    auto locString = globalStringValueFromLoc(rewriter, mulOp.getLoc());
+
     if (insertForwardDeclaration(
             mulOp, rewriter, funcName,
             rewriter.getFunctionType(
-                {rewriter.getIntegerType(64), rewriter.getIntegerType(64)},
+                {rewriter.getIntegerType(64), rewriter.getIntegerType(64),
+                 mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type())},
                 {rewriter.getIntegerType(64)}))
             .failed()) {
       return mlir::failure();
@@ -147,7 +168,7 @@ struct MulOpPattern : public mlir::OpConversionPattern<TFHE::MulGLWEIntOp> {
 
     rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         mulOp, funcName, mlir::TypeRange{rewriter.getIntegerType(64)},
-        mlir::ValueRange({adaptor.getA(), adaptor.getB()}));
+        mlir::ValueRange({adaptor.getA(), adaptor.getB(), locString}));
 
     return mlir::success();
   }
@@ -500,6 +521,8 @@ struct BootstrapGLWEOpPattern
     mlir::Value castedLUT = rewriter.create<mlir::tensor::CastOp>(
         bsOp.getLoc(), dynamicLutType, adaptor.getLookupTable());
 
+    auto locString = globalStringValueFromLoc(rewriter, bsOp.getLoc());
+
     // uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t
     // *tlu_allocated, uint64_t *tlu_aligned, uint64_t tlu_offset, uint64_t
     // tlu_size, uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t
@@ -510,7 +533,8 @@ struct BootstrapGLWEOpPattern
                 {rewriter.getIntegerType(64), dynamicLutType,
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
-                 rewriter.getIntegerType(32)},
+                 rewriter.getIntegerType(32),
+                 mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type())},
                 {rewriter.getIntegerType(64)}))
             .failed()) {
       return mlir::failure();
@@ -520,7 +544,7 @@ struct BootstrapGLWEOpPattern
         bsOp, funcName, this->getTypeConverter()->convertType(resultType),
         mlir::ValueRange({adaptor.getCiphertext(), castedLUT,
                           inputLweDimensionCst, polySizeCst, levelsCst,
-                          baseLogCst, glweDimensionCst}));
+                          baseLogCst, glweDimensionCst, locString}));
 
     return mlir::success();
   }
@@ -638,7 +662,8 @@ void SimulateTFHEPass::runOnOperation() {
   target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addLegalOp<mlir::func::CallOp, mlir::memref::GetGlobalOp,
                     mlir::memref::CastOp, mlir::bufferization::AllocTensorOp,
-                    mlir::tensor::CastOp>();
+                    mlir::tensor::CastOp, mlir::LLVM::GlobalOp,
+                    mlir::LLVM::AddressOfOp, mlir::LLVM::GEPOp>();
   // Make sure that no ops from `TFHE` remain after the lowering
   target.addIllegalDialect<TFHE::TFHEDialect>();
 

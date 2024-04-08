@@ -63,7 +63,7 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
                                uint64_t tlu_size, uint64_t tlu_stride,
                                uint32_t input_lwe_dim, uint32_t poly_size,
                                uint32_t level, uint32_t base_log,
-                               uint32_t glwe_dim) {
+                               uint32_t glwe_dim, char *loc) {
   auto tlu = tlu_aligned + tlu_offset;
 
   // modulus switching
@@ -98,7 +98,7 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
       mlir::concretelang::optimizer::DEFAULT_FFT_PRECISION, variance_bsk);
   out = out + gaussian_noise(0, variance);
   if (out > UINT63_MAX) {
-    printf("WARNING: overflow happened during LUT\n");
+    printf("WARNING at %s: overflow happened during LUT\n", loc);
   }
   return out;
 }
@@ -189,16 +189,19 @@ void sim_wop_pbs_crt(
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }
 
-uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs) {
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc) {
   if (lhs > UINT63_MAX - rhs) {
-    printf("WARNING: overflow happened during addition in simulation\n");
+    printf("WARNING at %s: overflow happened during addition in simulation\n",
+           loc);
   }
   return lhs + rhs;
 }
 
-uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs) {
+uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc) {
   if (rhs != 0 && lhs > UINT63_MAX / rhs) {
-    printf("WARNING: overflow happened during multiplication in simulation\n");
+    printf("WARNING at %s: overflow happened during multiplication in "
+           "simulation\n",
+           loc);
   }
   return lhs * rhs;
 }

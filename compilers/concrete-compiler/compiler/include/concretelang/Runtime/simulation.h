@@ -31,8 +31,9 @@ uint64_t sim_neg_lwe_u64(uint64_t plaintext);
 ///
 /// \param lhs left operand
 /// \param rhs right operand
+/// \param loc
 /// \return uint64_t
-uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs);
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc);
 
 /// \brief simulate the multiplication of a noisy plaintext with an integer
 ///
@@ -40,8 +41,9 @@ uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs);
 ///
 /// \param lhs left operand
 /// \param rhs right operand
+/// \param loc
 /// \return uint64_t
-uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs);
+uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc);
 
 /// \brief simulate a keyswitch on a noisy plaintext
 ///
@@ -68,13 +70,14 @@ uint64_t sim_keyswitch_lwe_u64(uint64_t plaintext, uint32_t level,
 /// \param level
 /// \param base_log
 /// \param glwe_dim
+/// \param loc
 /// \return uint64_t
 uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
                                uint64_t *tlu_aligned, uint64_t tlu_offset,
                                uint64_t tlu_size, uint64_t tlu_stride,
                                uint32_t input_lwe_dim, uint32_t poly_size,
                                uint32_t level, uint32_t base_log,
-                               uint32_t glwe_dim);
+                               uint32_t glwe_dim, char *loc);
 
 /// simulate a WoP PBS
 void sim_wop_pbs_crt(
