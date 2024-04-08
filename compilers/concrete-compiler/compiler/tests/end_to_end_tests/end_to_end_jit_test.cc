@@ -496,3 +496,18 @@ func.func @dec(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   ASSERT_EQ(lambda_dec({Tensor<uint64_t>(1)}), (uint64_t)0);
   ASSERT_EQ(lambda_dec({Tensor<uint64_t>(4)}), (uint64_t)3);
 }
+
+/// https://github.com/zama-ai/concrete-internal/issues/655
+TEST(CompileAndRun, compress_input_and_simulate) {
+  mlir::concretelang::CompilationOptions options;
+  options.compressInputCiphertexts = true;
+  options.simulate = true;
+  TestProgram circuit(options);
+  ASSERT_OUTCOME_HAS_VALUE(circuit.compile(R"XXX(
+func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
+  return %arg0: !FHE.eint<3>
+}
+)XXX"));
+  ASSERT_ASSIGN_OUTCOME_VALUE(result, circuit.call({Tensor<uint64_t>(7)}));
+  ASSERT_EQ(result[0].getTensor<uint64_t>().value()[0], (uint64_t)(7));
+}
