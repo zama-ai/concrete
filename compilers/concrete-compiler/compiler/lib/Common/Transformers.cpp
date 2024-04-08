@@ -871,7 +871,7 @@ Result<ArgTransformer> TransformerFactory::getLweCiphertextArgTransformer(
   Transformer decompressionTransformer;
   auto lweCiphertextInfo = gateInfo.asReader().getTypeInfo().getLweCiphertext();
   auto compression = lweCiphertextInfo.getCompression();
-  if (compression == concreteprotocol::Compression::NONE) {
+  if (compression == concreteprotocol::Compression::NONE || useSimulation) {
     OUTCOME_TRY(decompressionTransformer, getNoneDecompressionTransformer());
   } else if (compression == concreteprotocol::Compression::SEED) {
     OUTCOME_TRY(decompressionTransformer,
