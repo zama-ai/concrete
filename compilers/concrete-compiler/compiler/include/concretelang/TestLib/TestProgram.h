@@ -150,7 +150,10 @@ public:
 
   Result<ClientCircuit> getClientCircuit(std::string name = "main") {
     OUTCOME_TRY(auto lib, getLibrary());
-    OUTCOME_TRY(auto ks, getKeyset());
+    Keyset ks{};
+    if (!isSimulation()) {
+      OUTCOME_TRY(ks, getKeyset());
+    }
     auto programInfo = lib.getProgramInfo();
     OUTCOME_TRY(auto clientProgram,
                 ClientProgram::create(programInfo, ks.client, encryptionCsprng,
