@@ -1,4 +1,4 @@
-**# Compression**
+# Compression
 
 Fully Homomorphic Encryption (FHE) needs both ciphertexts (encrypted data) and evaluation keys to carry out the homomorphic evaluation of a function. Both elements are large, which may critically affect the application's performance depending on the use case, application deployment, and the method for transmitting and storing ciphertexts and evaluation keys.
 
