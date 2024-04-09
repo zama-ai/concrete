@@ -186,7 +186,9 @@ public:
         mlir::Builder(&this->getContext()).getI64ArrayAttr(tileSizes);
 
     op->walk([&](mlir::Operation *op) {
-      if (llvm::isa<mlir::concretelang::FHELinalg::ApplyLookupTableEintOp>(
+      if (llvm::isa<
+              mlir::concretelang::FHELinalg::ApplyLookupTableEintOp,
+              mlir::concretelang::FHELinalg::ApplyMappedLookupTableEintOp>(
               op) ||
           llvm::isa<mlir::concretelang::FHELinalg::MatMulEintIntOp,
                     mlir::concretelang::FHELinalg::MatMulIntEintOp,
