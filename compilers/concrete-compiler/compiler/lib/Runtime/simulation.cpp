@@ -98,7 +98,7 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
       mlir::concretelang::optimizer::DEFAULT_FFT_PRECISION, variance_bsk);
   out = out + gaussian_noise(0, variance);
   if (out > UINT63_MAX) {
-    printf("WARNING at %s: overflow happened during LUT\n", loc);
+    printf("WARNING at %s: overflow happened during LUT in simulation\n", loc);
   }
   return out;
 }
