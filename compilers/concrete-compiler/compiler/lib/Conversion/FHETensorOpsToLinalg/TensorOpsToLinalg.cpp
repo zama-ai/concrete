@@ -305,6 +305,9 @@ struct FHELinalgOpToLinalgGeneric : public mlir::OpRewritePattern<FHELinalgOp> {
                                                  ins, outs, maps, iteratorTypes,
                                                  doc, call, bodyBuilder);
 
+    if (linalgOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", linalgOp->getAttr("tile-sizes"));
+
     rewriter.replaceOp(linalgOp, {genericOp.getResult(0)});
 
     return ::mlir::success();
@@ -1933,6 +1936,9 @@ struct FHELinalgUnaryOpToLinalgGeneric
         rewriter.create<mlir::linalg::GenericOp>(linalgOp.getLoc(), resTypes,
                                                  ins, outs, maps, iteratorTypes,
                                                  doc, call, bodyBuilder);
+
+    if (linalgOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", linalgOp->getAttr("tile-sizes"));
 
     rewriter.replaceOp(linalgOp, {genericOp.getResult(0)});
 
