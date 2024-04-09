@@ -188,7 +188,9 @@ public:
     op->walk([&](mlir::Operation *op) {
       if (llvm::isa<mlir::concretelang::FHELinalg::ApplyLookupTableEintOp>(
               op) ||
-          llvm::isa<mlir::concretelang::FHELinalg::MatMulEintIntOp>(op) ||
+          llvm::isa<mlir::concretelang::FHELinalg::MatMulEintIntOp,
+                    mlir::concretelang::FHELinalg::MatMulIntEintOp,
+                    mlir::concretelang::FHELinalg::MatMulEintEintOp>(op) ||
           llvm::isa<mlir::concretelang::FHELinalg::AddEintOp,
                     mlir::concretelang::FHELinalg::AddEintIntOp,
                     mlir::concretelang::FHELinalg::SubIntEintOp,
