@@ -1,3 +1,7 @@
+import subprocess
+import sys
+import os
+import tempfile
 import pytest
 import shutil
 import numpy as np
@@ -239,3 +243,69 @@ def test_lib_compile_and_run_simulation(mlir_input, args, expected_result):
             args_and_shape.append((arg.flatten().tolist(), list(arg.shape)))
     compile_run_assert(engine, mlir_input, args_and_shape, expected_result)
     shutil.rmtree(artifact_dir)
+
+
+end_to_end_overflow_simu_fixture = [
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
+            }
+            """,
+        (120, 30),
+        150,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="add_eint_int",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
+            }
+            """,
+        (20, 10),
+        200,
+        b'WARNING at loc("-":3:22): overflow happened during multiplication in simulation\n',
+        id="mul_eint_int",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
+                %tlu = arith.constant dense<[0, 140, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
+                %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<7>, tensor<128xi64>) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
+            }
+            """,
+        (1,),
+        140,
+        b'WARNING at loc("-":4:22): overflow happened during LUT in simulation\n',
+        id="apply_lookup_table",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "mlir_input, args, expected_result, overflow_message",
+    end_to_end_overflow_simu_fixture,
+)
+def test_lib_compile_and_run_simulation_with_overflow(
+    mlir_input, args, expected_result, overflow_message
+):
+    # write mlir to tmp file
+    mlir_file = tempfile.NamedTemporaryFile("w")
+    mlir_file.write(mlir_input)
+    mlir_file.flush()
+
+    # prepare cmd and run
+    script_path = os.path.join(os.path.dirname(__file__), "overflow.py")
+    cmd = [sys.executable, script_path, mlir_file.name]
+    cmd.extend(map(str, args))
+    cmd.append(str(expected_result))
+    out = subprocess.check_output(cmd, env=os.environ)
+
+    # close/remove tmp file
+    mlir_file.close()
+
+    assert overflow_message == out
