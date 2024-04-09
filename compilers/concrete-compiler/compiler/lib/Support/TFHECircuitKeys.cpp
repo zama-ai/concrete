@@ -59,6 +59,7 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
 
   OS << "TFHECircuitKeys{\n"
      << "    secretKeys:" << cks.secretKeys << "\n"
+     << "    inputKeys:" << cks.inputKeys << "\n"
      << "    keyswitchKeys:" << cks.keyswitchKeys << "\n"
      << "    bootstrapKeys:" << cks.bootstrapKeys << "\n"
      << "    packingKeyswitchKeys:" << cks.packingKeyswitchKeys
@@ -70,30 +71,38 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
 TFHECircuitKeys extractCircuitKeys(mlir::ModuleOp moduleOp) {
   // Gathering circuit secret keys
   SmallSet<TFHE::GLWESecretKey> secretKeys;
-  auto tryInsert = [&](mlir::Type type) {
+  SmallSet<TFHE::GLWESecretKey> inputKeys;
+  auto tryInsert = [&](mlir::Type type, bool input) {
+    std::optional<TFHE::GLWESecretKey> key;
     if (auto glweType = type.dyn_cast<TFHE::GLWECipherTextType>()) {
-      secretKeys.insert(glweType.getKey());
+      key.emplace(glweType.getKey());
     } else if (auto tensorType = type.dyn_cast<mlir::RankedTensorType>()) {
       if (auto elementType = tensorType.getElementType()
                                  .dyn_cast<TFHE::GLWECipherTextType>()) {
-        secretKeys.insert(elementType.getKey());
+        key.emplace(elementType.getKey());
+      }
+    }
+    if (key) {
+      secretKeys.insert(key.value());
+      if (input) {
+        inputKeys.insert(key.value());
       }
     }
   };
   moduleOp->walk([&](mlir::Operation *op) {
     for (auto operand : op->getOperands()) {
-      tryInsert(operand.getType());
+      tryInsert(operand.getType(), false);
     }
     for (auto result : op->getResults()) {
-      tryInsert(result.getType());
+      tryInsert(result.getType(), false);
     }
   });
   moduleOp->walk([&](mlir::func::FuncOp op) {
     for (auto argType : op.getArgumentTypes()) {
-      tryInsert(argType);
+      tryInsert(argType, true);
     }
     for (auto resultType : op.getResultTypes()) {
-      tryInsert(resultType);
+      tryInsert(resultType, false);
     }
   });
 
@@ -133,8 +142,9 @@ TFHECircuitKeys extractCircuitKeys(mlir::ModuleOp moduleOp) {
     secretKeys.insert(op.getPkskAttr().getOutputKey());
   });
 
-  return TFHECircuitKeys{secretKeys.vector, bootstrapKeys.vector,
-                         keyswitchKeys.vector, packingKeyswitchKeys.vector};
+  return TFHECircuitKeys{secretKeys.vector, inputKeys.vector,
+                         bootstrapKeys.vector, keyswitchKeys.vector,
+                         packingKeyswitchKeys.vector};
 }
 
 std::optional<uint64_t>
