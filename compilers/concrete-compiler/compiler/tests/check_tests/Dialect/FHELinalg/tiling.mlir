@@ -73,3 +73,15 @@ func.func @apply_lookup_table(%arg0: tensor<2x3x4x!FHE.eint<2>>, %arg1: tensor<4
   %1 = "FHELinalg.apply_lookup_table"(%arg0, %arg1) { "tile-sizes" = [2,3,2] } : (tensor<2x3x4x!FHE.eint<2>>, tensor<4xi64>) -> (tensor<2x3x4x!FHE.eint<2>>)
   return %1: tensor<2x3x4x!FHE.eint<2>>
 }
+
+// -----
+
+// CHECK: %[[res:.*]] = linalg.generic {indexing_maps = [#[[map:.*]], #[[map2:.*]], #[[map3:.*]]], iterator_types = ["parallel", "parallel", "parallel"]} ins(%[[extracted_slice:.*]], %[[extracted_slice_0:.*]] : tensor<2x3x2x!FHE.eint<7>>, tensor<2x3x2xindex>) outs(%[[extracted_slice_1:.*]] : tensor<2x3x2x!FHE.eint<7>>) attrs =  {"tile-sizes" = [2, 3, 2]}
+func.func @apply_mapped_lookup_table(
+  %input: tensor<2x3x4x!FHE.eint<7>>,
+  %luts: tensor<10x128xi64>,
+  %map: tensor<2x3x4xindex>
+) -> tensor<2x3x4x!FHE.eint<7>> {
+  %0 = "FHELinalg.apply_mapped_lookup_table"(%input, %luts, %map) { "tile-sizes" = [2,3,2] } : (tensor<2x3x4x!FHE.eint<7>>, tensor<10x128xi64>, tensor<2x3x4xindex>) -> (tensor<2x3x4x!FHE.eint<7>>)
+  return %0: tensor<2x3x4x!FHE.eint<7>>
+}

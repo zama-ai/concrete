@@ -441,6 +441,9 @@ struct FHELinalgApplyMappedLookupTableToLinalgGeneric
     auto genericOp = rewriter.create<linalg::GenericOp>(
         loc, resTys, ins, outs, affineMaps, iteratorTypes, lambdaBlock);
 
+    if (mappedLookup->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", mappedLookup->getAttr("tile-sizes"));
+
     rewriter.replaceOp(mappedLookup, {genericOp.getResult(0)});
 
     return ::mlir::success();
