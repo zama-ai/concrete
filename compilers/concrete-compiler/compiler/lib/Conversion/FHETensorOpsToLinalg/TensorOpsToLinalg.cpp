@@ -598,6 +598,9 @@ struct FHELinalgApplyMultiLookupTableToLinalgGeneric
             fheLinalgLutOp.getLoc(), resTypes, ins, outs, maps, iteratorTypes,
             doc, call, bodyBuilder);
 
+    if (fheLinalgLutOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", fheLinalgLutOp->getAttr("tile-sizes"));
+
     rewriter.replaceOp(fheLinalgLutOp, {genericOp.getResult(0)});
 
     return ::mlir::success();
