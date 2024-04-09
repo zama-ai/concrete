@@ -188,7 +188,19 @@ public:
     op->walk([&](mlir::Operation *op) {
       if (llvm::isa<mlir::concretelang::FHELinalg::ApplyLookupTableEintOp>(
               op) ||
-          llvm::isa<mlir::concretelang::FHELinalg::MatMulEintIntOp>(op)) {
+          llvm::isa<mlir::concretelang::FHELinalg::MatMulEintIntOp>(op) ||
+          llvm::isa<mlir::concretelang::FHELinalg::AddEintOp,
+                    mlir::concretelang::FHELinalg::AddEintIntOp,
+                    mlir::concretelang::FHELinalg::SubIntEintOp,
+                    mlir::concretelang::FHELinalg::SubEintIntOp,
+                    mlir::concretelang::FHELinalg::SubEintOp,
+                    mlir::concretelang::FHELinalg::MulEintIntOp,
+                    mlir::concretelang::FHELinalg::MulEintOp,
+                    mlir::concretelang::FHELinalg::LsbEintOp,
+                    mlir::concretelang::FHELinalg::NegEintOp,
+                    mlir::concretelang::FHELinalg::ToSignedOp,
+                    mlir::concretelang::FHELinalg::ToUnsignedOp,
+                    mlir::concretelang::FHELinalg::RoundOp>(op)) {
         op->setAttr("tile-sizes", tileAttr);
       }
     });
