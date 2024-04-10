@@ -45,15 +45,6 @@ do
     echo "  * [$filename]($f)" >> "$TMP_FILE"
 done
 
-FINAL_FILE="docs/SUMMARY.md"
-NEW_FINAL_FILE="docs/SUMMARY.md.tmp"
-
-grep "<!-- auto-created, do not edit, begin -->" $FINAL_FILE -B 100000 > $NEW_FINAL_FILE
-sort "$TMP_FILE" | grep -v "\[README.md\]" >> $NEW_FINAL_FILE
-grep "<!-- auto-created, do not edit, end -->" $FINAL_FILE -A 100000 >> $NEW_FINAL_FILE
-
-mv $NEW_FINAL_FILE $FINAL_FILE
-
 rm -rf "$FRESH_DIRECTORY"
 
 # New files?
