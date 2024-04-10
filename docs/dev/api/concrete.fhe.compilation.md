@@ -19,6 +19,8 @@ Glue the compilation process together.
 - **compiler**
 - **DEFAULT_GLOBAL_P_ERROR**
 - **DEFAULT_P_ERROR**
+- **module**
+- **module_compiler**
 - **decorators**
 
 

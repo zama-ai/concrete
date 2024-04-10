@@ -51,13 +51,14 @@ Get the keys for the client.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/client.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/client.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt`
 
 ```python
 decrypt(
-    *results: Union[Value, Tuple[Value, ]]
+    *results: Union[Value, Tuple[Value, ]],
+    function_name: str = 'main'
 ) → Union[int, ndarray, Tuple[Union[int, ndarray, NoneType], ], NoneType]
 ```
 
@@ -66,7 +67,7 @@ Decrypt result(s) of evaluation.
 
 
 **Args:**
-  *results (Union[Value, Tuple[Value, ...]]):  result(s) of evaluation 
+  *results (Union[Value, Tuple[Value, ...]]):  result(s) of evaluation  function_name (str):  name of the function to decrypt for 
 
 
 
@@ -81,7 +82,8 @@ Decrypt result(s) of evaluation.
 
 ```python
 encrypt(
-    *args: Optional[int, ndarray, List]
+    *args: Optional[int, ndarray, List],
+    function_name: str = 'main'
 ) → Union[Value, Tuple[Optional[Value], ], NoneType]
 ```
 
@@ -90,7 +92,7 @@ Encrypt argument(s) to for evaluation.
 
 
 **Args:**
-  *args (Optional[Union[int, np.ndarray, List]]):  argument(s) for evaluation 
+  *args (Optional[Union[int, np.ndarray, List]]):  argument(s) for evaluation  function_name (str):  name of the function to encrypt 
 
 
 

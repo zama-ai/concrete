@@ -14,7 +14,7 @@ Declaration of `Configuration` class.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ParameterSelectionStrategy`
 ParameterSelectionStrategy, to set optimization strategy. 
@@ -25,7 +25,7 @@ ParameterSelectionStrategy, to set optimization strategy.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultiParameterStrategy`
 MultiParamStrategy, to set optimization strategy for multi-parameter. 
@@ -36,7 +36,48 @@ MultiParamStrategy, to set optimization strategy for multi-parameter.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `Exactness`
+Exactness, to specify for specific operator the implementation preference (default and local). 
+
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `ApproximateRoundingConfig`
+Controls the behavior of approximate rounding. 
+
+In the following `k` is the ideal rounding output precision. Often the precision used after rounding is `k`+1 to avoid overflow. `logical_clipping`, `approximate_clipping_start_precision` can be used to stay at precision `k`, either logically or physically at the successor TLU. See examples in https://github.com/zama-ai/concrete/blob/main/docs/tutorial/rounding.md. 
+
+<a href="../../tempdirectoryforapidocs/<string>"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(
+    logical_clipping: bool = True,
+    approximate_clipping_start_precision: int = 5,
+    reduce_precision_after_approximate_clipping: bool = True,
+    symetrize_deltas: bool = True
+) → None
+```
+
+
+
+
+
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ComparisonStrategy`
 ComparisonStrategy, to specify implementation preference for comparisons. 
@@ -47,7 +88,7 @@ ComparisonStrategy, to specify implementation preference for comparisons.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L447"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BitwiseStrategy`
 BitwiseStrategy, to specify implementation preference for bitwise operations. 
@@ -58,7 +99,7 @@ BitwiseStrategy, to specify implementation preference for bitwise operations.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L645"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L695"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultivariateStrategy`
 MultivariateStrategy, to specify implementation preference for multivariate operations. 
@@ -69,7 +110,7 @@ MultivariateStrategy, to specify implementation preference for multivariate oper
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L804"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MinMaxStrategy`
 MinMaxStrategy, to specify implementation preference for minimum and maximum operations. 
@@ -80,12 +121,12 @@ MinMaxStrategy, to specify implementation preference for minimum and maximum ope
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L889"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L939"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Configuration`
 Configuration class, to allow the compilation process to be customized. 
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L935"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L993"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -107,6 +148,7 @@ __init__(
     dataflow_parallelize: bool = False,
     auto_parallelize: bool = False,
     compress_evaluation_keys: bool = False,
+    compress_input_ciphertexts: bool = False,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     auto_adjust_rounders: bool = False,
@@ -130,7 +172,14 @@ __init__(
     use_gpu: bool = False,
     relu_on_bits_threshold: int = 7,
     relu_on_bits_chunk_size: int = 3,
-    if_then_else_chunk_size: int = 3
+    if_then_else_chunk_size: int = 3,
+    additional_pre_processors: Optional[List[GraphProcessor]] = None,
+    additional_post_processors: Optional[List[GraphProcessor]] = None,
+    rounding_exactness: Exactness = <Exactness.EXACT: 'exact'>,
+    approximate_rounding_config: Optional[ApproximateRoundingConfig] = None,
+    optimize_tlu_based_on_measured_bounds: bool = False,
+    enable_tlu_fusing: bool = True,
+    print_tlu_fusing: bool = False
 )
 ```
 
@@ -143,7 +192,7 @@ __init__(
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L1080"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/configuration.py#L1161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fork`
 
@@ -165,6 +214,7 @@ fork(
     dataflow_parallelize: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     auto_parallelize: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     compress_evaluation_keys: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    compress_input_ciphertexts: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     p_error: Optional[Keep, float] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     global_p_error: Optional[Keep, float] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     auto_adjust_rounders: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
@@ -188,7 +238,14 @@ fork(
     use_gpu: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     relu_on_bits_threshold: Union[Keep, int] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     relu_on_bits_chunk_size: Union[Keep, int] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
-    if_then_else_chunk_size: Union[Keep, int] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>
+    if_then_else_chunk_size: Union[Keep, int] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    additional_pre_processors: Optional[Keep, List[GraphProcessor]] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    additional_post_processors: Optional[Keep, List[GraphProcessor]] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    rounding_exactness: Union[Keep, Exactness] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    approximate_rounding_config: Optional[Keep, ApproximateRoundingConfig] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    optimize_tlu_based_on_measured_bounds: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    enable_tlu_fusing: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    print_tlu_fusing: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>
 ) → Configuration
 ```
 
