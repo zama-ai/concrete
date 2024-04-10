@@ -44,7 +44,7 @@ profile = "m7i-cpu-test"
 check_run_name = "Compiler Build and Test (CPU)"
 
 [command.compiler-cpu-build-distributed]
-workflow = "compiler_build_and_test_cpu.yml"
+workflow = "compiler_build_and_test_cpu_distributed.yml"
 profile = "slurm-cluster"
 check_run_name = "Compiler Distributed Build and Test (CPU)"
 runner_name = "distributed-ci"
