@@ -51,7 +51,7 @@ Wrap the native Cpp object.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L162"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt_result`
 
@@ -59,7 +59,8 @@ Wrap the native Cpp object.
 decrypt_result(
     client_parameters: ClientParameters,
     keyset: KeySet,
-    public_result: PublicResult
+    public_result: PublicResult,
+    circuit_name: str = 'main'
 ) → Union[int, ndarray]
 ```
 
@@ -71,7 +72,8 @@ Decrypt a public result using the keyset.
  
  - <b>`client_parameters`</b> (ClientParameters):  client parameters for decryption 
  - <b>`keyset`</b> (KeySet):  keyset used for decryption 
- - <b>`public_result`</b>:  public result to decrypt 
+ - <b>`public_result`</b> (PublicResult):  public result to decrypt 
+ - <b>`circuit_name`</b> (str):  name of the circuit for which to decrypt 
 
 
 
@@ -79,6 +81,7 @@ Decrypt a public result using the keyset.
  
  - <b>`TypeError`</b>:  if keyset is not of type KeySet 
  - <b>`TypeError`</b>:  if public_result is not of type PublicResult 
+ - <b>`TypeError`</b>:  if circuit_name is not of type str 
  - <b>`RuntimeError`</b>:  if the result is of an unknown type 
 
 
@@ -97,7 +100,8 @@ Decrypt a public result using the keyset.
 encrypt_arguments(
     client_parameters: ClientParameters,
     keyset: KeySet,
-    args: List[Union[int, ndarray]]
+    args: List[Union[int, ndarray]],
+    circuit_name: str = 'main'
 ) → PublicArguments
 ```
 
@@ -112,6 +116,7 @@ Pack public arguments by encrypting the ones that requires encryption, and leavi
  - <b>`client_parameters`</b> (ClientParameters):  client parameters specification 
  - <b>`keyset`</b> (KeySet):  keyset used to encrypt arguments that require encryption 
  - <b>`args`</b> (List[Union[int, np.ndarray]]):  list of scalar or tensor arguments 
+ - <b>`circuit_name`</b> (str):  the name of the circuit for which to encrypt 
 
 
 
@@ -119,6 +124,7 @@ Pack public arguments by encrypting the ones that requires encryption, and leavi
  
  - <b>`TypeError`</b>:  if client_parameters is not of type ClientParameters 
  - <b>`TypeError`</b>:  if keyset is not of type KeySet 
+ - <b>`TypeError`</b>:  if circuit_name is not of type str 
 
 
 

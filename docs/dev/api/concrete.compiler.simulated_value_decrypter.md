@@ -68,7 +68,7 @@ Decrypt value.
 ### <kbd>method</kbd> `new`
 
 ```python
-new(client_parameters: ClientParameters)
+new(client_parameters: ClientParameters, circuit_name: str = 'main')
 ```
 
 Create a value decrypter. 

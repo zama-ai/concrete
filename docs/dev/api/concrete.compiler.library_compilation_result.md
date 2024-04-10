@@ -46,24 +46,22 @@ Wrap the native Cpp object.
 ### <kbd>method</kbd> `new`
 
 ```python
-new(output_dir_path: str, func_name: str) → LibraryCompilationResult
+new(output_dir_path: str) → LibraryCompilationResult
 ```
 
-Build a LibraryCompilationResult at output_dir_path, with func_name as entrypoint. 
+Build a LibraryCompilationResult at output_dir_path. 
 
 
 
 **Args:**
  
  - <b>`output_dir_path`</b> (str):  path to the compilation artifacts 
- - <b>`func_name`</b> (str):  entrypoint function name 
 
 
 
 **Raises:**
  
  - <b>`TypeError`</b>:  if output_dir_path is not of type str 
- - <b>`TypeError`</b>:  if func_name is not of type str 
 
 
 

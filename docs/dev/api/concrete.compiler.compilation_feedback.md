@@ -8,7 +8,7 @@ Compilation feedback.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tag_from_location`
 
@@ -21,17 +21,17 @@ Extract tag of the operation from its location.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `CompilationFeedback`
-CompilationFeedback is a set of hint computed by the compiler engine. 
+## <kbd>class</kbd> `CircuitCompilationFeedback`
+CircuitCompilationFeedback is a set of hint computed by the compiler engine for a circuit. 
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(compilation_feedback: CompilationFeedback)
+__init__(circuit_compilation_feedback: CircuitCompilationFeedback)
 ```
 
 Wrap the native Cpp object. 
@@ -40,20 +40,20 @@ Wrap the native Cpp object.
 
 **Args:**
  
- - <b>`compilation_feeback`</b> (_CompilationFeedback):  object to wrap 
+ - <b>`circuit_compilation_feeback`</b> (_CircuitCompilationFeedback):  object to wrap 
 
 
 
 **Raises:**
  
- - <b>`TypeError`</b>:  if compilation_feedback is not of type _CompilationFeedback 
+ - <b>`TypeError`</b>:  if circuit_compilation_feedback is not of type _CircuitCompilationFeedback 
 
 
 
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `count`
 
@@ -75,7 +75,7 @@ Count the amount of specified operations in the program.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L94"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `count_per_parameter`
 
@@ -105,7 +105,7 @@ Count the amount of specified operations in the program and group by parameters.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `count_per_tag`
 
@@ -127,7 +127,7 @@ Count the amount of specified operations in the program and group by tags.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `count_per_tag_per_parameter`
 
@@ -154,5 +154,67 @@ Count the amount of specified operations in the program and group by tags and pa
 
 **Returns:**
   Dict[str, Dict[Parameter, int]]:  number of specified operations per tag per parameter in the program 
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `ProgramCompilationFeedback`
+CompilationFeedback is a set of hint computed by the compiler engine. 
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L223"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(program_compilation_feedback: ProgramCompilationFeedback)
+```
+
+Wrap the native Cpp object. 
+
+
+
+**Args:**
+ 
+ - <b>`compilation_feeback`</b> (_CompilationFeedback):  object to wrap 
+
+
+
+**Raises:**
+ 
+ - <b>`TypeError`</b>:  if program_compilation_feedback is not of type _CompilationFeedback 
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/compilation_feedback.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `circuit`
+
+```python
+circuit(circuit_name: str) → CircuitCompilationFeedback
+```
+
+Returns the feedback for the circuit circuit_name. 
+
+
+
+**Args:**
+  circuit_name (str):  the name of the circuit. 
+
+
+
+**Returns:**
+  CircuitCompilationFeedback:  the feedback for the circuit. 
+
+
+
+**Raises:**
+ 
+ - <b>`TypeError`</b>:  if the circuit_name is not a string 
+ - <b>`ValueError`</b>:  if there is no circuit with name circuit_name 
 
 
