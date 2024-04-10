@@ -92,7 +92,7 @@ class ApproximateRoundingConfig:
     Often the precision used after rounding is `k`+1 to avoid overflow.
     `logical_clipping`, `approximate_clipping_start_precision` can be used to stay at precision `k`,
     either logically or physically at the successor TLU.
-    See examples in https://github.com/zama-ai/concrete/blob/main/docs/tutorial/rounding.md.
+    See examples in https://github.com/zama-ai/concrete/blob/main/docs/core-features/rounding.md.
     """
 
     logical_clipping: bool = True
