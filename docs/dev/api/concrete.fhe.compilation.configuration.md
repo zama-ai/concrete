@@ -52,7 +52,7 @@ Exactness, to specify for specific operator the implementation preference (defau
 ## <kbd>class</kbd> `ApproximateRoundingConfig`
 Controls the behavior of approximate rounding. 
 
-In the following `k` is the ideal rounding output precision. Often the precision used after rounding is `k`+1 to avoid overflow. `logical_clipping`, `approximate_clipping_start_precision` can be used to stay at precision `k`, either logically or physically at the successor TLU. See examples in https://github.com/zama-ai/concrete/blob/main/docs/tutorial/rounding.md. 
+In the following `k` is the ideal rounding output precision. Often the precision used after rounding is `k`+1 to avoid overflow. `logical_clipping`, `approximate_clipping_start_precision` can be used to stay at precision `k`, either logically or physically at the successor TLU. See examples in https://github.com/zama-ai/concrete/blob/main/docs/core-features/rounding.md.
 
 <a href="../../tempdirectoryforapidocs/<string>"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
