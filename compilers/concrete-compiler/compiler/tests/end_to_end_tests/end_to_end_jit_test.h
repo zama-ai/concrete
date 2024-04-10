@@ -26,6 +26,7 @@ bool DEFAULT_chunkedIntegers = false;
 unsigned int DEFAULT_chunkSize = 4;
 unsigned int DEFAULT_chunkWidth = 2;
 bool DEFAULT_composable = false;
+bool DEFAULT_use_multi_parameter = true;
 
 // Jit-compiles the function specified by `func` from `src` and
 // returns the corresponding lambda. Any compilation errors are caught
@@ -40,7 +41,8 @@ inline Result<TestProgram> internalCheckedJit(
     bool chunkedIntegers = DEFAULT_chunkedIntegers,
     unsigned int chunkSize = DEFAULT_chunkSize,
     unsigned int chunkWidth = DEFAULT_chunkWidth,
-    bool composable = DEFAULT_composable) {
+    bool composable = DEFAULT_composable,
+    bool use_multi_parameter = DEFAULT_use_multi_parameter) {
 
   auto options = mlir::concretelang::CompilationOptions();
   options.optimizerConfig.global_p_error = global_p_error;
@@ -54,12 +56,7 @@ inline Result<TestProgram> internalCheckedJit(
   }
   options.loopParallelize = loopParallelize;
 #ifdef CONCRETELANG_DATAFLOW_EXECUTION_ENABLED
-#ifdef CONCRETELANG_DATAFLOW_TESTING_ENABLED
-  options.dataflowParallelize = true;
-  options.loopParallelize = true;
-#else
   options.dataflowParallelize = dataflowParallelize;
-#endif
 #endif
   options.batchTFHEOps = batchTFHEOps;
   if (composable) {
@@ -68,6 +65,9 @@ inline Result<TestProgram> internalCheckedJit(
         mlir::concretelang::optimizer::Strategy::DAG_MULTI;
   }
 
+  if (!use_multi_parameter)
+    options.optimizerConfig.strategy =
+        mlir::concretelang::optimizer::Strategy::DAG_MONO;
   std::vector<std::string> sources = {src.str()};
   TestProgram testProgram(options);
   OUTCOME_TRYV(testProgram.compile({src.str()}));
