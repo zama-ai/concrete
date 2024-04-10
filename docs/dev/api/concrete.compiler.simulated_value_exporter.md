@@ -39,7 +39,7 @@ Wrap the native C++ object.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/simulated_value_exporter.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/simulated_value_exporter.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `export_scalar`
 
@@ -63,7 +63,7 @@ Export scalar.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/simulated_value_exporter.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/simulated_value_exporter.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `export_tensor`
 
@@ -94,7 +94,10 @@ Export tensor.
 ### <kbd>method</kbd> `new`
 
 ```python
-new(client_parameters: ClientParameters) → SimulatedValueExporter
+new(
+    client_parameters: ClientParameters,
+    circuitName: str = 'main'
+) → SimulatedValueExporter
 ```
 
 Create a value exporter. 

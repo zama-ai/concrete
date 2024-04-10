@@ -61,10 +61,16 @@ Compiler submodule.
 - **value_exporter**
 - **simulated_value_decrypter**
 - **simulated_value_exporter**
+- **server_circuit**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
+
+- **server_program**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
+
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `init_dfr`
 
@@ -79,7 +85,7 @@ It is not always required to initialize the dataflow runtime as it can be implic
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `round_trip`
 

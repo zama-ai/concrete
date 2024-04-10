@@ -39,7 +39,7 @@ Wrap the native C++ object.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/value_exporter.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/value_exporter.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `export_scalar`
 
@@ -63,7 +63,7 @@ Export scalar.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/value_exporter.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/value_exporter.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `export_tensor`
 
@@ -94,7 +94,11 @@ Export tensor.
 ### <kbd>method</kbd> `new`
 
 ```python
-new(keyset: KeySet, client_parameters: ClientParameters) → ValueExporter
+new(
+    keyset: KeySet,
+    client_parameters: ClientParameters,
+    circuit_name: str = 'main'
+) → ValueExporter
 ```
 
 Create a value exporter. 
