@@ -24,19 +24,14 @@ on:
 
 
 env:
-  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   GLIB_VER: 2_28
 
 jobs:
   BuildAndTest:
     name: Build and test compiler on Slurm cluster in EC2
-    runs-on: ${{ github.event.inputs.runner_name }}
+    runs-on: distributed-ci
     if: ${{ !cancelled() }}
-    concurrency:
-      group: ${{ github.workflow }}_${{ github.ref }}
-      cancel-in-progress: true
     steps:
-  
       - name: Instance configuration used
         run: |
           echo "ID: ${{ inputs.instance_id }}"
@@ -45,81 +40,48 @@ jobs:
           echo "Request ID: ${{ inputs.request_id }}"
           echo "Matrix item: ${{ inputs.matrix_item }}"
 
-      # SSH private key is required as some dependencies are from private repos
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
+      - name: Instance cleanup
+        run: |
+          sudo rm -rf /home/ubuntu/actions-runner/_work/concrete/concrete/*
+          docker system prune -af
 
       - name: Fetch repository
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+
+      - name: Set up home
+        # "Install rust" step require root user to have a HOME directory which is not set.
+        run: |
+          echo "HOME=/shared" >> "${GITHUB_ENV}"
+
+      - name: Export specific variables (CPU)
+        if: ${{ !startswith(inputs.instance_type, 'p3.') }}
+        run: |
+          echo "CUDA_SUPPORT=OFF" >> "${GITHUB_ENV}"
+          echo "DATAFLOW_EXECUTION_ENABLED=ON" >> "${GITHUB_ENV}"
 
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
 
-      - name: Create build dir
-        run: mkdir build
-
-      - name: Build compiler
-        uses: addnab/docker-run-action@v3
-        id: build-compiler
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
-            -v ${{ github.workspace }}/wheels:/wheels
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
-            -e SSH_AUTH_SOCK=/ssh.socket
-            ${{ env.DOCKER_GPU_OPTION }}
-          shell: bash
-          run: |
-            rustup toolchain install nightly-2024-01-31
-            set -e
-            cd /concrete/compilers/concrete-compiler/compiler
-            rm -rf /build/*
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build build-end-to-end-dataflow-tests
-            echo "Debug: ccache statistics (after the build):"
-            ccache -s
-
-      - name: Enable complete tests on push to main
-        if: github.ref == 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=OFF" >> $GITHUB_ENV
-
-      - name: Enable minimal tests otherwise
-        if: github.ref != 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=ON" >> $GITHUB_ENV
-
-      - name: Test compiler
-        uses: addnab/docker-run-action@v3
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
-            ${{ env.DOCKER_GPU_OPTION }}
-          shell: bash
-          run: |
-            set -e
-            rustup toolchain install nightly-2024-01-31
-            cd /concrete/compilers/concrete-compiler/compiler
-            pip install pytest
-            dnf install -y libzstd libzstd-devel
-            sed "s/pytest/python -m pytest/g" -i Makefile
-            mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-end-to-end-distributed-tests
-            chmod -R ugo+rwx /tmp/KeySetCache
-            
-      - name: Analyze logs
+      - name: Build compiler benchmarks
         run: |
-            cd build/gtest-parallel-logs/passed
-            ls -1 | xargs grep -H "WARNING RETRY" | sed -e "s/.log.*//g" | uniq -c | sed -re "s/ *([0-9]*) (.*)/::warning ::Test \2 retried \1 times/g" | cat
+          set -e
+          git config --global --add safe.directory '*'
+          cd compilers/concrete-compiler/compiler
+          rm -rf /shared/build
+          make HPX_DIR=/shared/hpx install-hpx-from-source
+          make HPX_DIR=/shared/hpx BUILD_DIR=/shared/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} build-end-to-end-dataflow-tests
+
+      - name: Run end-to-end benchmarks
+        run: |
+          set -e
+          cd compilers/concrete-compiler/compiler
+          make BUILD_DIR=/shared/build run-end-to-end-distributed-tests
+
+      - name: Instance cleanup
+        run: |
+          sudo rm -rf /home/ubuntu/actions-runner/_work/concrete/concrete/*
+          docker system prune -af
