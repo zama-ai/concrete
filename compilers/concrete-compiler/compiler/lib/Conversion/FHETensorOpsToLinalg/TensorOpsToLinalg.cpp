@@ -1261,13 +1261,14 @@ struct TransposeToLinalgGeneric
       mlir::Value item = blockArgs[0];
       nestedBuilder.create<linalg::YieldOp>(location, item);
     };
-    mlir::Value result =
-        rewriter
-            .create<linalg::GenericOp>(location, resultTypes, ins, outs, maps,
-                                       iteratorTypes, regionBuilder)
-            .getResult(0);
 
-    rewriter.replaceOp(transposeOp, {result});
+    linalg::GenericOp genericOp = rewriter.create<linalg::GenericOp>(
+        location, resultTypes, ins, outs, maps, iteratorTypes, regionBuilder);
+
+    if (transposeOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", transposeOp->getAttr("tile-sizes"));
+
+    rewriter.replaceOp(transposeOp, genericOp.getResults());
     return mlir::success();
   };
 };

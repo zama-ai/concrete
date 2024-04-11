@@ -196,6 +196,7 @@ public:
                     mlir::concretelang::FHELinalg::MatMulIntEintOp,
                     mlir::concretelang::FHELinalg::MatMulEintEintOp>(op) ||
           llvm::isa<mlir::concretelang::FHELinalg::SumOp>(op) ||
+          llvm::isa<mlir::concretelang::FHELinalg::TransposeOp>(op) ||
           llvm::isa<mlir::concretelang::FHELinalg::AddEintOp,
                     mlir::concretelang::FHELinalg::AddEintIntOp,
                     mlir::concretelang::FHELinalg::SubIntEintOp,
