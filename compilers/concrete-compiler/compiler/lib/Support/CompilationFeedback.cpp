@@ -7,6 +7,7 @@
 #include <fstream>
 #include <vector>
 
+#include "concrete-cpu.h"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/Support/CompilationFeedback.h"
 
@@ -85,12 +86,14 @@ void ProgramCompilationFeedback::fillFromProgramInfo(
         params.getKeyset().getLweSecretKeys()[bskInfo.getOutputId()];
     assert(bskInfo.getParams().getIntegerPrecision() % 8 == 0);
     auto byteSize = bskInfo.getParams().getIntegerPrecision() / 8;
-    auto inputLweSize = inputKeyInfo.getParams().getLweDimension() + 1;
-    auto outputLweSize = outputKeyInfo.getParams().getLweDimension() + 1;
+    auto inputLweDimension = inputKeyInfo.getParams().getLweDimension();
+    auto outputLweDimension = outputKeyInfo.getParams().getLweDimension();
     auto level = bskInfo.getParams().getLevelCount();
     auto glweDimension = bskInfo.getParams().getGlweDimension();
-    totalBootstrapKeysSize += inputLweSize * level * (glweDimension + 1) *
-                              (glweDimension + 1) * outputLweSize * byteSize;
+    totalBootstrapKeysSize +=
+        concrete_cpu_bootstrap_key_size_u64(
+            level, glweDimension, outputLweDimension, inputLweDimension) *
+        byteSize;
   }
   // Compute the keyswitch keys size
   totalKeyswitchKeysSize = 0;
@@ -105,10 +108,13 @@ void ProgramCompilationFeedback::fillFromProgramInfo(
         params.getKeyset().getLweSecretKeys()[kskInfo.getOutputId()];
     assert(kskInfo.getParams().getIntegerPrecision() % 8 == 0);
     auto byteSize = kskInfo.getParams().getIntegerPrecision() / 8;
-    auto inputLweSize = inputKeyInfo.getParams().getLweDimension() + 1;
-    auto outputLweSize = outputKeyInfo.getParams().getLweDimension() + 1;
+    auto inputLweDimension = inputKeyInfo.getParams().getLweDimension();
+    auto outputLweDimension = outputKeyInfo.getParams().getLweDimension();
     auto level = kskInfo.getParams().getLevelCount();
-    totalKeyswitchKeysSize += level * inputLweSize * outputLweSize * byteSize;
+    totalKeyswitchKeysSize +=
+        concrete_cpu_keyswitch_key_size_u64(level, inputLweDimension,
+                                            outputLweDimension) *
+        byteSize;
   }
   // Compute the circuit feedbacks
   for (auto circuitInfo : params.getCircuits()) {
