@@ -2021,6 +2021,9 @@ struct TensorPartitionFrontierOpToLinalgGeneric
                                                  outs, maps, iteratorTypes, doc,
                                                  call, bodyBuilder);
 
+    if (pfOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", pfOp->getAttr("tile-sizes"));
+
     rewriter.replaceOp(pfOp, {genericOp.getResult(0)});
 
     return ::mlir::success();
