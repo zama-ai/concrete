@@ -1,5 +1,6 @@
-Parameter Curves
-=========
+# Security
+
+## Parameter Curves
 
 To select secure cryptographic parameters for usage in Concrete, we utilize the [Lattice-Estimator](https://github.com/malb/lattice-estimator). In particular, we use the following workflow:
 
@@ -17,8 +18,13 @@ To select secure cryptographic parameters for usage in Concrete, we utilize the 
 These models are then used as input for Concrete, to ensure that the parameter space explored by the compiler attains the required security level. Note that we consider the `RC.BDGL16` lattice reduction cost model within the Lattice Estimator. 
 Therefore, when computing our security estimates, we use the call `LWE.estimate(params, red_cost_model = RC.BDGL16)` on the input parameter set `params`.
 
-Usage
----------
+{% hint style="warning" %}
+The cryptographic parameters are chosen considering the IND-CPA security model, and are selected with a bootstrapping failure probability fixed by the user. In particular, it is assumed that the results of decrypted computations are not shared by the secret key owner with any third parties, as such an action can lead to leakage of the secret encryption key. If you are designing an application where decryptions must be shared, you will need to craft custom encryption parameters which are chosen in consideration of the IND-CPA^D security model [1].
+
+[1] Li, Baiyu, et al. “Securing approximate homomorphic encryption using differential privacy.” Annual International Cryptology Conference. Cham: Springer Nature Switzerland, 2022. https://eprint.iacr.org/2022/816.pdf
+{% endhint %}
+
+## Usage
 
 To generate the raw data from the lattice estimator, use::
 
@@ -38,8 +44,7 @@ To generate the associated cpp and rust code, use::
 
 further advanced options can be found inside the Makefile.
 
-Example
----------
+## Example
 
 To look at the raw data gathered in step 1., we can look in the [sage-object folder](https://github.com/zama-ai/concrete/tree/main/tools/parameter-curves/sage-object). These objects can be loaded in the following way using SageMath:
     
