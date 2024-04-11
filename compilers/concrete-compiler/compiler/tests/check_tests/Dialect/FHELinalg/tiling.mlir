@@ -93,3 +93,31 @@ func.func @main(%arg0: tensor<3x3x!FHE.eint<2>>, %arg1: tensor<3x3x4xi8>) -> ten
   %1 = "FHELinalg.apply_multi_lookup_table"(%arg0, %arg1) { "tile-sizes" = [3, 3] }: (tensor<3x3x!FHE.eint<2>>, tensor<3x3x4xi8>) -> tensor<3x3x!FHE.eint<2>>
   return %1: tensor<3x3x!FHE.eint<2>>
 }
+
+// -----
+
+// CHECK:      %[[V4:.*]] = scf.forall (%[[Varg1]], %[[Varg2]], %[[Varg3]]) in (1, 1, 2) shared_outs(%[[Varg4:.*]] = %[[V3]]) -> (tensor<3x8x2x!FHE.eint<7>>) {
+// CHECK-NEXT:   %[[Vextracted_slice:.*]] = tensor.extract_slice %[[Varg4]]{{\[0, 0,}} %[[Varg1]]{{\] \[3, 8, 1\] \[1, 1, 1\]}} : tensor<3x8x2x!FHE.eint<7>> to tensor<3x8x!FHE.eint<7>>
+// CHECK-NEXT:   %[[V6:.*]] = affine.apply #map1(%[[Varg1]])
+// CHECK-NEXT:   %[[V7:.*]] = affine.apply #map2(%[[Varg2]])
+// CHECK-NEXT:   %[[V8:.*]] = affine.apply #map3(%[[Varg3]])
+// CHECK-NEXT:   %[[V9:.*]] = affine.apply #map1(%[[Varg1]])
+// CHECK-NEXT:   %[[V10:.*]] = affine.apply #map2(%[[Varg2]])
+// CHECK-NEXT:   %[[Vextracted_slice_0:.*]] = tensor.extract_slice %[[Varg0]]{{\[}}%[[V6]], %[[V7]], %[[V8]]{{\] \[3, 8, 2\] \[1, 1, 1\]}} : tensor<3x8x4x!FHE.eint<7>> to tensor<3x8x2x!FHE.eint<7>>
+// CHECK-NEXT:   %[[Vextracted_slice_1:.*]] = tensor.extract_slice %[[Vextracted_slice]]{{\[}}%[[V9]], %[[V10]]{{\] \[3, 8\] \[1, 1\]}} : tensor<3x8x!FHE.eint<7>> to tensor<3x8x!FHE.eint<7>>
+// CHECK-NEXT:   %[[V11:.*]] = linalg.generic {indexing_maps = {{\[}}#map, #map4{{\], iterator}}_types = {{\[}}"parallel", "parallel", "reduction"{{\]}}} ins(%[[Vextracted_slice_0]] : tensor<3x8x2x!FHE.eint<7>>) outs(%[[Vextracted_slice_1]] : tensor<3x8x!FHE.eint<7>>) {
+// CHECK-NEXT:   ^bb0(%[[Vin:.*]]: !FHE.eint<7>, %[[Vout:.*]]: !FHE.eint<7>):
+// CHECK-NEXT:     %[[V14:.*]] = "FHE.add_eint"(%[[Vin]], %[[Vout]]) : (!FHE.eint<7>, !FHE.eint<7>) -> !FHE.eint<7>
+// CHECK-NEXT:     linalg.yield %[[V14]] : !FHE.eint<7>
+// CHECK-NEXT:   } -> tensor<3x8x!FHE.eint<7>>
+// CHECK-NEXT:   %[[V12:.*]] = affine.apply #map1(%[[Varg1]])
+// CHECK-NEXT:   %[[V13:.*]] = affine.apply #map2(%[[Varg2]])
+// CHECK-NEXT:   scf.forall.in_parallel {
+// CHECK-NEXT:     tensor.parallel_insert_slice %[[V11]] into %[[Varg4]]{{\[}}%[[V12]], %[[V13]], %[[Varg1]]{{\] \[3, 8, 1\] \[1, 1, 1\]}} : tensor<3x8x!FHE.eint<7>> into tensor<3x8x2x!FHE.eint<7>>
+// CHECK-NEXT:   }
+// CHECK-NEXT: }
+
+func.func @main(%arg0: tensor<3x8x4x!FHE.eint<7>>) -> tensor<3x8x!FHE.eint<7>> {
+  %0 = "FHELinalg.sum"(%arg0) { axes = [2], "tile-sizes" = [3, 8, 2] } : (tensor<3x8x4x!FHE.eint<7>>) -> tensor<3x8x!FHE.eint<7>>
+  return %0 : tensor<3x8x!FHE.eint<7>>
+}

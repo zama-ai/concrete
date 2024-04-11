@@ -1162,6 +1162,9 @@ struct SumToLinalgGeneric
     linalg::GenericOp genericOp = rewriter.create<linalg::GenericOp>(
         location, resultTypes, ins, outs, maps, iteratorTypes, regionBuilder);
 
+    if (sumOp->hasAttr("tile-sizes"))
+      genericOp->setAttr("tile-sizes", sumOp->getAttr("tile-sizes"));
+
     mlir::Value accumulation = genericOp.getResult(0);
 
     mlir::Value result = accumulation;
