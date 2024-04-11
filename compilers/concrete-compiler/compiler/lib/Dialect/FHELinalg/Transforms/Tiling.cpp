@@ -101,6 +101,7 @@ public:
       if (lres.succeeded()) {
         res.value().tileOp->setAttr(kTransformMarker, rewriter.getUnitAttr());
         res.value().tiledOp->setAttr(kTransformMarker, rewriter.getUnitAttr());
+        res.value().tiledOp->removeAttr("tile-sizes");
         rewriter.replaceOp(op.getOperation(), res.value().tileOp->getResults());
       }
 
@@ -141,6 +142,7 @@ public:
       if (lres.succeeded()) {
         res.value().parallelTiledOp->setAttr(kTransformMarker,
                                              rewriter.getUnitAttr());
+        res.value().parallelTiledOp->removeAttr("tile-sizes");
         res.value().mergeOp->setAttr(kTransformMarker, rewriter.getUnitAttr());
         res.value().initialOp->setAttr(kTransformMarker,
                                        rewriter.getUnitAttr());
