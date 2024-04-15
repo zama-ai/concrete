@@ -966,6 +966,14 @@ def issue650(x):
             {},
             id="issue-651",
         ),
+        pytest.param(
+            lambda x: x + (x // 3),
+            {
+                "x": {"range": [0, 2**14 - 1], "status": "encrypted", "shape": ()},
+            },
+            {},
+            id="x + (x // 3)",
+        ),
     ],
 )
 def test_others(function, parameters, configuration_overrides, helpers):

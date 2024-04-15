@@ -2882,18 +2882,28 @@ class Context:
             on = self.cast_to_original_bit_width(offsetted)
 
         elif on.bit_width > on.original_bit_width:
-            if on.is_unsigned:
-                tables = [table[: 2**on.original_bit_width] for table in tables]
-            else:
-                tables = [
-                    (
-                        table[: 2 ** (on.original_bit_width - 1)]
-                        + table[-(2 ** (on.original_bit_width - 1)) :]
-                    )
-                    for table in tables
-                ]
+            optimize = (
+                self.configuration.optimize_tlu_based_on_original_bit_width
+                if isinstance(self.configuration.optimize_tlu_based_on_original_bit_width, bool)
+                else (
+                    on.original_bit_width
+                    <= self.configuration.optimize_tlu_based_on_original_bit_width
+                )
+            )
 
-            on = self.cast_to_original_bit_width(on)
+            if optimize:
+                if on.is_unsigned:
+                    tables = [table[: 2**on.original_bit_width] for table in tables]
+                else:
+                    tables = [
+                        (
+                            table[: 2 ** (on.original_bit_width - 1)]
+                            + table[-(2 ** (on.original_bit_width - 1)) :]
+                        )
+                        for table in tables
+                    ]
+
+                on = self.cast_to_original_bit_width(on)
 
         on = self.broadcast_to(on, mapping.shape)
 
@@ -3633,16 +3643,26 @@ class Context:
             on = self.cast_to_original_bit_width(offsetted)
 
         elif on.bit_width > on.original_bit_width:
-            if len(table) != 2**on.original_bit_width:
-                if on.is_unsigned:
-                    table = table[: 2**on.original_bit_width]
-                else:
-                    table = (
-                        table[: 2 ** (on.original_bit_width - 1)]
-                        + table[-(2 ** (on.original_bit_width - 1)) :]  # type: ignore
-                    )
+            optimize = (
+                self.configuration.optimize_tlu_based_on_original_bit_width
+                if isinstance(self.configuration.optimize_tlu_based_on_original_bit_width, bool)
+                else (
+                    on.original_bit_width
+                    <= self.configuration.optimize_tlu_based_on_original_bit_width
+                )
+            )
 
-            on = self.cast_to_original_bit_width(on)
+            if optimize:
+                if len(table) != 2**on.original_bit_width:
+                    if on.is_unsigned:
+                        table = table[: 2**on.original_bit_width]
+                    else:
+                        table = (
+                            table[: 2 ** (on.original_bit_width - 1)]
+                            + table[-(2 ** (on.original_bit_width - 1)) :]  # type: ignore
+                        )
+
+                on = self.cast_to_original_bit_width(on)
 
         table = list(table)
 

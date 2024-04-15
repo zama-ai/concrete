@@ -135,6 +135,12 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
 * **print_tlu_fusing** : bool = False
   * Enables printing TLU fusing to see which table lookups are fused.
 * **compress\_evaluation\_keys**: bool = False,
-    - This specifies that serialization takes the compressed form of evaluation keys.
+  * This specifies that serialization takes the compressed form of evaluation keys.
 * **compress\_input\_ciphertexts**: bool = False,
-    * This specifies that serialization takes the compressed form of input ciphertexts.
+  * This specifies that serialization takes the compressed form of input ciphertexts.
+* **optimize\_tlu\_based\_on\_original\_bit\_width**: Union\[bool, int] = 8,
+  * Configures whether to convert values to their original precision before doing a table lookup on them.
+  * True enables it for all cases.
+  * False disables it for all cases.
+  * Integer value enables or disables it depending on the original bit width.
+  * With the default value of 8, only the values with original bit width <= 8 will be converted to their original precision.
