@@ -11,8 +11,8 @@
 
 * [Key value database](../application-tutorial/key_value_database.ipynb)
 * [SHA-256 ](../application-tutorial/sha256.ipynb)
-* [Game of Life](../../frontends/concrete-python/examples/game_of_life)
-* [XOR distance](../../frontends/concrete-python/examples/xor_distance)
+* [Game of Life](../../frontends/concrete-python/examples/game_of_life/game_of_life.md)
+* [XOR distance](../../frontends/concrete-python/examples/xor_distance/xor_distance.md)
 
 #### Blog tutorials
 
