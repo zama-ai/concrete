@@ -304,7 +304,7 @@ concretelang::clientlib::EvaluationKeys
 evaluationKeysUnserialize(const std::string &buffer) {
   auto serverKeysetProto = Message<concreteprotocol::ServerKeyset>();
   auto maybeError = serverKeysetProto.readBinaryFromString(
-      buffer, capnp::ReaderOptions{7000000000, 64});
+      buffer, mlir::concretelang::python::DESER_OPTIONS);
   if (maybeError.has_failure()) {
     throw std::runtime_error("Failed to deserialize server keyset." +
                              maybeError.as_failure().error().mesg);
@@ -329,7 +329,7 @@ std::unique_ptr<concretelang::clientlib::KeySet>
 keySetUnserialize(const std::string &buffer) {
   auto keysetProto = Message<concreteprotocol::Keyset>();
   auto maybeError = keysetProto.readBinaryFromString(
-      buffer, capnp::ReaderOptions{7000000000, 64});
+      buffer, mlir::concretelang::python::DESER_OPTIONS);
   if (maybeError.has_failure()) {
     throw std::runtime_error("Failed to deserialize keyset." +
                              maybeError.as_failure().error().mesg);
@@ -351,7 +351,10 @@ std::string keySetSerialize(concretelang::clientlib::KeySet &keySet) {
 concretelang::clientlib::SharedScalarOrTensorData
 valueUnserialize(const std::string &buffer) {
   auto inner = TransportValue();
-  if (inner.readBinaryFromString(buffer).has_failure()) {
+  if (inner
+          .readBinaryFromString(buffer,
+                                mlir::concretelang::python::DESER_OPTIONS)
+          .has_failure()) {
     throw std::runtime_error("Failed to deserialize Value");
   }
   return {inner};
