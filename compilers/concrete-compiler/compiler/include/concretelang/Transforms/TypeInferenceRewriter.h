@@ -125,8 +125,9 @@ protected:
 
     // Replace original function and remove suffix from the name of the new
     // function
+    std::string oldFuncName = func.getName().str();
     rewriter.replaceOp(func, newFunc->getResults());
-    newFunc.setName(func.getName());
+    newFunc.setName(oldFuncName);
 
     return mlir::success();
   }
