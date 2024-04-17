@@ -98,19 +98,19 @@ If one executes the [code](hamming_distance.py)
 for 120-bit vectors (of whatever shape), execution times should be:
 
 ```
-    dist_in_fhe_with_multivariate_tables on 2 bits:  0.07 secunds
-    dist_in_fhe_with_multivariate_tables on 1 bits:  0.09 secunds
-             dist_in_fhe_with_xor_tables on 2 bits:  0.09 secunds
-            dist_in_fhe_directly_from_cp on 2 bits:  0.10 secunds
-             dist_in_fhe_with_xor_tables on 1 bits:  0.11 secunds
-            dist_in_fhe_directly_from_cp on 1 bits:  0.12 secunds
-                dist_in_fhe_with_bits_1b on 1 bits:  0.15 secunds
-    dist_in_fhe_with_multivariate_tables on 3 bits:  0.27 secunds
-             dist_in_fhe_with_xor_tables on 3 bits:  0.29 secunds
-            dist_in_fhe_directly_from_cp on 3 bits:  0.31 secunds
-            dist_in_fhe_directly_from_cp on 4 bits:  1.17 secunds
-             dist_in_fhe_with_xor_tables on 4 bits:  2.18 secunds
-    dist_in_fhe_with_multivariate_tables on 4 bits:  2.24 secunds
+    dist_in_fhe_with_multivariate_tables on 2 bits:  0.07 seconds
+    dist_in_fhe_with_multivariate_tables on 1 bits:  0.09 seconds
+             dist_in_fhe_with_xor_tables on 2 bits:  0.09 seconds
+            dist_in_fhe_directly_from_cp on 2 bits:  0.10 seconds
+             dist_in_fhe_with_xor_tables on 1 bits:  0.11 seconds
+            dist_in_fhe_directly_from_cp on 1 bits:  0.12 seconds
+                dist_in_fhe_with_bits_1b on 1 bits:  0.15 seconds
+    dist_in_fhe_with_multivariate_tables on 3 bits:  0.27 seconds
+             dist_in_fhe_with_xor_tables on 3 bits:  0.29 seconds
+            dist_in_fhe_directly_from_cp on 3 bits:  0.31 seconds
+            dist_in_fhe_directly_from_cp on 4 bits:  1.17 seconds
+             dist_in_fhe_with_xor_tables on 4 bits:  2.18 seconds
+    dist_in_fhe_with_multivariate_tables on 4 bits:  2.24 seconds
 
 ```
 
@@ -118,36 +118,36 @@ For 1200-bit vectors (obtained with `python hamming_distance.py --nb_bits 1200`)
 should be:
 
 ```
-    dist_in_fhe_with_multivariate_tables on 2 bits:  0.22 secunds
-             dist_in_fhe_with_xor_tables on 2 bits:  0.29 secunds
-            dist_in_fhe_directly_from_cp on 2 bits:  0.32 secunds
-            dist_in_fhe_directly_from_cp on 1 bits:  0.36 secunds
-             dist_in_fhe_with_xor_tables on 1 bits:  0.39 secunds
-                dist_in_fhe_with_bits_1b on 1 bits:  0.44 secunds
-    dist_in_fhe_with_multivariate_tables on 1 bits:  0.48 secunds
-            dist_in_fhe_directly_from_cp on 3 bits:  0.73 secunds
-    dist_in_fhe_with_multivariate_tables on 3 bits:  0.85 secunds
-             dist_in_fhe_with_xor_tables on 3 bits:  1.14 secunds
-            dist_in_fhe_directly_from_cp on 4 bits:  5.99 secunds
-    dist_in_fhe_with_multivariate_tables on 4 bits:  7.17 secunds
-             dist_in_fhe_with_xor_tables on 4 bits:  8.20 secunds
+    dist_in_fhe_with_multivariate_tables on 2 bits:  0.22 seconds
+             dist_in_fhe_with_xor_tables on 2 bits:  0.29 seconds
+            dist_in_fhe_directly_from_cp on 2 bits:  0.32 seconds
+            dist_in_fhe_directly_from_cp on 1 bits:  0.36 seconds
+             dist_in_fhe_with_xor_tables on 1 bits:  0.39 seconds
+                dist_in_fhe_with_bits_1b on 1 bits:  0.44 seconds
+    dist_in_fhe_with_multivariate_tables on 1 bits:  0.48 seconds
+            dist_in_fhe_directly_from_cp on 3 bits:  0.73 seconds
+    dist_in_fhe_with_multivariate_tables on 3 bits:  0.85 seconds
+             dist_in_fhe_with_xor_tables on 3 bits:  1.14 seconds
+            dist_in_fhe_directly_from_cp on 4 bits:  5.99 seconds
+    dist_in_fhe_with_multivariate_tables on 4 bits:  7.17 seconds
+             dist_in_fhe_with_xor_tables on 4 bits:  8.20 seconds
 ```
 
 And finally, for 12804-bit vectors, execution times should be:
 
 ```
-             dist_in_fhe_with_xor_tables on 2 bits:  2.53 secunds
-    dist_in_fhe_with_multivariate_tables on 2 bits:  2.66 secunds
-            dist_in_fhe_directly_from_cp on 2 bits:  3.64 secunds
-            dist_in_fhe_directly_from_cp on 1 bits:  4.25 secunds
-                dist_in_fhe_with_bits_1b on 1 bits:  4.40 secunds
-             dist_in_fhe_with_xor_tables on 1 bits:  4.53 secunds
-    dist_in_fhe_with_multivariate_tables on 1 bits:  4.71 secunds
-            dist_in_fhe_directly_from_cp on 3 bits:  6.76 secunds
-    dist_in_fhe_with_multivariate_tables on 3 bits:  7.93 secunds
-             dist_in_fhe_with_xor_tables on 3 bits:  8.43 secunds
-            dist_in_fhe_directly_from_cp on 4 bits: 23.72 secunds
-             dist_in_fhe_with_xor_tables on 4 bits: 39.27 secunds
-    dist_in_fhe_with_multivariate_tables on 4 bits: 40.89 secunds
+             dist_in_fhe_with_xor_tables on 2 bits:  2.53 seconds
+    dist_in_fhe_with_multivariate_tables on 2 bits:  2.66 seconds
+            dist_in_fhe_directly_from_cp on 2 bits:  3.64 seconds
+            dist_in_fhe_directly_from_cp on 1 bits:  4.25 seconds
+                dist_in_fhe_with_bits_1b on 1 bits:  4.40 seconds
+             dist_in_fhe_with_xor_tables on 1 bits:  4.53 seconds
+    dist_in_fhe_with_multivariate_tables on 1 bits:  4.71 seconds
+            dist_in_fhe_directly_from_cp on 3 bits:  6.76 seconds
+    dist_in_fhe_with_multivariate_tables on 3 bits:  7.93 seconds
+             dist_in_fhe_with_xor_tables on 3 bits:  8.43 seconds
+            dist_in_fhe_directly_from_cp on 4 bits: 23.72 seconds
+             dist_in_fhe_with_xor_tables on 4 bits: 39.27 seconds
+    dist_in_fhe_with_multivariate_tables on 4 bits: 40.89 seconds
 ```
 
