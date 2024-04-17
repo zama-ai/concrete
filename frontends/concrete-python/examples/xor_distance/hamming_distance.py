@@ -219,7 +219,7 @@ def main():
     sorted_execution_times = sorted(execution_times.items(), key=lambda x: x[1])
 
     for algo, average_time in sorted_execution_times:
-        print(f"{algo:>50s}: {average_time:5.2f} secunds")
+        print(f"{algo:>50s}: {average_time:5.2f} seconds")
 
     print()
 
