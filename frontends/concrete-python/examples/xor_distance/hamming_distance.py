@@ -9,8 +9,10 @@ from concrete import fhe
 # Hamming weight computation
 def hw(x):
     # Hamming Weight table for 8b entries
+    hw_table_ref = [np.binary_repr(x).count("1") for x in range(2**8)]
+
     # fmt: off
-    hw_table_ref = [
+    assert np.array_equal(hw_table_ref, [
         0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3,
         4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4,
         4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2,
@@ -20,7 +22,7 @@ def hw(x):
         3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5,
         6, 6, 7, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6,
         4, 5, 5, 6, 5, 6, 6, 7, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5,
-        6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8]
+        6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8])
     # fmt: on
 
     hw_table = fhe.LookupTable(hw_table_ref)
