@@ -29,7 +29,7 @@ impl Feasible {
     pub fn pbs_max_feasible_variance(
         &self,
         operations_variance: &OperationsValue,
-        partition: usize,
+        partition: PartitionIndex,
     ) -> f64 {
         let pbs_index = operations_variance.index.pbs(partition);
         let actual_pbs_variance = operations_variance.values[pbs_index];
@@ -52,8 +52,8 @@ impl Feasible {
     pub fn ks_max_feasible_variance(
         &self,
         operations_variance: &OperationsValue,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
     ) -> f64 {
         let ks_index = operations_variance
             .index
@@ -81,8 +81,8 @@ impl Feasible {
     pub fn fks_max_feasible_variance(
         &self,
         operations_variance: &OperationsValue,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
     ) -> f64 {
         let fks_index = operations_variance
             .index
@@ -195,7 +195,7 @@ impl Feasible {
             .iter()
             .filter(|constraint| {
                 constraint.partition == partition
-                    || (0..nb_partitions).any(|i| touch_any_ks(constraint, i))
+                    || PartitionIndex::range(0, nb_partitions).any(|i| touch_any_ks(constraint, i))
             })
             .cloned()
             .collect();

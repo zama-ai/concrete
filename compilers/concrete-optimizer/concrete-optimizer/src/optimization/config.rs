@@ -18,7 +18,6 @@ pub struct Config<'a> {
     pub ciphertext_modulus_log: u32,
     pub fft_precision: u32,
     pub complexity_model: &'a dyn ComplexityModel,
-    pub composable: bool,
 }
 
 #[derive(Clone, Debug)]

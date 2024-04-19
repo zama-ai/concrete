@@ -1,6 +1,6 @@
 use super::symbolic_variance::{SymbolicVariance, VarianceOrigin};
 use crate::dag::operator::{
-    dot_kind, LevelledComplexity, Operator, OperatorIndex, Precision, Shape,
+    DotKind, LevelledComplexity, Operator, OperatorIndex, Precision, Shape,
 };
 use crate::dag::rewrite::round::expand_round;
 use crate::dag::unparametrized::Dag;
@@ -8,7 +8,6 @@ use crate::noise_estimator::error;
 use crate::noise_estimator::p_error::{combine_errors, repeat_p_error};
 use crate::optimization::config::NoiseBoundConfig;
 use crate::utils::square;
-use dot_kind::DotKind;
 use std::collections::{HashMap, HashSet};
 
 pub fn first<'a, Property>(inputs: &[OperatorIndex], properties: &'a [Property]) -> &'a Property {
@@ -140,7 +139,7 @@ pub struct VariancesAndBound {
 
 fn out_variance(
     op: &Operator,
-    out_shapes: &[Shape],
+    _out_shapes: &[Shape],
     out_variances: &[SymbolicVariance],
 ) -> SymbolicVariance {
     // Maintain a linear combination of input_variance and lut_out_variance
@@ -158,28 +157,37 @@ fn out_variance(
             origin * variance_factor
         }
         Operator::Dot {
-            inputs, weights, ..
-        } => {
-            let input_shape = first(inputs, out_shapes);
-            let kind = dot_kind(inputs.len() as u64, input_shape, weights);
-            match kind {
-                DotKind::Simple | DotKind::Tensor | DotKind::Broadcast { .. } => {
-                    let first_input = inputs[0];
-                    let mut out_variance = SymbolicVariance::ZERO;
-                    for (j, &weight) in weights.values.iter().enumerate() {
-                        let k = if inputs.len() > 1 {
-                            inputs[j].0
-                        } else {
-                            first_input.0
-                        };
-                        out_variance += out_variances[k] * square(weight as f64);
-                    }
-                    out_variance
-                }
-                DotKind::CompatibleTensor { .. } => todo!("TODO"),
-                DotKind::Unsupported { .. } => panic!("Unsupported"),
-            }
+            kind: DotKind::CompatibleTensor { .. },
+            ..
+        } => todo!("TODO"),
+        Operator::Dot {
+            kind: DotKind::Unsupported { .. },
+            ..
+        } => panic!("Unsupported"),
+        Operator::Dot {
+            inputs,
+            weights,
+            kind: DotKind::Simple | DotKind::Tensor | DotKind::Broadcast { .. },
+        } if inputs.len() == 1 => {
+            let var = out_variances[inputs.iter().next().unwrap().0];
+            weights
+                .values
+                .iter()
+                .fold(SymbolicVariance::ZERO, |acc, weight| {
+                    acc + var * square(*weight as f64)
+                })
         }
+        Operator::Dot {
+            inputs,
+            weights,
+            kind: DotKind::Simple | DotKind::Tensor | DotKind::Broadcast { .. },
+        } => weights
+            .values
+            .iter()
+            .zip(inputs.iter().map(|n| out_variances[n.0]))
+            .fold(SymbolicVariance::ZERO, |acc, (weight, var)| {
+                acc + var * square(*weight as f64)
+            }),
         Operator::UnsafeCast { input, .. } => out_variances[input.0],
         Operator::Round { .. } => {
             unreachable!("Round should have been either expanded or integrated to a lut")
@@ -230,20 +238,15 @@ fn in_luts_variance(
 fn op_levelled_complexity(op: &Operator, out_shapes: &[Shape]) -> LevelledComplexity {
     match op {
         Operator::Dot {
-            inputs, weights, ..
-        } => {
-            let input_shape = first(inputs, out_shapes);
-            let kind = dot_kind(inputs.len() as u64, input_shape, weights);
-            match kind {
-                DotKind::Simple
-                | DotKind::Tensor
-                | DotKind::Broadcast { .. }
-                | DotKind::CompatibleTensor => {
-                    LevelledComplexity::ADDITION * (inputs.len() as u64) * input_shape.flat_size()
-                }
-                DotKind::Unsupported { .. } => panic!("Unsupported"),
-            }
+            kind: DotKind::Unsupported,
+            ..
+        } => panic!("Unsupported"),
+        Operator::Dot { inputs, .. } => {
+            LevelledComplexity::ADDITION
+                * (inputs.len() as u64)
+                * out_shapes[inputs[0].0].flat_size()
         }
+
         Operator::LevelledOp { complexity, .. } => *complexity,
         Operator::Input { .. } | Operator::Lut { .. } | Operator::UnsafeCast { .. } => {
             LevelledComplexity::ZERO

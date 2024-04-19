@@ -68,9 +68,9 @@ struct OperationsCV {
     cost: OperationsValue,
 }
 
-type KsSrc = usize;
-type KsDst = usize;
-type FksSrc = usize;
+type KsSrc = PartitionIndex;
+type KsDst = PartitionIndex;
+type FksSrc = PartitionIndex;
 
 #[inline(never)]
 fn optimize_1_ks(
@@ -124,7 +124,8 @@ fn optimize_many_independant_ks(
     let mut operations = operations.clone();
     let mut ks_bests = Vec::with_capacity(macro_parameters.len());
     for (ks_dst, macro_dst) in macro_parameters.iter().enumerate() {
-        if !ks_used[ks_src][ks_dst] {
+        let ks_dst = PartitionIndex(ks_dst);
+        if !ks_used[ks_src.0][ks_dst.0] {
             continue;
         }
         let output_dim = macro_dst.internal_dim;
@@ -153,8 +154,8 @@ struct Best1FksAndManyKs {
 fn optimize_1_fks_and_all_compatible_ks(
     macro_parameters: &[MacroParameters],
     ks_used: &[Vec<bool>],
-    fks_src: usize,
-    fks_dst: usize,
+    fks_src: PartitionIndex,
+    fks_dst: PartitionIndex,
     operations: &OperationsCV,
     feasible: &Feasible,
     complexity: &Complexity,
@@ -164,15 +165,15 @@ fn optimize_1_fks_and_all_compatible_ks(
     fft_precision: u32,
 ) -> Option<(Best1FksAndManyKs, OperationsCV)> {
     // At this point every thing else is known apart fks and ks
-    let input_glwe = macro_parameters[fks_src].glwe_params;
-    let output_glwe = macro_parameters[fks_dst].glwe_params;
+    let input_glwe = macro_parameters[fks_src.0].glwe_params;
+    let output_glwe = macro_parameters[fks_dst.0].glwe_params;
     let output_lwe_dim = output_glwe.sample_extract_lwe_dimension();
     // OPT: have a separate cache for fks
     let ks_pareto = caches.pareto_quantities(output_lwe_dim).to_owned();
     // TODO: fast ks in the other direction as well
     let use_fast_ks = REAL_FAST_KS && input_glwe.sample_extract_lwe_dimension() >= output_lwe_dim;
     let ks_src = fks_dst;
-    let ks_input_dim = macro_parameters[fks_dst]
+    let ks_input_dim = macro_parameters[fks_dst.0]
         .glwe_params
         .sample_extract_lwe_dimension();
     let mut operations = operations.clone();
@@ -296,7 +297,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
                 macro_parameters,
                 ks_used,
                 *fks_src,
-                fks_dst,
+                PartitionIndex(fks_dst),
                 &acc_operations,
                 feasible,
                 complexity,
@@ -311,7 +312,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
             // There is no fks to optimize
             let (many_ks, operations) = optimize_many_independant_ks(
                 macro_parameters,
-                ks_src,
+                PartitionIndex(ks_src),
                 ks_input_lwe_dim,
                 ks_used,
                 &acc_operations,
@@ -408,10 +409,10 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     let mut ks = vec![vec![None; nb_partitions]; nb_partitions];
     for (fks_dst, one_best_fks_ks) in best_fks_ks.iter().enumerate() {
         if let Some((fks_src, sol_fks)) = one_best_fks_ks.fks {
-            fks[fks_src][fks_dst] = Some(sol_fks);
+            fks[fks_src.0][fks_dst] = Some(sol_fks);
         }
         for (ks_dst, sol_ks) in &one_best_fks_ks.many_ks {
-            ks[fks_dst][*ks_dst] = Some(*sol_ks);
+            ks[fks_dst][ks_dst.0] = Some(*sol_ks);
         }
     }
     Some(PartialMicroParameters {
@@ -432,11 +433,11 @@ fn apply_all_ks_lower_bound(
     operations: &mut OperationsCV,
 ) {
     for (src, dst) in cross_partition(nb_partitions) {
-        if !used_tlu_keyswitch[src][dst] {
+        if !used_tlu_keyswitch[src.0][dst.0] {
             continue;
         }
-        let in_glwe_params = macro_parameters[src].glwe_params;
-        let out_internal_dim = macro_parameters[dst].internal_dim;
+        let in_glwe_params = macro_parameters[src.0].glwe_params;
+        let out_internal_dim = macro_parameters[dst.0].internal_dim;
         let ks_pareto = caches.pareto_quantities(out_internal_dim);
         let in_lwe_dim = in_glwe_params.sample_extract_lwe_dimension();
         *operations.variance.ks(src, dst) = keyswitch::lowest_noise_ks(ks_pareto, in_lwe_dim);
@@ -456,11 +457,11 @@ fn apply_fks_variance_and_cost_or_lower_bound(
     fft_precision: u32,
 ) {
     for (src, dst) in cross_partition(nb_partitions) {
-        if !used_conversion_keyswitch[src][dst] {
+        if !used_conversion_keyswitch[src.0][dst.0] {
             continue;
         }
-        let input_glwe = &macro_parameters[src].glwe_params;
-        let output_glwe = &macro_parameters[dst].glwe_params;
+        let input_glwe = &macro_parameters[src.0].glwe_params;
+        let output_glwe = &macro_parameters[dst.0].glwe_params;
         if input_glwe == output_glwe {
             *operations.variance.fks(src, dst) = 0.0;
             *operations.cost.fks(src, dst) = 0.0;
@@ -468,8 +469,8 @@ fn apply_fks_variance_and_cost_or_lower_bound(
         }
         // if an optimized fks is applicable and is not to be optimized
         // we use the already optimized fks instead of a lower bound
-        if let Some(fks) = initial_fks[src][dst] {
-            let to_be_optimized = fks_to_optimize[src].map_or(false, |fdst| dst == fdst);
+        if let Some(fks) = initial_fks[src.0][dst.0] {
+            let to_be_optimized = fks_to_optimize[src.0].map_or(false, |fdst| dst == fdst);
             if !to_be_optimized {
                 if input_glwe == &fks.src_glwe_param && output_glwe == &fks.dst_glwe_param {
                     *operations.variance.fks(src, dst) = fks.noise;
@@ -519,17 +520,17 @@ fn apply_partitions_input_and_modulus_variance_and_cost(
     variance_modulus_switching: f64,
     operations: &mut OperationsCV,
 ) {
-    for i in 0..nb_partitions {
+    for i in PartitionIndex::range(0, nb_partitions) {
         let (input_variance, variance_modulus_switching) =
-            if macro_parameters[i] == macro_parameters[partition] {
+            if macro_parameters[i.0] == macro_parameters[partition.0] {
                 (input_variance, variance_modulus_switching)
             } else {
-                let input_variance = macro_parameters[i]
+                let input_variance = macro_parameters[i.0]
                     .glwe_params
                     .minimal_variance(ciphertext_modulus_log, security_level);
                 let variance_modulus_switching = estimate_modulus_switching_noise_with_binary_key(
-                    macro_parameters[i].internal_dim,
-                    macro_parameters[i].glwe_params.log2_polynomial_size,
+                    macro_parameters[i.0].internal_dim,
+                    macro_parameters[i.0].glwe_params.log2_polynomial_size,
                     ciphertext_modulus_log,
                 );
                 (input_variance, variance_modulus_switching)
@@ -548,15 +549,16 @@ fn apply_pbs_variance_and_cost_or_lower_bounds(
 ) {
     // setting already chosen pbs and lower bounds
     for (i, pbs) in initial_pbs.iter().enumerate() {
+        let i = PartitionIndex(i);
         let pbs = if i == partition { &None } else { pbs };
         if let Some(pbs) = pbs {
-            let internal_dim = macro_parameters[i].internal_dim;
+            let internal_dim = macro_parameters[i.0].internal_dim;
             *operations.variance.pbs(i) = pbs.noise_br(internal_dim);
             *operations.cost.pbs(i) = pbs.complexity_br(internal_dim);
         } else {
             // OPT: Most values could be shared on first optimize_macro
-            let in_internal_dim = macro_parameters[i].internal_dim;
-            let out_glwe_params = macro_parameters[i].glwe_params;
+            let in_internal_dim = macro_parameters[i.0].internal_dim;
+            let out_glwe_params = macro_parameters[i.0].glwe_params;
             let variance_min =
                 cmux::lowest_noise_br(caches.pareto_quantities(out_glwe_params), in_internal_dim);
             *operations.variance.pbs(i) = variance_min;
@@ -576,28 +578,28 @@ fn fks_to_optimize(
     // When fks is unused a None is used to keep the same loop structure.
     let mut fks_paretos: Vec<Option<_>> = vec![];
     fks_paretos.reserve_exact(nb_partitions);
-    for fks_dst in 0..nb_partitions {
+    for fks_dst in PartitionIndex::range(0, nb_partitions) {
         // find the i-th valid fks_src
-        let fks_src = if used_conversion_keyswitch[optimized_partition][fks_dst] {
+        let fks_src = if used_conversion_keyswitch[optimized_partition.0][fks_dst.0] {
             Some(optimized_partition)
         } else {
             let mut count_used: usize = 0;
             let mut fks_src = None;
             #[allow(clippy::needless_range_loop)]
-            for src in 0..nb_partitions {
-                let used = used_conversion_keyswitch[src][fks_dst];
-                if used && count_used == optimized_partition {
+            for src in PartitionIndex::range(0, nb_partitions) {
+                let used = used_conversion_keyswitch[src.0][fks_dst.0];
+                if used && count_used == optimized_partition.0 {
                     fks_src = Some(src);
                     break;
                 }
                 count_used += used as usize;
             }
             if fks_src.is_none() && count_used > 0 {
-                let n_th = optimized_partition % count_used;
+                let n_th = optimized_partition.0 % count_used;
                 count_used = 0;
                 #[allow(clippy::needless_range_loop)]
-                for src in 0..nb_partitions {
-                    let used = used_conversion_keyswitch[src][fks_dst];
+                for src in PartitionIndex::range(0, nb_partitions) {
+                    let used = used_conversion_keyswitch[src.0][fks_dst.0];
                     if used && count_used == n_th {
                         fks_src = Some(src);
                         break;
@@ -632,7 +634,7 @@ fn optimize_macro(
     best_p_error: f64,
 ) -> Parameters {
     let nb_partitions = init_parameters.macro_params.len();
-    assert!(partition < nb_partitions);
+    assert!(partition.0 < nb_partitions);
 
     let variance_modulus_switching_of = |glwe_log2_poly_size, internal_lwe_dimensions| {
         estimate_modulus_switching_noise_with_binary_key(
@@ -686,12 +688,12 @@ fn optimize_macro(
             };
 
             // Heuristic to fill missing macro parameters
-            let macros: Vec<_> = (0..nb_partitions)
+            let macros: Vec<_> = PartitionIndex::range(0, nb_partitions)
                 .map(|i| {
                     if i == partition {
                         macro_param_partition
                     } else {
-                        init_parameters.macro_params[i].unwrap_or(macro_param_partition)
+                        init_parameters.macro_params[i.0].unwrap_or(macro_param_partition)
                     }
                 })
                 .collect();
@@ -765,7 +767,7 @@ fn optimize_macro(
                 // here we optimize for feasibility only
                 // if nothing is feasible, it will give improves feasability for later iterations
                 let mut macro_params = init_parameters.macro_params.clone();
-                macro_params[partition] = Some(MacroParameters {
+                macro_params[partition.0] = Some(MacroParameters {
                     glwe_params,
                     internal_dim,
                 });
@@ -781,7 +783,7 @@ fn optimize_macro(
                 let p_error = feasible.p_error(&operations.variance);
                 let global_p_error = feasible.global_p_error(&operations.variance);
                 let mut pbs = init_parameters.micro_params.pbs.clone();
-                pbs[partition] = Some(cmux_params);
+                pbs[partition.0] = Some(cmux_params);
                 let micro_params = MicroParameters {
                     pbs,
                     ks: vec![vec![None; nb_partitions]; nb_partitions],
@@ -825,35 +827,36 @@ fn optimize_macro(
                 // optimize_micro has already checked for best-ness
                 lb_message = None;
                 let mut macro_params = init_parameters.macro_params.clone();
-                macro_params[partition] = Some(macro_param_partition);
+                macro_params[partition.0] = Some(macro_param_partition);
                 let mut is_lower_bound = macro_params.iter().any(Option::is_none);
                 if is_lower_bound {
                     lb_message = Some("is_lower_bound due to missing macro parameter");
                 }
                 // copy back pbs from other partition
                 let mut all_pbs = init_parameters.micro_params.pbs.clone();
-                all_pbs[partition] = Some(some_micro_params.pbs);
+                all_pbs[partition.0] = Some(some_micro_params.pbs);
                 let mut all_fks = init_parameters.micro_params.fks.clone();
                 for (dst_partition, maybe_fks) in fks_to_optimize.iter().enumerate() {
+                    let dst_partition = PartitionIndex(dst_partition);
                     if let &Some(src_partition) = maybe_fks {
-                        all_fks[src_partition][dst_partition] =
-                            some_micro_params.fks[src_partition][dst_partition];
-                        assert!(used_conversion_keyswitch[src_partition][dst_partition]);
-                        assert!(all_fks[src_partition][dst_partition].is_some());
+                        all_fks[src_partition.0][dst_partition.0] =
+                            some_micro_params.fks[src_partition.0][dst_partition.0];
+                        assert!(used_conversion_keyswitch[src_partition.0][dst_partition.0]);
+                        assert!(all_fks[src_partition.0][dst_partition.0].is_some());
                     }
                 }
                 // As all fks cannot be re-optimized in some case, we need to check previous ones are still valid.
                 for (src_partition, dst_partition) in cross_partition(nb_partitions) {
-                    if !used_conversion_keyswitch[src_partition][dst_partition] {
+                    if !used_conversion_keyswitch[src_partition.0][dst_partition.0] {
                         continue;
                     }
-                    let fks = &all_fks[src_partition][dst_partition];
+                    let fks = &all_fks[src_partition.0][dst_partition.0];
                     if !is_lower_bound && fks.is_none() {
                         lb_message = Some("is_lower_bound due to missing fast keyswitch parameter");
                         is_lower_bound = true;
                     }
-                    let src_glwe_param = macro_params[src_partition].map(|p| p.glwe_params);
-                    let dst_glwe_param = macro_params[dst_partition].map(|p| p.glwe_params);
+                    let src_glwe_param = macro_params[src_partition.0].map(|p| p.glwe_params);
+                    let dst_glwe_param = macro_params[dst_partition.0].map(|p| p.glwe_params);
                     let src_glwe_param_stable = src_glwe_param == fks.map(|p| p.src_glwe_param);
                     let dst_glwe_param_stable = dst_glwe_param == fks.map(|p| p.dst_glwe_param);
                     if src_glwe_param_stable && dst_glwe_param_stable {
@@ -862,7 +865,7 @@ fn optimize_macro(
                     if !is_lower_bound {
                         lb_message = Some("is_lower_bound due to changing others fks macro param");
                     }
-                    all_fks[src_partition][dst_partition] = None;
+                    all_fks[src_partition.0][dst_partition.0] = None;
                     is_lower_bound = true;
                 }
                 let micro_params = MicroParameters {
@@ -894,8 +897,9 @@ fn optimize_macro(
     best_parameters
 }
 
-fn cross_partition(nb_partitions: usize) -> impl Iterator<Item = (usize, usize)> {
-    (0..nb_partitions).flat_map(move |a: usize| (0..nb_partitions).map(move |b: usize| (a, b)))
+fn cross_partition(nb_partitions: usize) -> impl Iterator<Item = (PartitionIndex, PartitionIndex)> {
+    PartitionIndex::range(0, nb_partitions)
+        .flat_map(move |a| PartitionIndex::range(0, nb_partitions).map(move |b| (a, b)))
 }
 
 #[allow(clippy::too_many_lines, clippy::missing_errors_doc)]
@@ -910,14 +914,13 @@ pub fn optimize(
     let ciphertext_modulus_log = config.ciphertext_modulus_log;
     let fft_precision = config.fft_precision;
     let security_level = config.security_level;
-    let composable = config.composable;
     let noise_config = NoiseBoundConfig {
         security_level,
         maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
         ciphertext_modulus_log,
     };
 
-    let dag = analyze(dag, &noise_config, p_cut, default_partition, composable)?;
+    let dag = analyze(dag, &noise_config, p_cut, default_partition)?;
     let kappa =
         error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
@@ -950,7 +953,7 @@ pub fn optimize(
     let mut fix_point = params.clone();
     let mut best_params: Option<Parameters> = None;
     for iter in 0..=10 {
-        for partition in (0..nb_partitions).rev() {
+        for partition in PartitionIndex::range(0, nb_partitions).rev() {
             let new_params = optimize_macro(
                 security_level,
                 ciphertext_modulus_log,
@@ -1045,7 +1048,7 @@ fn used_tlu_keyswitch(dag: &AnalyzedDag) -> Vec<Vec<bool>> {
                 .coeff_keyswitch_to_small(src_partition, dst_partition)
                 != 0.0
             {
-                result[src_partition][dst_partition] = true;
+                result[src_partition.0][dst_partition.0] = true;
                 break;
             }
         }
@@ -1062,7 +1065,7 @@ fn used_conversion_keyswitch(dag: &AnalyzedDag) -> Vec<Vec<bool>> {
                 .coeff_partition_keyswitch_to_big(src_partition, dst_partition)
                 != 0.0
             {
-                result[src_partition][dst_partition] = true;
+                result[src_partition.0][dst_partition.0] = true;
                 break;
             }
         }
@@ -1091,8 +1094,8 @@ fn sanity_check(
         cost: complexity.zero_cost(),
     };
     let micro_params = &params.micro_params;
-    for partition in 0..nb_partitions {
-        let partition_macro = params.macro_params[partition].unwrap();
+    for partition in PartitionIndex::range(0, nb_partitions) {
+        let partition_macro = params.macro_params[partition.0].unwrap();
         let glwe_param = partition_macro.glwe_params;
         let internal_dim = partition_macro.internal_dim;
         let input_variance = glwe_param.minimal_variance(ciphertext_modulus_log, security_level);
@@ -1103,42 +1106,42 @@ fn sanity_check(
         );
         *operations.variance.input(partition) = input_variance;
         *operations.variance.modulus_switching(partition) = variance_modulus_switching;
-        if let Some(pbs) = micro_params.pbs[partition] {
+        if let Some(pbs) = micro_params.pbs[partition.0] {
             *operations.variance.pbs(partition) = pbs.noise_br(internal_dim);
             *operations.cost.pbs(partition) = pbs.complexity_br(internal_dim);
         } else {
             *operations.variance.pbs(partition) = f64::MAX;
             *operations.cost.pbs(partition) = f64::MAX;
         }
-        for src_partition in 0..nb_partitions {
-            let src_partition_macro = params.macro_params[src_partition].unwrap();
+        for src_partition in PartitionIndex::range(0, nb_partitions) {
+            let src_partition_macro = params.macro_params[src_partition.0].unwrap();
             let src_glwe_param = src_partition_macro.glwe_params;
             let src_lwe_dim = src_glwe_param.sample_extract_lwe_dimension();
-            if let Some(ks) = micro_params.ks[src_partition][partition] {
+            if let Some(ks) = micro_params.ks[src_partition.0][partition.0] {
                 assert!(
-                    used_tlu_keyswitch[src_partition][partition],
+                    used_tlu_keyswitch[src_partition.0][partition.0],
                     "Superflous ks[{src_partition}->{partition}]"
                 );
                 *operations.variance.ks(src_partition, partition) = ks.noise(src_lwe_dim);
                 *operations.cost.ks(src_partition, partition) = ks.complexity(src_lwe_dim);
             } else {
                 assert!(
-                    !used_tlu_keyswitch[src_partition][partition],
+                    !used_tlu_keyswitch[src_partition.0][partition.0],
                     "Missing ks[{src_partition}->{partition}]"
                 );
                 *operations.variance.ks(src_partition, partition) = f64::MAX;
                 *operations.cost.ks(src_partition, partition) = f64::MAX;
             }
-            if let Some(fks) = micro_params.fks[src_partition][partition] {
+            if let Some(fks) = micro_params.fks[src_partition.0][partition.0] {
                 assert!(
-                    used_conversion_keyswitch[src_partition][partition],
+                    used_conversion_keyswitch[src_partition.0][partition.0],
                     "Superflous fks[{src_partition}->{partition}]"
                 );
                 *operations.variance.fks(src_partition, partition) = fks.noise;
                 *operations.cost.fks(src_partition, partition) = fks.complexity;
             } else {
                 assert!(
-                    !used_conversion_keyswitch[src_partition][partition],
+                    !used_conversion_keyswitch[src_partition.0][partition.0],
                     "Missing fks[{src_partition}->{partition}]"
                 );
                 *operations.variance.fks(src_partition, partition) = f64::MAX;
@@ -1164,7 +1167,7 @@ pub fn optimize_to_circuit_solution(
 ) -> keys_spec::CircuitSolution {
     if lut_count_from_dag(dag) == 0 {
         // If there are no lut in the dag the noise is never refresh so the dag cannot be composable
-        if config.composable {
+        if dag.is_composed() {
             return keys_spec::CircuitSolution::no_solution(
                 NotComposable("No luts in the circuit.".into()).to_string(),
             );
@@ -1176,7 +1179,7 @@ pub fn optimize_to_circuit_solution(
         }
         return keys_spec::CircuitSolution::no_solution(NoParametersFound.to_string());
     }
-    let default_partition = 0;
+    let default_partition = PartitionIndex::FIRST;
     let dag_and_params = optimize(
         dag,
         config,

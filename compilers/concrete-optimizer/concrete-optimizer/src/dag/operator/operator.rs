@@ -4,6 +4,8 @@ use std::ops::Deref;
 
 use crate::dag::operator::tensor::{ClearTensor, Shape};
 
+use super::DotKind;
+
 pub type Weights = ClearTensor<i64>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -82,6 +84,7 @@ pub enum Operator {
     Dot {
         inputs: Vec<OperatorIndex>,
         weights: Weights,
+        kind: DotKind,
     },
     LevelledOp {
         inputs: Vec<OperatorIndex>,
@@ -116,7 +119,7 @@ impl Operator {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct OperatorIndex(pub usize);
 
 impl Deref for OperatorIndex {
@@ -143,7 +146,9 @@ impl fmt::Display for Operator {
             } => {
                 write!(f, "Input : u{out_precision} x {out_shape:?}")?;
             }
-            Self::Dot { inputs, weights } => {
+            Self::Dot {
+                inputs, weights, ..
+            } => {
                 for (i, (input, weight)) in inputs.iter().zip(weights.values.iter()).enumerate() {
                     if i > 0 {
                         write!(f, " + ")?;

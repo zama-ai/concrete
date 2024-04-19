@@ -134,7 +134,10 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
   if (pm.run(module.getOperation()).failed()) {
     return StreamStringError() << "Failed to create concrete-optimizer dag\n";
   }
+  optimizer::applyCompositionRules(config, *dag);
+
   std::optional<optimizer::Description> description;
+
   if (!constraint) {
     description = std::nullopt;
   } else {

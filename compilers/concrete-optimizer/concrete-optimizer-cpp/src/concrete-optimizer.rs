@@ -59,7 +59,6 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
         ciphertext_modulus_log: options.ciphertext_modulus_log,
         fft_precision: options.fft_precision,
         complexity_model: &CpuComplexity::default(),
-        composable: options.composable,
     };
 
     let sum_size = 1;
@@ -489,6 +488,20 @@ impl Dag {
         self.0.viz_string()
     }
 
+    fn get_input_indices(&self) -> Vec<ffi::OperatorIndex> {
+        self.0
+            .get_input_operators_iter()
+            .map(|n| ffi::OperatorIndex { index: n.id.0 })
+            .collect()
+    }
+
+    fn get_output_indices(&self) -> Vec<ffi::OperatorIndex> {
+        self.0
+            .get_output_operators_iter()
+            .map(|n| ffi::OperatorIndex { index: n.id.0 })
+            .collect()
+    }
+
     fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
         let processing_unit = processing_unit(options);
         let config = Config {
@@ -498,13 +511,12 @@ impl Dag {
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
-            composable: options.composable,
         };
 
         let search_space = SearchSpace::default(processing_unit);
 
         let encoding = options.encoding.into();
-        if options.composable {
+        if self.0.is_composed() {
             let circuit_sol =
                 concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
                     &self.0,
@@ -535,6 +547,32 @@ impl Dag {
         self.0.get_circuit_count()
     }
 
+    fn add_compositions(&mut self, froms: &[ffi::OperatorIndex], tos: &[ffi::OperatorIndex]) {
+        self.0.add_compositions(
+            froms
+                .iter()
+                .map(|a| OperatorIndex(a.index))
+                .collect::<Vec<_>>(),
+            tos.iter()
+                .map(|a| OperatorIndex(a.index))
+                .collect::<Vec<_>>(),
+        );
+    }
+
+    fn add_all_compositions(&mut self) {
+        let froms = self
+            .0
+            .get_output_operators_iter()
+            .map(|o| o.id)
+            .collect::<Vec<_>>();
+        let tos = self
+            .0
+            .get_input_operators_iter()
+            .map(|o| o.id)
+            .collect::<Vec<_>>();
+        self.0.add_compositions(froms, tos);
+    }
+
     fn optimize_multi(&self, options: ffi::Options) -> ffi::CircuitSolution {
         let processing_unit = processing_unit(options);
         let config = Config {
@@ -544,7 +582,6 @@ impl Dag {
             ciphertext_modulus_log: options.ciphertext_modulus_log,
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
-            composable: options.composable,
         };
         let search_space = SearchSpace::default(processing_unit);
 
@@ -763,6 +800,10 @@ mod ffi {
 
         fn optimize(self: &Dag, options: Options) -> DagSolution;
 
+        fn add_compositions(self: &mut Dag, froms: &[OperatorIndex], tos: &[OperatorIndex]);
+
+        fn add_all_compositions(self: &mut Dag);
+
         #[namespace = "concrete_optimizer::dag"]
         fn dump(self: &CircuitSolution) -> String;
 
@@ -780,6 +821,10 @@ mod ffi {
         fn get_circuit_count(self: &Dag) -> usize;
 
         fn optimize_multi(self: &Dag, options: Options) -> CircuitSolution;
+
+        fn get_input_indices(self: &Dag) -> Vec<OperatorIndex>;
+
+        fn get_output_indices(self: &Dag) -> Vec<OperatorIndex>;
 
         fn NO_KEY_ID() -> u64;
     }
@@ -857,7 +902,6 @@ mod ffi {
         pub cache_on_disk: bool,
         pub ciphertext_modulus_log: u32,
         pub fft_precision: u32,
-        pub composable: bool,
     }
 
     #[namespace = "concrete_optimizer::dag"]

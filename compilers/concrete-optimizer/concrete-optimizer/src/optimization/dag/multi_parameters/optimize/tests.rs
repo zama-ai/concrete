@@ -28,7 +28,7 @@ static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
 
 const _4_SIGMA: f64 = 0.000_063_342_483_999_973;
 
-const LOW_PARTITION: PartitionIndex = 0;
+const LOW_PARTITION: PartitionIndex = PartitionIndex(0);
 
 static CPU_COMPLEXITY: Lazy<CpuComplexity> = Lazy::new(CpuComplexity::default);
 
@@ -41,14 +41,13 @@ fn default_config() -> Config<'static> {
         ciphertext_modulus_log: 64,
         fft_precision: 53,
         complexity_model,
-        composable: false,
     }
 }
 
 fn optimize(
     dag: &unparametrized::Dag,
     p_cut: &Option<PartitionCut>,
-    default_partition: usize,
+    default_partition: PartitionIndex,
 ) -> Option<Parameters> {
     let config = default_config();
     let search_space = SearchSpace::default_cpu();
@@ -288,7 +287,7 @@ fn optimize_multi_independant_2_partitions_finally_added_and_luted() {
             let dag_multi = dag_lut_sum_of_2_partitions_2_layer(precision1, precision2, true);
             let sol_1 = single_precision_sol[precision1 as usize].clone();
             let sol_2 = single_precision_sol[precision2 as usize].clone();
-            let sol_multi = optimize(&dag_multi, &p_cut, 0);
+            let sol_multi = optimize(&dag_multi, &p_cut, PartitionIndex(0));
             let feasible_multi = sol_multi.is_some();
             let feasible_2 = sol_2.is_some();
             assert!(feasible_multi);
@@ -335,7 +334,7 @@ fn optimize_multi_independant_2_partitions_finally_added_and_luted() {
 
 fn optimize_rounded(dag: &unparametrized::Dag) -> Option<Parameters> {
     let p_cut = Some(PartitionCut::from_precisions(&[1, 128]));
-    let default_partition = 0;
+    let default_partition = PartitionIndex(0);
     optimize(dag, &p_cut, default_partition)
 }
 
@@ -385,8 +384,8 @@ fn test_optimize_v3_expanded_round(
         [true, false], // FKS[1->0]
     ];
     for (src, dst) in cross_partition(2) {
-        assert!(sol.micro_params.ks[src][dst].is_some() == expected_ks[src][dst]);
-        assert!(sol.micro_params.fks[src][dst].is_some() == expected_fks[src][dst]);
+        assert!(sol.micro_params.ks[src.0][dst.0].is_some() == expected_ks[src.0][dst.0]);
+        assert!(sol.micro_params.fks[src.0][dst.0].is_some() == expected_fks[src.0][dst.0]);
     }
 }
 
@@ -477,7 +476,7 @@ fn test_partition_chain(decreasing: bool) {
     );
     _ = dag.add_lut(lut_input, FunctionTable::UNKWOWN, min_precision);
     let mut p_cut = PartitionCut::empty();
-    let sol = optimize(&dag, &Some(p_cut.clone()), 0).unwrap();
+    let sol = optimize(&dag, &Some(p_cut.clone()), PartitionIndex(0)).unwrap();
     assert!(sol.macro_params.len() == 1);
     let mut complexity = sol.complexity;
     for &out_precision in &input_precisions {
@@ -487,7 +486,7 @@ fn test_partition_chain(decreasing: bool) {
         }
         p_cut.p_cut.push((out_precision, f64::MAX));
         p_cut.p_cut.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        let sol = optimize(&dag, &Some(p_cut.clone()), 0).unwrap();
+        let sol = optimize(&dag, &Some(p_cut.clone()), PartitionIndex(0)).unwrap();
         let nb_partitions = sol.macro_params.len();
         assert!(
             nb_partitions == (p_cut.p_cut.len() + 1),
@@ -500,22 +499,23 @@ fn test_partition_chain(decreasing: bool) {
             sol.complexity
         );
         for (src, dst) in cross_partition(nb_partitions) {
-            let ks = sol.micro_params.ks[src][dst];
+            let ks = sol.micro_params.ks[src.0][dst.0];
             eprintln!("{} {src} {dst}", ks.is_some());
-            let expected_ks = (!decreasing || src == dst + 1) && (decreasing || src + 1 == dst)
-                || (src == dst && (src == 0 || src == nb_partitions - 1));
+            let expected_ks = (!decreasing || src.0 == dst.0 + 1)
+                && (decreasing || src.0 + 1 == dst.0)
+                || (src == dst && (src == PartitionIndex(0) || src.0 == nb_partitions - 1));
             assert!(
                 ks.is_some() == expected_ks,
                 "{:?} {:?}",
                 ks.is_some(),
                 expected_ks
             );
-            let fks = sol.micro_params.fks[src][dst];
+            let fks = sol.micro_params.fks[src.0][dst.0];
             assert!(fks.is_none());
         }
         complexity = sol.complexity;
     }
-    let sol = optimize(&dag, &None, 0);
+    let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.unwrap().complexity == complexity);
 }
 
@@ -567,7 +567,7 @@ fn test_independant_partitions_non_feasible_single_params() {
     let sol_single = solo_key::optimize::tests::optimize(&dag).best_solution;
     assert!(sol_single.is_none());
     // solves in multi
-    let sol = optimize(&dag, &None, 0);
+    let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
     let sol = sol.unwrap();
     // check optimality
@@ -600,7 +600,7 @@ fn test_chained_partitions_non_feasible_single_params() {
     );
     let sol_single = solo_key::optimize::tests::optimize(&dag).best_solution;
     assert!(sol_single.is_none());
-    let sol = optimize(&dag, &None, 0);
+    let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
 }
 
@@ -611,13 +611,13 @@ fn test_multi_rounded_fks_coherency() {
     let reduced_8 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 8, 8);
     let reduced_4 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 4, 8);
     _ = dag.add_dot([reduced_8, reduced_4], [1, 1]);
-    let sol = optimize(&dag, &None, 0);
+    let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
     let sol = sol.unwrap();
     for (src, dst) in cross_partition(sol.macro_params.len()) {
-        if let Some(fks) = sol.micro_params.fks[src][dst] {
-            assert!(fks.src_glwe_param == sol.macro_params[src].unwrap().glwe_params);
-            assert!(fks.dst_glwe_param == sol.macro_params[dst].unwrap().glwe_params);
+        if let Some(fks) = sol.micro_params.fks[src.0][dst.0] {
+            assert!(fks.src_glwe_param == sol.macro_params[src.0].unwrap().glwe_params);
+            assert!(fks.dst_glwe_param == sol.macro_params[dst.0].unwrap().glwe_params);
         }
     }
 }
@@ -653,7 +653,6 @@ fn test_big_secret_key_sharing() {
         ciphertext_modulus_log: 64,
         fft_precision: 53,
         complexity_model: &CpuComplexity::default(),
-        composable: false,
     };
     let config_no_sharing = Config {
         key_sharing: false,
@@ -703,7 +702,6 @@ fn test_big_and_small_secret_key() {
         ciphertext_modulus_log: 64,
         fft_precision: 53,
         complexity_model: &CpuComplexity::default(),
-        composable: false,
     };
     let config_no_sharing = Config {
         key_sharing: false,
@@ -745,23 +743,26 @@ fn test_composition_2_partitions() {
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 6);
     let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
     let input2 = dag.add_dot([input1, lut3], [1, 1]);
-    let _ = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
-    let normal_config = default_config();
-    let composed_config = Config {
-        composable: true,
-        ..normal_config
-    };
+    let out = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
     let search_space = SearchSpace::default_cpu();
-    let normal_sol = super::optimize(&dag, normal_config, &search_space, &SHARED_CACHES, &None, 1)
-        .unwrap()
-        .1;
-    let composed_sol = super::optimize(
+    let normal_sol = super::optimize(
         &dag,
-        composed_config,
+        default_config(),
         &search_space,
         &SHARED_CACHES,
         &None,
-        1,
+        PartitionIndex(1),
+    )
+    .unwrap()
+    .1;
+    dag.add_composition(out, input1);
+    let composed_sol = super::optimize(
+        &dag,
+        default_config(),
+        &search_space,
+        &SHARED_CACHES,
+        &None,
+        PartitionIndex(1),
     )
     .unwrap()
     .1;
@@ -773,23 +774,28 @@ fn test_composition_2_partitions() {
 fn test_composition_1_partition_not_composable() {
     let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(8, Shape::number());
-    let input1 = dag.add_dot([input1], [1 << 16]);
-    let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 8);
-    let _ = dag.add_dot([lut1], [1 << 16]);
+    let dot = dag.add_dot([input1], [1 << 16]);
+    let lut1 = dag.add_lut(dot, FunctionTable::UNKWOWN, 8);
+    let oup = dag.add_dot([lut1], [1 << 16]);
     let normal_config = default_config();
-    let composed_config = Config {
-        composable: true,
-        ..normal_config
-    };
+    let composed_config = normal_config;
     let search_space = SearchSpace::default_cpu();
-    let normal_sol = super::optimize(&dag, normal_config, &search_space, &SHARED_CACHES, &None, 1);
+    let normal_sol = super::optimize(
+        &dag,
+        normal_config,
+        &search_space,
+        &SHARED_CACHES,
+        &None,
+        PartitionIndex(1),
+    );
+    dag.add_composition(oup, input1);
     let composed_sol = super::optimize(
         &dag,
         composed_config,
         &search_space,
         &SHARED_CACHES,
         &None,
-        1,
+        PartitionIndex(1),
     );
     assert!(normal_sol.is_ok());
     assert!(composed_sol.is_err());
@@ -805,11 +811,11 @@ fn test_maximal_multi() {
     let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 8u8);
     _ = dag.add_dot([lut2], [1 << 16]);
 
-    let sol = optimize(&dag, &None, 0).unwrap();
+    let sol = optimize(&dag, &None, PartitionIndex(0)).unwrap();
     assert!(sol.macro_params.len() == 1);
 
     let p_cut = PartitionCut::maximal_partitionning(&dag);
-    let sol = optimize(&dag, &Some(p_cut.clone()), 0).unwrap();
+    let sol = optimize(&dag, &Some(p_cut.clone()), PartitionIndex(0)).unwrap();
     assert!(sol.macro_params.len() == 2);
 
     eprintln!("{:?}", sol.micro_params.pbs);
@@ -842,6 +848,6 @@ fn test_bug_with_zero_noise() {
     let v2 = dag.add_levelled_op([v1], complexity, 1.0, &out_shape, "comment");
     let v3 = dag.add_unsafe_cast(v2, 1);
     let _ = dag.add_lut(v3, FunctionTable { values: vec![] }, 1);
-    let sol = optimize(&dag, &None, 0);
+    let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
 }

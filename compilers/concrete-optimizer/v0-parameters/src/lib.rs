@@ -92,9 +92,6 @@ pub struct Args {
 
     #[clap(long, default_value_t = 53)]
     pub fft_precision: u32,
-
-    #[clap(long)]
-    pub composable: bool,
 }
 
 pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
@@ -103,7 +100,6 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
     let maximum_acceptable_error_probability = args.p_error;
     let security_level = args.security_level;
     let cache_on_disk = args.cache_on_disk;
-    let composable = args.composable;
 
     let search_space = SearchSpace {
         glwe_log_polynomial_sizes: (args.min_log_poly_size..=args.max_log_poly_size).collect(),
@@ -126,7 +122,6 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
         ciphertext_modulus_log: args.ciphertext_modulus_log,
         fft_precision: args.fft_precision,
         complexity_model: &CpuComplexity::default(),
-        composable,
     };
 
     let cache = decomposition::cache(
@@ -300,7 +295,6 @@ mod tests {
                 cache_on_disk: true,
                 ciphertext_modulus_log: 64,
                 fft_precision: 53,
-                composable: false,
             };
 
             let mut actual_output = Vec::<u8>::new();
@@ -345,7 +339,6 @@ mod tests {
                 cache_on_disk: true,
                 ciphertext_modulus_log: 64,
                 fft_precision: 53,
-                composable: false,
             };
 
             let mut actual_output = Vec::<u8>::new();

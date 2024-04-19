@@ -972,8 +972,12 @@ struct Dag final : public ::rust::Opaque {
   ::rust::Box<::concrete_optimizer::DagBuilder> builder(::rust::String circuit) noexcept;
   ::rust::String dump() const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
+  void add_compositions(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> froms, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> tos) noexcept;
+  void add_all_compositions() noexcept;
   ::std::size_t get_circuit_count() const noexcept;
   ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options options) const noexcept;
+  ::rust::Vec<::concrete_optimizer::dag::OperatorIndex> get_input_indices() const noexcept;
+  ::rust::Vec<::concrete_optimizer::dag::OperatorIndex> get_output_indices() const noexcept;
   ~Dag() = delete;
 
 private:
@@ -1111,7 +1115,6 @@ struct Options final {
   bool cache_on_disk;
   ::std::uint32_t ciphertext_modulus_log;
   ::std::uint32_t fft_precision;
-  bool composable;
 
   using IsRelocatable = ::std::true_type;
 };
@@ -1315,6 +1318,10 @@ void concrete_optimizer$cxxbridge1$DagBuilder$dump(::concrete_optimizer::DagBuil
 void concrete_optimizer$cxxbridge1$DagBuilder$tag_operator_as_output(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex op) noexcept;
 
 void concrete_optimizer$cxxbridge1$Dag$optimize(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
+
+void concrete_optimizer$cxxbridge1$Dag$add_compositions(::concrete_optimizer::Dag &self, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> froms, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> tos) noexcept;
+
+void concrete_optimizer$cxxbridge1$Dag$add_all_compositions(::concrete_optimizer::Dag &self) noexcept;
 } // extern "C"
 
 namespace dag {
@@ -1342,6 +1349,10 @@ extern "C" {
 ::std::size_t concrete_optimizer$cxxbridge1$Dag$get_circuit_count(::concrete_optimizer::Dag const &self) noexcept;
 
 void concrete_optimizer$cxxbridge1$Dag$optimize_multi(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
+
+void concrete_optimizer$cxxbridge1$Dag$get_input_indices(::concrete_optimizer::Dag const &self, ::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *return$) noexcept;
+
+void concrete_optimizer$cxxbridge1$Dag$get_output_indices(::concrete_optimizer::Dag const &self, ::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *return$) noexcept;
 
 ::std::uint64_t concrete_optimizer$cxxbridge1$NO_KEY_ID() noexcept;
 } // extern "C"
@@ -1438,6 +1449,14 @@ void DagBuilder::tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex
   return ::std::move(return$.value);
 }
 
+void Dag::add_compositions(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> froms, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> tos) noexcept {
+  concrete_optimizer$cxxbridge1$Dag$add_compositions(*this, froms, tos);
+}
+
+void Dag::add_all_compositions() noexcept {
+  concrete_optimizer$cxxbridge1$Dag$add_all_compositions(*this);
+}
+
 namespace dag {
 ::rust::String CircuitSolution::dump() const noexcept {
   ::rust::MaybeUninit<::rust::String> return$;
@@ -1480,6 +1499,18 @@ namespace weights {
   return ::std::move(return$.value);
 }
 
+::rust::Vec<::concrete_optimizer::dag::OperatorIndex> Dag::get_input_indices() const noexcept {
+  ::rust::MaybeUninit<::rust::Vec<::concrete_optimizer::dag::OperatorIndex>> return$;
+  concrete_optimizer$cxxbridge1$Dag$get_input_indices(*this, &return$.value);
+  return ::std::move(return$.value);
+}
+
+::rust::Vec<::concrete_optimizer::dag::OperatorIndex> Dag::get_output_indices() const noexcept {
+  ::rust::MaybeUninit<::rust::Vec<::concrete_optimizer::dag::OperatorIndex>> return$;
+  concrete_optimizer$cxxbridge1$Dag$get_output_indices(*this, &return$.value);
+  return ::std::move(return$.value);
+}
+
 ::std::uint64_t NO_KEY_ID() noexcept {
   return concrete_optimizer$cxxbridge1$NO_KEY_ID();
 }
@@ -1497,6 +1528,15 @@ void cxxbridge1$box$concrete_optimizer$DagBuilder$drop(::rust::Box<::concrete_op
 ::concrete_optimizer::Weights *cxxbridge1$box$concrete_optimizer$Weights$alloc() noexcept;
 void cxxbridge1$box$concrete_optimizer$Weights$dealloc(::concrete_optimizer::Weights *) noexcept;
 void cxxbridge1$box$concrete_optimizer$Weights$drop(::rust::Box<::concrete_optimizer::Weights> *ptr) noexcept;
+
+void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$new(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$drop(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$len(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$capacity(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> const *ptr) noexcept;
+::concrete_optimizer::dag::OperatorIndex const *cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$data(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$reserve_total(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$set_len(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$truncate(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *ptr, ::std::size_t len) noexcept;
 
 void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$new(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> const *ptr) noexcept;
 void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$drop(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> *ptr) noexcept;
@@ -1599,6 +1639,38 @@ void Box<::concrete_optimizer::Weights>::allocation::dealloc(::concrete_optimize
 template <>
 void Box<::concrete_optimizer::Weights>::drop() noexcept {
   cxxbridge1$box$concrete_optimizer$Weights$drop(this);
+}
+template <>
+Vec<::concrete_optimizer::dag::OperatorIndex>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$new(this);
+}
+template <>
+void Vec<::concrete_optimizer::dag::OperatorIndex>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$drop(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::dag::OperatorIndex>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$len(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::dag::OperatorIndex>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$capacity(this);
+}
+template <>
+::concrete_optimizer::dag::OperatorIndex const *Vec<::concrete_optimizer::dag::OperatorIndex>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$data(this);
+}
+template <>
+void Vec<::concrete_optimizer::dag::OperatorIndex>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::concrete_optimizer::dag::OperatorIndex>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$set_len(this, len);
+}
+template <>
+void Vec<::concrete_optimizer::dag::OperatorIndex>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$truncate(this, len);
 }
 template <>
 Vec<::concrete_optimizer::dag::SecretLweKey>::Vec() noexcept {

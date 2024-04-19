@@ -62,8 +62,9 @@ pub fn optimize(
     caches: &PersistDecompCaches,
     p_cut: &Option<PartitionCut>,
 ) -> CircuitSolution {
-    let native = || native_optimize(dag, config, search_space, caches, p_cut);
-    let crt = || crt_optimize(dag, config, search_space, default_log_norm2_woppbs, caches);
+    let dag = dag.clone();
+    let native = || native_optimize(&dag, config, search_space, caches, p_cut);
+    let crt = || crt_optimize(&dag, config, search_space, default_log_norm2_woppbs, caches);
     match encoding {
         Encoding::Auto => best_complexity_solution(native(), crt()),
         Encoding::Native => native(),
