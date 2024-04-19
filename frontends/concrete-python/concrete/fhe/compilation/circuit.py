@@ -158,12 +158,14 @@ class Circuit:
 
         exporter = SimulatedValueExporter.new(self.simulator.client_specs.client_parameters)
         exported = [
-            None
-            if arg is None
-            else Value(
-                exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
-                if isinstance(arg, np.ndarray) and arg.shape != ()
-                else exporter.export_scalar(position, int(arg))
+            (
+                None
+                if arg is None
+                else Value(
+                    exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
+                    if isinstance(arg, np.ndarray) and arg.shape != ()
+                    else exporter.export_scalar(position, int(arg))
+                )
             )
             for position, arg in enumerate(ordered_validated_args)
         ]

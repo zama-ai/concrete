@@ -526,7 +526,7 @@ def main():
             global_p_error=None,  # 2**log2_global_p_error,
             p_error=2**log2_p_error,
             bitwise_strategy_preference=fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
-            verbose=args.verbose_compilation
+            verbose=args.verbose_compilation,
             # parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
             # single_precision=False,
         )

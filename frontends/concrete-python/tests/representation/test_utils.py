@@ -1,6 +1,7 @@
 """
 Tests of utilities related to representation of computation.
 """
+
 import numpy as np
 import pytest
 
