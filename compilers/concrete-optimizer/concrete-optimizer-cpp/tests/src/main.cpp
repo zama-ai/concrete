@@ -30,7 +30,6 @@ concrete_optimizer::Options default_options() {
       .cache_on_disk = true,
       .ciphertext_modulus_log = CIPHERTEXT_MODULUS_LOG,
       .fft_precision = 53,
-      .composable = false
   };
 }
 
@@ -38,7 +37,6 @@ concrete_optimizer::Options default_options() {
 
 TEST test_v0() {
   auto options = default_options();
-  options.composable = true;
   concrete_optimizer::v0::Solution solution =
       concrete_optimizer::v0::optimize_bootstrap(
           PRECISION_1B, NOISE_DEVIATION_COEFF, options);
@@ -261,7 +259,7 @@ TEST test_composable_dag_mono_fallback_on_dag_multi() {
   assert(!solution1.use_wop_pbs);
   assert(solution1.p_error < options.maximum_acceptable_error_probability);
 
-  options.composable = true;
+  dag->add_all_compositions();
   auto solution2 = dag->optimize(options);
   assert(!solution2.use_wop_pbs);
   assert(solution2.p_error < options.maximum_acceptable_error_probability);
@@ -298,7 +296,7 @@ TEST test_non_composable_dag_mono_fallback_on_woppbs() {
   assert(!solution1.use_wop_pbs);
   assert(solution1.p_error < options.maximum_acceptable_error_probability);
 
-  options.composable = true;
+  dag->add_all_compositions();
   auto solution2 = dag->optimize(options);
   assert(solution2.p_error < options.maximum_acceptable_error_probability);
   assert(solution1.complexity < solution2.complexity);

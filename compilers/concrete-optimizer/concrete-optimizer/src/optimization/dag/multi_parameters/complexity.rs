@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::utils::f64::f64_dot;
 
-use super::operations_value::OperationsValue;
+use super::{operations_value::OperationsValue, partitions::PartitionIndex};
 
 #[derive(Clone, Debug)]
 pub struct OperationsCount {
@@ -26,8 +26,8 @@ impl fmt::Display for OperationsCount {
         let counts = &self.counts;
         let nb_partitions = counts.nb_partitions();
         let index = &counts.index;
-        for src_partition in 0..nb_partitions {
-            for dst_partition in 0..nb_partitions {
+        for src_partition in PartitionIndex::range(0, nb_partitions) {
+            for dst_partition in PartitionIndex::range(0, nb_partitions) {
                 let coeff = counts.values[index.keyswitch_to_small(src_partition, dst_partition)];
                 if coeff != 0.0 {
                     if src_partition == dst_partition {
@@ -39,14 +39,14 @@ impl fmt::Display for OperationsCount {
                 }
             }
         }
-        for src_partition in 0..nb_partitions {
+        for src_partition in PartitionIndex::range(0, nb_partitions) {
             assert!(counts.values[index.input(src_partition)] == 0.0);
             let coeff = counts.values[index.pbs(src_partition)];
             if coeff != 0.0 {
                 write!(f, "{add_plus}{coeff}¢Br[{src_partition}]")?;
                 add_plus = " + ";
             }
-            for dst_partition in 0..nb_partitions {
+            for dst_partition in PartitionIndex::range(0, nb_partitions) {
                 let coeff = counts.values[index.keyswitch_to_big(src_partition, dst_partition)];
                 if coeff != 0.0 {
                     write!(f, "{add_plus}{coeff}¢FK[{src_partition}→{dst_partition}]")?;
@@ -55,7 +55,7 @@ impl fmt::Display for OperationsCount {
             }
         }
 
-        for partition in 0..nb_partitions {
+        for partition in PartitionIndex::range(0, nb_partitions) {
             assert!(counts.values[index.modulus_switching(partition)] == 0.0);
         }
         if add_plus.is_empty() {
@@ -80,8 +80,8 @@ impl Complexity {
         &self,
         complexity_cut: f64,
         costs: &OperationsValue,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
     ) -> f64 {
         let ks_index = costs.index.keyswitch_to_small(src_partition, dst_partition);
         let actual_ks_cost = costs.values[ks_index];
@@ -98,8 +98,8 @@ impl Complexity {
         &self,
         complexity_cut: f64,
         costs: &OperationsValue,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
     ) -> f64 {
         let fks_index = costs.index.keyswitch_to_big(src_partition, dst_partition);
         let actual_fks_cost = costs.values[fks_index];

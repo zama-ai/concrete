@@ -47,7 +47,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ciphertext_modulus_log,
         fft_precision,
         complexity_model: &CpuComplexity::default(),
-        composable: false,
     };
 
     let cache = decomposition::cache(

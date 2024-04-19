@@ -1,6 +1,6 @@
 use super::{ClearTensor, Shape};
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum DotKind {
     // inputs = [x,y,z], weights = [a,b,c], = x*a + y*b + z*c
     Simple,

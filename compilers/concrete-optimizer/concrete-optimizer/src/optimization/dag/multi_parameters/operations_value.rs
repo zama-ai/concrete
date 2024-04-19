@@ -1,5 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
+use super::partitions::PartitionIndex;
+
 /**
  * Index actual operations (input, ks, pbs, fks, modulus switching, etc).
  */
@@ -80,46 +82,54 @@ impl Indexing {
         self.nb_partitions * (STABLE_NB_VALUES_BY_PARTITION + 2 * self.nb_partitions)
     }
 
-    pub fn input(&self, partition: usize) -> usize {
-        assert!(partition < self.nb_partitions);
-        self.maybe_compressed(partition * self.nb_coeff_per_partition() + VALUE_INDEX_FRESH)
+    pub fn input(&self, partition: PartitionIndex) -> usize {
+        assert!(partition.0 < self.nb_partitions);
+        self.maybe_compressed(partition.0 * self.nb_coeff_per_partition() + VALUE_INDEX_FRESH)
     }
 
-    pub fn pbs(&self, partition: usize) -> usize {
-        assert!(partition < self.nb_partitions);
-        self.maybe_compressed(partition * self.nb_coeff_per_partition() + VALUE_INDEX_PBS)
+    pub fn pbs(&self, partition: PartitionIndex) -> usize {
+        assert!(partition.0 < self.nb_partitions);
+        self.maybe_compressed(partition.0 * self.nb_coeff_per_partition() + VALUE_INDEX_PBS)
     }
 
-    pub fn modulus_switching(&self, partition: usize) -> usize {
-        assert!(partition < self.nb_partitions);
-        self.maybe_compressed(partition * self.nb_coeff_per_partition() + VALUE_INDEX_MODULUS)
+    pub fn modulus_switching(&self, partition: PartitionIndex) -> usize {
+        assert!(partition.0 < self.nb_partitions);
+        self.maybe_compressed(partition.0 * self.nb_coeff_per_partition() + VALUE_INDEX_MODULUS)
     }
 
-    pub fn keyswitch_to_small(&self, src_partition: usize, dst_partition: usize) -> usize {
-        assert!(src_partition < self.nb_partitions);
-        assert!(dst_partition < self.nb_partitions);
+    pub fn keyswitch_to_small(
+        &self,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
+    ) -> usize {
+        assert!(src_partition.0 < self.nb_partitions);
+        assert!(dst_partition.0 < self.nb_partitions);
         self.maybe_compressed(
             // Skip other partition
-            dst_partition * self.nb_coeff_per_partition()
+            dst_partition.0 * self.nb_coeff_per_partition()
             // Skip non keyswitchs
             + STABLE_NB_VALUES_BY_PARTITION
             // Select the right keyswicth to small
-            + src_partition,
+            + src_partition.0,
         )
     }
 
-    pub fn keyswitch_to_big(&self, src_partition: usize, dst_partition: usize) -> usize {
-        assert!(src_partition < self.nb_partitions);
-        assert!(dst_partition < self.nb_partitions);
+    pub fn keyswitch_to_big(
+        &self,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
+    ) -> usize {
+        assert!(src_partition.0 < self.nb_partitions);
+        assert!(dst_partition.0 < self.nb_partitions);
         self.maybe_compressed(
             // Skip other partition
-            dst_partition * self.nb_coeff_per_partition()
+            dst_partition.0 * self.nb_coeff_per_partition()
             // Skip non keyswitchs
             + STABLE_NB_VALUES_BY_PARTITION
             // Skip keyswitch to small
             + self.nb_keyswitchs_per_partition()
             // Select the right keyswicth to big
-            + src_partition,
+            + src_partition.0,
         )
     }
 
@@ -131,10 +141,21 @@ impl Indexing {
 /**
  * Represent any values indexed by actual operations (input, pbs, modulus switching, ks, fks, , etc) variance,
  */
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialOrd)]
 pub struct OperationsValue {
     pub index: Indexing,
     pub values: Vec<f64>,
+}
+
+impl PartialEq for OperationsValue {
+    fn eq(&self, other: &Self) -> bool {
+        self.index == other.index
+            && self
+                .values
+                .iter()
+                .zip(other.values.iter())
+                .all(|(a, b)| a.is_nan() && b.is_nan() || *a == *b)
+    }
 }
 
 impl OperationsValue {
@@ -172,23 +193,27 @@ impl OperationsValue {
         }
     }
 
-    pub fn input(&mut self, partition: usize) -> &mut f64 {
+    pub fn input(&mut self, partition: PartitionIndex) -> &mut f64 {
         &mut self.values[self.index.input(partition)]
     }
 
-    pub fn pbs(&mut self, partition: usize) -> &mut f64 {
+    pub fn pbs(&mut self, partition: PartitionIndex) -> &mut f64 {
         &mut self.values[self.index.pbs(partition)]
     }
 
-    pub fn ks(&mut self, src_partition: usize, dst_partition: usize) -> &mut f64 {
+    pub fn ks(&mut self, src_partition: PartitionIndex, dst_partition: PartitionIndex) -> &mut f64 {
         &mut self.values[self.index.keyswitch_to_small(src_partition, dst_partition)]
     }
 
-    pub fn fks(&mut self, src_partition: usize, dst_partition: usize) -> &mut f64 {
+    pub fn fks(
+        &mut self,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
+    ) -> &mut f64 {
         &mut self.values[self.index.keyswitch_to_big(src_partition, dst_partition)]
     }
 
-    pub fn modulus_switching(&mut self, partition: usize) -> &mut f64 {
+    pub fn modulus_switching(&mut self, partition: PartitionIndex) -> &mut f64 {
         &mut self.values[self.index.modulus_switching(partition)]
     }
 

@@ -2,6 +2,8 @@ use std::fmt;
 
 use crate::optimization::dag::multi_parameters::operations_value::OperationsValue;
 
+use super::partitions::PartitionIndex;
+
 /**
  * A variance that is represented as a linear combination of base variances.
  * Only the linear coefficient are known.
@@ -20,14 +22,14 @@ use crate::optimization::dag::multi_parameters::operations_value::OperationsValu
  */
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct SymbolicVariance {
-    pub partition: usize,
+    pub partition: PartitionIndex,
     pub coeffs: OperationsValue,
 }
 
 impl SymbolicVariance {
     // To be used as a initial accumulator
     pub const ZERO: Self = Self {
-        partition: 0,
+        partition: PartitionIndex::FIRST,
         coeffs: OperationsValue::ZERO,
     };
 
@@ -37,12 +39,12 @@ impl SymbolicVariance {
 
     pub fn nan(nb_partitions: usize) -> Self {
         Self {
-            partition: usize::MAX,
+            partition: PartitionIndex::INVALID,
             coeffs: OperationsValue::nan(nb_partitions),
         }
     }
 
-    pub fn input(nb_partitions: usize, partition: usize) -> Self {
+    pub fn input(nb_partitions: usize, partition: PartitionIndex) -> Self {
         let mut r = Self {
             partition,
             coeffs: OperationsValue::zero(nb_partitions),
@@ -52,11 +54,11 @@ impl SymbolicVariance {
         r
     }
 
-    pub fn coeff_input(&self, partition: usize) -> f64 {
+    pub fn coeff_input(&self, partition: PartitionIndex) -> f64 {
         self.coeffs[self.coeffs.index.input(partition)]
     }
 
-    pub fn after_pbs(nb_partitions: usize, partition: usize) -> Self {
+    pub fn after_pbs(nb_partitions: usize, partition: PartitionIndex) -> Self {
         let mut r = Self {
             partition,
             coeffs: OperationsValue::zero(nb_partitions),
@@ -65,15 +67,15 @@ impl SymbolicVariance {
         r
     }
 
-    pub fn coeff_pbs(&self, partition: usize) -> f64 {
+    pub fn coeff_pbs(&self, partition: PartitionIndex) -> f64 {
         self.coeffs[self.coeffs.index.pbs(partition)]
     }
 
-    pub fn coeff_modulus_switching(&self, partition: usize) -> f64 {
+    pub fn coeff_modulus_switching(&self, partition: PartitionIndex) -> f64 {
         self.coeffs[self.coeffs.index.modulus_switching(partition)]
     }
 
-    pub fn after_modulus_switching(&self, partition: usize) -> Self {
+    pub fn after_modulus_switching(&self, partition: PartitionIndex) -> Self {
         let mut new = self.clone();
         let index = self.coeffs.index.modulus_switching(partition);
         assert!(new.coeffs[index] == 0.0);
@@ -81,7 +83,11 @@ impl SymbolicVariance {
         new
     }
 
-    pub fn coeff_keyswitch_to_small(&self, src_partition: usize, dst_partition: usize) -> f64 {
+    pub fn coeff_keyswitch_to_small(
+        &self,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
+    ) -> f64 {
         self.coeffs[self
             .coeffs
             .index
@@ -90,8 +96,8 @@ impl SymbolicVariance {
 
     pub fn after_partition_keyswitch_to_small(
         &self,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
     ) -> Self {
         let index = self
             .coeffs
@@ -102,8 +108,8 @@ impl SymbolicVariance {
 
     pub fn coeff_partition_keyswitch_to_big(
         &self,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
     ) -> f64 {
         self.coeffs[self
             .coeffs
@@ -113,8 +119,8 @@ impl SymbolicVariance {
 
     pub fn after_partition_keyswitch_to_big(
         &self,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
     ) -> Self {
         let index = self
             .coeffs
@@ -125,12 +131,12 @@ impl SymbolicVariance {
 
     pub fn after_partition_keyswitch(
         &self,
-        src_partition: usize,
-        dst_partition: usize,
+        src_partition: PartitionIndex,
+        dst_partition: PartitionIndex,
         index: usize,
     ) -> Self {
-        assert!(src_partition < self.nb_partitions());
-        assert!(dst_partition < self.nb_partitions());
+        assert!(src_partition.0 < self.nb_partitions());
+        assert!(dst_partition.0 < self.nb_partitions());
         assert!(src_partition == self.partition);
         let mut new = self.clone();
         new.partition = dst_partition;
@@ -144,7 +150,7 @@ impl SymbolicVariance {
         // detect the previous base manp level
         // this is the maximum value of fresh base noise and pbs base noise
         let mut current_max: f64 = 0.0;
-        for partition in 0..self.nb_partitions() {
+        for partition in PartitionIndex::range(0, self.nb_partitions()) {
             let fresh_coeff = self.coeff_input(partition);
             let pbs_noise_coeff = self.coeff_pbs(partition);
             current_max = current_max.max(fresh_coeff).max(pbs_noise_coeff);
@@ -195,7 +201,7 @@ impl fmt::Display for SymbolicVariance {
             return write!(f, "NAN x σ²");
         }
         let mut add_plus = "";
-        for src_partition in 0..self.nb_partitions() {
+        for src_partition in PartitionIndex::range(0, self.nb_partitions()) {
             let coeff = self.coeff_input(src_partition);
             if coeff != 0.0 {
                 write!(f, "{add_plus}{coeff}σ²In[{src_partition}]")?;
@@ -206,7 +212,7 @@ impl fmt::Display for SymbolicVariance {
                 write!(f, "{add_plus}{coeff}σ²Br[{src_partition}]")?;
                 add_plus = " + ";
             }
-            for dst_partition in 0..self.nb_partitions() {
+            for dst_partition in PartitionIndex::range(0, self.nb_partitions()) {
                 let coeff = self.coeff_partition_keyswitch_to_big(src_partition, dst_partition);
                 if coeff != 0.0 {
                     write!(f, "{add_plus}{coeff}σ²FK[{src_partition}→{dst_partition}]")?;
@@ -214,8 +220,8 @@ impl fmt::Display for SymbolicVariance {
                 }
             }
         }
-        for src_partition in 0..self.nb_partitions() {
-            for dst_partition in 0..self.nb_partitions() {
+        for src_partition in PartitionIndex::range(0, self.nb_partitions()) {
+            for dst_partition in PartitionIndex::range(0, self.nb_partitions()) {
                 let coeff = self.coeff_keyswitch_to_small(src_partition, dst_partition);
                 if coeff != 0.0 {
                     if src_partition == dst_partition {
@@ -227,7 +233,7 @@ impl fmt::Display for SymbolicVariance {
                 }
             }
         }
-        for partition in 0..self.nb_partitions() {
+        for partition in PartitionIndex::range(0, self.nb_partitions()) {
             let coeff = self.coeff_modulus_switching(partition);
             if coeff != 0.0 {
                 write!(f, "{add_plus}{coeff}σ²M[{partition}]")?;
@@ -235,6 +241,21 @@ impl fmt::Display for SymbolicVariance {
             }
         }
         Ok(())
+    }
+}
+
+impl std::ops::Add for SymbolicVariance {
+    type Output = Self;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        if self.coeffs.is_empty() {
+            self = rhs;
+        } else {
+            for i in 0..self.coeffs.len() {
+                self.coeffs[i] += rhs.coeffs[i];
+            }
+        };
+        self
     }
 }
 

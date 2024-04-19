@@ -1,16 +1,20 @@
 use crate::dag::operator::{
-    dot_kind, DotKind, FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision,
-    Shape, Weights,
+    FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision, Shape, Weights,
 };
-use std::{collections::HashSet, fmt};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
+
+use super::operator::dot_kind::{dot_kind, DotKind};
 
 /// The name of the default. Used when adding operations directly on the dag instead of via a
 /// builder.
 const DEFAULT_CIRCUIT: &str = "_";
 
 /// A state machine to define if an operator is used as output to a circuit.
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub(crate) enum OutputState {
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum OutputState {
     /// The operator was created and neither used as input to another operator, nor tagged as output
     /// explicitly. It is considered an output.
     Unused,
@@ -51,29 +55,29 @@ impl OutputState {
 /// A type referencing every informations related to an operator of the dag.
 #[derive(Debug, Clone)]
 #[allow(unused)]
-pub(crate) struct DagOperator<'dag> {
-    pub(crate) id: OperatorIndex,
-    pub(crate) dag: &'dag Dag,
-    pub(crate) operator: &'dag Operator,
-    pub(crate) shape: &'dag Shape,
-    pub(crate) precision: &'dag Precision,
-    pub(crate) output_state: &'dag OutputState,
-    pub(crate) circuit_tag: &'dag String,
+pub struct DagOperator<'dag> {
+    pub id: OperatorIndex,
+    pub dag: &'dag Dag,
+    pub operator: &'dag Operator,
+    pub shape: &'dag Shape,
+    pub precision: &'dag Precision,
+    pub output_state: &'dag OutputState,
+    pub circuit_tag: &'dag String,
 }
 
 impl<'dag> DagOperator<'dag> {
     /// Returns if the operator is an input.
-    pub(crate) fn is_input(&self) -> bool {
+    pub fn is_input(&self) -> bool {
         matches!(self.operator, Operator::Input { .. })
     }
 
     /// Returns if the operator is an output.
-    pub(crate) fn is_output(&self) -> bool {
+    pub fn is_output(&self) -> bool {
         self.output_state.is_output()
     }
 
     /// Returns an iterator over the operators used as input to this operator.
-    pub(crate) fn get_inputs_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
+    pub fn get_inputs_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> {
         self.operator
             .get_inputs_iter()
             .map(|id| self.dag.get_operator(*id))
@@ -90,19 +94,19 @@ pub struct DagCircuit<'dag> {
 
 impl<'dag> DagCircuit<'dag> {
     /// Returns an iterator over the operators of this circuit.
-    pub(crate) fn get_operators_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
+    pub fn get_operators_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
         self.ids.iter().map(|id| self.dag.get_operator(*id))
     }
 
     /// Returns an iterator over the circuit's input operators.
     #[allow(unused)]
-    pub(crate) fn get_input_operators_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
+    pub fn get_input_operators_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
         self.get_operators_iter().filter(DagOperator::is_input)
     }
 
     /// Returns an iterator over the circuit's output operators.
     #[allow(unused)]
-    pub(crate) fn get_output_operators_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
+    pub fn get_output_operators_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
         self.get_operators_iter().filter(DagOperator::is_output)
     }
 }
@@ -176,7 +180,14 @@ impl<'dag> DagBuilder<'dag> {
     ) -> OperatorIndex {
         let inputs = inputs.into();
         let weights = weights.into();
-        self.add_operator(Operator::Dot { inputs, weights })
+        // We detect the kind of dot to simplify matching later on.
+        let nb_inputs = inputs.len() as u64;
+        let input_shape = self.dag.get_operator(inputs[0]).shape;
+        self.add_operator(Operator::Dot {
+            inputs,
+            kind: dot_kind(nb_inputs, input_shape, &weights),
+            weights,
+        })
     }
 
     pub fn add_levelled_op(
@@ -353,28 +364,26 @@ impl<'dag> DagBuilder<'dag> {
             | Operator::UnsafeCast { input, .. }
             | Operator::Round { input, .. } => self.dag.out_shapes[input.0].clone(),
             Operator::Dot {
-                inputs, weights, ..
+                kind: DotKind::Simple | DotKind::Tensor | DotKind::CompatibleTensor,
+                ..
+            } => Shape::number(),
+            Operator::Dot {
+                kind: DotKind::Broadcast { shape },
+                ..
+            } => shape.clone(),
+            Operator::Dot {
+                kind: DotKind::Unsupported { .. },
+                weights,
+                inputs,
             } => {
-                let input_shape = self.dag.out_shapes[inputs[0].0].clone();
-                let kind = dot_kind(inputs.len() as u64, &input_shape, weights);
-                match kind {
-                    DotKind::Simple | DotKind::Tensor | DotKind::CompatibleTensor => {
-                        Shape::number()
-                    }
-                    DotKind::Broadcast { shape } => shape,
-                    DotKind::Unsupported { .. } => {
-                        let weights_shape = &weights.shape;
-
-                        println!();
-                        println!();
-                        println!("Error diagnostic on dot operation:");
-                        println!(
-                            "Incompatible operands: <{input_shape:?}> DOT <{weights_shape:?}>"
-                        );
-                        println!();
-                        panic!("Unsupported or invalid dot operation")
-                    }
-                }
+                let weights_shape = &weights.shape;
+                let input_shape = self.dag.get_operator(inputs[0]).shape;
+                println!();
+                println!();
+                println!("Error diagnostic on dot operation:");
+                println!("Incompatible operands: <{input_shape:?}> DOT <{weights_shape:?}>");
+                println!();
+                panic!("Unsupported or invalid dot operation")
             }
         }
     }
@@ -389,6 +398,41 @@ impl<'dag> DagBuilder<'dag> {
                 self.dag.out_precisions[inputs[0].0]
             }
         }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug, Default)]
+pub(crate) struct CompositionRules(HashMap<OperatorIndex, Vec<OperatorIndex>>);
+
+impl CompositionRules {
+    pub(crate) fn add(&mut self, from: OperatorIndex, to: OperatorIndex) {
+        let _ = self
+            .0
+            .entry(to)
+            .and_modify(|e| e.push(from))
+            .or_insert_with(|| [from].into());
+    }
+
+    pub(crate) fn update_index(&mut self, old_to_new_map: &[usize]) {
+        let mut old_map = HashMap::with_capacity(self.0.capacity());
+        std::mem::swap(&mut old_map, &mut self.0);
+        for (old_id, mut compositions) in old_map {
+            let adapter = |old_id: OperatorIndex| -> OperatorIndex {
+                OperatorIndex(old_to_new_map[old_id.0])
+            };
+            compositions
+                .iter_mut()
+                .for_each(|from| *from = adapter(*from));
+            let _ = self.0.insert(adapter(old_id), compositions);
+        }
+    }
+}
+
+impl IntoIterator for CompositionRules {
+    type Item = (OperatorIndex, Vec<OperatorIndex>);
+    type IntoIter = std::collections::hash_map::IntoIter<OperatorIndex, Vec<OperatorIndex>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -417,6 +461,8 @@ pub struct Dag {
     pub(crate) output_state: Vec<OutputState>,
     // Collect the circuit the operators are associated with
     pub(crate) circuit_tags: Vec<String>,
+    // Composition rules
+    pub(crate) composition: CompositionRules,
 }
 
 impl fmt::Display for Dag {
@@ -443,6 +489,7 @@ impl Dag {
             out_precisions: vec![],
             output_state: vec![],
             circuit_tags: vec![],
+            composition: CompositionRules::default(),
         }
     }
 
@@ -586,13 +633,38 @@ impl Dag {
         )
     }
 
+    /// Adds a composition rule to the dag.
+    pub fn add_composition(&mut self, from: OperatorIndex, to: OperatorIndex) {
+        debug_assert!(self.get_operator(from).is_output());
+        debug_assert!(self.get_operator(to).is_input());
+        self.composition.add(from, to);
+    }
+
+    /// Adds a composition rule between every elements of from and every elements of to.
+    pub fn add_compositions<A: AsRef<[OperatorIndex]>, B: AsRef<[OperatorIndex]>>(
+        &mut self,
+        from: A,
+        to: B,
+    ) {
+        for from_i in from.as_ref() {
+            for to_i in to.as_ref() {
+                self.add_composition(*from_i, *to_i);
+            }
+        }
+    }
+
+    /// Returns whether the dag contains a composition rule.
+    pub fn is_composed(&self) -> bool {
+        !self.composition.0.is_empty()
+    }
+
     /// Returns an iterator over the operator indices.
-    pub(crate) fn get_indices_iter(&self) -> impl Iterator<Item = OperatorIndex> {
+    pub fn get_indices_iter(&self) -> impl Iterator<Item = OperatorIndex> {
         (0..self.len()).map(OperatorIndex)
     }
 
     /// Returns an iterator over the circuits contained in the dag.
-    pub(crate) fn get_circuits_iter(&self) -> impl Iterator<Item = DagCircuit<'_>> + '_ {
+    pub fn get_circuits_iter(&self) -> impl Iterator<Item = DagCircuit<'_>> + '_ {
         let mut circuits: HashSet<String> = HashSet::new();
         self.circuit_tags.iter().for_each(|name| {
             let _ = circuits.insert(name.to_owned());
@@ -607,7 +679,7 @@ impl Dag {
     /// # Note:
     ///
     /// Panics if no circuit with the given name exist in the dag.
-    pub(crate) fn get_circuit<A: AsRef<str>>(&self, circuit: A) -> DagCircuit {
+    pub fn get_circuit<A: AsRef<str>>(&self, circuit: A) -> DagCircuit {
         let circuit = circuit.as_ref().to_string();
         assert!(self.circuit_tags.contains(&circuit));
         let ids = self
@@ -624,21 +696,22 @@ impl Dag {
     }
 
     /// Returns an iterator over the input operators of the dag.
-    pub(crate) fn get_input_operators_iter(&self) -> impl Iterator<Item = DagOperator<'_>> {
+    #[allow(unused)]
+    pub fn get_input_operators_iter(&self) -> impl Iterator<Item = DagOperator<'_>> {
         self.get_indices_iter()
             .map(|i| self.get_operator(i))
             .filter(DagOperator::is_input)
     }
 
     /// Returns an iterator over the outputs operators of the dag.
-    pub(crate) fn get_output_operators_iter(&self) -> impl Iterator<Item = DagOperator<'_>> {
+    pub fn get_output_operators_iter(&self) -> impl Iterator<Item = DagOperator<'_>> {
         self.get_indices_iter()
             .map(|i| self.get_operator(i))
             .filter(DagOperator::is_output)
     }
 
     /// Returns an iterator over the operators of the dag.
-    pub(crate) fn get_operators_iter(&self) -> impl Iterator<Item = DagOperator<'_>> {
+    pub fn get_operators_iter(&self) -> impl Iterator<Item = DagOperator<'_>> {
         self.get_indices_iter().map(|i| self.get_operator(i))
     }
 
@@ -647,7 +720,7 @@ impl Dag {
     /// # Note:
     ///
     /// Panics if the operator index is invalid.
-    pub(crate) fn get_operator(&self, id: OperatorIndex) -> DagOperator<'_> {
+    pub fn get_operator(&self, id: OperatorIndex) -> DagOperator<'_> {
         assert!(id.0 < self.len());
         DagOperator {
             dag: self,
@@ -686,7 +759,6 @@ impl Dag {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dag::operator::Shape;
 
     #[test]
     fn output_marking() {
@@ -722,7 +794,6 @@ mod tests {
         let mut graph = Dag::new();
         let mut builder = graph.builder("_");
         let input1 = builder.add_input(1, Shape::number());
-
         let input2 = builder.add_input(2, Shape::number());
 
         let cpx_add = LevelledComplexity::ADDITION;
@@ -778,6 +849,7 @@ mod tests {
                         shape: Shape::vector(2),
                         values: vec![1, 2]
                     },
+                    kind: DotKind::Tensor
                 },
                 Operator::Lut {
                     input: dot,
@@ -811,6 +883,7 @@ mod tests {
             Operator::Dot {
                 inputs: vec![input1],
                 weights: Weights::number(1 << 5),
+                kind: DotKind::Tensor,
             },
             Operator::UnsafeCast {
                 input: OperatorIndex(1),
@@ -826,6 +899,7 @@ mod tests {
             Operator::Dot {
                 inputs: vec![input1, OperatorIndex(3)],
                 weights: Weights::vector([1, -1]),
+                kind: DotKind::Simple,
             },
             Operator::UnsafeCast {
                 input: OperatorIndex(4),
@@ -836,6 +910,7 @@ mod tests {
             Operator::Dot {
                 inputs: vec![OperatorIndex(5)],
                 weights: Weights::number(1 << 4),
+                kind: DotKind::Tensor,
             },
             Operator::UnsafeCast {
                 input: OperatorIndex(6),
@@ -851,6 +926,7 @@ mod tests {
             Operator::Dot {
                 inputs: vec![OperatorIndex(5), OperatorIndex(8)],
                 weights: Weights::vector([1, -1]),
+                kind: DotKind::Simple,
             },
             Operator::UnsafeCast {
                 input: OperatorIndex(9),
@@ -861,6 +937,7 @@ mod tests {
             Operator::Dot {
                 inputs: vec![OperatorIndex(10)],
                 weights: Weights::number(1 << 3),
+                kind: DotKind::Tensor,
             },
             Operator::UnsafeCast {
                 input: OperatorIndex(11),
@@ -876,6 +953,7 @@ mod tests {
             Operator::Dot {
                 inputs: vec![OperatorIndex(10), OperatorIndex(13)],
                 weights: Weights::vector([1, -1]),
+                kind: DotKind::Simple,
             },
             Operator::UnsafeCast {
                 input: OperatorIndex(14),

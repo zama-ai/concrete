@@ -1,4 +1,4 @@
-mod analyze;
+pub(crate) mod analyze;
 mod complexity;
 mod fast_keyswitch;
 mod feasible;

@@ -418,15 +418,16 @@ TEST(CompileNotComposable, not_composable_2) {
   TestProgram circuit(options);
   auto err = circuit.compile(R"XXX(
 func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
-  %cst_1 = arith.constant 1 : i4
+  %cst_1 = arith.constant 2 : i4
   %cst_2 = arith.constant dense<[0, 1, 2, 3, 4, 5, 6, 7]> : tensor<8xi64>
-  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  %1 = "FHE.mul_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
   %2 = "FHE.apply_lookup_table"(%1, %cst_2): (!FHE.eint<3>, tensor<8xi64>) -> (!FHE.eint<3>)
   return %1, %2: !FHE.eint<3>, !FHE.eint<3>
 }
 )XXX");
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(
-      err, "Program can not be composed: Output 1 has variance 1σ²In[0].");
+      err, "Program can not be composed: Dag is not composable, because of "
+           "output 1: Partition 0 has input coefficient 4");
 }
 
 TEST(CompileComposable, composable_supported_dag_mono) {

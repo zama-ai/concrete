@@ -36,6 +36,13 @@ impl Viz for crate::dag::unparametrized::Dag {
         let mut graph = vec![];
         self.get_circuits_iter()
             .for_each(|circuit| graph.push(circuit.viz_node()));
+        self.composition
+            .clone()
+            .into_iter()
+            .flat_map(|(to, froms)| froms.into_iter().map(move |f| (to, f)))
+            .for_each(|(to, from)| {
+                graph.push(format!("{from} -> {to} [color=red, style=dashed]"));
+            });
         graph.join("\n")
     }
 }
@@ -108,10 +115,66 @@ impl<'dag> Viz for crate::dag::unparametrized::DagOperator<'dag> {
     }
 }
 
+impl Viz for crate::optimization::dag::multi_parameters::analyze::PartitionedDag {
+    fn viz_node(&self) -> String {
+        let mut output = self.dag.viz_node();
+        self.partitions
+            .instrs_partition
+            .iter()
+            .enumerate()
+            .for_each(|(i, part)| {
+                let partition = part.instruction_partition;
+                let circuit = &self.dag.circuit_tags[i];
+                // let color = partition.0 + 1;
+                output.push_str(&format!("subgraph cluster_circuit_{circuit} {{\n"));
+                output.push_str(&format!("partition_{i} [label =\"{partition}\"];\n"));
+                output.push_str(&format!(
+                    "partition_{i} -> {i} [arrowhead=none, color=gray80, weight=99];\n"
+                ));
+                output.push_str("}\n");
+            });
+        output
+    }
+}
+
+impl Viz for crate::optimization::dag::multi_parameters::analyze::VariancedDag {
+    fn viz_node(&self) -> String {
+        let mut output = self.dag.viz_node();
+        self.partitions
+            .instrs_partition
+            .iter()
+            .zip(self.variances.vars.iter())
+            .enumerate()
+            .for_each(|(i, (part, var))| {
+                let partition = part.instruction_partition;
+                let circuit = &self.dag.circuit_tags[i];
+                let variances = var
+                    .vars
+                    .iter()
+                    .enumerate()
+                    .map(|(i, var)| format!("{{{i}|{var}}}"))
+                    .collect::<Vec<_>>()
+                    .join("|");
+                let label = format!(
+                    "<{{<b>Partition</b> | {partition} | <b>Variances</b> | {variances} }}>"
+                );
+                output.push_str(&format!("subgraph cluster_circuit_{circuit} {{\n"));
+                output.push_str(&format!(
+                    "info_{i} [label ={label} color=gray80 fillcolor=gray90];\n"
+                ));
+                output.push_str(&format!(
+                    "{i} -> info_{i} [arrowhead=none, color=gray90, weight=99];\n"
+                ));
+                output.push_str("}\n");
+            });
+        output
+    }
+}
+
 macro_rules! _viz {
     ($path: expr, $object:expr) => {{
         let mut path = std::env::temp_dir();
-        path.push($path.as_str());
+        path.push(AsRef::<std::path::Path>::as_ref($path));
         let _ = std::process::Command::new("sh")
             .arg("-c")
             .arg(format!(
@@ -139,7 +202,7 @@ macro_rules! viz {
     };
     ($object:expr) => {
         let name = format!("concrete_optimizer_dbg_{}.svg", rand::random::<u64>());
-        $crate::utils::viz::viz!(name, $object);
+        $crate::utils::viz::viz!(&name, $object);
     };
 }
 
@@ -158,7 +221,7 @@ macro_rules! vizp {
     }};
     ($object:expr) => {
         let name = format!("concrete_optimizer_dbg_{}.svg", rand::random::<u64>());
-        $crate::utils::viz::vizp!(name, $object);
+        $crate::utils::viz::vizp!(&name, $object);
     };
 }
 

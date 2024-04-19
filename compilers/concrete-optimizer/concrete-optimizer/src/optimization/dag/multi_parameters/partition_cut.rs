@@ -66,10 +66,10 @@ impl PartitionCut {
                     if dag.out_precisions[input.0] <= precision_cut
                         && self.rnorm2(op_i) <= norm2_cut
                     {
-                        return Some(partition);
+                        return Some(PartitionIndex(partition));
                     }
                 }
-                Some(self.p_cut.len())
+                Some(PartitionIndex(self.p_cut.len()))
             }
             _ => None,
         }
@@ -193,7 +193,7 @@ impl PartitionCut {
     pub fn delete_unused_cut(&self, used: &HashSet<PartitionIndex>) -> Self {
         let mut p_cut = vec![];
         for (i, &cut) in self.p_cut.iter().enumerate() {
-            if used.contains(&i) {
+            if used.contains(&PartitionIndex(i)) {
                 p_cut.push(cut);
             }
         }

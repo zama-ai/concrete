@@ -1,6 +1,38 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    fmt::Display,
+    ops::{Deref, Index, IndexMut},
+};
 
-pub type PartitionIndex = usize;
+use crate::dag::operator::OperatorIndex;
+
+#[derive(Clone, Debug, PartialEq, Eq, Default, PartialOrd, Ord, Hash, Copy)]
+pub struct PartitionIndex(pub(crate) usize);
+
+impl PartitionIndex {
+    pub const FIRST: Self = Self(0);
+
+    pub const INVALID: Self = Self(usize::MAX);
+
+    pub fn range(from: usize, to: usize) -> impl DoubleEndedIterator<Item = Self> {
+        (from..to).map(PartitionIndex)
+    }
+}
+
+impl Display for PartitionIndex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl Deref for PartitionIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 pub type AdditionalRepresentations = HashSet<PartitionIndex>;
 
 // How one input is made compatible with the instruction partition
@@ -46,4 +78,31 @@ impl InstructionPartition {
 pub struct Partitions {
     pub nb_partitions: usize,
     pub instrs_partition: Vec<InstructionPartition>,
+}
+
+impl Index<OperatorIndex> for Partitions {
+    type Output = InstructionPartition;
+
+    fn index(&self, index: OperatorIndex) -> &Self::Output {
+        &self.instrs_partition[index.0]
+    }
+}
+
+impl IndexMut<OperatorIndex> for Partitions {
+    fn index_mut(&mut self, index: OperatorIndex) -> &mut Self::Output {
+        &mut self.instrs_partition[index.0]
+    }
+}
+
+#[allow(unused)]
+pub struct PartitionsCircuit<'part> {
+    pub(crate) partitions: &'part [InstructionPartition],
+    pub(crate) idx: Vec<usize>,
+}
+
+impl<'part> PartitionsCircuit<'part> {
+    #[allow(unused)]
+    pub fn get_node_iter(&'part self) -> impl Iterator<Item = &'part InstructionPartition> {
+        self.idx.iter().map(|i| self.partitions.get(*i).unwrap())
+    }
 }

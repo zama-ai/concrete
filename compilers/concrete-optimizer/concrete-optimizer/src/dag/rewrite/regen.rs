@@ -41,6 +41,9 @@ pub(crate) fn regen(
                 .for_each(|n| regen_dag.output_state[n.0].transition_use());
         }
     }
+    // remap composition
+    regen_dag.composition = dag.composition.clone();
+    regen_dag.composition.update_index(&old_index_to_new);
     (regen_dag, instructions_multi_map(&old_index_to_new))
 }
 

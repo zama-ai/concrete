@@ -20,6 +20,9 @@ namespace optimizer {
 std::unique_ptr<mlir::Pass> createDagPass(optimizer::Config config,
                                           concrete_optimizer::Dag &dag);
 
+void applyCompositionRules(optimizer::Config config,
+                           concrete_optimizer::Dag &dag);
+
 } // namespace optimizer
 } // namespace concretelang
 } // namespace mlir

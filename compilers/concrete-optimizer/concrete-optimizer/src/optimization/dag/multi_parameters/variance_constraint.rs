@@ -49,7 +49,7 @@ impl VarianceConstraint {
         let self_renorm = other.safe_variance_bound / self.safe_variance_bound;
         let rel_diff =
             |f: &dyn Fn(&SymbolicVariance) -> f64| self_renorm * f(self_var) - f(other_var);
-        for partition in 0..self.variance.nb_partitions() {
+        for partition in PartitionIndex::range(0, self.variance.nb_partitions()) {
             let diffs = [
                 rel_diff(&|var| var.coeff_pbs(partition)),
                 rel_diff(&|var| var.coeff_pbs(partition) + var.coeff_input(partition)),
@@ -61,8 +61,8 @@ impl VarianceConstraint {
                 }
             }
         }
-        for src_partition in 0..self.variance.nb_partitions() {
-            for dst_partition in 0..self.variance.nb_partitions() {
+        for src_partition in PartitionIndex::range(0, self.variance.nb_partitions()) {
+            for dst_partition in PartitionIndex::range(0, self.variance.nb_partitions()) {
                 let diffs = [
                     rel_diff(&|var| var.coeff_keyswitch_to_small(src_partition, dst_partition)),
                     rel_diff(&|var| {
