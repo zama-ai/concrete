@@ -408,6 +408,12 @@ void TFHEKeyNormalizationPass::runOnOperation() {
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::linalg::YieldOp>(
         target, typeConverter);
 
+    patterns.add<RegionOpTypeConverterPattern<mlir::tensor::YieldOp,
+                                              conversion::TypeConverter>>(
+        &getContext(), typeConverter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::YieldOp>(
+        target, typeConverter);
+
     mlir::concretelang::populateWithTensorTypeConverterPatterns(
         patterns, target, typeConverter);
 

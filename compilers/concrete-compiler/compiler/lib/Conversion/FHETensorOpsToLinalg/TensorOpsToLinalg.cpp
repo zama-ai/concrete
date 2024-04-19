@@ -2030,6 +2030,86 @@ struct TensorPartitionFrontierOpToLinalgGeneric
   };
 };
 
+/// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.fancy_index` to an instance of `tensor.generate`.
+///
+/// Example:
+///
+///   %output = "FHELinalg.fancy_index"(%input, %indices) :
+///     (tensor<5x!FHE.eint<6>>, tensor<3xindex>) -> tensor<3x!FHE.eint<6>>
+///
+/// becomes:
+///
+///   %output = tensor.generate  {
+///     ^bb0(%i: index):
+///       %index = tensor.extract %indices[%i] : tensor<3xindex>
+///       %element = tensor.extract %input[%index] : tensor<5x!FHE.eint<6>>
+///       tensor.yield %element : !FHE.eint<6>
+///     } : tensor<3x!FHE.eint<6>>
+///
+struct FancyIndexToTensorGenerate
+    : public mlir::OpRewritePattern<FHELinalg::FancyIndexOp> {
+  FancyIndexToTensorGenerate(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<FHELinalg::FancyIndexOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHELinalg::FancyIndexOp fancyIndexOp,
+                  mlir::PatternRewriter &rewriter) const override {
+
+    auto location = fancyIndexOp.getLoc();
+
+    auto input = fancyIndexOp.getInput();
+    auto indices = fancyIndexOp.getIndices();
+    auto output = fancyIndexOp.getOutput();
+
+    auto inputType = input.getType().dyn_cast<mlir::RankedTensorType>();
+    auto outputType = output.getType().dyn_cast<mlir::RankedTensorType>();
+
+    auto inputShape = inputType.getShape();
+    auto inputDimensions = inputShape.size();
+    auto inputIsVector = inputDimensions == 1;
+    auto inputElementType = inputType.getElementType();
+
+    auto dynamicExtents = mlir::ValueRange();
+    auto body = [=](mlir::OpBuilder &builder, mlir::Location location,
+                    mlir::ValueRange args) {
+      if (inputIsVector) {
+        auto index = builder.create<tensor::ExtractOp>(
+            location, builder.getIndexType(), indices, args);
+
+        auto result = builder.create<tensor::ExtractOp>(
+            location, inputElementType, input, index.getResult());
+        result->setAttrs(fancyIndexOp->getAttrs());
+
+        builder.create<tensor::YieldOp>(location, result);
+      } else {
+        auto index = llvm::SmallVector<mlir::Value>();
+        auto baseArgs = std::vector<mlir::Value>(args.begin(), args.end());
+        for (size_t i = 0; i < inputShape.size(); i++) {
+          baseArgs.push_back(builder.create<arith::ConstantOp>(
+              location, builder.getIndexType(), builder.getIndexAttr(i)));
+          index.push_back(builder.create<tensor::ExtractOp>(
+              location, builder.getIndexType(), indices, baseArgs));
+          baseArgs.pop_back();
+        }
+
+        auto result = builder.create<tensor::ExtractOp>(
+            location, inputElementType, input, index);
+        result->setAttrs(fancyIndexOp->getAttrs());
+
+        builder.create<tensor::YieldOp>(location, result);
+      }
+    };
+    auto result = rewriter.create<tensor::GenerateOp>(location, outputType,
+                                                      dynamicExtents, body);
+    result->setAttrs(fancyIndexOp->getAttrs());
+
+    rewriter.replaceOp(fancyIndexOp, {result});
+    return mlir::success();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -2211,6 +2291,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<TransposeToLinalgGeneric>(&getContext());
   patterns.insert<FromElementToTensorFromElements>(&getContext());
   patterns.insert<TensorPartitionFrontierOpToLinalgGeneric>(&getContext());
+  patterns.insert<FancyIndexToTensorGenerate>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())

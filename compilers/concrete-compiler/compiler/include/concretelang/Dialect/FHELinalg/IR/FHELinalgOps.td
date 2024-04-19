@@ -1415,5 +1415,52 @@ def FHELinalg_ReinterpretPrecisionEintOp: FHELinalg_Op<"reinterpret_precision", 
     let hasVerifier = 1;
 }
 
+def FHELinalg_FancyIndexOp : FHELinalg_Op<"fancy_index", [Pure]> {
+    let summary = "Index into a tensor using a tensor of indices.";
+
+    let description = [{
+        Examples:
+
+        ```mlir
+        "FHELinalg.fancy_index"(%t, %i) : (tensor<5x!FHE.eint<6>>, tensor<3xindex>) -> tensor<3x!FHE.eint<6>>
+        //
+        // fancy_index([10, 20, 30, 40, 50], [3, 1, 2]) = [40, 20, 30]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.fancy_index"(%t, %i) : (tensor<5x!FHE.eint<6>>, tensor<3x2xindex>) -> tensor<3x2x!FHE.eint<6>>
+        //
+        // fancy_index([10, 20, 30, 40, 50], [[3, 1], [2, 2], [0, 4]]) = [[40, 20], [30, 30], [10, 50]]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.fancy_index"(%t, %i) : (tensor<2x3x!FHE.eint<6>>, tensor<3x2xindex>) -> tensor<3x!FHE.eint<6>>
+        //
+        // fancy_index([[11, 12, 13], [21, 22, 23]], [[1, 0], [0, 2], [0, 0]]) = [21, 13, 11]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.fancy_index"(%t, %i) : (tensor<3x3x!FHE.eint<6>>, tensor<2x3x2xindex>) -> tensor<2x3x!FHE.eint<6>>
+        //
+        // fancy_index([[11, 12, 13], [21, 22, 23], [31, 32, 33]], [[[1, 0], [0, 2], [0, 0]], [[2, 0], [1, 1], [2, 1]]]) = [[21, 13, 11], [31, 22, 32]]
+        //
+        ```
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$input,
+        Type<And<[TensorOf<[Index]>.predicate, HasStaticShapePred]>>:$indices
+    );
+
+    let results = (outs
+        Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$output
+    );
+
+    let hasVerifier = 1;
+}
+
 
 #endif

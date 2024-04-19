@@ -2454,7 +2454,7 @@ class Context:
             resulting_type.bit_width
         )
 
-        result = self.zeros(resulting_type)
+        indices = []
         for destination_position in np.ndindex(resulting_type.shape):
             source_position = []
             for indexing_element in index:
@@ -2471,10 +2471,21 @@ class Context:
                     message = f"invalid indexing element of type {type(indexing_element)}"
                     raise AssertionError(message)
 
-            element = self.index_static(resulting_element_type, x, tuple(source_position))
-            result = self.assign_static(resulting_type, result, element, destination_position)
+            indices.append(source_position)
 
-        return result
+        indices_shape = resulting_type.shape
+        if len(x.shape) > 1:
+            indices_shape = (*indices_shape, len(x.shape))
+
+        return self.operation(
+            fhelinalg.FancyIndexOp,
+            resulting_type,
+            x.result,
+            self.constant(
+                self.tensor(self.index_type(), indices_shape),
+                np.array(indices).reshape(indices_shape),
+            ).result
+        )
 
     def less(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.LESS})
