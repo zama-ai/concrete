@@ -359,6 +359,43 @@ public:
 
           cs.converge(op, *this, state, inferredTypes);
         })
+        .Case<mlir::tensor::YieldOp>([&](mlir::tensor::YieldOp op) {
+          TypeConstraintSet<> cs;
+
+          if (solution.has_value()) {
+            cs.addConstraint<ApplySolverSolutionConstraint>(*this,
+                                                            solution.value());
+          }
+
+          for (size_t i = 0; i < op->getNumOperands(); i++) {
+            cs.addConstraint<
+                DynamicSameElementTypeConstraint<DynamicFunctorYield>>(
+                [=]() { return op->getParentOp()->getResult(i); },
+                [=]() { return op->getOperand(i); });
+          }
+
+          cs.converge(op, *this, state, inferredTypes);
+        })
+        .Case<mlir::tensor::GenerateOp>([&](mlir::tensor::GenerateOp op) {
+          TypeConstraintSet<> cs;
+
+          if (solution.has_value()) {
+            cs.addConstraint<ApplySolverSolutionConstraint>(*this,
+                                                            solution.value());
+          }
+
+          for (size_t i = 0; i < op->getNumResults(); i++) {
+            mlir::Value result = op->getResult(i);
+            mlir::Value terminatorOperand =
+                op.getBody().getBlocks().front().getTerminator()->getOperand(i);
+
+            cs.addConstraint<
+                DynamicSameElementTypeConstraint<DynamicFunctorYield>>(
+                [=]() { return result; }, [=]() { return terminatorOperand; });
+          }
+
+          cs.converge(op, *this, state, inferredTypes);
+        })
         .Default([&](auto _op) { assert(false && "unsupported op type"); });
 
     return state;

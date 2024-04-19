@@ -916,6 +916,12 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::EmptyOp>(
         target, converter);
 
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::tensor::YieldOp>>(patterns.getContext(), converter);
+
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::YieldOp>(
+        target, converter);
+
     mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::DimOp>(
         target, converter);
 

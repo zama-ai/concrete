@@ -1004,6 +1004,8 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
         target, converter);
     mlir::concretelang::addDynamicallyLegalTypeOp<
         mlir::tensor::ParallelInsertSliceOp>(target, converter);
+    mlir::concretelang::addDynamicallyLegalTypeOp<mlir::tensor::YieldOp>(
+        target, converter);
 
     //---------------------------------------------------------- Adding patterns
     mlir::RewritePatternSet patterns(&getContext());
@@ -1100,6 +1102,9 @@ struct FHEToTFHECrtPass : public FHEToTFHECrtBase<FHEToTFHECrtPass> {
                                                             converter);
     patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
         mlir::scf::ForallOp>>(&getContext(), converter);
+
+    patterns.add<mlir::concretelang::TypeConvertingReinstantiationPattern<
+        mlir::tensor::YieldOp>>(&getContext(), converter);
 
     //--------------------------------------------------------- Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

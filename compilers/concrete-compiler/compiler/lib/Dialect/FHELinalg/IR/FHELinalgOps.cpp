@@ -1454,6 +1454,61 @@ mlir::LogicalResult ReinterpretPrecisionEintOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult FancyIndexOp::verify() {
+  auto inputType =
+      this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto indicesType =
+      this->getIndices().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+  auto inputElementType = inputType.getElementType();
+  auto outputElementType = outputType.getElementType();
+
+  if (inputElementType != outputElementType) {
+    this->emitOpError() << "input element type " << inputElementType
+                        << " doesn't match output element type "
+                        << outputElementType;
+    return mlir::failure();
+  }
+
+  auto inputShape = inputType.getShape();
+  auto indicesShape = indicesType.getShape();
+  auto outputShape = outputType.getShape();
+
+  auto inputIsVector = inputShape.size() == 1;
+  if (!inputIsVector) {
+    if (indicesShape[indicesShape.size() - 1] != (int64_t)inputShape.size()) {
+      this->emitOpError()
+          << "size of the last dimension of indices '"
+          << indicesShape[indicesShape.size() - 1]
+          << "' doesn't match the number of dimensions of input '"
+          << inputShape.size() << "'";
+      return mlir::failure();
+    }
+  }
+
+  auto expectedOutputShape =
+      inputIsVector ? indicesShape : indicesShape.drop_back();
+  if (outputShape != expectedOutputShape) {
+    auto stream = this->emitOpError();
+
+    stream << "output shape '<";
+    if (!outputShape.empty()) {
+      llvm::interleave(outputShape, stream, "x");
+    }
+    stream << ">' doesn't match the expected output shape '<";
+    if (!expectedOutputShape.empty()) {
+      llvm::interleave(expectedOutputShape, stream, "x");
+    }
+    stream << ">'";
+
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 /// Avoid addition with constant tensor of 0s
 OpFoldResult AddEintIntOp::fold(FoldAdaptor operands) {
   auto toAdd = operands.getRhs().dyn_cast_or_null<mlir::DenseIntElementsAttr>();
