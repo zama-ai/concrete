@@ -2514,9 +2514,11 @@ class Context:
                 size = 1
                 stride = 1
                 offset = int(
-                    indexing_element
-                    if indexing_element >= 0
-                    else indexing_element + dimension_size,
+                    (
+                        indexing_element
+                        if indexing_element >= 0
+                        else indexing_element + dimension_size
+                    ),
                 )
 
             offsets.append(offset)

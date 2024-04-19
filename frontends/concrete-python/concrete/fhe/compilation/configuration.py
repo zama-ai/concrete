@@ -1233,9 +1233,11 @@ class Configuration:
         args = locals()
         return Configuration(
             **{
-                name: getattr(self, name)
-                if isinstance(args[name], Configuration.Keep)
-                else args[name]
+                name: (
+                    getattr(self, name)
+                    if isinstance(args[name], Configuration.Keep)
+                    else args[name]
+                )
                 for name in get_type_hints(Configuration.__init__)
             }
         )

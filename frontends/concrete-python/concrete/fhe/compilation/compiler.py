@@ -347,9 +347,11 @@ class Compiler:
         self.artifacts = (
             artifacts
             if artifacts is not None
-            else DebugArtifacts()
-            if self.configuration.dump_artifacts_on_unexpected_failures
-            else None
+            else (
+                DebugArtifacts()
+                if self.configuration.dump_artifacts_on_unexpected_failures
+                else None
+            )
         )
 
         try:
@@ -447,9 +449,11 @@ class Compiler:
         self.artifacts = (
             artifacts
             if artifacts is not None
-            else DebugArtifacts()
-            if self.configuration.dump_artifacts_on_unexpected_failures
-            else None
+            else (
+                DebugArtifacts()
+                if self.configuration.dump_artifacts_on_unexpected_failures
+                else None
+            )
         )
 
         try:

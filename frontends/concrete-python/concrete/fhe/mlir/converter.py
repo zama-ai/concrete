@@ -749,9 +749,7 @@ class Converter:
 
             if variable_input.bit_width > original_bit_width:
                 bit_width_difference = variable_input.bit_width - original_bit_width
-                shifter = ctx.constant(
-                    ctx.i(variable_input.bit_width + 1), 2**bit_width_difference
-                )
+                shifter = ctx.constant(ctx.i(variable_input.bit_width + 1), 2**bit_width_difference)
                 variable_input = ctx.mul(variable_input.type, variable_input, shifter)
 
             variable_input = ctx.reinterpret(variable_input, bit_width=truncated_bit_width)

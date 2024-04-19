@@ -230,7 +230,8 @@ def test_configuration_bad_fork(kwargs, expected_error, expected_message):
     main.%1 == main.%4
 
             """,
-            """
+            (
+                """
 
  main.%0 = 3
  main.%1 = 8
@@ -240,8 +241,8 @@ def test_configuration_bad_fork(kwargs, expected_error, expected_message):
 main.max = 8
 
             """
-            if USE_MULTI_PRECISION
-            else """
+                if USE_MULTI_PRECISION
+                else """
 
  main.%0 = 8
  main.%1 = 8
@@ -250,7 +251,8 @@ main.max = 8
  main.%4 = 8
 main.max = 8
 
-            """,
+            """
+            ),
         ),
     ],
 )

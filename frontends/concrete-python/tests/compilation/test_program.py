@@ -1,6 +1,7 @@
 """
 Tests of everything related to multi-circuit.
 """
+
 import tempfile
 
 import numpy as np

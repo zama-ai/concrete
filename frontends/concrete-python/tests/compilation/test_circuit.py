@@ -408,9 +408,7 @@ def test_circuit_run_with_unused_arg(helpers):
     def f(x, y):  # pylint: disable=unused-argument
         return x + 10
 
-    inputset = [
-        (np.random.randint(2**3, 2**4), np.random.randint(2**4, 2**5)) for _ in range(100)
-    ]
+    inputset = [(np.random.randint(2**3, 2**4), np.random.randint(2**4, 2**5)) for _ in range(100)]
     circuit = f.compile(inputset, configuration)
 
     with pytest.raises(ValueError, match="Expected 2 inputs but got 1"):
