@@ -3,7 +3,7 @@
 
 ## Context
 
-The concrete backends are implementations of the cryptographic primitives of the Zama variant of [TFHE](https://eprint.iacr.org/2018/421.pdf).
+The Concrete backends are implementations of the cryptographic primitives of the Zama variant of [TFHE](https://eprint.iacr.org/2018/421.pdf).
 
 There are client features (private and public key generation, encryption and decryption) and server features (homomorphic operations on ciphertexts using public keys).
 
