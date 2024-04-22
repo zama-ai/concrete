@@ -36,11 +36,11 @@ redirects:
   howto/debug: execution-analysis/debug.md
   howto/call_from_other_language: explanations/call_from_other_language.md
   dev/fusing: explanations/fusing.md
-  dev/backends/README: explanations/backends/README.md
+  dev/backends: explanations/backends/README.md
   dev/backends/new_backend: explanations/backends/new_backend.md
+  dev/compilation: dev/compilation/compiler_workflow.md
   dev/compilation/optimizer: explanations/optimizer.md
   dev/compilation/dialects: explanations/dialects.md
-  dev/compilation/README: explanations/compilation/README.md
   dev/compilation/FHELinalgDialect: explanations/FHELinalgDialect.md
   dev/compilation/FHEDialect: explanations/FHEDialect.md
   dev/compilation/TFHEDialect: explanations/TFHEDialect.md
@@ -48,5 +48,6 @@ redirects:
   dev/compilation/TracingDialect: explanations/TracingDialect.md
   dev/compilation/RTDialect: explanations/RTDialect.md
   dev/compilation/SDFGDialect: explanations/SDFGDialect.md
-  dev/security/security_curves: explanations/security_curves.md
+  dev/security/security_curves: explanations/security.md
+  explanations/security_curves: explanations/security.md
   dev/setup/layout: explanations/layout.md
