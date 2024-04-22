@@ -603,6 +603,8 @@ void SimulateTFHEPass::runOnOperation() {
                   mlir::concretelang::TypeConvertingReinstantiationPattern<
                       mlir::tensor::InsertSliceOp, true>,
                   mlir::concretelang::TypeConvertingReinstantiationPattern<
+                      mlir::tensor::ParallelInsertSliceOp, true>,
+                  mlir::concretelang::TypeConvertingReinstantiationPattern<
                       mlir::tensor::ExpandShapeOp>,
                   mlir::concretelang::TypeConvertingReinstantiationPattern<
                       mlir::tensor::CollapseShapeOp>,
@@ -615,12 +617,13 @@ void SimulateTFHEPass::runOnOperation() {
       mlir::tensor::YieldOp, mlir::scf::YieldOp, mlir::tensor::GenerateOp,
       mlir::tensor::ExtractSliceOp, mlir::tensor::ExtractOp,
       mlir::tensor::InsertOp, mlir::tensor::InsertSliceOp,
-      mlir::tensor::FromElementsOp, mlir::tensor::ExpandShapeOp,
-      mlir::tensor::CollapseShapeOp, mlir::bufferization::AllocTensorOp,
-      mlir::tensor::EmptyOp>([&](mlir::Operation *op) {
-    return converter.isLegal(op->getResultTypes()) &&
-           converter.isLegal(op->getOperandTypes());
-  });
+      mlir::tensor::ParallelInsertSliceOp, mlir::tensor::FromElementsOp,
+      mlir::tensor::ExpandShapeOp, mlir::tensor::CollapseShapeOp,
+      mlir::bufferization::AllocTensorOp, mlir::tensor::EmptyOp>(
+      [&](mlir::Operation *op) {
+        return converter.isLegal(op->getResultTypes()) &&
+               converter.isLegal(op->getOperandTypes());
+      });
   // Make sure that no ops `linalg.generic` that have illegal types
   target
       .addDynamicallyLegalOp<mlir::linalg::GenericOp, mlir::tensor::GenerateOp>(
@@ -638,6 +641,14 @@ void SimulateTFHEPass::runOnOperation() {
     return converter.isLegal(forOp.getInitArgs().getTypes()) &&
            converter.isLegal(forOp.getResults().getTypes());
   });
+
+  patterns.add<RegionOpTypeConverterPattern<mlir::scf::ForallOp,
+                                            SimulateTFHETypeConverter>>(
+      &getContext(), converter);
+  target.addDynamicallyLegalOp<mlir::scf::ForallOp>(
+      [&](mlir::scf::ForallOp forallOp) {
+        return converter.isLegal(forallOp.getResults().getTypes());
+      });
 
   patterns.insert<ZeroOpPattern, ZeroTensorOpPattern, KeySwitchGLWEOpPattern,
                   BootstrapGLWEOpPattern, WopPBSGLWEOpPattern,

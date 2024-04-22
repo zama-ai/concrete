@@ -102,6 +102,10 @@ mlir::LogicalResult optimizeTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
                                  std::function<bool(mlir::Pass *)> enablePass);
 
+mlir::LogicalResult
+transformTFHEOperations(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                        std::function<bool(mlir::Pass *)> enablePass);
+
 mlir::LogicalResult simulateTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
                                  std::function<bool(mlir::Pass *)> enablePass);
