@@ -62,7 +62,7 @@
 
 ## Explanations
 
-* [Compiler workflow](dev/compilation/README.md)
+* [Compiler workflow](dev/compilation/compiler_workflow.md)
 * [Frontend fusing](explanations/fusing.md)
 * [Compiler backend](explanations/backends/README.md)
   * [Adding a new backend](explanations/backends/new_backend.md)
@@ -75,7 +75,7 @@
   * [Tracing dialect](explanations/TracingDialect.md)
   * [Runtime dialect](explanations/RTDialect.md)
   * [SDFG dialect](explanations/SDFGDialect.md)
-* [Security](explanations/security_curves.md)
+* [Security](explanations/security.md)
 * [Call FHE circuits from other languages](explanations/call_from_other_language.md)
 * [Project layout](explanations/layout.md)
 
