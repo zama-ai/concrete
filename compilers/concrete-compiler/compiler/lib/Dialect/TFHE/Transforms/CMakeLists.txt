@@ -1,6 +1,7 @@
 add_mlir_library(
   TFHEDialectTransforms
   Optimization.cpp
+  OperationTransformations.cpp
   TFHECircuitSolutionParametrization.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/TFHE

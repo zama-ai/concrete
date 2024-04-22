@@ -461,6 +461,13 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     return StreamStringError("Optimizing TFHE failed");
   }
 
+  // Transforming TFHE operations
+  if (mlir::concretelang::pipeline::transformTFHEOperations(mlirContext, module,
+                                                            this->enablePass)
+          .failed()) {
+    return StreamStringError("Transforming TFHE operations failed");
+  }
+
   if (target == Target::TFHE)
     return std::move(res);
 

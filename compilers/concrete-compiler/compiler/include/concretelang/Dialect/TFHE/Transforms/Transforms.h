@@ -16,6 +16,8 @@
 namespace mlir {
 namespace concretelang {
 std::unique_ptr<mlir::OperationPass<>> createTFHEOptimizationPass();
+std::unique_ptr<mlir::OperationPass<mlir::func::FuncOp>>
+createTFHEOperationTransformationsPass();
 std::unique_ptr<mlir::OperationPass<mlir::ModuleOp>>
     createTFHECircuitSolutionParametrizationPass(
         std::optional<concrete_optimizer::dag::CircuitSolution>);
