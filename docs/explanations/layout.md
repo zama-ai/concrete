@@ -4,7 +4,7 @@
 
 Concrete is a modular framework composed by sub-projects using different technologies, all having theirs own build system and test suite. Each sub-project have is own README that explain how to setup the developer environment, how to build it and how to run tests commands.
 
-Concrete is made of 4 main categories of sub-project that are organized in subdirectories from the root of the concrete repo:
+Concrete is made of 4 main categories of sub-project that are organized in subdirectories from the root of the Concrete repo:
 
 * `frontends` contains **high-level transpilers** that target end users developers who want to use the Concrete stack easily from their usual environment. There are for now only one frontend provided by the Concrete project: a Python frontend named `concrete-python`.
 * `compilers` contains the sub-projects in charge of actually solving the compilation problem of an high-level abstraction of FHE to an actual executable. `concrete-optimizer` is a Rust based project that solves the optimization problems of an FHE dag to a TFHE dag and `concrete-compiler` which use `concrete-optimizer` is an end-to-end MLIR-based compiler that takes a crypto free FHE dialect and generates compilation artifacts both for the client and the server. `concrete-compiler` project provide in addition of the compilation engine, a client and server library in order to easily play with the compilation artifacts to implement a client and server protocol.
