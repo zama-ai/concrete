@@ -62,6 +62,7 @@
 
 ## Explanations
 
+* [Compiler workflow](dev/compilation/README.md)
 * [Frontend fusing](explanations/fusing.md)
 * [Compiler backend](explanations/backends/README.md)
   * [Adding a new backend](explanations/backends/new_backend.md)
