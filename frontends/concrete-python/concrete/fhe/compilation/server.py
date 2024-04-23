@@ -56,7 +56,7 @@ class Server:
     client_specs: ClientSpecs
     is_simulated: bool
 
-    _output_dir: Optional[tempfile.TemporaryDirectory]
+    _output_dir: Union[None, str, Path]
     _support: LibrarySupport
     _compilation_result: LibraryCompilationResult
     _compilation_feedback: ProgramCompilationFeedback
@@ -68,7 +68,7 @@ class Server:
     def __init__(
         self,
         client_specs: ClientSpecs,
-        output_dir: Optional[tempfile.TemporaryDirectory],
+        output_dir: Union[None, str, Path],
         support: LibrarySupport,
         compilation_result: LibraryCompilationResult,
         server_program: ServerProgram,
@@ -189,10 +189,8 @@ class Server:
             if configuration.compiler_verbose_mode:  # pragma: no cover
                 set_compiler_logging(True)
 
-            # pylint: disable=consider-using-with
-            output_dir = tempfile.TemporaryDirectory()
-            output_dir_path = Path(output_dir.name)
-            # pylint: enable=consider-using-with
+            output_dir = tempfile.mkdtemp()
+            output_dir_path = Path(output_dir)
 
             support = LibrarySupport.new(
                 str(output_dir_path), generateCppHeader=False, generateStaticLib=False
@@ -268,13 +266,13 @@ class Server:
             message = "Output directory must be provided"
             raise RuntimeError(message)
 
-        with open(Path(self._output_dir.name) / "client.specs.json", "wb") as f:
+        with open(Path(self._output_dir) / "client.specs.json", "wb") as f:
             f.write(self.client_specs.serialize())
 
-        with open(Path(self._output_dir.name) / "is_simulated", "w", encoding="utf-8") as f:
+        with open(Path(self._output_dir) / "is_simulated", "w", encoding="utf-8") as f:
             f.write("1" if self.is_simulated else "0")
 
-        shutil.make_archive(path, "zip", self._output_dir.name)
+        shutil.make_archive(path, "zip", self._output_dir)
 
     @staticmethod
     def load(path: Union[str, Path]) -> "Server":
@@ -291,8 +289,8 @@ class Server:
         """
 
         # pylint: disable=consider-using-with
-        output_dir = tempfile.TemporaryDirectory()
-        output_dir_path = Path(output_dir.name)
+        output_dir = tempfile.mkdtemp()
+        output_dir_path = Path(output_dir)
         # pylint: enable=consider-using-with
 
         shutil.unpack_archive(path, str(output_dir_path), "zip")
@@ -388,7 +386,7 @@ class Server:
         """
 
         if self._output_dir is not None:
-            self._output_dir.cleanup()
+            shutil.rmtree(Path(self._output_dir).resolve())
 
     @property
     def size_of_secret_keys(self) -> int:
