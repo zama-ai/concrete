@@ -5,6 +5,7 @@
 
 #include "llvm/Support/TargetSelect.h"
 
+#include "concrete-optimizer.hpp"
 #include "concretelang/Support/CompilationFeedback.h"
 #include "concretelang/Support/V0Parameters.h"
 #include "mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h"
@@ -13,6 +14,7 @@
 #include "mlir/Dialect/Func/Transforms/Passes.h"
 #include "mlir/Transforms/Passes.h"
 #include "llvm/Support/Error.h"
+#include <optional>
 
 #include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Arith/Transforms/Passes.h"
@@ -89,13 +91,12 @@ addPotentiallyNestedPass(mlir::PassManager &pm, std::unique_ptr<Pass> pass,
   }
 }
 
-llvm::Expected<std::map<std::string, std::optional<optimizer::Description>>>
+llvm::Expected<std::optional<optimizer::Description>>
 getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      optimizer::Config config,
                      std::function<bool(mlir::Pass *)> enablePass) {
   std::optional<size_t> oMax2norm;
   std::optional<size_t> oMaxWidth;
-  optimizer::FunctionsDag dags;
 
   mlir::PassManager pm(&context);
 
@@ -127,26 +128,19 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
         {/*.norm2 = */ ceilLog2(oMax2norm.value()),
          /*.p = */ oMaxWidth.value()});
   }
-  addPotentiallyNestedPass(pm, optimizer::createDagPass(config, dags),
+  auto dag = concrete_optimizer::dag::empty();
+  addPotentiallyNestedPass(pm, optimizer::createDagPass(config, *dag),
                            enablePass);
   if (pm.run(module.getOperation()).failed()) {
     return StreamStringError() << "Failed to create concrete-optimizer dag\n";
   }
-  std::map<std::string, std::optional<optimizer::Description>> descriptions;
-  for (auto &entry_dag : dags) {
-    if (!constraint) {
-      descriptions.insert(
-          decltype(descriptions)::value_type(entry_dag.first, std::nullopt));
-      continue;
-    }
-    optimizer::Description description = {*constraint,
-                                          std::move(entry_dag.second)};
-    std::optional<optimizer::Description> opt_description{
-        std::move(description)};
-    descriptions.insert(decltype(descriptions)::value_type(
-        entry_dag.first, std::move(opt_description)));
+  std::optional<optimizer::Description> description;
+  if (!constraint) {
+    description = std::nullopt;
+  } else {
+    description = {*constraint, std::move(dag)};
   }
-  return std::move(descriptions);
+  return std::move(description);
 }
 
 mlir::LogicalResult materializeOptimizerPartitionFrontiers(

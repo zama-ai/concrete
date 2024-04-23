@@ -24,7 +24,7 @@ mlir::LogicalResult materializeOptimizerPartitionFrontiers(
     std::optional<V0FHEContext> &fheContext,
     std::function<bool(mlir::Pass *)> enablePass);
 
-llvm::Expected<std::map<std::string, std::optional<optimizer::Description>>>
+llvm::Expected<std::optional<optimizer::Description>>
 getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      optimizer::Config config,
                      std::function<bool(mlir::Pass *)> enablePass);

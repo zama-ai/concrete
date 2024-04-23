@@ -1,4 +1,4 @@
-use crate::dag::unparametrized::OperationDag;
+use crate::dag::unparametrized::Dag;
 use crate::optimization::config::{Config, SearchSpace};
 use crate::optimization::dag::multi_parameters::keys_spec::CircuitSolution;
 use crate::optimization::dag::multi_parameters::optimize::optimize_to_circuit_solution as native_optimize;
@@ -26,7 +26,7 @@ fn best_complexity_solution(native: CircuitSolution, crt: CircuitSolution) -> Ci
 }
 
 fn crt_optimize(
-    dag: &OperationDag,
+    dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
     default_log_norm2_woppbs: f64,
@@ -54,7 +54,7 @@ fn crt_optimize(
 }
 
 pub fn optimize(
-    dag: &OperationDag,
+    dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
     encoding: Encoding,

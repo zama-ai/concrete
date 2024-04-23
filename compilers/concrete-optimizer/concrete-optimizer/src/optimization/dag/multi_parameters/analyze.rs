@@ -46,7 +46,7 @@ pub struct AnalyzedDag {
 }
 
 pub fn analyze(
-    dag: &unparametrized::OperationDag,
+    dag: &unparametrized::Dag,
     noise_config: &NoiseBoundConfig,
     p_cut: &Option<PartitionCut>,
     default_partition: PartitionIndex,
@@ -70,8 +70,8 @@ pub fn analyze(
         check_composability(&dag, &out_variances, nb_partitions)?;
         // Get the largest output out_variance
         let largest_output_variances = dag
-            .get_output_index_iter()
-            .map(|index| out_variances[index].clone())
+            .get_output_operators_iter()
+            .map(|op| out_variances[op.id.0].clone())
             .reduce(|lhs, rhs| {
                 lhs.into_iter()
                     .zip(rhs)
@@ -110,7 +110,7 @@ pub fn analyze(
 }
 
 fn check_composability(
-    dag: &unparametrized::OperationDag,
+    dag: &unparametrized::Dag,
     symbolic_variances: &[Vec<SymbolicVariance>],
     nb_partitions: usize,
 ) -> Result<()> {
@@ -126,8 +126,8 @@ fn check_composability(
     // If the circuit outputs are free from input variances, it means that every outputs are
     // refreshed, and the function can be composed.
     let in_var_in_out_var = dag
-        .get_output_index_iter()
-        .flat_map(|index| symbolic_variances[index].iter().map(move |v| (index, v)))
+        .get_output_operators_iter()
+        .flat_map(|op| symbolic_variances[op.id.0].iter().map(move |v| (op.id, v)))
         .find_map(|(output_index, sym_var)| {
             (0..nb_partitions)
                 .find(|partition| {
@@ -164,8 +164,8 @@ pub fn original_instrs_partition(
         // let mut extra_conversion_keys = None;
         for (i, new_instruction) in new_instructions.iter().enumerate() {
             // focus on TLU information
-            let new_instr_part = &dag.instrs_partition[new_instruction.i];
-            if let Op::Lut { .. } = dag.operators[new_instruction.i] {
+            let new_instr_part = &dag.instrs_partition[new_instruction.0];
+            if let Op::Lut { .. } = dag.operators[new_instruction.0] {
                 let ks_dst = new_instr_part.instruction_partition;
                 partition = Some(ks_dst);
                 #[allow(clippy::match_on_vec_items)]
@@ -201,7 +201,7 @@ pub fn original_instrs_partition(
             );
         }
         let partition =
-            partition.unwrap_or(dag.instrs_partition[new_instructions[0].i].instruction_partition);
+            partition.unwrap_or(dag.instrs_partition[new_instructions[0].0].instruction_partition);
         let input_partition = input_partition.unwrap_or(partition);
         let merged = keys_spec::InstructionKeys {
             input_key: big_keys[input_partition].identifier,
@@ -218,7 +218,7 @@ pub fn original_instrs_partition(
 }
 
 fn out_variance(
-    op: &unparametrized::UnparameterizedOperator,
+    op: &Operator,
     out_shapes: &[Shape],
     out_variances: &[Vec<SymbolicVariance>],
     nb_partitions: usize,
@@ -232,12 +232,12 @@ fn out_variance(
     // one variance per partition, in case the result is converted
     let partition = instr_partition.instruction_partition;
     let out_variance_of = |input: &OperatorIndex| {
-        assert!(input.i < out_variances.len());
-        assert!(partition < out_variances[input.i].len());
-        assert!(out_variances[input.i][partition] != SymbolicVariance::ZERO);
-        assert!(!out_variances[input.i][partition].coeffs.values[0].is_nan());
-        assert!(out_variances[input.i][partition].partition != usize::MAX);
-        out_variances[input.i][partition].clone()
+        assert!(input.0 < out_variances.len());
+        assert!(partition < out_variances[input.0].len());
+        assert!(out_variances[input.0][partition] != SymbolicVariance::ZERO);
+        assert!(!out_variances[input.0][partition].coeffs.values[0].is_nan());
+        assert!(out_variances[input.0][partition].partition != usize::MAX);
+        out_variances[input.0][partition].clone()
     };
     let max_variance = |acc: SymbolicVariance, input: SymbolicVariance| acc.max(&input);
     let variance = match op {
@@ -293,7 +293,7 @@ fn out_variance(
 }
 
 fn out_variances(
-    dag: &unparametrized::OperationDag,
+    dag: &unparametrized::Dag,
     nb_partitions: usize,
     instrs_partition: &[InstructionPartition],
     input_override: &Option<Vec<SymbolicVariance>>,
@@ -315,7 +315,7 @@ fn out_variances(
 }
 
 fn variance_constraint(
-    dag: &unparametrized::OperationDag,
+    dag: &unparametrized::Dag,
     noise_config: &NoiseBoundConfig,
     partition: PartitionIndex,
     op_i: usize,
@@ -336,18 +336,18 @@ fn variance_constraint(
 #[allow(clippy::float_cmp)]
 #[allow(clippy::match_on_vec_items)]
 fn collect_all_variance_constraints(
-    dag: &unparametrized::OperationDag,
+    dag: &unparametrized::Dag,
     noise_config: &NoiseBoundConfig,
     instrs_partition: &[InstructionPartition],
     out_variances: &[Vec<SymbolicVariance>],
 ) -> Vec<VarianceConstraint> {
     let mut constraints = vec![];
-    for (op_i, op) in dag.operators.iter().enumerate() {
-        let partition = instrs_partition[op_i].instruction_partition;
-        if let Op::Lut { input, .. } = op {
-            let precision = dag.out_precisions[input.i];
+    for op in dag.get_operators_iter() {
+        let partition = instrs_partition[op.id.0].instruction_partition;
+        if let Op::Lut { input, .. } = op.operator {
+            let precision = dag.out_precisions[input.0];
             let dst_partition = partition;
-            let src_partition = match instrs_partition[op_i].inputs_transition[0] {
+            let src_partition = match instrs_partition[op.id.0].inputs_transition[0] {
                 None => dst_partition,
                 Some(Transition::Internal { src_partition }) => {
                     assert!(src_partition != dst_partition);
@@ -355,7 +355,7 @@ fn collect_all_variance_constraints(
                 }
                 Some(Transition::Additional { src_partition }) => {
                     assert!(src_partition != dst_partition);
-                    let variance = &out_variances[input.i][dst_partition];
+                    let variance = &out_variances[input.0][dst_partition];
                     assert!(
                         variance.coeff_partition_keyswitch_to_big(src_partition, dst_partition)
                             == 1.0
@@ -363,7 +363,7 @@ fn collect_all_variance_constraints(
                     dst_partition
                 }
             };
-            let variance = &out_variances[input.i][src_partition].clone();
+            let variance = &out_variances[input.0][src_partition].clone();
             let variance = variance
                 .after_partition_keyswitch_to_small(src_partition, dst_partition)
                 .after_modulus_switching(partition);
@@ -371,19 +371,19 @@ fn collect_all_variance_constraints(
                 dag,
                 noise_config,
                 partition,
-                op_i,
+                op.id.0,
                 precision,
                 variance,
             ));
         }
-        if dag.is_output_node(op_i) {
-            let precision = dag.out_precisions[op_i];
-            let variance = out_variances[op_i][partition].clone();
+        if op.is_output() {
+            let precision = dag.out_precisions[op.id.0];
+            let variance = out_variances[op.id.0][partition].clone();
             constraints.push(variance_constraint(
                 dag,
                 noise_config,
                 partition,
-                op_i,
+                op.id.0,
                 precision,
                 variance,
             ));
@@ -394,15 +394,15 @@ fn collect_all_variance_constraints(
 
 #[allow(clippy::match_on_vec_items)]
 fn operations_counts(
-    dag: &unparametrized::OperationDag,
-    op: &unparametrized::UnparameterizedOperator,
+    dag: &unparametrized::Dag,
+    op: &Operator,
     nb_partitions: usize,
     instr_partition: &InstructionPartition,
 ) -> OperationsCount {
     let mut counts = OperationsValue::zero(nb_partitions);
     if let Op::Lut { input, .. } = op {
         let partition = instr_partition.instruction_partition;
-        let nb_lut = dag.out_shapes[input.i].flat_size() as f64;
+        let nb_lut = dag.out_shapes[input.0].flat_size() as f64;
         let src_partition = match instr_partition.inputs_transition[0] {
             Some(Transition::Internal { src_partition }) => src_partition,
             Some(Transition::Additional { .. }) | None => partition,
@@ -417,7 +417,7 @@ fn operations_counts(
 }
 
 fn collect_operations_count(
-    dag: &unparametrized::OperationDag,
+    dag: &unparametrized::Dag,
     nb_partitions: usize,
     instrs_partition: &[InstructionPartition],
 ) -> Vec<OperationsCount> {
@@ -446,12 +446,12 @@ pub mod tests {
     };
     use crate::optimization::dag::solo_key::analyze::tests::CONFIG;
 
-    pub fn analyze(dag: &unparametrized::OperationDag) -> AnalyzedDag {
+    pub fn analyze(dag: &unparametrized::Dag) -> AnalyzedDag {
         analyze_with_preferred(dag, LOW_PRECISION_PARTITION)
     }
 
     pub fn analyze_with_preferred(
-        dag: &unparametrized::OperationDag,
+        dag: &unparametrized::Dag,
         default_partition: PartitionIndex,
     ) -> AnalyzedDag {
         let p_cut = PartitionCut::for_each_precision(dag);
@@ -524,21 +524,19 @@ pub mod tests {
 
     #[test]
     fn test_composition_with_inputs_only() {
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let _ = dag.add_input(1, Shape::number());
         let p_cut = PartitionCut::for_each_precision(&dag);
-        dag.detect_outputs();
         let res = super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true);
         assert!(res.is_ok());
     }
 
     #[test]
     fn test_composition_1_partition() {
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let input1 = dag.add_input(1, Shape::number());
         let _ = dag.add_lut(input1, FunctionTable::UNKWOWN, 2);
         let p_cut = PartitionCut::for_each_precision(&dag);
-        dag.detect_outputs();
         let dag =
             super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true).unwrap();
         assert!(dag.nb_partitions == 1);
@@ -556,13 +554,12 @@ pub mod tests {
 
     #[test]
     fn test_composition_2_partitions() {
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let input1 = dag.add_input(3, Shape::number());
         let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 6);
         let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
         let input2 = dag.add_dot([input1, lut3], [1, 1]);
         let _ = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
-        dag.detect_outputs();
         let analyzed_dag =
             super::analyze(&dag, &CONFIG, &None, LOW_PRECISION_PARTITION, true).unwrap();
         assert_eq!(analyzed_dag.nb_partitions, 2);
@@ -597,7 +594,7 @@ pub mod tests {
 
     #[test]
     fn test_composition_3_partitions() {
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let input1 = dag.add_input(3, Shape::number());
         let input2 = dag.add_input(13, Shape::number());
         let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 6);
@@ -606,7 +603,6 @@ pub mod tests {
         let b = dag.add_dot([input1, lut3], [1, 1]);
         let _ = dag.add_lut(a, FunctionTable::UNKWOWN, 3);
         let _ = dag.add_lut(b, FunctionTable::UNKWOWN, 3);
-        dag.detect_outputs();
         let analyzed_dag = super::analyze(&dag, &CONFIG, &None, 1, true).unwrap();
         assert_eq!(analyzed_dag.nb_partitions, 3);
         let actual_constraint_strings = analyzed_dag
@@ -643,7 +639,7 @@ pub mod tests {
     #[allow(clippy::needless_range_loop)]
     #[test]
     fn test_lut_sequence() {
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let input1 = dag.add_input(8, Shape::number());
         let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 8);
         let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 1);
@@ -658,12 +654,11 @@ pub mod tests {
             LOW_PRECISION_PARTITION,
             HIGH_PRECISION_PARTITION,
         ];
-        dag.detect_outputs();
         let dag = analyze(&dag);
         assert!(dag.nb_partitions == 2);
-        for op_i in input1.i..=lut5.i {
+        for op_i in input1.0..=lut5.0 {
             let p = &dag.instrs_partition[op_i];
-            let is_input = op_i == input1.i;
+            let is_input = op_i == input1.0;
             assert!(p.instruction_partition == partitions[op_i]);
             if is_input {
                 assert_input_on(&dag, p.instruction_partition, op_i, 1.0);
@@ -677,7 +672,7 @@ pub mod tests {
 
     #[test]
     fn test_levelled_op() {
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let out_shape = Shape::number();
         let manp = 8.0;
         let input1 = dag.add_input(8, Shape::number());
@@ -690,7 +685,6 @@ pub mod tests {
             &out_shape,
             "comment",
         );
-        dag.detect_outputs();
         let dag = analyze(&dag);
         assert!(dag.nb_partitions == 1);
     }
@@ -704,18 +698,17 @@ pub mod tests {
     fn test_rounded_v3_first_layer_and_second_layer() {
         let acc_precision = 16;
         let precision = 8;
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let input1 = dag.add_input(acc_precision, Shape::number());
         let rounded1 = dag.add_expanded_round(input1, precision);
         let lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, acc_precision);
         let rounded2 = dag.add_expanded_round(lut1, precision);
         let lut2 = dag.add_lut(rounded2, FunctionTable::UNKWOWN, acc_precision);
-        dag.detect_outputs();
         let old_dag = dag;
         let dag = analyze(&old_dag);
         show_partitionning(&old_dag, &dag.instrs_partition);
         // First layer is fully LOW_PRECISION_PARTITION
-        for op_i in input1.i..lut1.i {
+        for op_i in input1.0..lut1.0 {
             let p = LOW_PRECISION_PARTITION;
             let sb = &dag.out_variances[op_i][p];
             assert!(sb.coeff_input(p) >= 1.0 || sb.coeff_pbs(p) >= 1.0);
@@ -725,10 +718,10 @@ pub mod tests {
         }
         // First lut is HIGH_PRECISION_PARTITION and immedialtely converted to LOW_PRECISION_PARTITION
         let p = HIGH_PRECISION_PARTITION;
-        let sb = &dag.out_variances[lut1.i][p];
+        let sb = &dag.out_variances[lut1.0][p];
         assert!(sb.coeff_input(p) == 0.0);
         assert!(sb.coeff_pbs(p) == 1.0);
-        let sb_after_fast_ks = &dag.out_variances[lut1.i][LOW_PRECISION_PARTITION];
+        let sb_after_fast_ks = &dag.out_variances[lut1.0][LOW_PRECISION_PARTITION];
         assert!(
             sb_after_fast_ks.coeff_partition_keyswitch_to_big(
                 HIGH_PRECISION_PARTITION,
@@ -736,7 +729,7 @@ pub mod tests {
             ) == 1.0
         );
         // The next rounded is on LOW_PRECISION_PARTITION but base noise can comes from HIGH_PRECISION_PARTITION + FKS
-        for op_i in (lut1.i + 1)..lut2.i {
+        for op_i in (lut1.0 + 1)..lut2.0 {
             assert!(LOW_PRECISION_PARTITION == dag.instrs_partition[op_i].instruction_partition);
             let p = LOW_PRECISION_PARTITION;
             let sb = &dag.out_variances[op_i][p];
@@ -762,9 +755,9 @@ pub mod tests {
             }
         }
         assert!(nan_symbolic_variance(
-            &dag.out_variances[lut2.i][LOW_PRECISION_PARTITION]
+            &dag.out_variances[lut2.0][LOW_PRECISION_PARTITION]
         ));
-        let sb = &dag.out_variances[lut2.i][HIGH_PRECISION_PARTITION];
+        let sb = &dag.out_variances[lut2.0][HIGH_PRECISION_PARTITION];
         assert!(sb.coeff_pbs(HIGH_PRECISION_PARTITION) >= 1.0);
     }
 
@@ -773,23 +766,22 @@ pub mod tests {
     fn test_rounded_v3_classic_first_layer_second_layer() {
         let acc_precision = 16;
         let precision = 8;
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let free_input1 = dag.add_input(precision, Shape::number());
         let input1 = dag.add_lut(free_input1, FunctionTable::UNKWOWN, acc_precision);
         let rounded1 = dag.add_expanded_round(input1, precision);
         let _lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, acc_precision);
-        dag.detect_outputs();
         let old_dag = dag;
         let dag = analyze(&old_dag);
         show_partitionning(&old_dag, &dag.instrs_partition);
         // First layer is fully HIGH_PRECISION_PARTITION
         assert!(
-            dag.out_variances[free_input1.i][HIGH_PRECISION_PARTITION]
+            dag.out_variances[free_input1.0][HIGH_PRECISION_PARTITION]
                 .coeff_input(HIGH_PRECISION_PARTITION)
                 == 1.0
         );
         // First layer tlu
-        let sb = &dag.out_variances[input1.i][HIGH_PRECISION_PARTITION];
+        let sb = &dag.out_variances[input1.0][HIGH_PRECISION_PARTITION];
         assert!(sb.coeff_input(LOW_PRECISION_PARTITION) == 0.0);
         assert!(sb.coeff_pbs(HIGH_PRECISION_PARTITION) == 1.0);
         assert!(
@@ -797,7 +789,7 @@ pub mod tests {
                 == 0.0
         );
         // The same cyphertext exists in another partition with additional noise due to fast keyswitch
-        let sb = &dag.out_variances[input1.i][LOW_PRECISION_PARTITION];
+        let sb = &dag.out_variances[input1.0][LOW_PRECISION_PARTITION];
         assert!(sb.coeff_input(LOW_PRECISION_PARTITION) == 0.0);
         assert!(sb.coeff_pbs(HIGH_PRECISION_PARTITION) == 1.0);
         assert!(
@@ -808,7 +800,7 @@ pub mod tests {
         // Second layer
         let mut first_bit_extract_verified = false;
         let mut first_bit_erase_verified = false;
-        for op_i in (input1.i + 1)..rounded1.i {
+        for op_i in (input1.0 + 1)..rounded1.0 {
             if let Op::Dot {
                 weights, inputs, ..
             } = &dag.operators[op_i]
@@ -817,7 +809,7 @@ pub mod tests {
                 let first_bit_extract = bit_extract && !first_bit_extract_verified;
                 let bit_erase = weights.values == [1, -1];
                 let first_bit_erase = bit_erase && !first_bit_erase_verified;
-                let input0_sb = &dag.out_variances[inputs[0].i][LOW_PRECISION_PARTITION];
+                let input0_sb = &dag.out_variances[inputs[0].0][LOW_PRECISION_PARTITION];
                 let input0_coeff_pbs_high = input0_sb.coeff_pbs(HIGH_PRECISION_PARTITION);
                 let input0_coeff_pbs_low = input0_sb.coeff_pbs(LOW_PRECISION_PARTITION);
                 let input0_coeff_fks = input0_sb.coeff_partition_keyswitch_to_big(
@@ -835,7 +827,7 @@ pub mod tests {
                     assert!(input0_coeff_fks == 1.0);
                 } else if bit_erase {
                     first_bit_erase_verified |= first_bit_erase;
-                    let input1_sb = &dag.out_variances[inputs[1].i][LOW_PRECISION_PARTITION];
+                    let input1_sb = &dag.out_variances[inputs[1].0][LOW_PRECISION_PARTITION];
                     let input1_coeff_pbs_high = input1_sb.coeff_pbs(HIGH_PRECISION_PARTITION);
                     let input1_coeff_pbs_low = input1_sb.coeff_pbs(LOW_PRECISION_PARTITION);
                     let input1_coeff_fks = input1_sb.coeff_partition_keyswitch_to_big(
@@ -863,12 +855,11 @@ pub mod tests {
     fn test_rounded_v3_classic_first_layer_second_layer_constraints() {
         let acc_precision = 7;
         let precision = 4;
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let free_input1 = dag.add_input(precision, Shape::number());
         let input1 = dag.add_lut(free_input1, FunctionTable::UNKWOWN, acc_precision);
         let rounded1 = dag.add_expanded_round(input1, precision);
         let _lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, precision);
-        dag.detect_outputs();
         let old_dag = dag;
         let dag = analyze(&old_dag);
         show_partitionning(&old_dag, &dag.instrs_partition);
@@ -924,13 +915,12 @@ pub mod tests {
     fn test_rounded_v1_classic_first_layer_second_layer_constraints() {
         let acc_precision = 7;
         let precision = 4;
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let free_input1 = dag.add_input(precision, Shape::number());
         let input1 = dag.add_lut(free_input1, FunctionTable::UNKWOWN, acc_precision);
         // let input1 = dag.add_input(acc_precision, Shape::number());
         let rounded1 = dag.add_expanded_round(input1, precision);
         let _lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, precision);
-        dag.detect_outputs();
         let old_dag = dag;
         let dag = analyze_with_preferred(&old_dag, HIGH_PRECISION_PARTITION);
         show_partitionning(&old_dag, &dag.instrs_partition);
@@ -983,12 +973,11 @@ pub mod tests {
     fn test_rounded_v3_classic_first_layer_second_layer_complexity() {
         let acc_precision = 7;
         let precision = 4;
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let free_input1 = dag.add_input(precision, Shape::number());
         let input1 = dag.add_lut(free_input1, FunctionTable::UNKWOWN, acc_precision);
         let rounded1 = dag.add_expanded_round(input1, precision);
         let _lut1 = dag.add_lut(rounded1, FunctionTable::UNKWOWN, precision);
-        dag.detect_outputs();
         let old_dag = dag;
         let dag = analyze(&old_dag);
         // Partition 0
@@ -1033,7 +1022,7 @@ pub mod tests {
 
     #[test]
     fn test_high_partition_number() {
-        let mut dag = unparametrized::OperationDag::new();
+        let mut dag = unparametrized::Dag::new();
         let max_precision = 10;
         let mut lut_input = dag.add_input(max_precision, Shape::number());
         for out_precision in (1..=max_precision).rev() {
@@ -1042,7 +1031,6 @@ pub mod tests {
         _ = dag.add_lut(lut_input, FunctionTable::UNKWOWN, 1);
         let precisions: Vec<_> = (1..=max_precision).collect();
         let p_cut = PartitionCut::from_precisions(&precisions);
-        dag.detect_outputs();
         let dag = super::analyze(
             &dag,
             &CONFIG,

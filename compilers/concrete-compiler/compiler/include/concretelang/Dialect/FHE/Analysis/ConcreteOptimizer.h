@@ -17,10 +17,8 @@ namespace mlir {
 namespace concretelang {
 
 namespace optimizer {
-using FunctionsDag = std::map<std::string, std::optional<Dag>>;
-
 std::unique_ptr<mlir::Pass> createDagPass(optimizer::Config config,
-                                          optimizer::FunctionsDag &dags);
+                                          concrete_optimizer::Dag &dag);
 
 } // namespace optimizer
 } // namespace concretelang

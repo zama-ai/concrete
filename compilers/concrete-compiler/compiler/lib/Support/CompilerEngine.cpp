@@ -13,6 +13,7 @@
 #include <err.h>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <llvm/Support/Debug.h>
 #include <memory>
 #include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
@@ -161,6 +162,7 @@ llvm::Expected<std::optional<optimizer::Description>>
 CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
   mlir::ModuleOp module = res.mlirModuleRef->get();
+  auto config = this->compilerOptions.optimizerConfig;
   // If the values has been overwritten returns
   if (this->overrideMaxEintPrecision.has_value() &&
       this->overrideMaxMANP.has_value()) {
@@ -168,47 +170,23 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
         this->overrideMaxMANP.value(), this->overrideMaxEintPrecision.value()};
     return optimizer::Description{constraint, std::nullopt};
   }
-  auto config = this->compilerOptions.optimizerConfig;
-  auto descriptions = mlir::concretelang::pipeline::getFHEContextFromFHE(
+  auto description = mlir::concretelang::pipeline::getFHEContextFromFHE(
       mlirContext, module, config, enablePass);
-  if (auto err = descriptions.takeError()) {
+  if (auto err = description.takeError()) {
     return std::move(err);
   }
-  if (descriptions->empty()) { // The pass has not been run
+  if (!description->has_value()) { // The pass has not been run
     return std::nullopt;
   }
-  if (descriptions->size() > 1 &&
+  if (description->value().dag.value()->get_circuit_count() > 1 &&
       config.strategy !=
           mlir::concretelang::optimizer::V0) { // Multi circuits without V0
     return StreamStringError(
         "Multi-circuits is only supported for V0 optimization.");
   }
-  if (descriptions->size() > 1) {
-    auto iter = descriptions->begin();
-    auto desc = std::move(iter->second);
-    if (!desc.has_value()) {
-      return StreamStringError("Expected description.");
-    }
-    if (!desc.value().dag.has_value()) {
-      return StreamStringError("Expected dag in description.");
-    }
-    iter++;
-    while (iter != descriptions->end()) {
-      if (!iter->second.has_value()) {
-        return StreamStringError("Expected description.");
-      }
-      if (!iter->second.value().dag.has_value()) {
-        return StreamStringError("Expected dag in description.");
-      }
-      desc->dag.value()->concat(*iter->second.value().dag.value());
-      iter++;
-    }
-    return std::move(desc);
-  }
-  return std::move(descriptions->begin()->second);
+  return description;
 }
 
-/// set the fheContext field if the v0Constraint can be computed
 /// set the fheContext field if the v0Constraint can be computed
 llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
   if (compilerOptions.v0Parameter.has_value()) {

@@ -941,7 +941,8 @@ union MaybeUninit {
 struct PrivateFunctionalPackingBoostrapKey;
 struct CircuitKeys;
 namespace concrete_optimizer {
-  struct OperationDag;
+  struct Dag;
+  struct DagBuilder;
   struct Weights;
   enum class Encoding : ::std::uint8_t;
   enum class MultiParamStrategy : ::std::uint8_t;
@@ -965,21 +966,15 @@ namespace concrete_optimizer {
 }
 
 namespace concrete_optimizer {
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$OperationDag
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$OperationDag
-struct OperationDag final : public ::rust::Opaque {
-  ::concrete_optimizer::dag::OperatorIndex add_input(::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
-  ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Dag
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$Dag
+struct Dag final : public ::rust::Opaque {
+  ::rust::Box<::concrete_optimizer::DagBuilder> builder(::rust::String circuit) noexcept;
   ::rust::String dump() const noexcept;
-  void concat(::concrete_optimizer::OperationDag const &other) noexcept;
-  void tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept;
+  ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
+  ::std::size_t get_circuit_count() const noexcept;
   ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options options) const noexcept;
-  ~OperationDag() = delete;
+  ~Dag() = delete;
 
 private:
   friend ::rust::layout;
@@ -988,7 +983,29 @@ private:
     static ::std::size_t align() noexcept;
   };
 };
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$OperationDag
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Dag
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$DagBuilder
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$DagBuilder
+struct DagBuilder final : public ::rust::Opaque {
+  ::rust::String dump() const noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_input(::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
+  void tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept;
+  ~DagBuilder() = delete;
+
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$DagBuilder
 
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Weights
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$Weights
@@ -1259,39 +1276,45 @@ namespace utils {
 extern "C" {
 void concrete_optimizer$utils$cxxbridge1$convert_to_dag_solution(::concrete_optimizer::v0::Solution const &solution, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
 
-void concrete_optimizer$utils$cxxbridge1$convert_to_circuit_solution(::concrete_optimizer::dag::DagSolution const &solution, ::concrete_optimizer::OperationDag const &dag, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
+void concrete_optimizer$utils$cxxbridge1$convert_to_circuit_solution(::concrete_optimizer::dag::DagSolution const &solution, ::concrete_optimizer::Dag const &dag, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
 } // extern "C"
 } // namespace utils
 
 extern "C" {
-::std::size_t concrete_optimizer$cxxbridge1$OperationDag$operator$sizeof() noexcept;
-::std::size_t concrete_optimizer$cxxbridge1$OperationDag$operator$alignof() noexcept;
+::std::size_t concrete_optimizer$cxxbridge1$Dag$operator$sizeof() noexcept;
+::std::size_t concrete_optimizer$cxxbridge1$Dag$operator$alignof() noexcept;
+::std::size_t concrete_optimizer$cxxbridge1$DagBuilder$operator$sizeof() noexcept;
+::std::size_t concrete_optimizer$cxxbridge1$DagBuilder$operator$alignof() noexcept;
 } // extern "C"
 
 namespace dag {
 extern "C" {
-::concrete_optimizer::OperationDag *concrete_optimizer$dag$cxxbridge1$empty() noexcept;
+::concrete_optimizer::Dag *concrete_optimizer$dag$cxxbridge1$empty() noexcept;
 } // extern "C"
 } // namespace dag
 
 extern "C" {
-::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_input(::concrete_optimizer::OperationDag &self, ::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape) noexcept;
+::concrete_optimizer::DagBuilder *concrete_optimizer$cxxbridge1$Dag$builder(::concrete_optimizer::Dag &self, ::rust::String *circuit) noexcept;
 
-::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_lut(::concrete_optimizer::OperationDag &self, ::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept;
+void concrete_optimizer$cxxbridge1$Dag$dump(::concrete_optimizer::Dag const &self, ::rust::String *return$) noexcept;
 
-::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_dot(::concrete_optimizer::OperationDag &self, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::concrete_optimizer::Weights *weights) noexcept;
+void concrete_optimizer$cxxbridge1$DagBuilder$dump(::concrete_optimizer::DagBuilder const &self, ::rust::String *return$) noexcept;
 
-::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_levelled_op(::concrete_optimizer::OperationDag &self, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_input(::concrete_optimizer::DagBuilder &self, ::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape) noexcept;
 
-::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_round_op(::concrete_optimizer::OperationDag &self, ::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_lut(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept;
 
-::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$OperationDag$add_unsafe_cast_op(::concrete_optimizer::OperationDag &self, ::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_dot(::concrete_optimizer::DagBuilder &self, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::concrete_optimizer::Weights *weights) noexcept;
 
-void concrete_optimizer$cxxbridge1$OperationDag$optimize(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_levelled_op(::concrete_optimizer::DagBuilder &self, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept;
 
-void concrete_optimizer$cxxbridge1$OperationDag$dump(::concrete_optimizer::OperationDag const &self, ::rust::String *return$) noexcept;
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_round_op(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
 
-void concrete_optimizer$cxxbridge1$OperationDag$concat(::concrete_optimizer::OperationDag &self, ::concrete_optimizer::OperationDag const &other) noexcept;
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_unsafe_cast_op(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept;
+
+void concrete_optimizer$cxxbridge1$DagBuilder$tag_operator_as_output(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex op) noexcept;
+
+void concrete_optimizer$cxxbridge1$Dag$optimize(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
 } // extern "C"
 
 namespace dag {
@@ -1316,9 +1339,9 @@ extern "C" {
 } // namespace weights
 
 extern "C" {
-void concrete_optimizer$cxxbridge1$OperationDag$tag_operator_as_output(::concrete_optimizer::OperationDag &self, ::concrete_optimizer::dag::OperatorIndex op) noexcept;
+::std::size_t concrete_optimizer$cxxbridge1$Dag$get_circuit_count(::concrete_optimizer::Dag const &self) noexcept;
 
-void concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(::concrete_optimizer::OperationDag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
+void concrete_optimizer$cxxbridge1$Dag$optimize_multi(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
 
 ::std::uint64_t concrete_optimizer$cxxbridge1$NO_KEY_ID() noexcept;
 } // extern "C"
@@ -1336,65 +1359,83 @@ namespace utils {
   return ::std::move(return$.value);
 }
 
-::concrete_optimizer::dag::CircuitSolution convert_to_circuit_solution(::concrete_optimizer::dag::DagSolution const &solution, ::concrete_optimizer::OperationDag const &dag) noexcept {
+::concrete_optimizer::dag::CircuitSolution convert_to_circuit_solution(::concrete_optimizer::dag::DagSolution const &solution, ::concrete_optimizer::Dag const &dag) noexcept {
   ::rust::MaybeUninit<::concrete_optimizer::dag::CircuitSolution> return$;
   concrete_optimizer$utils$cxxbridge1$convert_to_circuit_solution(solution, dag, &return$.value);
   return ::std::move(return$.value);
 }
 } // namespace utils
 
-::std::size_t OperationDag::layout::size() noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$operator$sizeof();
+::std::size_t Dag::layout::size() noexcept {
+  return concrete_optimizer$cxxbridge1$Dag$operator$sizeof();
 }
 
-::std::size_t OperationDag::layout::align() noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$operator$alignof();
+::std::size_t Dag::layout::align() noexcept {
+  return concrete_optimizer$cxxbridge1$Dag$operator$alignof();
+}
+
+::std::size_t DagBuilder::layout::size() noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$operator$sizeof();
+}
+
+::std::size_t DagBuilder::layout::align() noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$operator$alignof();
 }
 
 namespace dag {
-::rust::Box<::concrete_optimizer::OperationDag> empty() noexcept {
-  return ::rust::Box<::concrete_optimizer::OperationDag>::from_raw(concrete_optimizer$dag$cxxbridge1$empty());
+::rust::Box<::concrete_optimizer::Dag> empty() noexcept {
+  return ::rust::Box<::concrete_optimizer::Dag>::from_raw(concrete_optimizer$dag$cxxbridge1$empty());
 }
 } // namespace dag
 
-::concrete_optimizer::dag::OperatorIndex OperationDag::add_input(::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape) noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$add_input(*this, out_precision, out_shape);
+::rust::Box<::concrete_optimizer::DagBuilder> Dag::builder(::rust::String circuit) noexcept {
+  return ::rust::Box<::concrete_optimizer::DagBuilder>::from_raw(concrete_optimizer$cxxbridge1$Dag$builder(*this, &circuit));
 }
 
-::concrete_optimizer::dag::OperatorIndex OperationDag::add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$add_lut(*this, input, table, out_precision);
-}
-
-::concrete_optimizer::dag::OperatorIndex OperationDag::add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$add_dot(*this, inputs, weights.into_raw());
-}
-
-::concrete_optimizer::dag::OperatorIndex OperationDag::add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$add_levelled_op(*this, inputs, lwe_dim_cost_factor, fixed_cost, manp, out_shape, comment);
-}
-
-::concrete_optimizer::dag::OperatorIndex OperationDag::add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$add_round_op(*this, input, rounded_precision);
-}
-
-::concrete_optimizer::dag::OperatorIndex OperationDag::add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept {
-  return concrete_optimizer$cxxbridge1$OperationDag$add_unsafe_cast_op(*this, input, rounded_precision);
-}
-
-::concrete_optimizer::dag::DagSolution OperationDag::optimize(::concrete_optimizer::Options options) const noexcept {
-  ::rust::MaybeUninit<::concrete_optimizer::dag::DagSolution> return$;
-  concrete_optimizer$cxxbridge1$OperationDag$optimize(*this, options, &return$.value);
-  return ::std::move(return$.value);
-}
-
-::rust::String OperationDag::dump() const noexcept {
+::rust::String Dag::dump() const noexcept {
   ::rust::MaybeUninit<::rust::String> return$;
-  concrete_optimizer$cxxbridge1$OperationDag$dump(*this, &return$.value);
+  concrete_optimizer$cxxbridge1$Dag$dump(*this, &return$.value);
   return ::std::move(return$.value);
 }
 
-void OperationDag::concat(::concrete_optimizer::OperationDag const &other) noexcept {
-  concrete_optimizer$cxxbridge1$OperationDag$concat(*this, other);
+::rust::String DagBuilder::dump() const noexcept {
+  ::rust::MaybeUninit<::rust::String> return$;
+  concrete_optimizer$cxxbridge1$DagBuilder$dump(*this, &return$.value);
+  return ::std::move(return$.value);
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_input(::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_input(*this, out_precision, out_shape);
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_lut(*this, input, table, out_precision);
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_dot(*this, inputs, weights.into_raw());
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, double manp, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_levelled_op(*this, inputs, lwe_dim_cost_factor, fixed_cost, manp, out_shape, comment);
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_round_op(*this, input, rounded_precision);
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_unsafe_cast_op(*this, input, rounded_precision);
+}
+
+void DagBuilder::tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept {
+  concrete_optimizer$cxxbridge1$DagBuilder$tag_operator_as_output(*this, op);
+}
+
+::concrete_optimizer::dag::DagSolution Dag::optimize(::concrete_optimizer::Options options) const noexcept {
+  ::rust::MaybeUninit<::concrete_optimizer::dag::DagSolution> return$;
+  concrete_optimizer$cxxbridge1$Dag$optimize(*this, options, &return$.value);
+  return ::std::move(return$.value);
 }
 
 namespace dag {
@@ -1429,13 +1470,13 @@ namespace weights {
 }
 } // namespace weights
 
-void OperationDag::tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept {
-  concrete_optimizer$cxxbridge1$OperationDag$tag_operator_as_output(*this, op);
+::std::size_t Dag::get_circuit_count() const noexcept {
+  return concrete_optimizer$cxxbridge1$Dag$get_circuit_count(*this);
 }
 
-::concrete_optimizer::dag::CircuitSolution OperationDag::optimize_multi(::concrete_optimizer::Options options) const noexcept {
+::concrete_optimizer::dag::CircuitSolution Dag::optimize_multi(::concrete_optimizer::Options options) const noexcept {
   ::rust::MaybeUninit<::concrete_optimizer::dag::CircuitSolution> return$;
-  concrete_optimizer$cxxbridge1$OperationDag$optimize_multi(*this, options, &return$.value);
+  concrete_optimizer$cxxbridge1$Dag$optimize_multi(*this, options, &return$.value);
   return ::std::move(return$.value);
 }
 
@@ -1445,9 +1486,13 @@ void OperationDag::tag_operator_as_output(::concrete_optimizer::dag::OperatorInd
 } // namespace concrete_optimizer
 
 extern "C" {
-::concrete_optimizer::OperationDag *cxxbridge1$box$concrete_optimizer$OperationDag$alloc() noexcept;
-void cxxbridge1$box$concrete_optimizer$OperationDag$dealloc(::concrete_optimizer::OperationDag *) noexcept;
-void cxxbridge1$box$concrete_optimizer$OperationDag$drop(::rust::Box<::concrete_optimizer::OperationDag> *ptr) noexcept;
+::concrete_optimizer::Dag *cxxbridge1$box$concrete_optimizer$Dag$alloc() noexcept;
+void cxxbridge1$box$concrete_optimizer$Dag$dealloc(::concrete_optimizer::Dag *) noexcept;
+void cxxbridge1$box$concrete_optimizer$Dag$drop(::rust::Box<::concrete_optimizer::Dag> *ptr) noexcept;
+
+::concrete_optimizer::DagBuilder *cxxbridge1$box$concrete_optimizer$DagBuilder$alloc() noexcept;
+void cxxbridge1$box$concrete_optimizer$DagBuilder$dealloc(::concrete_optimizer::DagBuilder *) noexcept;
+void cxxbridge1$box$concrete_optimizer$DagBuilder$drop(::rust::Box<::concrete_optimizer::DagBuilder> *ptr) noexcept;
 
 ::concrete_optimizer::Weights *cxxbridge1$box$concrete_optimizer$Weights$alloc() noexcept;
 void cxxbridge1$box$concrete_optimizer$Weights$dealloc(::concrete_optimizer::Weights *) noexcept;
@@ -1520,16 +1565,28 @@ void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$truncate(::rust:
 namespace rust {
 inline namespace cxxbridge1 {
 template <>
-::concrete_optimizer::OperationDag *Box<::concrete_optimizer::OperationDag>::allocation::alloc() noexcept {
-  return cxxbridge1$box$concrete_optimizer$OperationDag$alloc();
+::concrete_optimizer::Dag *Box<::concrete_optimizer::Dag>::allocation::alloc() noexcept {
+  return cxxbridge1$box$concrete_optimizer$Dag$alloc();
 }
 template <>
-void Box<::concrete_optimizer::OperationDag>::allocation::dealloc(::concrete_optimizer::OperationDag *ptr) noexcept {
-  cxxbridge1$box$concrete_optimizer$OperationDag$dealloc(ptr);
+void Box<::concrete_optimizer::Dag>::allocation::dealloc(::concrete_optimizer::Dag *ptr) noexcept {
+  cxxbridge1$box$concrete_optimizer$Dag$dealloc(ptr);
 }
 template <>
-void Box<::concrete_optimizer::OperationDag>::drop() noexcept {
-  cxxbridge1$box$concrete_optimizer$OperationDag$drop(this);
+void Box<::concrete_optimizer::Dag>::drop() noexcept {
+  cxxbridge1$box$concrete_optimizer$Dag$drop(this);
+}
+template <>
+::concrete_optimizer::DagBuilder *Box<::concrete_optimizer::DagBuilder>::allocation::alloc() noexcept {
+  return cxxbridge1$box$concrete_optimizer$DagBuilder$alloc();
+}
+template <>
+void Box<::concrete_optimizer::DagBuilder>::allocation::dealloc(::concrete_optimizer::DagBuilder *ptr) noexcept {
+  cxxbridge1$box$concrete_optimizer$DagBuilder$dealloc(ptr);
+}
+template <>
+void Box<::concrete_optimizer::DagBuilder>::drop() noexcept {
+  cxxbridge1$box$concrete_optimizer$DagBuilder$drop(this);
 }
 template <>
 ::concrete_optimizer::Weights *Box<::concrete_optimizer::Weights>::allocation::alloc() noexcept {

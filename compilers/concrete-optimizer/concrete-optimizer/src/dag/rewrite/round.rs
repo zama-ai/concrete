@@ -1,9 +1,9 @@
 use crate::dag::operator::{Operator, OperatorIndex};
-use crate::dag::unparametrized::OperationDag;
+use crate::dag::unparametrized::Dag;
 
 use super::regen::regen;
 
-fn regen_round(_: usize, op: &Operator, dag: &mut OperationDag) -> Option<OperatorIndex> {
+fn regen_round(_: usize, op: &Operator, dag: &mut Dag) -> Option<OperatorIndex> {
     match *op {
         Operator::Round {
             input,
@@ -13,12 +13,10 @@ fn regen_round(_: usize, op: &Operator, dag: &mut OperationDag) -> Option<Operat
     }
 }
 
-pub(crate) fn expand_round(dag: &OperationDag) -> OperationDag {
+pub(crate) fn expand_round(dag: &Dag) -> Dag {
     regen(dag, &mut regen_round).0
 }
 
-pub(crate) fn expand_round_and_index_map(
-    dag: &OperationDag,
-) -> (OperationDag, Vec<Vec<OperatorIndex>>) {
+pub(crate) fn expand_round_and_index_map(dag: &Dag) -> (Dag, Vec<Vec<OperatorIndex>>) {
     regen(dag, &mut regen_round)
 }
