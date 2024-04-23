@@ -49,21 +49,21 @@ impl PartitionCut {
         if self.rnorm2.is_empty() {
             return f64::MAX;
         }
-        assert!(!self.rnorm2[op_i.i].is_nan());
-        self.rnorm2[op_i.i]
+        assert!(!self.rnorm2[op_i.0].is_nan());
+        self.rnorm2[op_i.0]
     }
 
     pub fn partition(
         &self,
-        dag: &unparametrized::OperationDag,
+        dag: &unparametrized::Dag,
         op_i: OperatorIndex,
     ) -> Option<PartitionIndex> {
-        let op = &dag.operators[op_i.i];
+        let op = &dag.operators[op_i.0];
         match op {
             Operator::Lut { input, .. } => {
                 assert!(!self.p_cut.is_empty());
                 for (partition, &(precision_cut, norm2_cut)) in self.p_cut.iter().enumerate() {
-                    if dag.out_precisions[input.i] <= precision_cut
+                    if dag.out_precisions[input.0] <= precision_cut
                         && self.rnorm2(op_i) <= norm2_cut
                     {
                         return Some(partition);
@@ -75,19 +75,19 @@ impl PartitionCut {
         }
     }
 
-    pub fn for_each_precision(dag: &unparametrized::OperationDag) -> Self {
+    pub fn for_each_precision(dag: &unparametrized::Dag) -> Self {
         let (dag, _) = expand_round_and_index_map(dag);
         let mut lut_in_precisions: HashSet<_> = HashSet::default();
         for op in &dag.operators {
             if let Operator::Lut { input, .. } = op {
-                _ = lut_in_precisions.insert(dag.out_precisions[input.i]);
+                _ = lut_in_precisions.insert(dag.out_precisions[input.0]);
             }
         }
         let precisions: Vec<_> = lut_in_precisions.iter().copied().collect();
         Self::from_precisions(&precisions)
     }
 
-    pub fn maximal_partitionning(original_dag: &unparametrized::OperationDag) -> Self {
+    pub fn maximal_partitionning(original_dag: &unparametrized::Dag) -> Self {
         // Note: only keep one 0-bits, partition as the compiler will not support multi-parameter round
         // partition based on input precision and output log norm2
         let (dag, rewrited) = expand_round_and_index_map(original_dag);
@@ -95,7 +95,7 @@ impl PartitionCut {
         for (round_i, op) in original_dag.operators.iter().enumerate() {
             if let Operator::Round { .. } = op {
                 for op in &rewrited[round_i] {
-                    let already = round_index.insert(op.i, round_i);
+                    let already = round_index.insert(op.0, round_i);
                     assert!(already.is_none());
                 }
             }
@@ -112,12 +112,12 @@ impl PartitionCut {
                 Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
                     let mut origins = HashSet::default();
                     for input in inputs {
-                        origins.extend(&noise_origins[input.i]);
+                        origins.extend(&noise_origins[input.0]);
                     }
                     noise_origins[op_i] = origins;
                 }
                 Operator::UnsafeCast { input, .. } => {
-                    noise_origins[op_i] = noise_origins[input.i].clone();
+                    noise_origins[op_i] = noise_origins[input.0].clone();
                 }
                 // origins
                 Operator::Lut { .. } => {
@@ -136,16 +136,16 @@ impl PartitionCut {
         let mut lut_partition: HashSet<_> = HashSet::default();
         for dest in &dag.operators {
             if let Operator::Lut { input, .. } = dest {
-                for &origin in &noise_origins[input.i] {
-                    let norm2 = out_norm2(input.i);
+                for &origin in &noise_origins[input.0] {
+                    let norm2 = out_norm2(input.0);
                     max_output_norm2[origin] = max_output_norm2[origin].max(norm2);
                     assert!(!max_output_norm2[origin].is_nan());
                 }
             }
         }
-        for op_i in dag.get_output_index_iter() {
-            for &origin in &noise_origins[op_i] {
-                max_output_norm2[origin] = max_output_norm2[origin].max(out_norm2(op_i));
+        for op in dag.get_output_operators_iter() {
+            for &origin in &noise_origins[op.id.0] {
+                max_output_norm2[origin] = max_output_norm2[origin].max(out_norm2(op.id.0));
                 assert!(!max_output_norm2[origin].is_nan());
             }
         }
@@ -153,7 +153,7 @@ impl PartitionCut {
         // reassociate all lut's output_norm2 and precisions
         for (op_i, output_norm2) in max_output_norm2.iter_mut().enumerate() {
             if let Operator::Lut { input, .. } = dag.operators[op_i] {
-                let input_precision = dag.out_precisions[input.i];
+                let input_precision = dag.out_precisions[input.0];
                 let output_precision = dag.out_precisions[op_i] as i32;
                 let delta_precision = output_precision - input_precision as i32;
                 assert!(!output_norm2.is_nan());

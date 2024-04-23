@@ -189,10 +189,10 @@ impl SymbolicVariance {
 impl fmt::Display for SymbolicVariance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self == &Self::ZERO {
-            write!(f, "ZERO x σ²")?;
+            return write!(f, "ZERO x σ²");
         }
         if self.coeffs[0].is_nan() {
-            write!(f, "NAN x σ²")?;
+            return write!(f, "NAN x σ²");
         }
         let mut add_plus = "";
         for src_partition in 0..self.nb_partitions() {

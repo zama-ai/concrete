@@ -1,5 +1,5 @@
 use crate::dag::operator::Precision;
-use crate::dag::unparametrized::OperationDag;
+use crate::dag::unparametrized::Dag;
 use crate::noise_estimator::p_error::repeat_p_error;
 use crate::optimization::atomic_pattern::Solution as WpSolution;
 use crate::optimization::config::{Config, SearchSpace};
@@ -31,7 +31,7 @@ pub enum Encoding {
     Crt,
 }
 
-pub fn max_precision(dag: &OperationDag) -> Precision {
+pub fn max_precision(dag: &Dag) -> Precision {
     dag.out_precisions.iter().copied().max().unwrap_or(0)
 }
 
@@ -63,7 +63,7 @@ fn best_complexity_solution(native: Option<Solution>, crt: Option<Solution>) -> 
 }
 
 fn optimize_with_wop_pbs(
-    dag: &OperationDag,
+    dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
     default_log_norm2_woppbs: f64,
@@ -82,7 +82,7 @@ fn optimize_with_wop_pbs(
 }
 
 pub fn optimize(
-    dag: &OperationDag,
+    dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
     encoding: Encoding,

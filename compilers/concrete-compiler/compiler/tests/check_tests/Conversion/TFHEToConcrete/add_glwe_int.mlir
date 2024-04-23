@@ -1,4 +1,5 @@
-// RUN: concretecompiler --passes tfhe-to-concrete --action=dump-concrete --skip-program-info %s 2>&1| FileCheck %s
+// RUN: concretecompiler --passes tfhe-to-concrete --action=dump-concrete --split-input-file --skip-program-info %s 2>&1| FileCheck %s
+
 
 //CHECK: func.func @add_glwe_const_int(%[[A0:.*]]: tensor<1025xi64>) -> tensor<1025xi64> {
 //CHECK:   %c1_i64 = arith.constant 1 : i64
@@ -11,6 +12,7 @@ func.func @add_glwe_const_int(%arg0: !TFHE.glwe<sk[1]<1,1024>>) -> !TFHE.glwe<sk
   return %1: !TFHE.glwe<sk[1]<1,1024>>
 }
 
+// -----
 
 //CHECK: func.func @add_glwe_int(%[[A0:.*]]: tensor<1025xi64>, %[[A1:.*]]: i64) -> tensor<1025xi64> {
 //CHECK:   %[[V0:.*]] = "Concrete.add_plaintext_lwe_tensor"(%[[A0]], %[[A1]]) : (tensor<1025xi64>, i64) -> tensor<1025xi64>

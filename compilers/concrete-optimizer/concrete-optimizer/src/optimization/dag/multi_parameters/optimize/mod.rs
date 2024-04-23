@@ -1,7 +1,7 @@
 // OPT: cache for fks and verified pareto
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
 
-use crate::dag::unparametrized;
+use crate::dag::unparametrized::Dag;
 use crate::noise_estimator::error;
 use crate::optimization;
 use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
@@ -900,7 +900,7 @@ fn cross_partition(nb_partitions: usize) -> impl Iterator<Item = (usize, usize)>
 
 #[allow(clippy::too_many_lines, clippy::missing_errors_doc)]
 pub fn optimize(
-    dag: &unparametrized::OperationDag,
+    dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
     persistent_caches: &PersistDecompCaches,
@@ -1156,7 +1156,7 @@ fn sanity_check(
 }
 
 pub fn optimize_to_circuit_solution(
-    dag: &unparametrized::OperationDag,
+    dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
     persistent_caches: &PersistDecompCaches,

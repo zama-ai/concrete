@@ -135,7 +135,8 @@ constexpr Config DEFAULT_CONFIG = {
     DEFAULT_COMPOSABLE,
 };
 
-using Dag = rust::Box<concrete_optimizer::OperationDag>;
+using Dag = rust::Box<concrete_optimizer::Dag>;
+using DagBuilder = rust::Box<concrete_optimizer::DagBuilder>;
 using DagSolution = concrete_optimizer::dag::DagSolution;
 using CircuitSolution = concrete_optimizer::dag::CircuitSolution;
 

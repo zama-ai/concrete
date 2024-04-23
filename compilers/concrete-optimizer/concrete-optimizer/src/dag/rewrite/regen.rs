@@ -1,6 +1,6 @@
 use crate::dag::operator::operator::Operator;
 use crate::dag::operator::OperatorIndex;
-use crate::dag::unparametrized::OperationDag;
+use crate::dag::unparametrized::Dag;
 
 fn reindex_op_inputs(op: &Operator, old_index_to_new: &[usize]) -> Operator {
     let mut op = op.clone();
@@ -8,10 +8,10 @@ fn reindex_op_inputs(op: &Operator, old_index_to_new: &[usize]) -> Operator {
         Operator::Input { .. } => (),
         Operator::Lut { input, .. }
         | Operator::UnsafeCast { input, .. }
-        | Operator::Round { input, .. } => input.i = old_index_to_new[input.i],
+        | Operator::Round { input, .. } => input.0 = old_index_to_new[input.0],
         Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
             for input in inputs {
-                input.i = old_index_to_new[input.i];
+                input.0 = old_index_to_new[input.0];
             }
         }
     };
@@ -19,16 +19,16 @@ fn reindex_op_inputs(op: &Operator, old_index_to_new: &[usize]) -> Operator {
 }
 
 pub(crate) fn regen(
-    dag: &OperationDag,
-    f: &mut dyn FnMut(usize, &Operator, &mut OperationDag) -> Option<OperatorIndex>,
-) -> (OperationDag, Vec<Vec<OperatorIndex>>) {
-    let mut regen_dag = OperationDag::new();
+    dag: &Dag,
+    f: &mut dyn FnMut(usize, &Operator, &mut Dag) -> Option<OperatorIndex>,
+) -> (Dag, Vec<Vec<OperatorIndex>>) {
+    let mut regen_dag = Dag::new();
     let mut old_index_to_new = vec![];
     for (i, op) in dag.operators.iter().enumerate() {
         let op = reindex_op_inputs(op, &old_index_to_new);
         let size = regen_dag.operators.len();
         if let Some(op_i) = f(i, &op, &mut regen_dag) {
-            old_index_to_new.push(op_i.i);
+            old_index_to_new.push(op_i.0);
         } else {
             assert!(size == regen_dag.operators.len());
             old_index_to_new.push(regen_dag.len());
@@ -36,6 +36,7 @@ pub(crate) fn regen(
             regen_dag.out_precisions.push(dag.out_precisions[i]);
             regen_dag.out_shapes.push(dag.out_shapes[i].clone());
             regen_dag.output_tags.push(dag.output_tags[i]);
+            regen_dag.circuit_tags.push(dag.circuit_tags[i].clone());
         }
     }
     (regen_dag, instructions_multi_map(&old_index_to_new))
@@ -48,11 +49,7 @@ fn instructions_multi_map(old_index_to_new: &[usize]) -> Vec<Vec<OperatorIndex>>
     for &new_instr in old_index_to_new {
         let start_from = last_new_instr.map_or(new_instr, |v: usize| v + 1);
         if start_from <= new_instr {
-            result.push(
-                (start_from..=new_instr)
-                    .map(|i| OperatorIndex { i })
-                    .collect(),
-            );
+            result.push((start_from..=new_instr).map(OperatorIndex).collect());
         } else {
             result.push(vec![]);
         }

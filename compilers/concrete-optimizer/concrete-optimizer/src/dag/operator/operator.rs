@@ -1,5 +1,6 @@
 use std::fmt;
 use std::iter::{empty, once};
+use std::ops::Deref;
 
 use crate::dag::operator::tensor::{ClearTensor, Shape};
 
@@ -116,8 +117,20 @@ impl Operator {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct OperatorIndex {
-    pub i: usize,
+pub struct OperatorIndex(pub usize);
+
+impl Deref for OperatorIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl fmt::Display for OperatorIndex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 impl fmt::Display for Operator {
@@ -135,21 +148,21 @@ impl fmt::Display for Operator {
                     if i > 0 {
                         write!(f, " + ")?;
                     }
-                    write!(f, "{weight} x %{}", input.i)?;
+                    write!(f, "{weight} x %{}", input.0)?;
                 }
             }
             Self::UnsafeCast {
                 input,
                 out_precision,
             } => {
-                write!(f, "%{} : u{out_precision}", input.i)?;
+                write!(f, "%{} : u{out_precision}", input.0)?;
             }
             Self::Lut {
                 input,
                 out_precision,
                 ..
             } => {
-                write!(f, "LUT[%{}] : u{out_precision}", input.i)?;
+                write!(f, "LUT[%{}] : u{out_precision}", input.0)?;
             }
             Self::LevelledOp {
                 inputs,
@@ -162,7 +175,7 @@ impl fmt::Display for Operator {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "%{}", input.i)?;
+                    write!(f, "%{}", input.0)?;
                 }
                 write!(f, "] : manp={manp} x {out_shape:?}")?;
             }
@@ -170,7 +183,7 @@ impl fmt::Display for Operator {
                 input,
                 out_precision,
             } => {
-                write!(f, "ROUND[%{}] : u{out_precision}", input.i)?;
+                write!(f, "ROUND[%{}] : u{out_precision}", input.0)?;
             }
         }
         Ok(())

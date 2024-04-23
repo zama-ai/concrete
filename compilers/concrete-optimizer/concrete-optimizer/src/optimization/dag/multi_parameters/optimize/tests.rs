@@ -46,7 +46,7 @@ fn default_config() -> Config<'static> {
 }
 
 fn optimize(
-    dag: &unparametrized::OperationDag,
+    dag: &unparametrized::Dag,
     p_cut: &Option<PartitionCut>,
     default_partition: usize,
 ) -> Option<Parameters> {
@@ -63,11 +63,11 @@ fn optimize(
     .map_or(None, |v| Some(v.1))
 }
 
-fn optimize_single(dag: &unparametrized::OperationDag) -> Option<Parameters> {
+fn optimize_single(dag: &unparametrized::Dag) -> Option<Parameters> {
     optimize(dag, &Some(PartitionCut::empty()), LOW_PARTITION)
 }
 
-fn equiv_single(dag: &unparametrized::OperationDag) -> Option<bool> {
+fn equiv_single(dag: &unparametrized::Dag) -> Option<bool> {
     let sol_mono = solo_key::optimize::tests::optimize(dag);
     let sol_multi = optimize_single(dag);
     if sol_mono.best_solution.is_none() != sol_multi.is_none() {
@@ -121,11 +121,10 @@ fn optimize_simple_parameter_rounded_lut_2_layers() {
 }
 
 fn equiv_2_single(
-    dag_multi: &unparametrized::OperationDag,
-    dag_1: &unparametrized::OperationDag,
-    dag_2: &unparametrized::OperationDag,
+    dag_multi: &unparametrized::Dag,
+    dag_1: &unparametrized::Dag,
+    dag_2: &unparametrized::Dag,
 ) -> Option<bool> {
-    eprintln!("{dag_multi}");
     let sol_single_1 = solo_key::optimize::tests::optimize(dag_1);
     let sol_single_2 = solo_key::optimize::tests::optimize(dag_2);
     let sol_multi = optimize(dag_multi, &None, LOW_PARTITION);
@@ -177,11 +176,8 @@ fn optimize_multi_independant_2_precisions() {
                 let noise_factor = manp as f64;
                 let mut dag_multi = v0_dag(sum_size, precision1, noise_factor);
                 add_v0_dag(&mut dag_multi, sum_size, precision2, noise_factor);
-                dag_multi.detect_outputs();
-                let mut dag_1 = v0_dag(sum_size, precision1, noise_factor);
-                dag_1.detect_outputs();
-                let mut dag_2 = v0_dag(sum_size, precision2, noise_factor);
-                dag_2.detect_outputs();
+                let dag_1 = v0_dag(sum_size, precision1, noise_factor);
+                let dag_2 = v0_dag(sum_size, precision2, noise_factor);
                 if let Some(equiv) = equiv_2_single(&dag_multi, &dag_1, &dag_2) {
                     assert!(equiv, "FAILED ON {precision1} {precision2} {manp}");
                 } else {
@@ -196,8 +192,8 @@ fn dag_lut_sum_of_2_partitions_2_layer(
     precision1: u8,
     precision2: u8,
     final_lut: bool,
-) -> unparametrized::OperationDag {
-    let mut dag = unparametrized::OperationDag::new();
+) -> unparametrized::Dag {
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(precision1, Shape::number());
     let input2 = dag.add_input(precision2, Shape::number());
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, precision1);
@@ -208,7 +204,6 @@ fn dag_lut_sum_of_2_partitions_2_layer(
     if final_lut {
         _ = dag.add_lut(dot, FunctionTable::UNKWOWN, precision1);
     }
-    dag.detect_outputs();
     dag
 }
 
@@ -338,19 +333,16 @@ fn optimize_multi_independant_2_partitions_finally_added_and_luted() {
     }
 }
 
-fn optimize_rounded(dag: &unparametrized::OperationDag) -> Option<Parameters> {
+fn optimize_rounded(dag: &unparametrized::Dag) -> Option<Parameters> {
     let p_cut = Some(PartitionCut::from_precisions(&[1, 128]));
     let default_partition = 0;
     optimize(dag, &p_cut, default_partition)
 }
 
-fn dag_rounded_lut_2_layers(
-    accumulator_precision: usize,
-    precision: usize,
-) -> unparametrized::OperationDag {
+fn dag_rounded_lut_2_layers(accumulator_precision: usize, precision: usize) -> unparametrized::Dag {
     let out_precision = accumulator_precision as u8;
     let rounded_precision = precision as u8;
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(precision as u8, Shape::number());
     let rounded1 = dag.add_expanded_rounded_lut(
         input1,
@@ -418,7 +410,7 @@ fn test_optimize_v3_expanded_round_16_6() {
 
 #[test]
 fn optimize_v3_direct_round() {
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(16, Shape::number());
     _ = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 8, 16);
     let sol = optimize_rounded(&dag).unwrap();
@@ -437,7 +429,7 @@ fn optimize_v3_direct_round() {
 fn optimize_sign_extract() {
     let precision = 8;
     let high_precision = 16;
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let complexity = LevelledComplexity::ZERO;
     let free_small_input1 = dag.add_input(precision, Shape::number());
     let small_input1 = dag.add_lut(free_small_input1, FunctionTable::UNKWOWN, precision);
@@ -467,7 +459,7 @@ fn test_partition_chain(decreasing: bool) {
     // tlu chain with decreasing precision (decreasing partition index)
     // check that increasing partitionning gaves faster solutions
     // check solution has the right structure
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let min_precision = 6;
     let max_precision = 8;
     let mut input_precisions: Vec<_> = (min_precision..=max_precision).collect();
@@ -588,7 +580,7 @@ fn test_chained_partitions_non_feasible_single_params() {
     // generate hard circuit, non feasible with single parameters
     let precisions = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     // Note: reversing chain have issues for connecting lower bits to 7 bits, there may be no feasible solution
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let mut lut_input = dag.add_input(precisions[0], Shape::number());
     for out_precision in precisions {
         let noise_factor = MAX_WEIGHT[*dag.out_precisions.last().unwrap() as usize] as f64;
@@ -614,12 +606,11 @@ fn test_chained_partitions_non_feasible_single_params() {
 
 #[test]
 fn test_multi_rounded_fks_coherency() {
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(16, Shape::number());
     let reduced_8 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 8, 8);
     let reduced_4 = dag.add_expanded_rounded_lut(input1, FunctionTable::UNKWOWN, 4, 8);
     _ = dag.add_dot([reduced_8, reduced_4], [1, 1]);
-    dag.detect_outputs();
     let sol = optimize(&dag, &None, 0);
     assert!(sol.is_some());
     let sol = sol.unwrap();
@@ -633,7 +624,7 @@ fn test_multi_rounded_fks_coherency() {
 
 #[test]
 fn test_levelled_only() {
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let _ = dag.add_input(22, Shape::number());
     let config = default_config();
     let search_space = SearchSpace::default_cpu();
@@ -648,14 +639,13 @@ fn test_levelled_only() {
 
 #[test]
 fn test_big_secret_key_sharing() {
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(4, Shape::number());
     let input2 = dag.add_input(5, Shape::number());
     let input2 = dag.add_dot([input2], [128]);
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
-    dag.detect_outputs();
     let config_sharing = Config {
         security_level: 128,
         maximum_acceptable_error_probability: _4_SIGMA,
@@ -699,14 +689,13 @@ fn test_big_secret_key_sharing() {
 
 #[test]
 fn test_big_and_small_secret_key() {
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(4, Shape::number());
     let input2 = dag.add_input(5, Shape::number());
     let input2 = dag.add_dot([input2], [128]);
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 5);
     let lut2 = dag.add_lut(input2, FunctionTable::UNKWOWN, 5);
     let _ = dag.add_dot([lut1, lut2], [16, 1]);
-    dag.detect_outputs();
     let config_sharing = Config {
         security_level: 128,
         maximum_acceptable_error_probability: _4_SIGMA,
@@ -751,13 +740,12 @@ fn test_big_and_small_secret_key() {
 
 #[test]
 fn test_composition_2_partitions() {
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(3, Shape::number());
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 6);
     let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
     let input2 = dag.add_dot([input1, lut3], [1, 1]);
     let _ = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
-    dag.detect_outputs();
     let normal_config = default_config();
     let composed_config = Config {
         composable: true,
@@ -783,12 +771,11 @@ fn test_composition_2_partitions() {
 
 #[test]
 fn test_composition_1_partition_not_composable() {
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(8, Shape::number());
     let input1 = dag.add_dot([input1], [1 << 16]);
     let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 8);
     let _ = dag.add_dot([lut1], [1 << 16]);
-    dag.detect_outputs();
     let normal_config = default_config();
     let composed_config = Config {
         composable: true,
@@ -812,12 +799,11 @@ fn test_composition_1_partition_not_composable() {
 fn test_maximal_multi() {
     let config = default_config();
     let search_space = SearchSpace::default_cpu();
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let input = dag.add_input(8, Shape::number());
     let lut1 = dag.add_lut(input, FunctionTable::UNKWOWN, 8u8);
     let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 8u8);
     _ = dag.add_dot([lut2], [1 << 16]);
-    dag.detect_outputs();
 
     let sol = optimize(&dag, &None, 0).unwrap();
     assert!(sol.macro_params.len() == 1);
@@ -850,7 +836,7 @@ fn test_maximal_multi() {
 fn test_bug_with_zero_noise() {
     let complexity = LevelledComplexity::ZERO;
     let out_shape = Shape::number();
-    let mut dag = unparametrized::OperationDag::new();
+    let mut dag = unparametrized::Dag::new();
     let v0 = dag.add_input(2, &out_shape);
     let v1 = dag.add_levelled_op([v0], complexity, 0.0, &out_shape, "comment");
     let v2 = dag.add_levelled_op([v1], complexity, 1.0, &out_shape, "comment");

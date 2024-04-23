@@ -15,6 +15,7 @@ use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
 use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::parameters::{BrDecompositionParameters, KsDecompositionParameters};
 use concrete_optimizer::utils::cache::persistent::default_cache_dir;
+use concrete_optimizer::utils::viz::Viz;
 
 fn no_solution() -> ffi::Solution {
     ffi::Solution {
@@ -221,7 +222,7 @@ impl From<DagSolution> for ffi::DagSolution {
     }
 }
 
-fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &OperationDag) -> ffi::CircuitSolution {
+fn convert_to_circuit_solution(sol: &ffi::DagSolution, dag: &Dag) -> ffi::CircuitSolution {
     let big_key = ffi::SecretLweKey {
         identifier: 0,
         polynomial_size: sol.glwe_polynomial_size,
@@ -473,13 +474,105 @@ fn NO_KEY_ID() -> u64 {
     keys_spec::NO_KEY_ID
 }
 
-pub struct OperationDag(unparametrized::OperationDag);
+pub struct Dag(unparametrized::Dag);
 
-fn empty() -> Box<OperationDag> {
-    Box::new(OperationDag(unparametrized::OperationDag::new()))
+fn empty() -> Box<Dag> {
+    Box::new(Dag(unparametrized::Dag::new()))
 }
 
-impl OperationDag {
+impl Dag {
+    fn builder(&mut self, circuit: String) -> Box<DagBuilder<'_>> {
+        Box::new(DagBuilder(self.0.builder(circuit)))
+    }
+
+    fn dump(&self) -> String {
+        self.0.viz_string()
+    }
+
+    fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
+        let processing_unit = processing_unit(options);
+        let config = Config {
+            security_level: options.security_level,
+            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+            key_sharing: options.key_sharing,
+            ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
+            complexity_model: &CpuComplexity::default(),
+            composable: options.composable,
+        };
+
+        let search_space = SearchSpace::default(processing_unit);
+
+        let encoding = options.encoding.into();
+        if options.composable {
+            let circuit_sol =
+                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                    &Some(PartitionCut::empty()),
+                );
+            let circuit_sol: ffi::CircuitSolution = circuit_sol.into();
+            (&circuit_sol).into()
+        } else {
+            let result =
+                concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                );
+            result.map_or_else(no_dag_solution, |solution| solution.into())
+        }
+    }
+
+    fn get_circuit_count(&self) -> usize {
+        self.0.get_circuit_count()
+    }
+
+    fn optimize_multi(&self, options: ffi::Options) -> ffi::CircuitSolution {
+        let processing_unit = processing_unit(options);
+        let config = Config {
+            security_level: options.security_level,
+            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+            key_sharing: options.key_sharing,
+            ciphertext_modulus_log: options.ciphertext_modulus_log,
+            fft_precision: options.fft_precision,
+            complexity_model: &CpuComplexity::default(),
+            composable: options.composable,
+        };
+        let search_space = SearchSpace::default(processing_unit);
+
+        let encoding = options.encoding.into();
+        #[allow(clippy::wildcard_in_or_patterns)]
+        let p_cut = match options.multi_param_strategy {
+            ffi::MultiParamStrategy::ByPrecisionAndNorm2 => {
+                PartitionCut::maximal_partitionning(&self.0)
+            }
+            ffi::MultiParamStrategy::ByPrecision | _ => PartitionCut::for_each_precision(&self.0),
+        };
+        let circuit_sol =
+            concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                &self.0,
+                config,
+                &search_space,
+                encoding,
+                options.default_log_norm2_woppbs,
+                &caches_from(options),
+                &Some(p_cut),
+            );
+        circuit_sol.into()
+    }
+}
+
+pub struct DagBuilder<'dag>(unparametrized::DagBuilder<'dag>);
+
+impl<'dag> DagBuilder<'dag> {
     fn add_input(&mut self, out_precision: Precision, out_shape: &[u64]) -> ffi::OperatorIndex {
         let out_shape = Shape {
             dimensions_size: out_shape.to_owned(),
@@ -553,92 +646,12 @@ impl OperationDag {
         self.0.add_unsafe_cast(input.into(), new_precision).into()
     }
 
-    fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
-        let processing_unit = processing_unit(options);
-        let config = Config {
-            security_level: options.security_level,
-            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
-            key_sharing: options.key_sharing,
-            ciphertext_modulus_log: options.ciphertext_modulus_log,
-            fft_precision: options.fft_precision,
-            complexity_model: &CpuComplexity::default(),
-            composable: options.composable,
-        };
-
-        let search_space = SearchSpace::default(processing_unit);
-
-        let encoding = options.encoding.into();
-        if options.composable {
-            let circuit_sol =
-                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                    &Some(PartitionCut::empty()),
-                );
-            let circuit_sol: ffi::CircuitSolution = circuit_sol.into();
-            (&circuit_sol).into()
-        } else {
-            let result =
-                concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                );
-            result.map_or_else(no_dag_solution, |solution| solution.into())
-        }
-    }
-
-    fn dump(&self) -> String {
-        self.0.dump()
-    }
-
-    fn concat(&mut self, other: &Self) {
-        self.0.concat(&other.0);
-    }
-
     fn tag_operator_as_output(&mut self, op: ffi::OperatorIndex) {
         self.0.tag_operator_as_output(op.into());
     }
 
-    fn optimize_multi(&self, options: ffi::Options) -> ffi::CircuitSolution {
-        let processing_unit = processing_unit(options);
-        let config = Config {
-            security_level: options.security_level,
-            maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
-            key_sharing: options.key_sharing,
-            ciphertext_modulus_log: options.ciphertext_modulus_log,
-            fft_precision: options.fft_precision,
-            complexity_model: &CpuComplexity::default(),
-            composable: options.composable,
-        };
-        let search_space = SearchSpace::default(processing_unit);
-
-        let encoding = options.encoding.into();
-        #[allow(clippy::wildcard_in_or_patterns)]
-        let p_cut = match options.multi_param_strategy {
-            ffi::MultiParamStrategy::ByPrecisionAndNorm2 => {
-                PartitionCut::maximal_partitionning(&self.0)
-            }
-            ffi::MultiParamStrategy::ByPrecision | _ => PartitionCut::for_each_precision(&self.0),
-        };
-        let circuit_sol =
-            concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                &self.0,
-                config,
-                &search_space,
-                encoding,
-                options.default_log_norm2_woppbs,
-                &caches_from(options),
-                &Some(p_cut),
-            );
-        circuit_sol.into()
+    fn dump(&self) -> String {
+        format!("{}", self.0.get_circuit())
     }
 }
 
@@ -654,14 +667,14 @@ fn number(weight: i64) -> Box<Weights> {
 
 impl From<OperatorIndex> for ffi::OperatorIndex {
     fn from(oi: OperatorIndex) -> Self {
-        Self { index: oi.i }
+        Self { index: oi.0 }
     }
 }
 
 #[allow(clippy::from_over_into)]
 impl Into<OperatorIndex> for ffi::OperatorIndex {
     fn into(self) -> OperatorIndex {
-        OperatorIndex { i: self.index }
+        OperatorIndex(self.index)
     }
 }
 
@@ -677,7 +690,7 @@ impl Into<Encoding> for ffi::Encoding {
     }
 }
 
-#[allow(unused_must_use)]
+#[allow(unused_must_use, clippy::needless_lifetimes)]
 #[cxx::bridge]
 mod ffi {
     #[namespace = "concrete_optimizer"]
@@ -690,37 +703,42 @@ mod ffi {
         fn convert_to_dag_solution(solution: &Solution) -> DagSolution;
 
         #[namespace = "concrete_optimizer::utils"]
-        fn convert_to_circuit_solution(
-            solution: &DagSolution,
-            dag: &OperationDag,
-        ) -> CircuitSolution;
+        fn convert_to_circuit_solution(solution: &DagSolution, dag: &Dag) -> CircuitSolution;
 
-        type OperationDag;
+        type Dag;
+
+        type DagBuilder<'dag>;
 
         #[namespace = "concrete_optimizer::dag"]
-        fn empty() -> Box<OperationDag>;
+        fn empty() -> Box<Dag>;
 
-        fn add_input(
-            self: &mut OperationDag,
+        unsafe fn builder(self: &mut Dag, circuit: String) -> Box<DagBuilder<'_>>;
+
+        fn dump(self: &Dag) -> String;
+
+        fn dump(self: &DagBuilder) -> String;
+
+        unsafe fn add_input(
+            self: &mut DagBuilder<'_>,
             out_precision: u8,
             out_shape: &[u64],
         ) -> OperatorIndex;
 
-        fn add_lut(
-            self: &mut OperationDag,
+        unsafe fn add_lut(
+            self: &mut DagBuilder<'_>,
             input: OperatorIndex,
             table: &[u64],
             out_precision: u8,
         ) -> OperatorIndex;
 
-        fn add_dot(
-            self: &mut OperationDag,
+        unsafe fn add_dot(
+            self: &mut DagBuilder<'_>,
             inputs: &[OperatorIndex],
             weights: Box<Weights>,
         ) -> OperatorIndex;
 
-        fn add_levelled_op(
-            self: &mut OperationDag,
+        unsafe fn add_levelled_op(
+            self: &mut DagBuilder<'_>,
             inputs: &[OperatorIndex],
             lwe_dim_cost_factor: f64,
             fixed_cost: f64,
@@ -729,23 +747,21 @@ mod ffi {
             comment: &str,
         ) -> OperatorIndex;
 
-        fn add_round_op(
-            self: &mut OperationDag,
+        unsafe fn add_round_op(
+            self: &mut DagBuilder<'_>,
             input: OperatorIndex,
             rounded_precision: u8,
         ) -> OperatorIndex;
 
-        fn add_unsafe_cast_op(
-            self: &mut OperationDag,
+        unsafe fn add_unsafe_cast_op(
+            self: &mut DagBuilder<'_>,
             input: OperatorIndex,
             rounded_precision: u8,
         ) -> OperatorIndex;
 
-        fn optimize(self: &OperationDag, options: Options) -> DagSolution;
+        unsafe fn tag_operator_as_output(self: &mut DagBuilder<'_>, op: OperatorIndex);
 
-        fn dump(self: &OperationDag) -> String;
-
-        fn concat(self: &mut OperationDag, other: &OperationDag);
+        fn optimize(self: &Dag, options: Options) -> DagSolution;
 
         #[namespace = "concrete_optimizer::dag"]
         fn dump(self: &CircuitSolution) -> String;
@@ -761,9 +777,9 @@ mod ffi {
         #[namespace = "concrete_optimizer::weights"]
         fn number(weight: i64) -> Box<Weights>;
 
-        fn tag_operator_as_output(self: &mut OperationDag, op: OperatorIndex);
+        fn get_circuit_count(self: &Dag) -> usize;
 
-        fn optimize_multi(self: &OperationDag, options: Options) -> CircuitSolution;
+        fn optimize_multi(self: &Dag, options: Options) -> CircuitSolution;
 
         fn NO_KEY_ID() -> u64;
     }
