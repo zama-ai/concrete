@@ -92,14 +92,30 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
   else
     out = -tlu[mod_switched % poly_size];
 
+  // get encoded info from lsb
+  bool is_signed = (out >> 1) & 1;
+  bool is_overflow = out & 1;
+  // discard info bits (2 lsb)
+  out = out & 18446744073709551612U;
+
+  if (!is_signed && out > UINT63_MAX) {
+    printf("WARNING at %s: overflow (padding bit) happened during LUT in "
+           "simulation\n",
+           loc);
+  }
+  if (is_overflow) {
+    printf("WARNING at %s: overflow (original value didn't fit, so a modulus "
+           "was applied) happened "
+           "during LUT in "
+           "simulation\n",
+           loc);
+  }
+
   double variance_bsk = security_curve()->getVariance(glwe_dim, poly_size, 64);
   double variance = concrete_cpu_variance_blind_rotate(
       input_lwe_dim, glwe_dim, poly_size, base_log, level, 64,
       mlir::concretelang::optimizer::DEFAULT_FFT_PRECISION, variance_bsk);
   out = out + gaussian_noise(0, variance);
-  if (out > UINT63_MAX) {
-    printf("WARNING at %s: overflow happened during LUT in simulation\n", loc);
-  }
   return out;
 }
 
@@ -189,33 +205,145 @@ void sim_wop_pbs_crt(
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }
 
-uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc) {
-  if (lhs > UINT63_MAX - rhs) {
-    printf("WARNING at %s: overflow happened during addition in simulation\n",
-           loc);
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc,
+                         bool is_signed) {
+  const char msg_f[] =
+      "WARNING at %s: overflow happened during addition in simulation\n";
+
+  uint64_t result = lhs + rhs;
+
+  if (is_signed) {
+    // We shift left to discard the padding bit and only consider the message
+    // for easier overflow checking
+    int64_t lhs_signed = (int64_t)lhs << 1;
+    int64_t rhs_signed = (int64_t)rhs << 1;
+    if (lhs_signed > 0 && rhs_signed > INT64_MAX - lhs_signed)
+      printf(msg_f, loc);
+    else if (lhs_signed < 0 && rhs_signed < INT64_MIN - lhs_signed)
+      printf(msg_f, loc);
+  } else if (lhs > UINT63_MAX - rhs || result > UINT63_MAX) {
+    printf(msg_f, loc);
   }
-  return lhs + rhs;
+  return result;
 }
 
-uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc) {
-  if (rhs != 0 && lhs > UINT63_MAX / rhs) {
-    printf("WARNING at %s: overflow happened during multiplication in "
-           "simulation\n",
-           loc);
+uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc,
+                         bool is_signed) {
+  const char msg_f[] =
+      "WARNING at %s: overflow happened during multiplication in simulation\n";
+
+  uint64_t result = lhs * rhs;
+
+  if (is_signed) {
+    // We shift left to discard the padding bit and only consider the message
+    // for easier overflow checking
+    int64_t lhs_signed = (int64_t)lhs << 1;
+    int64_t rhs_signed = (int64_t)rhs << 1;
+    if (lhs_signed != 0 && rhs_signed > INT64_MAX / lhs_signed)
+      printf(msg_f, loc);
+    else if (lhs_signed != 0 && rhs_signed < INT64_MIN / lhs_signed)
+      printf(msg_f, loc);
+  } else if (rhs != 0 && lhs > UINT63_MAX / rhs) {
+    printf(msg_f, loc);
   }
-  return lhs * rhs;
+  return result;
 }
 
+// a copy of memref_encode_expand_lut_for_bootstrap but which encodes overflow
+// and sign info into the LUT. Those information should later be discarder by
+// the LUT function
 void sim_encode_expand_lut_for_boostrap(
-    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
-    uint64_t out_size, uint64_t out_stride, uint64_t *in_allocated,
-    uint64_t *in_aligned, uint64_t in_offset, uint64_t in_size,
-    uint64_t in_stride, uint32_t poly_size, uint32_t output_bits,
-    bool is_signed) {
-  return memref_encode_expand_lut_for_bootstrap(
-      out_allocated, out_aligned, out_offset, out_size, out_stride,
-      in_allocated, in_aligned, in_offset, in_size, in_stride, poly_size,
-      output_bits, is_signed);
+    uint64_t *output_lut_allocated, uint64_t *output_lut_aligned,
+    uint64_t output_lut_offset, uint64_t output_lut_size,
+    uint64_t output_lut_stride, uint64_t *input_lut_allocated,
+    uint64_t *input_lut_aligned, uint64_t input_lut_offset,
+    uint64_t input_lut_size, uint64_t input_lut_stride, uint32_t poly_size,
+    uint32_t out_MESSAGE_BITS, bool is_signed) {
+
+  assert(input_lut_stride == 1 && "Runtime: stride not equal to 1, check "
+                                  "memref_encode_expand_lut_bootstrap");
+
+  assert(output_lut_stride == 1 && "Runtime: stride not equal to 1, check "
+                                   "memref_encode_expand_lut_bootstrap");
+
+  size_t mega_case_size = output_lut_size / input_lut_size;
+
+  assert((mega_case_size % 2) == 0);
+
+  // compute overflow bit
+  std::vector<bool> overflow_info(output_lut_size, false);
+  uint64_t upper_bound = uint64_t(1)
+                         << (out_MESSAGE_BITS + (is_signed ? 1 : 0));
+  for (size_t i = 0; i < input_lut_size; i++) {
+    if (input_lut_aligned[input_lut_offset + i] >= upper_bound) {
+      overflow_info[i] = true;
+    } else {
+      overflow_info[i] = false;
+    }
+  }
+  // used to set the sign bit or not
+  uint64_t sign_bit_setter = 0;
+  if (is_signed) {
+    sign_bit_setter = 2;
+  }
+
+  // When the bootstrap is executed on encrypted signed integers, the lut must
+  // be half-rotated. This map takes care about properly indexing into the input
+  // lut depending on what bootstrap gets executed.
+  std::function<size_t(size_t)> indexMap;
+  if (is_signed) {
+    size_t halfInputSize = input_lut_size / 2;
+    indexMap = [=](size_t idx) {
+      if (idx < halfInputSize) {
+        return idx + halfInputSize;
+      } else {
+        return idx - halfInputSize;
+      }
+    };
+  } else {
+    indexMap = [=](size_t idx) { return idx; };
+  }
+
+  // The first lut value should be centered over zero. This means that half of
+  // it should appear at the beginning of the output lut, and half of it at the
+  // end (but negated).
+  for (size_t idx = 0; idx < mega_case_size / 2; ++idx) {
+    output_lut_aligned[output_lut_offset + idx] =
+        input_lut_aligned[input_lut_offset + indexMap(0)]
+        << (64 - out_MESSAGE_BITS - 1);
+    // set the sign bit
+    output_lut_aligned[output_lut_offset + idx] |= sign_bit_setter;
+    // set the overflow bit
+    output_lut_aligned[output_lut_offset + idx] |= (uint64_t)overflow_info[0];
+  }
+  for (size_t idx = (input_lut_size - 1) * mega_case_size + mega_case_size / 2;
+       idx < output_lut_size; ++idx) {
+    output_lut_aligned[output_lut_offset + idx] =
+        -(input_lut_aligned[input_lut_offset + indexMap(0)]
+          << (64 - out_MESSAGE_BITS - 1));
+    // set the sign bit
+    output_lut_aligned[output_lut_offset + idx] |= sign_bit_setter;
+    // set the overflow bit
+    output_lut_aligned[output_lut_offset + idx] |=
+        (uint64_t)overflow_info[indexMap(0)];
+  }
+
+  // Treats the other ut values.
+  for (size_t lut_idx = 1; lut_idx < input_lut_size; ++lut_idx) {
+    uint64_t lut_value = input_lut_aligned[input_lut_offset + indexMap(lut_idx)]
+                         << (64 - out_MESSAGE_BITS - 1);
+    // set the sign bit
+    lut_value |= sign_bit_setter;
+    // set the overflow bit
+    lut_value |= (uint64_t)overflow_info[indexMap(lut_idx)];
+    size_t start = mega_case_size * (lut_idx - 1) + mega_case_size / 2;
+    for (size_t output_idx = start; output_idx < start + mega_case_size;
+         ++output_idx) {
+      output_lut_aligned[output_lut_offset + output_idx] = lut_value;
+    }
+  }
+
+  return;
 }
 
 void sim_encode_plaintext_with_crt(uint64_t *output_allocated,

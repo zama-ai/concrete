@@ -448,8 +448,10 @@ mlir::LogicalResult simulateTFHE(mlir::MLIRContext &context,
   if (fheContext) {
     auto solution = fheContext.value().solution;
     auto optCrt = getCrtDecompositionFromSolution(solution);
-    if (optCrt)
+    if (optCrt) {
       enableOverflowDetection = false;
+      log_verbose() << "WARNING: overflow detection disabled since using CRT";
+    }
   }
 
   pipelinePrinting("TFHESimulation", pm, context);

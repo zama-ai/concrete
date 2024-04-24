@@ -21,7 +21,7 @@ def assert_result(result, expected_result):
     """
     assert type(expected_result) == type(result)
     if isinstance(expected_result, int):
-        assert result == expected_result
+        assert result == expected_result, f"{result} != {expected_result}"
     else:
         assert np.all(result == expected_result)
 
@@ -260,6 +260,186 @@ end_to_end_overflow_simu_fixture = [
     ),
     pytest.param(
         """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-1, -2),
+        -3,
+        b"",
+        id="add_eint_int_signed",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-60, -20),
+        -80,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="add_eint_int_signed_underflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.add_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (60, 20),
+        -48,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="add_eint_int_signed_overflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+                %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
+            }
+            """,
+        (81, 73),
+        154,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="add_eint",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: !FHE.esint<7>) -> !FHE.esint<7> {
+                %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.esint<7>, !FHE.esint<7>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-81, 73),
+        -8,
+        b"",
+        id="add_eint_signed",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: !FHE.esint<7>) -> !FHE.esint<7> {
+                %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.esint<7>, !FHE.esint<7>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-60, -20),
+        -80,  # undefined behavior
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="add_eint_signed_underflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: !FHE.esint<7>) -> !FHE.esint<7> {
+                %1 = "FHE.add_eint"(%arg0, %arg1): (!FHE.esint<7>, !FHE.esint<7>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (81, 73),
+        -102,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="add_eint_signed_overflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
+            }
+            """,
+        (4, 7),
+        256 - 3,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="sub_eint_int",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (4, 7),
+        -3,
+        b"",
+        id="sub_eint_int_signed",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-37, 40),
+        -77,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="sub_eint_int_signed_underflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (33, -40),
+        -55,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="sub_eint_int_signed_overflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: !FHE.eint<7>) -> !FHE.eint<7> {
+                %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.eint<7>, !FHE.eint<7>) -> (!FHE.eint<7>)
+                return %1: !FHE.eint<7>
+            }
+            """,
+        (11, 18),
+        256 - 7,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="sub_eint",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: !FHE.esint<7>) -> !FHE.esint<7> {
+                %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.esint<7>, !FHE.esint<7>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (11, 18),
+        -7,
+        b"",
+        id="sub_eint_signed",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: !FHE.esint<7>) -> !FHE.esint<7> {
+                %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.esint<7>, !FHE.esint<7>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-44, 32),
+        -76,  # undefined behavior
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="sub_eint_signed_underflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: !FHE.esint<7>) -> !FHE.esint<7> {
+                %1 = "FHE.sub_eint"(%arg0, %arg1): (!FHE.esint<7>, !FHE.esint<7>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (61, -25),
+        -42,  # undefined behavior
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
+        id="sub_eint_signed_overflow",
+    ),
+    pytest.param(
+        """
             func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
                 %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
                 return %1: !FHE.eint<7>
@@ -272,16 +452,91 @@ end_to_end_overflow_simu_fixture = [
     ),
     pytest.param(
         """
+            func.func @main(%arg0: !FHE.eint<7>, %arg1: i8) -> !FHE.eint<7> {
+                %1 = "FHE.sub_eint_int"(%arg0, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                %2 = "FHE.mul_eint_int"(%1, %arg1): (!FHE.eint<7>, i8) -> (!FHE.eint<7>)
+                return %2: !FHE.eint<7>
+            }
+            """,
+        (5, 10),
+        256 - 50,
+        b'WARNING at loc("-":3:22): overflow happened during addition in simulation\nWARNING at loc("-":4:22): overflow happened during multiplication in simulation\n',
+        id="sub_mul_eint_int",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (5, -2),
+        -10,
+        b"",
+        id="mul_eint_int_signed",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-33, 5),
+        -37,  # undefined behavior
+        b'WARNING at loc("-":3:22): overflow happened during multiplication in simulation\n',
+        id="mul_eint_int_signed_underflow",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>, %arg1: i8) -> !FHE.esint<7> {
+                %1 = "FHE.mul_eint_int"(%arg0, %arg1): (!FHE.esint<7>, i8) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (-33, -5),
+        -91,
+        b'WARNING at loc("-":3:22): overflow happened during multiplication in simulation\n',
+        id="mul_eint_int_signed_overflow",
+    ),
+    pytest.param(
+        """
             func.func @main(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
-                %tlu = arith.constant dense<[0, 140, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
+                %tlu = arith.constant dense<[0, 1420, -2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
                 %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<7>, tensor<128xi64>) -> (!FHE.eint<7>)
                 return %1: !FHE.eint<7>
             }
             """,
         (1,),
         140,
-        b'WARNING at loc("-":4:22): overflow happened during LUT in simulation\n',
-        id="apply_lookup_table",
+        b'WARNING at loc("-":4:22): overflow (padding bit) happened during LUT in simulation\nWARNING at loc("-":4:22): overflow (original value didn\'t fit, so a modulus was applied) happened during LUT in simulation\n',
+        id="apply_lookup_table_big_value",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
+                %tlu = arith.constant dense<[0, 1400, 254, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
+                %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.esint<7>, tensor<128xi64>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (2,),
+        -2,
+        b"",
+        id="apply_lookup_table_signed",
+    ),
+    pytest.param(
+        """
+            func.func @main(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
+                %tlu = arith.constant dense<[0, 1400, -2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]> : tensor<128xi64>
+                %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.esint<7>, tensor<128xi64>) -> (!FHE.esint<7>)
+                return %1: !FHE.esint<7>
+            }
+            """,
+        (1,),
+        -8,
+        b'WARNING at loc("-":4:22): overflow (original value didn\'t fit, so a modulus was applied) happened during LUT in simulation\n',
+        id="apply_lookup_table_signed_big_value",
     ),
 ]
 
