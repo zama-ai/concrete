@@ -22,7 +22,12 @@
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 
+#include <concretelang/Dialect/Concrete/IR/ConcreteDialect.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteOps.h>
+#include <concretelang/Dialect/Concrete/IR/ConcreteTypes.h>
+
 namespace SDFG = mlir::concretelang::SDFG;
+namespace Concrete = mlir::concretelang::Concrete;
 
 namespace {
 enum class StreamMappingKind { ON_DEVICE, TO_DEVICE, SPLICE, TO_HOST, NONE };
@@ -80,16 +85,6 @@ void unrollLoopsWithSDFGConvertibleOps(mlir::func::FuncOp func) {
     if (mlir::loopUnrollByFactor(forOp, (uint64_t)unrollFactor).failed())
       continue;
   }
-}
-
-void restrictParallelLoopsWithSDFGConvertibleOps(mlir::func::FuncOp func,
-                                                 mlir::IRRewriter &rewriter) {
-  func.walk([&](SDFG::SDFGConvertibleOpInterface convertible) {
-    for (mlir::Operation *parent = convertible->getParentOp(); parent;
-         parent = parent->getParentOp())
-      if (mlir::scf::ForOp forOp = llvm::dyn_cast<mlir::scf::ForOp>(parent))
-        forOp->setAttr("parallel", rewriter.getBoolAttr(false));
-  });
 }
 
 StreamMappingKind determineStreamMappingKind(mlir::Value v) {
@@ -158,8 +153,6 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
 
     if (unroll)
       unrollLoopsWithSDFGConvertibleOps(func);
-    else
-      restrictParallelLoopsWithSDFGConvertibleOps(func, rewriter);
 
     mlir::DenseMap<mlir::Value, SDFG::MakeStream> processOutMapping;
     mlir::DenseMap<mlir::Value, SDFG::MakeStream> processInMapping;
@@ -169,8 +162,44 @@ struct ExtractSDFGOpsPass : public ExtractSDFGOpsBase<ExtractSDFGOpsPass> {
 
     unsigned streamNumber = 0;
 
+    // Restrict SDFG conversion to cases where the SDFG graph includes
+    // operations with sufficient computational complexity to benefit
+    // from offloading to an accelerator.
+    auto isOpInBootstrappingSDFG = [&](mlir::Operation *op) -> bool {
+      mlir::scf::ForOp loopParent =
+          llvm::dyn_cast_or_null<mlir::scf::ForOp>(op->getParentOp());
+      if (loopParent) {
+        for (mlir::Operation &bop : loopParent.getBody()->getOperations())
+          if (llvm::isa<Concrete::BatchedBootstrapLweTensorOp,
+                        Concrete::BatchedMappedBootstrapLweTensorOp,
+                        Concrete::BatchedKeySwitchLweTensorOp>(bop))
+            return true;
+        return false;
+      } else {
+        return true;
+      }
+    };
+    // If we will generate SDFG ops for a loop, then the loop and
+    // all enclosing loops must not be parallelized as SDFG access
+    // ops (put/get) need to be issued in serial order.
+    auto restrictParallelLoopsWithSDFGConvertibleOps =
+        [&](mlir::Operation *op) {
+          mlir::scf::ForOp loopParent =
+              llvm::dyn_cast_or_null<mlir::scf::ForOp>(op->getParentOp());
+          if (loopParent) {
+            loopParent->setAttr("parallel", rewriter.getBoolAttr(false));
+            for (mlir::Operation *parent = loopParent->getParentOp(); parent;
+                 parent = parent->getParentOp())
+              if (mlir::scf::ForOp forOp =
+                      llvm::dyn_cast<mlir::scf::ForOp>(parent))
+                forOp->setAttr("parallel", rewriter.getBoolAttr(false));
+          }
+        };
     func.walk([&](SDFG::SDFGConvertibleOpInterface op) {
-      convertibleOps.push_back(op);
+      if (isOpInBootstrappingSDFG(op)) {
+        restrictParallelLoopsWithSDFGConvertibleOps(op);
+        convertibleOps.push_back(op);
+      }
     });
 
     if (convertibleOps.size() == 0)
