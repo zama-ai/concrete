@@ -92,19 +92,21 @@ struct NegOpPattern : public mlir::OpConversionPattern<TFHE::NegGLWEOp> {
   }
 };
 
+int locationStringCtr = 0;
 mlir::Value globalStringValueFromLoc(mlir::ConversionPatternRewriter &rewriter,
                                      mlir::Location loc) {
   std::string locString;
   auto ros = llvm::raw_string_ostream(locString);
   loc.print(ros);
+  locString.append("\0");
+  auto locStrWithNullByte =
+      llvm::StringRef(locString.c_str(), locString.size() + 1);
 
-  std::string msgName;
-  std::stringstream stream;
-  stream << "loc_" << rand();
-  stream >> msgName;
-  return mlir::LLVM::createGlobalString(loc, rewriter, msgName, locString,
-                                        mlir::LLVM::linkage::Linkage::Linkonce,
-                                        false);
+  std::stringstream msgName;
+  msgName << "str_loc_" << locationStringCtr++;
+  return mlir::LLVM::createGlobalString(
+      loc, rewriter, msgName.str(), locStrWithNullByte,
+      mlir::LLVM::linkage::Linkage::Linkonce, false);
 }
 
 template <typename AddOp, typename AddOpAdaptor>
@@ -122,12 +124,21 @@ struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
     const std::string funcName = "sim_add_lwe_u64";
 
     auto locString = globalStringValueFromLoc(rewriter, addOp.getLoc());
+    // check if operation has been tagged as signed
+    auto isSigned = false;
+    mlir::Attribute signedAttr = adaptor.getAttributes().get("signed");
+    if (signedAttr && signedAttr.cast<mlir::BoolAttr>().getValue()) {
+      isSigned = true;
+    }
+    mlir::Value isSignedCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        addOp.getLoc(), isSigned, 1);
 
     if (insertForwardDeclaration(
             addOp, rewriter, funcName,
             rewriter.getFunctionType(
                 {rewriter.getIntegerType(64), rewriter.getIntegerType(64),
-                 mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type())},
+                 mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type()),
+                 rewriter.getIntegerType(1)},
                 {rewriter.getIntegerType(64)}))
             .failed()) {
       return mlir::failure();
@@ -135,7 +146,8 @@ struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
 
     rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         addOp, funcName, mlir::TypeRange{rewriter.getIntegerType(64)},
-        mlir::ValueRange({adaptor.getA(), adaptor.getB(), locString}));
+        mlir::ValueRange(
+            {adaptor.getA(), adaptor.getB(), locString, isSignedCst}));
 
     return mlir::success();
   }
@@ -156,11 +168,21 @@ struct MulOpPattern : public mlir::OpConversionPattern<TFHE::MulGLWEIntOp> {
 
     auto locString = globalStringValueFromLoc(rewriter, mulOp.getLoc());
 
+    // check if operation has been tagged as signed
+    auto isSigned = false;
+    mlir::Attribute signedAttr = adaptor.getAttributes().get("signed");
+    if (signedAttr && signedAttr.cast<mlir::BoolAttr>().getValue()) {
+      isSigned = true;
+    }
+    mlir::Value isSignedCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        mulOp.getLoc(), isSigned, 1);
+
     if (insertForwardDeclaration(
             mulOp, rewriter, funcName,
             rewriter.getFunctionType(
                 {rewriter.getIntegerType(64), rewriter.getIntegerType(64),
-                 mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type())},
+                 mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type()),
+                 rewriter.getIntegerType(1)},
                 {rewriter.getIntegerType(64)}))
             .failed()) {
       return mlir::failure();
@@ -168,7 +190,8 @@ struct MulOpPattern : public mlir::OpConversionPattern<TFHE::MulGLWEIntOp> {
 
     rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         mulOp, funcName, mlir::TypeRange{rewriter.getIntegerType(64)},
-        mlir::ValueRange({adaptor.getA(), adaptor.getB(), locString}));
+        mlir::ValueRange(
+            {adaptor.getA(), adaptor.getB(), locString, isSignedCst}));
 
     return mlir::success();
   }
@@ -186,8 +209,10 @@ struct SubIntGLWEOpPattern : public mlir::OpRewritePattern<TFHE::SubGLWEIntOp> {
     mlir::Value negated = rewriter.create<TFHE::NegGLWEOp>(
         subOp.getLoc(), subOp.getB().getType(), subOp.getB());
 
-    rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(subOp, subOp.getType(),
-                                                    negated, subOp.getA());
+    rewriter.replaceOpWithNewOp<TFHE::AddGLWEIntOp>(
+        subOp, subOp.getType(), mlir::ValueRange({negated, subOp.getA()}),
+        // to forward the signed attr if set
+        subOp.getOperation()->getAttrs());
 
     return mlir::success();
   }

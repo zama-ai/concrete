@@ -31,9 +31,10 @@ uint64_t sim_neg_lwe_u64(uint64_t plaintext);
 ///
 /// \param lhs left operand
 /// \param rhs right operand
-/// \param loc
+/// \param loc location of the operation
+/// \param is_signed tell if operands are known to be signed
 /// \return uint64_t
-uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc);
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc, bool is_signed);
 
 /// \brief simulate the multiplication of a noisy plaintext with an integer
 ///
@@ -41,9 +42,10 @@ uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc);
 ///
 /// \param lhs left operand
 /// \param rhs right operand
-/// \param loc
+/// \param loc location of the operation
+/// \param is_signed tell if operands are known to be signed
 /// \return uint64_t
-uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc);
+uint64_t sim_mul_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc, bool is_signed);
 
 /// \brief simulate a keyswitch on a noisy plaintext
 ///

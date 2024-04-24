@@ -57,6 +57,15 @@ inline void forwardOptimizerID(mlir::Operation *source,
   destination->setAttr("TFHE.OId", optimizerIdAttr);
 }
 
+// Set the `signed` attribute to true if the type is signed
+inline void markOpIfSigned(mlir::Operation *op,
+                           FHE::FheIntegerInterface resultType) {
+  auto isSigned = resultType.isSigned();
+  if (isSigned) {
+    op->setAttr("signed", mlir::BoolAttr::get(op->getContext(), true));
+  }
+}
+
 inline void
 forwardLinearlyOptimizerIDS(mlir::Operation &source,
                             std::vector<mlir::Value> &destinations) {
@@ -185,6 +194,29 @@ struct AddEintIntOpPattern : public ScalarOpPattern<FHE::AddEintIntOp> {
         op, getTypeConverter()->convertType(op.getType()), adaptor.getA(),
         encodedInt);
     forwardOptimizerID(op, newOp);
+    markOpIfSigned(newOp, op.getType().cast<FHE::FheIntegerInterface>());
+
+    return mlir::success();
+  }
+};
+
+/// Rewriter for the `FHE::add_eint` operation.
+struct AddEintOpPattern : public mlir::OpConversionPattern<FHE::AddEintOp> {
+  AddEintOpPattern(mlir::TypeConverter &converter, mlir::MLIRContext *context,
+                   mlir::PatternBenefit benefit = 1)
+      : mlir::OpConversionPattern<FHE::AddEintOp>(converter, context, benefit) {
+  }
+
+  mlir::LogicalResult
+  matchAndRewrite(FHE::AddEintOp op, FHE::AddEintOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+
+    // Write the new op
+    auto newOp = rewriter.replaceOpWithNewOp<TFHE::AddGLWEOp>(
+        op, getTypeConverter()->convertType(op.getType()),
+        adaptor.getOperands());
+    forwardOptimizerID(op, newOp);
+    markOpIfSigned(newOp, op.getType().cast<FHE::FheIntegerInterface>());
 
     return mlir::success();
   }
@@ -225,6 +257,7 @@ struct SubEintIntOpPattern : public ScalarOpPattern<FHE::SubEintIntOp> {
         op, getTypeConverter()->convertType(op.getType()), adaptor.getA(),
         encodedInt);
     forwardOptimizerID(op, newOp);
+    markOpIfSigned(newOp, op.getType().cast<FHE::FheIntegerInterface>());
 
     return mlir::success();
   };
@@ -252,6 +285,7 @@ struct SubIntEintOpPattern : public ScalarOpPattern<FHE::SubIntEintOp> {
         op, getTypeConverter()->convertType(op.getType()), encodedInt,
         adaptor.getB());
     forwardOptimizerID(op, newOp);
+    markOpIfSigned(newOp, op.getType().cast<FHE::FheIntegerInterface>());
 
     return mlir::success();
   };
@@ -281,6 +315,7 @@ struct SubEintOpPattern : public ScalarOpPattern<FHE::SubEintOp> {
         op, getTypeConverter()->convertType(op.getType()), lhsOperand,
         negative.getResult());
     forwardOptimizerID(op, newOp);
+    markOpIfSigned(newOp, op.getType().cast<FHE::FheIntegerInterface>());
 
     return mlir::success();
   };
@@ -310,6 +345,7 @@ struct MulEintIntOpPattern : public ScalarOpPattern<FHE::MulEintIntOp> {
         op, getTypeConverter()->convertType(op.getType()), eintOperand,
         castedCleartext);
     forwardOptimizerID(op, newOp);
+    markOpIfSigned(newOp, op.getType().cast<FHE::FheIntegerInterface>());
 
     return mlir::success();
   }
@@ -804,12 +840,11 @@ struct FHEToTFHEScalarPass : public FHEToTFHEScalarBase<FHEToTFHEScalarPass> {
             FHE::NegEintOp, TFHE::NegGLWEOp, true>,
         //    |_ `FHE::not`
         mlir::concretelang::GenericOneToOneOpConversionPattern<
-            FHE::BoolNotOp, TFHE::NegGLWEOp, true>,
-        //    |_ `FHE::add_eint`
-        mlir::concretelang::GenericOneToOneOpConversionPattern<
-            FHE::AddEintOp, TFHE::AddGLWEOp, true>>(&getContext(), converter);
+            FHE::BoolNotOp, TFHE::NegGLWEOp, true>>(&getContext(), converter);
     //    |_ `FHE::add_eint_int`
     patterns.add<lowering::AddEintIntOpPattern,
+                 //    |_ `FHE::add_eint`
+                 lowering::AddEintOpPattern,
                  //    |_ `FHE::sub_int_eint`
                  lowering::SubIntEintOpPattern,
                  //    |_ `FHE::sub_eint_int`
