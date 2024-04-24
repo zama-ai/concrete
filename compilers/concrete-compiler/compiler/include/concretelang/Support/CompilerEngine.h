@@ -135,11 +135,16 @@ struct CompilationOptions {
       loopParallelize = true;
       break;
     case Backend::GPU:
+      loopParallelize = true;
       batchTFHEOps = true;
       emitGPUOps = true;
       emitSDFGOps = true;
-      if (maxBatchSize == std::numeric_limits<int64_t>::max())
-        maxBatchSize = 1 << 16;
+      char *env = getenv("SDFG_MAX_BATCH_SIZE");
+      if (env != nullptr) {
+        int64_t targetMax = strtoul(env, NULL, 10);
+        if (targetMax > 0)
+          maxBatchSize = targetMax;
+      }
       break;
     }
   }
