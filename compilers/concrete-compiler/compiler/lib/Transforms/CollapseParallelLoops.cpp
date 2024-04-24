@@ -5,6 +5,7 @@
 
 #include "concretelang/Transforms/Passes.h"
 
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SCF/Utils/Utils.h"
@@ -16,6 +17,7 @@
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
 namespace {
+
 struct CollapseParallelLoopsPass
     : public CollapseParallelLoopsBase<CollapseParallelLoopsPass> {
 
@@ -50,17 +52,26 @@ struct CollapseParallelLoopsPass
         if (attr == nullptr || attr.getValue() == false)
           continue;
 
+        auto areValuesDefinedAbove = [&](mlir::ValueRange values,
+                                         mlir::Region &limit) -> bool {
+          for (mlir::Value v : values)
+            if (!v.getParentRegion()->isProperAncestor(&limit) &&
+                !v.isa<mlir::BlockArgument>())
+              return false;
+          return true;
+        };
+
         // Find how many loops are able to be coalesced
         for (unsigned j = 0; j < i; ++j) {
-          if (mlir::areValuesDefinedAbove(loops[i].getOperands(),
-                                          loops[j].getRegion())) {
+          if (areValuesDefinedAbove(loops[i].getOperands(),
+                                    loops[j].getRegion())) {
             coalesceableLoopRanges[i] = j;
             break;
           }
         }
-        // Now ensure that all loops in this sequence
-        // [coalesceableLoopRanges[i], i] are parallel. Otherwise
-        // update the range's lower bound.
+        //  Now ensure that all loops in this sequence
+        //  [coalesceableLoopRanges[i], i] are parallel. Otherwise
+        //  update the range's lower bound.
         for (int k = i - 1; k >= (int)coalesceableLoopRanges[i]; --k) {
           auto attrK = loops[k]->getAttrOfType<mlir::BoolAttr>("parallel");
           if (attrK == nullptr || attrK.getValue() == false) {
