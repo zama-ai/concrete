@@ -1140,6 +1140,7 @@ struct BootstrapKey final {
   ::concrete_optimizer::dag::SecretLweKey input_key;
   ::concrete_optimizer::dag::SecretLweKey output_key;
   ::concrete_optimizer::dag::BrDecompositionParameters br_decomposition_parameter;
+  double unitary_cost;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;
@@ -1153,6 +1154,7 @@ struct KeySwitchKey final {
   ::concrete_optimizer::dag::SecretLweKey input_key;
   ::concrete_optimizer::dag::SecretLweKey output_key;
   ::concrete_optimizer::dag::KsDecompositionParameters ks_decomposition_parameter;
+  double unitary_cost;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;
@@ -1167,6 +1169,7 @@ struct ConversionKeySwitchKey final {
   ::concrete_optimizer::dag::SecretLweKey output_key;
   ::concrete_optimizer::dag::KsDecompositionParameters ks_decomposition_parameter;
   bool fast_keyswitch;
+  double unitary_cost;
   ::rust::String description;
 
   using IsRelocatable = ::std::true_type;

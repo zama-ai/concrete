@@ -118,7 +118,7 @@ struct KeySwitchGLWEOpPattern
     auto newOutputKey = converter.getIntraPBSKey();
     auto keyswitchKey = TFHE::GLWEKeyswitchKeyAttr::get(
         ksOp->getContext(), newInputKey, newOutputKey, cryptoParameters.ksLevel,
-        cryptoParameters.ksLogBase, -1);
+        cryptoParameters.ksLogBase, -1, -1);
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::KeySwitchGLWEOp>(
         ksOp, newOutputTy, ksOp.getCiphertext(), keyswitchKey);
     rewriter.startRootUpdate(newOp);
@@ -156,7 +156,7 @@ struct BootstrapGLWEOpPattern
     auto bootstrapKey = TFHE::GLWEBootstrapKeyAttr::get(
         bsOp->getContext(), newInputKey, newOutputKey,
         cryptoParameters.getPolynomialSize(), cryptoParameters.glweDimension,
-        cryptoParameters.brLevel, cryptoParameters.brLogBase, -1);
+        cryptoParameters.brLevel, cryptoParameters.brLogBase, -1, -1);
     auto newOp = rewriter.replaceOpWithNewOp<TFHE::BootstrapGLWEOp>(
         bsOp, newOutputTy, bsOp.getCiphertext(), bsOp.getLookupTable(),
         bootstrapKey);
@@ -193,11 +193,11 @@ struct WopPBSGLWEOpPattern : public mlir::OpRewritePattern<TFHE::WopPBSGLWEOp> {
     auto intraKey = converter.getIntraPBSKey();
     auto keyswitchKey = TFHE::GLWEKeyswitchKeyAttr::get(
         wopPBSOp->getContext(), interKey, intraKey, cryptoParameters.ksLevel,
-        cryptoParameters.ksLogBase, -1);
+        cryptoParameters.ksLogBase, -1, -1);
     auto bootstrapKey = TFHE::GLWEBootstrapKeyAttr::get(
         wopPBSOp->getContext(), intraKey, interKey,
         cryptoParameters.getPolynomialSize(), cryptoParameters.glweDimension,
-        cryptoParameters.brLevel, cryptoParameters.brLogBase, -1);
+        cryptoParameters.brLevel, cryptoParameters.brLogBase, -1, -1);
     auto packingKeyswitchKey = TFHE::GLWEPackingKeyswitchKeyAttr::get(
         wopPBSOp->getContext(), interKey, interKey,
         cryptoParameters.largeInteger->wopPBS.packingKeySwitch

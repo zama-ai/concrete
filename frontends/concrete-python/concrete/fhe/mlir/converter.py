@@ -232,6 +232,7 @@ class Converter:
                 ),
             ]
             + configuration.additional_post_processors
+            + [AssignNodeIds()]
         )
 
         for processor in pipeline:

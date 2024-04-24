@@ -389,6 +389,26 @@ class Circuit:
         """
         return self._property("complexity")  # pragma: no cover
 
+    def complexity_per_tag(self) -> Dict[str, float]:
+        """
+        Get the complexity of each tag in the computation graph.
+
+        Returns:
+            Dict[str, float]:
+                complexity per tag
+        """
+        return self._property("complexity_per_tag")
+
+    def complexity_per_node(self) -> Dict[str, float]:
+        """
+        Get the complexity of each node in the computation graph.
+
+        Returns:
+            Dict[str, float]:
+                complexity per node
+        """
+        return self._property("complexity_per_node")
+
     # Programmable Bootstrap Statistics
 
     @property

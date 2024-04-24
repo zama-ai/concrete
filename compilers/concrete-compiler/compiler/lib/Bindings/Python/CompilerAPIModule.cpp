@@ -832,7 +832,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_readonly("operation", &mlir::concretelang::Statistic::operation)
       .def_readonly("location", &mlir::concretelang::Statistic::location)
       .def_readonly("keys", &mlir::concretelang::Statistic::keys)
-      .def_readonly("count", &mlir::concretelang::Statistic::count);
+      .def_readonly("count", &mlir::concretelang::Statistic::count)
+      .def_readonly("complexity", &mlir::concretelang::Statistic::complexity);
 
   pybind11::class_<mlir::concretelang::ProgramCompilationFeedback>(
       m, "ProgramCompilationFeedback")

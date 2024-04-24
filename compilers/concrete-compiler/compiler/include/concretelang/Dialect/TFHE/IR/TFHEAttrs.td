@@ -28,10 +28,11 @@ def TFHE_KeyswitchKeyAttr: TFHE_Attr<"GLWEKeyswitchKey", "ksk"> {
         "mlir::concretelang::TFHE::GLWESecretKey":$outputKey,
         "int":$levels,
         "int":$baseLog,
+        DefaultValuedParameter<"int64_t", "-1">: $complexity,
         DefaultValuedParameter<"int", "-1">: $index
     );
 
-    let assemblyFormat = " (`[` $index^ `]`)? `<` $inputKey `,` $outputKey `,` $levels `,` $baseLog `>`";
+    let assemblyFormat = " (`[` $index^ `]`)? (`{` $complexity^ `}`)? `<` $inputKey `,` $outputKey `,` $levels `,` $baseLog `>`";
 }
 
 def TFHE_BootstrapKeyAttr: TFHE_Attr<"GLWEBootstrapKey", "bsk"> {
@@ -45,10 +46,11 @@ def TFHE_BootstrapKeyAttr: TFHE_Attr<"GLWEBootstrapKey", "bsk"> {
         "int":$glweDim,
         "int":$levels,
         "int":$baseLog,
+        DefaultValuedParameter<"int64_t", "-1">: $complexity,
         DefaultValuedParameter<"int", "-1">: $index
     );
 
-    let assemblyFormat = "(`[` $index^ `]`)? `<` $inputKey `,` $outputKey `,` $polySize `,` $glweDim `,` $levels `,` $baseLog `>`";
+    let assemblyFormat = "(`[` $index^ `]`)? (`{` $complexity^ `}`)? `<` $inputKey `,` $outputKey `,` $polySize `,` $glweDim `,` $levels `,` $baseLog `>`";
 }
 
 def TFHE_PackingKeyswitchKeyAttr: TFHE_Attr<"GLWEPackingKeyswitchKey", "pksk"> {

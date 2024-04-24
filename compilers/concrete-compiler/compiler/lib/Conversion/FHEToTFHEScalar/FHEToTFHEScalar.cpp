@@ -386,7 +386,7 @@ struct ApplyLookupTableEintOpPattern
         op.getLoc(), getTypeConverter()->convertType(adaptor.getA().getType()),
         input,
         TFHE::GLWEKeyswitchKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
-                                        TFHE::GLWESecretKey(), -1, -1, -1));
+                                        TFHE::GLWESecretKey(), -1, -1, -1, -1));
     if (operatorIndexes != nullptr) {
       ksOp->setAttr("TFHE.OId",
                     rewriter.getI32IntegerAttr(
@@ -398,7 +398,7 @@ struct ApplyLookupTableEintOpPattern
         op, getTypeConverter()->convertType(op.getType()), ksOp, newLut,
         TFHE::GLWEBootstrapKeyAttr::get(op.getContext(), TFHE::GLWESecretKey(),
                                         TFHE::GLWESecretKey(), -1, -1, -1, -1,
-                                        -1));
+                                        -1, -1));
     if (operatorIndexes != nullptr) {
       bsOp->setAttr("TFHE.OId",
                     rewriter.getI32IntegerAttr(
@@ -515,9 +515,9 @@ std::vector<mlir::Value> extractBitWithClearedLowerBits(
   auto context = op.getContext();
   auto secretKey = TFHE::GLWESecretKey();
   auto ksk = TFHE::GLWEKeyswitchKeyAttr::get(context, secretKey, secretKey, -1,
-                                             -1, -1);
+                                             -1, -1, -1);
   auto bsk = TFHE::GLWEBootstrapKeyAttr::get(context, secretKey, secretKey, -1,
-                                             -1, -1, -1, -1);
+                                             -1, -1, -1, -1, -1);
 
   auto keyswitched = rewriter.create<TFHE::KeySwitchGLWEOp>(
       loc, cInputTy, shiftedRotatedInput, ksk);
