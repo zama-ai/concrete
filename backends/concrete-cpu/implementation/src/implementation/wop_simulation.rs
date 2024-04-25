@@ -8,11 +8,9 @@ use concrete_cpu_noise_model::gaussian_noise::noise::keyswitch::variance_keyswit
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
 use concrete_cpu_noise_model::gaussian_noise::noise::private_packing_keyswitch::estimate_packing_private_keyswitch;
 use concrete_csprng::generators::SoftwareRandomGenerator;
+use concrete_security_curves::gaussian::security::{minimal_variance_glwe, minimal_variance_lwe};
 use tfhe::core_crypto::commons::math::random::RandomGenerator;
 use tfhe::core_crypto::commons::parameters::*;
-
-use concrete_csprng::seeders::Seed;
-use concrete_security_curves::gaussian::security::{minimal_variance_glwe, minimal_variance_lwe};
 
 use tfhe::core_crypto::entities::{Polynomial, PolynomialList};
 
@@ -71,9 +69,8 @@ pub fn extract_bits(
     br_level: u64,
     ciphertext_modulus_log: u32,
     security_level: u64,
+    csprng: &mut RandomGenerator<SoftwareRandomGenerator>,
 ) {
-    let mut csprng = RandomGenerator::<SoftwareRandomGenerator>::new(Seed(0));
-
     let polynomial_size = 1 << log_poly_size;
     let mut lookup_table = vec![0_u64; polynomial_size as usize];
     let ciphertext_n_bits = u64::BITS as usize;
@@ -101,7 +98,7 @@ pub fn extract_bits(
             ciphertext_modulus_log,
             variance_ksk,
         );
-        let (keyswitch_noise, _) = random_gaussian_pair(keyswitch_variance, &mut csprng);
+        let (keyswitch_noise, _) = random_gaussian_pair(keyswitch_variance, csprng);
 
         // Key switch to input PBS key
         let keyswitched_shifted_lwe = shifted_lwe.wrapping_add(from_torus(keyswitch_noise));
@@ -131,7 +128,7 @@ pub fn extract_bits(
             log_poly_size,
             ciphertext_modulus_log,
         );
-        let (modulus_switch_noise, _) = random_gaussian_pair(modulus_switch_variance, &mut csprng);
+        let (modulus_switch_noise, _) = random_gaussian_pair(modulus_switch_variance, csprng);
 
         let modulus_switched_lwe = modular_add(
             integer_round(
@@ -164,7 +161,7 @@ pub fn extract_bits(
             53,
             variance_bsk,
         );
-        let (blind_rotate_noise, _) = random_gaussian_pair(blind_rotate_variance, &mut csprng);
+        let (blind_rotate_noise, _) = random_gaussian_pair(blind_rotate_variance, csprng);
 
         let blind_rotated_lwe = if modulus_switched_lwe < polynomial_size {
             lookup_table[modulus_switched_lwe as usize].wrapping_add(from_torus(blind_rotate_noise))
@@ -577,9 +574,8 @@ pub fn circuit_bootstrap_boolean_vertical_packing(
     pp_log_base: u64,
     ciphertext_modulus_log: u32,
     security_level: u64,
+    csprng: &mut RandomGenerator<SoftwareRandomGenerator>,
 ) {
-    let sw_csprng = &mut RandomGenerator::<SoftwareRandomGenerator>::new(Seed(0));
-
     let mut ggsw_list = vec![0_u64; lwe_list_in.len()];
     let delta_log = u64::BITS as usize - 1;
     for (lwe_in, ggsw) in zip_eq(lwe_list_in.iter(), ggsw_list.iter_mut()) {
@@ -589,7 +585,7 @@ pub fn circuit_bootstrap_boolean_vertical_packing(
             log_poly_size,
             lwe_dimension,
             ciphertext_modulus_log,
-            sw_csprng,
+            csprng,
         );
     }
 
@@ -608,7 +604,7 @@ pub fn circuit_bootstrap_boolean_vertical_packing(
             pbs_level,
             ciphertext_modulus_log,
             security_level,
-            sw_csprng,
+            csprng,
         );
     }
 }
