@@ -60,6 +60,7 @@
 #include <llvm/ADT/TypeSwitch.h>
 #include <llvm/Support/Debug.h>
 #include <mlir/Analysis/DataFlow/SparseAnalysis.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 
 namespace mlir {
 namespace concretelang {
@@ -590,16 +591,25 @@ template <typename YieldT>
 using DynamicSameTypeConstraint =
     SameTypeConstraintBase<DynamicTypeConstraint<YieldT>>;
 
-// Constraint that ensures that the types inferred for two values use
-// the same element type. If different types have been inferred
-// previously for the two values, precedence is given to the element
-// type inferred for the first value yielded by
-// `BaseConstraintT::yield`.
+// Base for constraints that ensure that the types inferred for two
+// values have the same nested type. What is considered a nested type
+// (e.g., an arbitrarily deeply nested scalar type or a shallow type
+// of a pointer) can be customized through `getNestedType()` and
+// `applyNestedType()`.
+//
+// The depth of the nesting for the left and right values can be set
+// independently through the template parameters `leftDepth` and
+// `rightDepth`.
+//
+// If different types have been inferred previously for the two
+// values, precedence is given to the element type inferred for the
+// first ("left") value yielded by `BaseConstraintT::yield`.
 //
 // If the element types for the two values are fixed, but
 // contradictory, an assertion is triggered.
-template <typename BaseConstraintT>
-class SameElementTypeConstraintBase : public BaseConstraintT {
+template <typename BaseConstraintT, unsigned int leftDepth = 1,
+          unsigned int rightDepth = 1>
+class SameNestedTypeConstraintBase : public BaseConstraintT {
 public:
   using BaseConstraintT::BaseConstraintT;
 
@@ -619,14 +629,17 @@ public:
     // type for the second value
     if (!leftUnresolved && rightUnresolved) {
       currState.set(leftValue, leftType);
-      currState.set(rightValue, TypeInferenceUtils::applyElementType(
-                                    getElementType(leftType), rightType));
+      currState.set(rightValue,
+                    applyNestedType(getNestedType(leftType, leftDepth),
+                                    rightType, rightDepth));
     } else if (leftUnresolved && !rightUnresolved) {
-      currState.set(leftValue, TypeInferenceUtils::applyElementType(
-                                   getElementType(rightType), leftType));
+      currState.set(leftValue,
+                    applyNestedType(getNestedType(rightType, rightDepth),
+                                    leftType, leftDepth));
       currState.set(rightValue, rightType);
     } else if (!leftUnresolved && !rightUnresolved) {
-      assert(getElementType(leftType) == getElementType(rightType) &&
+      assert(getNestedType(leftType, leftDepth) ==
+                 getNestedType(rightType, rightDepth) &&
              "Constraint cannot be matched, as fixed types of the values"
              "are incompatible types");
       currState.set(leftValue, leftType);
@@ -640,20 +653,62 @@ public:
 
       if (leftCurrType.hasType()) {
         currState.set(leftValue, leftCurrType);
-        currState.set(rightValue,
-                      TypeInferenceUtils::applyElementType(
-                          getElementType(leftCurrType.getType()), rightType));
+        currState.set(
+            rightValue,
+            applyNestedType(getNestedType(leftCurrType.getType(), leftDepth),
+                            rightType, rightDepth));
       } else if (rightCurrType.hasType()) {
-        currState.set(leftValue,
-                      TypeInferenceUtils::applyElementType(
-                          getElementType(rightCurrType.getType()), leftType));
+        currState.set(
+            leftValue,
+            applyNestedType(getNestedType(rightCurrType.getType(), rightDepth),
+                            leftType, leftDepth));
         currState.set(rightValue, rightCurrType);
       }
     }
   }
 
 protected:
-  static mlir::Type getElementType(mlir::Type t) {
+  virtual mlir::Type getNestedType(mlir::Type t, unsigned int depth) {
+    mlir::Type res = t;
+
+    for (unsigned int i = 0; i < depth; i++)
+      res = getNestedType(res);
+
+    return res;
+  }
+
+  virtual mlir::Type getNestedType(mlir::Type t) = 0;
+
+  virtual mlir::Type applyNestedType(mlir::Type nestedType, mlir::Type t,
+                                     unsigned int depth) {
+    if (depth == 0) {
+      return nestedType;
+    } else {
+      return applyNestedType(
+          applyNestedType(nestedType, getNestedType(t), depth - 1), t);
+    }
+  }
+
+  virtual mlir::Type applyNestedType(mlir::Type nestedType, mlir::Type t) = 0;
+};
+
+// Constraint that ensures that the types inferred for two values use
+// the same element type. If different types have been inferred
+// previously for the two values, precedence is given to the element
+// type inferred for the first value yielded by
+// `BaseConstraintT::yield`.
+//
+// If the element types for the two values are fixed, but
+// contradictory, an assertion is triggered.
+template <typename BaseConstraintT>
+class SameElementTypeConstraintBase
+    : public SameNestedTypeConstraintBase<BaseConstraintT> {
+public:
+  using SameNestedTypeConstraintBase<
+      BaseConstraintT>::SameNestedTypeConstraintBase;
+
+protected:
+  mlir::Type getNestedType(mlir::Type t) override {
     if (mlir::RankedTensorType rtt =
             llvm::dyn_cast<mlir::RankedTensorType>(t)) {
       return rtt.getElementType();
@@ -662,6 +717,10 @@ protected:
     } else {
       return t;
     }
+  }
+
+  mlir::Type applyNestedType(mlir::Type nestedType, mlir::Type t) override {
+    return TypeInferenceUtils::applyElementType(nestedType, t);
   }
 };
 
