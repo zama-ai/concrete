@@ -183,7 +183,7 @@ void sim_wop_pbs_crt(
     simulation_extract_bit_lwe_ciphertext_u64(
         &extract_bits_output_buffer[extract_bits_output_offset], in_block,
         delta_log, nb_bits_to_extract, log_poly_size, glwe_dim, lwe_small_dim,
-        ksk_base_log, ksk_level_count, bsk_base_log, bsk_level_count, 64, 128);
+        ksk_base_log, ksk_level_count, bsk_base_log, bsk_level_count, 64, 128, default_csprng.ptr);
   }
 
   size_t ct_in_count = total_number_of_bits_per_block;
@@ -199,7 +199,7 @@ void sim_wop_pbs_crt(
       extract_bits_output_buffer, out_aligned + out_offset, ct_in_count,
       ct_out_count, lut_size, lut_count, lut_ct_aligned + lut_ct_offset,
       glwe_dim, log_poly_size, lwe_small_dim, bsk_level_count, bsk_base_log,
-      cbs_level_count, cbs_base_log, pksk_level_count, pksk_base_log, 64, 128);
+      cbs_level_count, cbs_base_log, pksk_level_count, pksk_base_log, 64, 128, default_csprng.ptr);
 }
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }

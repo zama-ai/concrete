@@ -2,7 +2,11 @@ use crate::c_api::utils::nounwind;
 use crate::implementation::wop_simulation::{
     circuit_bootstrap_boolean_vertical_packing, extract_bits,
 };
+use concrete_csprng::generators::SoftwareRandomGenerator;
 use core::slice;
+use tfhe::core_crypto::commons::math::random::RandomGenerator;
+
+use super::types::Csprng;
 
 #[no_mangle]
 pub unsafe extern "C" fn simulation_extract_bit_lwe_ciphertext_u64(
@@ -19,9 +23,12 @@ pub unsafe extern "C" fn simulation_extract_bit_lwe_ciphertext_u64(
     br_level: u64,
     ciphertext_modulus_log: u32,
     security_level: u64,
+    csprng: *mut Csprng,
 ) {
     nounwind(|| {
         assert!(64 <= number_of_bits_to_extract + delta_log);
+
+        let csprng = &mut *(csprng as *mut RandomGenerator<SoftwareRandomGenerator>);
 
         extract_bits(
             slice::from_raw_parts_mut(lwe_list_out, number_of_bits_to_extract),
@@ -37,6 +44,7 @@ pub unsafe extern "C" fn simulation_extract_bit_lwe_ciphertext_u64(
             br_level,
             ciphertext_modulus_log,
             security_level,
+            csprng,
         );
     })
 }
@@ -61,6 +69,7 @@ pub unsafe extern "C" fn simulation_circuit_bootstrap_boolean_vertical_packing_l
     pp_log_base: u64,
     ciphertext_modulus_log: u32,
     security_level: u64,
+    csprng: *mut Csprng,
 ) {
     nounwind(|| {
         assert_ne!(cb_log_base, 0);
@@ -72,6 +81,8 @@ pub unsafe extern "C" fn simulation_circuit_bootstrap_boolean_vertical_packing_l
         let lwe_list_out = slice::from_raw_parts_mut(lwe_list_out, ct_out_count);
 
         let lwe_list_in = slice::from_raw_parts(lwe_list_in, ct_in_count);
+
+        let csprng = &mut *(csprng as *mut RandomGenerator<SoftwareRandomGenerator>);
 
         circuit_bootstrap_boolean_vertical_packing(
             lwe_list_in,
@@ -88,6 +99,7 @@ pub unsafe extern "C" fn simulation_circuit_bootstrap_boolean_vertical_packing_l
             pp_log_base,
             ciphertext_modulus_log,
             security_level,
+            csprng,
         );
     })
 }
