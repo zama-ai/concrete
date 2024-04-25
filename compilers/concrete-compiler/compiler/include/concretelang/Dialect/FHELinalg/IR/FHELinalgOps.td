@@ -1168,6 +1168,7 @@ def FHELinalg_ConcatOp : FHELinalg_Op<"concat", [Pure]> {
     );
 
     let hasVerifier = 1;
+    let hasFolder = 1;
 }
 
 def FHELinalg_Conv2dOp : FHELinalg_Op<"conv2d", [Pure, BinaryEintInt, DeclareOpInterfaceMethods<Binary, ["sqMANP"]>]> {

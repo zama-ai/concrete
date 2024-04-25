@@ -573,10 +573,17 @@ static bool sameShapeExceptAxis(llvm::ArrayRef<int64_t> shape1,
   return true;
 }
 
+OpFoldResult ConcatOp::fold(FoldAdaptor operands) {
+  if (this->getNumOperands() == 1) {
+    return this->getOperand(0);
+  }
+  return nullptr;
+}
+
 mlir::LogicalResult ConcatOp::verify() {
   unsigned numOperands = this->getNumOperands();
-  if (numOperands < 2) {
-    this->emitOpError() << "should have at least 2 inputs";
+  if (numOperands < 1) {
+    this->emitOpError() << "should have at least 1 input";
     return mlir::failure();
   }
 

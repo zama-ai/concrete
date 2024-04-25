@@ -160,3 +160,10 @@ func.func @to_unsigned_zero() -> tensor<4x!FHE.eint<7>> {
   %1 = "FHELinalg.to_unsigned"(%0) : (tensor<4x!FHE.esint<7>>) -> tensor<4x!FHE.eint<7>>
   return %1 : tensor<4x!FHE.eint<7>>
 }
+
+// CHECK: func.func @concat_1_operand(%[[a0:.*]]: tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+// CHECK-NEXT: return %[[a0]]
+func.func @concat_1_operand(%x: tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
+  %0 = "FHELinalg.concat"(%x) : (tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
+  return %0 : tensor<4x!FHE.eint<7>>
+}

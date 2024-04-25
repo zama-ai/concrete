@@ -3,17 +3,9 @@
 // -----
 
 func.func @main() -> tensor<0x!FHE.eint<7>> {
-  // expected-error @+1 {{'FHELinalg.concat' op should have at least 2 inputs}}
+  // expected-error @+1 {{'FHELinalg.concat' op should have at least 1 input}}
   %0 = "FHELinalg.concat"() : () -> tensor<0x!FHE.eint<7>>
   return %0 : tensor<0x!FHE.eint<7>>
-}
-
-// -----
-
-func.func @main(%x: tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>> {
-  // expected-error @+1 {{'FHELinalg.concat' op should have at least 2 inputs}}
-  %0 = "FHELinalg.concat"(%x) : (tensor<4x!FHE.eint<7>>) -> tensor<4x!FHE.eint<7>>
-  return %0 : tensor<4x!FHE.eint<7>>
 }
 
 // -----
