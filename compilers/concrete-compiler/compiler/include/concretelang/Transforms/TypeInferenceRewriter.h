@@ -73,7 +73,7 @@ protected:
     // function to get the actual types for the arguments and return
     // values
     LocalInferenceState inferredTypes =
-        TypeInferenceUtils::getLocalInferenceState(solver, func);
+        TypeInferenceUtils::getLocalInferenceState(solver, typeResolver, func);
     LocalInferenceState resolvedTypes =
         typeResolver.resolve(func, inferredTypes);
 
@@ -163,7 +163,7 @@ protected:
       resolvedResultTypes = llvm::to_vector(op->getResultTypes());
     } else {
       LocalInferenceState inferredTypes =
-          TypeInferenceUtils::getLocalInferenceState(solver, op);
+          TypeInferenceUtils::getLocalInferenceState(solver, typeResolver, op);
 
       // Return-like ops are a bit special, since their operand types
       // are tied to the types of their parent op. The types inferred

@@ -193,6 +193,71 @@ protected:
   bool changed;
 };
 
+// A type resolver is responsible for the actual inference of the
+// types related to an operation based on the previous inference state
+class TypeResolver {
+public:
+  virtual ~TypeResolver() {}
+
+  // Resolve the types for all values related to `op` based on the
+  // previous inference state `prevState` and the current state
+  // `currState`.
+  virtual LocalInferenceState resolve(mlir::Operation *op,
+                                      const LocalInferenceState &prevState) = 0;
+
+  // Returns true for any type that is considered unresolved by the
+  // resolver
+  virtual bool isUnresolvedType(mlir::Type t) const = 0;
+
+  // Invokes the callback function `fn` to all values related to the
+  // operation `op`. Iteration over the related value stops if `fn`
+  // returns `false`.
+  //
+  // Returns `true` if `fn` returned `true` for all related values,
+  // otherwise `false`.
+  virtual bool
+  iterateRelatedValues(mlir::Operation *op,
+                       llvm::function_ref<bool(mlir::Value)> fn) const {
+    auto applyToOperandsAndResults = [&](mlir::Operation *op) {
+      for (mlir::Value v : op->getOperands()) {
+        if (!fn(v))
+          return false;
+      }
+
+      for (mlir::Value v : op->getResults()) {
+        if (!fn(v))
+          return false;
+      }
+
+      return true;
+    };
+
+    if (!applyToOperandsAndResults(op))
+      return false;
+
+    for (mlir::Region &r : op->getRegions()) {
+      for (mlir::Value v : r.getArguments()) {
+        if (!fn(v))
+          return false;
+      }
+
+      if (!op->hasTrait<mlir::OpTrait::NoTerminator>()) {
+        // Also map return-like terminators, as they are excluded from
+        // forward and backward analysis and not visited individually
+        for (mlir::Block &b : r.getBlocks()) {
+          mlir::Operation *terminator = b.getTerminator();
+
+          if (terminator->hasTrait<OpTrait::ReturnLike>())
+            if (!applyToOperandsAndResults(terminator))
+              return false;
+        }
+      }
+    }
+
+    return true;
+  }
+};
+
 // Lattice value for type inference analysis, encapsulating a single
 // inferred type
 class TypeInferenceLatticeValue {
@@ -242,63 +307,16 @@ public:
 // with the inferred types).
 class TypeInferenceUtils {
 public:
-  // Invokes the callback function `fn` to all values related to the
-  // operation `op`. Iteration over the related value stops if `fn`
-  // returns `false`.
-  //
-  // Returns `true` if `fn` returned `true` for all related values,
-  // otherwise `false`.
-  static bool iterateRelatedValues(mlir::Operation *op,
-                                   llvm::function_ref<bool(mlir::Value)> fn) {
-    auto applyToOperandsAndResults = [&](mlir::Operation *op) {
-      for (mlir::Value v : op->getOperands()) {
-        if (!fn(v))
-          return false;
-      }
-
-      for (mlir::Value v : op->getResults()) {
-        if (!fn(v))
-          return false;
-      }
-
-      return true;
-    };
-
-    if (!applyToOperandsAndResults(op))
-      return false;
-
-    for (mlir::Region &r : op->getRegions()) {
-      for (mlir::Value v : r.getArguments()) {
-        if (!fn(v))
-          return false;
-      }
-
-      if (!op->hasTrait<mlir::OpTrait::NoTerminator>()) {
-        // Also map return-like terminators, as they are excluded from
-        // forward and backward analysis and not visited individually
-        for (mlir::Block &b : r.getBlocks()) {
-          mlir::Operation *terminator = b.getTerminator();
-
-          if (terminator->hasTrait<OpTrait::ReturnLike>())
-            if (!applyToOperandsAndResults(terminator))
-              return false;
-        }
-      }
-    }
-
-    return true;
-  }
-
   // Looks up the inferred types for all values related to the
   // operation `op`, i.e., the inferred types for operands, results,
   // region arguments and operands of terminators used in directly
   // nested regions.
   static LocalInferenceState getLocalInferenceState(
-      mlir::Operation *op,
+      mlir::Operation *op, const TypeResolver &typeResolver,
       llvm::function_ref<const TypeInferenceLattice *(mlir::Value)> lookup) {
     LocalInferenceState map;
 
-    iterateRelatedValues(op, [&](mlir::Value v) {
+    typeResolver.iterateRelatedValues(op, [&](mlir::Value v) {
       map.set(v, getInferredType(v, lookup));
       return true;
     });
@@ -309,9 +327,11 @@ public:
   // Retrieves the inferred types for all values related to `op` using
   // `DataFlowSolver::lookupState` invoked on `solver`.
   static LocalInferenceState
-  getLocalInferenceState(const DataFlowSolver &solver, mlir::Operation *op) {
-    LocalInferenceState map =
-        TypeInferenceUtils::getLocalInferenceState(op, [&](mlir::Value v) {
+  getLocalInferenceState(const DataFlowSolver &solver,
+                         const TypeResolver &typeResolver,
+                         mlir::Operation *op) {
+    LocalInferenceState map = TypeInferenceUtils::getLocalInferenceState(
+        op, typeResolver, [&](mlir::Value v) {
           return solver.lookupState<TypeInferenceLattice>(v);
         });
 
@@ -344,23 +364,6 @@ protected:
 
     return InferredType(latticeOperand->getValue().getInferredType());
   }
-};
-
-// A type resolver is responsible for the actual inference of the
-// types related to an operation based on the previous inference state
-class TypeResolver {
-public:
-  virtual ~TypeResolver() {}
-
-  // Resolve the types for all values related to `op` based on the
-  // previous inference state `prevState` and the current state
-  // `currState`.
-  virtual LocalInferenceState resolve(mlir::Operation *op,
-                                      const LocalInferenceState &prevState) = 0;
-
-  // Returns true for any type that is considered unresolved by the
-  // resolver
-  virtual bool isUnresolvedType(mlir::Type t) const = 0;
 };
 
 // Base class for all type constraints that can be added to a
@@ -885,8 +888,8 @@ protected:
   // for which no type has been inferred so far, a new lattice with an
   // empty inferred types is created.
   LocalInferenceState getCurrentInferredTypes(mlir::Operation *op) {
-    LocalInferenceState map =
-        TypeInferenceUtils::getLocalInferenceState(op, [&](mlir::Value v) {
+    LocalInferenceState map = TypeInferenceUtils::getLocalInferenceState(
+        op, resolver, [&](mlir::Value v) {
           return this->template getOrCreate<TypeInferenceLattice>(v);
         });
 
@@ -934,7 +937,7 @@ protected:
   // newly inferred types.
   void doVisitOperation(Operation *op) {
     // Skip operations that do not use unresolved types
-    if (TypeInferenceUtils::iterateRelatedValues(op, [&](mlir::Value v) {
+    if (resolver.iterateRelatedValues(op, [&](mlir::Value v) {
           return !resolver.isUnresolvedType(v.getType());
         })) {
       return;
@@ -960,7 +963,7 @@ protected:
         .Default([&](auto op) { state = resolver.resolve(op, inferredTypes); });
 
     // Store the resulting state in the lattice values
-    TypeInferenceUtils::iterateRelatedValues(op, [&](mlir::Value v) {
+    resolver.iterateRelatedValues(op, [&](mlir::Value v) {
       updateLatticeValuesFromState(state, v);
       return true;
     });
