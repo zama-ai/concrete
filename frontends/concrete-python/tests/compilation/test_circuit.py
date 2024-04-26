@@ -90,6 +90,12 @@ def test_circuit_feedback(helpers):
     assert isinstance(circuit.p_error, float)
     assert isinstance(circuit.global_p_error, float)
 
+    assert isinstance(circuit.memory_usage_per_location, dict)
+    assert all(
+        isinstance(key, str) and isinstance(value, int)
+        for key, value in circuit.memory_usage_per_location.items()
+    )
+
     assert circuit.p_error <= p_error
     assert circuit.global_p_error <= global_p_error
 
