@@ -430,6 +430,12 @@ class Server:
         """
         return self._compilation_feedback.complexity
 
+    def memory_usage_per_location(self, function: str = "main") -> Dict[str, int]:
+        """
+        Get the memory usage of operations per location.
+        """
+        return self._compilation_feedback.circuit(function).memory_usage_per_location
+
     def size_of_inputs(self, function: str = "main") -> int:
         """
         Get size of the inputs of the compiled program.
@@ -770,6 +776,7 @@ class Server:
             "encrypted_negation_count_per_parameter",
             "encrypted_negation_count_per_tag",
             "encrypted_negation_count_per_tag_per_parameter",
+            "memory_usage_per_location",
         ]
         output = {attribute: getattr(self, attribute)() for attribute in attributes}
         output["size_of_secret_keys"] = self.size_of_secret_keys

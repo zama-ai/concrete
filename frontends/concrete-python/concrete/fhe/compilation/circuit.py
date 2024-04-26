@@ -389,6 +389,13 @@ class Circuit:
         """
         return self._property("complexity")  # pragma: no cover
 
+    @property
+    def memory_usage_per_location(self) -> Dict[str, int]:
+        """
+        Get the memory usage of operations in the circuit per location.
+        """
+        return self._property("memory_usage_per_location")()  # pragma: no cover
+
     # Programmable Bootstrap Statistics
 
     @property
