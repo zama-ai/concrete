@@ -43,6 +43,7 @@ jobs:
       - name: Instance cleanup
         run: |
           sudo rm -rf /home/ubuntu/actions-runner/_work/concrete/concrete
+          mkdir -p /home/ubuntu/actions-runner/_work/concrete/concrete
           docker system prune -af
 
       - name: Fetch repository
