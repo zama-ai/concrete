@@ -19,6 +19,25 @@ class Integer(BaseDataType):
     is_signed: bool
     bit_width: int
 
+    def update_to_represent(self, value: Any, force_signed: bool = False):
+        """
+        Update sign and width inplace to be able to represent `value`.
+
+        Args:
+            value (Any):
+                value that needs to be represented
+
+            force_signed (bool, default = False):
+                whether to force signed integers or not
+
+        Raises:
+            ValueError:
+                if `value` cannot be represented by `Integer`
+        """
+        new_int = Integer.that_can_represent(value, force_signed)
+        self.is_signed = new_int.is_signed
+        self.bit_width = new_int.bit_width
+
     @staticmethod
     def that_can_represent(value: Any, force_signed: bool = False) -> "Integer":
         """
