@@ -1617,9 +1617,21 @@ void *stream_emulator_init() {
       num_devices = requested_gpus;
   }
 
+  // If the user has specified a ratio, use that. Otherwise we
+  // estimate the ratio based on the number of multiprocessors
+  // available per GPU.
   env = getenv("SDFG_DEVICE_TO_CORE_RATIO");
-  if (env != nullptr)
+  if (env != nullptr) {
     device_compute_factor = strtoul(env, NULL, 10);
+  } else {
+    cudaDeviceProp properties;
+    // For now we only querry one GPU, assuming all are the same.
+    assert(cudaGetDeviceProperties(&properties, 0) == cudaSuccess);
+    int smpc = properties.multiProcessorCount;
+    // Rough estimate - each SM has ballpark similar compute
+    // capability as a CPU core (so 2 HW threads generally).
+    device_compute_factor = smpc * 2;
+  }
 
   hwloc_topology_t topology;
   hwloc_topology_init(&topology);
@@ -1627,7 +1639,7 @@ void *stream_emulator_init() {
   hwloc_topology_set_type_filter(topology, HWLOC_OBJ_CORE,
                                  HWLOC_TYPE_FILTER_KEEP_ALL);
   hwloc_topology_load(topology);
-  num_cores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+  num_cores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU) - num_devices;
   env = getenv("SDFG_NUM_THREADS");
   if (env != nullptr && strtoul(env, NULL, 10) != 0)
     num_cores = strtoul(env, NULL, 10);
