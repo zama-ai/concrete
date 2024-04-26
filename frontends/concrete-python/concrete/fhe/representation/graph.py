@@ -707,7 +707,7 @@ class Graph:
 
                 new_value = deepcopy(node.output)
 
-                if isinstance(min_bound, np.integer):
+                if isinstance(min_bound, (np.integer, int)):
                     new_value.dtype = Integer.that_can_represent(np.array([min_bound, max_bound]))
                 else:
                     new_value.dtype = {
