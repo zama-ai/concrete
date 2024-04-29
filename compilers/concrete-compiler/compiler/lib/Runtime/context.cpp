@@ -29,7 +29,7 @@ FFT::~FFT() {
   }
 }
 
-RuntimeContext::RuntimeContext(ServerKeyset serverKeyset)
+RuntimeContext::RuntimeContext(ServerKeyset &serverKeyset)
     : serverKeyset(serverKeyset) {
 
   // Initialize for each bootstrap key the fourier one

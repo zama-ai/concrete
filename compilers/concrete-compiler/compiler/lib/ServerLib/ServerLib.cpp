@@ -428,7 +428,7 @@ bool getGateIsSigned(const Message<concreteprotocol::GateInfo> &gateInfo) {
 }
 
 Result<std::vector<TransportValue>>
-ServerCircuit::call(const ServerKeyset &serverKeyset,
+ServerCircuit::call(ServerKeyset &serverKeyset,
                     std::vector<TransportValue> &args) {
   if (args.size() != argsBuffer.size()) {
     return StringError("Called circuit with wrong number of arguments");
@@ -542,7 +542,7 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
   return output;
 }
 
-void ServerCircuit::invoke(const ServerKeyset &serverKeyset) {
+void ServerCircuit::invoke(ServerKeyset &serverKeyset) {
 
   // We create a runtime context from the keyset, and place a pointer to it in
   // the structure.
