@@ -42,7 +42,7 @@ typedef struct FFT {
 typedef struct RuntimeContext {
 
   RuntimeContext() = delete;
-  RuntimeContext(ServerKeyset serverKeyset);
+  RuntimeContext(ServerKeyset &serverKeyset);
   virtual ~RuntimeContext() {
 #ifdef CONCRETELANG_CUDA_SUPPORT
     for (int i = 0; i < num_devices; ++i) {
@@ -69,10 +69,8 @@ typedef struct RuntimeContext {
 
   virtual const struct Fft *fft(size_t keyId) { return ffts[keyId].fft; }
 
-  const ServerKeyset getKeys() const { return serverKeyset; }
-
 protected:
-  ServerKeyset serverKeyset;
+  ServerKeyset &serverKeyset;
   std::vector<std::shared_ptr<std::vector<std::complex<double>>>>
       fourier_bootstrap_keys;
   std::vector<FFT> ffts;
