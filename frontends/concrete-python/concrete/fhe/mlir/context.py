@@ -1636,6 +1636,9 @@ class Context:
 
         assert self.is_bit_width_compatible(resulting_type, x, y)
 
+        if any(isinstance(indexing_element, (list, np.ndarray)) for indexing_element in index):
+            return self.assign_static_fancy(resulting_type, x, y, index)
+
         index = list(index)
         while len(index) < len(x.shape):
             index.append(slice(None, None, None))
@@ -1710,6 +1713,59 @@ class Context:
             MlirDenseI64ArrayAttr.get(sizes),
             MlirDenseI64ArrayAttr.get(strides),
             original_bit_width=x.original_bit_width,
+        )
+
+    def assign_static_fancy(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        y: Conversion,
+        index: Sequence[Union[int, np.integer, slice, np.ndarray, list]],
+    ) -> Conversion:
+        resulting_element_type = (self.eint if resulting_type.is_unsigned else self.esint)(
+            resulting_type.bit_width
+        )
+
+        indices = []
+        indices_shape = ()
+        for indexing_element in index:
+            if isinstance(indexing_element, (int, np.integer, list, np.ndarray)):
+                indexing_element_array = np.array(indexing_element)
+                indices_shape = np.broadcast_shapes(
+                    indices_shape,
+                    indexing_element_array.shape,
+                )  # type:ignore
+                indices.append(indexing_element_array)
+
+            else:  # pragma: no cover
+                message = f"invalid indexing element of type {type(indexing_element)}"
+                raise AssertionError(message)
+        values_shape = indices_shape
+
+        indices = [np.broadcast_to(index, shape=indices_shape) for index in indices]
+
+        concrete_indices = []
+        for i in np.ndindex(*indices_shape):
+            concrete_index = [index[i] for index in indices]
+            concrete_indices.append(concrete_index)
+
+        if len(x.shape) > 1:
+            indices_shape = (*indices_shape, len(x.shape))  # type: ignore
+
+        if x.is_clear and y.is_encrypted:
+            raise NotImplementedError
+        if x.is_encrypted and y.is_clear:
+            y = self.encrypt(self.tensor(resulting_element_type, shape=y.shape), y)
+
+        return self.operation(
+            fhelinalg.FancyAssignOp,
+            resulting_type,
+            x.result,
+            self.constant(
+                self.tensor(self.index_type(), indices_shape),
+                np.array(concrete_indices).reshape(indices_shape),
+            ).result,
+            self.broadcast_to(y, shape=values_shape).result,
         )
 
     def bitwise(
@@ -2146,7 +2202,7 @@ class Context:
                 ],
                 self.converting: [
                     "so table cannot be looked up with this input",
-                    f"table shape should have been {(2**on.bit_width,)}",
+                    f"table shape should have been {(2 ** on.bit_width,)}",
                 ],
             }
             if on.bit_width != on.original_bit_width:  # pragma: no cover
@@ -2450,10 +2506,6 @@ class Context:
         x: Conversion,
         index: Sequence[Union[int, np.integer, slice, np.ndarray, list]],
     ) -> Conversion:
-        resulting_element_type = (self.eint if resulting_type.is_unsigned else self.esint)(
-            resulting_type.bit_width
-        )
-
         indices = []
         for destination_position in np.ndindex(resulting_type.shape):
             source_position = []
@@ -2484,7 +2536,7 @@ class Context:
             self.constant(
                 self.tensor(self.index_type(), indices_shape),
                 np.array(indices).reshape(indices_shape),
-            ).result
+            ).result,
         )
 
     def less(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:

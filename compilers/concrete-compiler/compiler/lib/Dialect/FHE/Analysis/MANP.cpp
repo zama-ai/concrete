@@ -684,6 +684,14 @@ getSqMANP(mlir::concretelang::FHELinalg::FancyIndexOp op,
   return operandMANPs[0]->getValue().getMANP().value();
 }
 
+static std::optional<llvm::APInt>
+getSqMANP(mlir::concretelang::FHELinalg::FancyAssignOp op,
+          llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+  auto inputManp = operandMANPs[0]->getValue().getMANP().value();
+  auto valuesManp = operandMANPs[2]->getValue().getMANP().value();
+  return APIntUMax(inputManp, valuesManp);
+}
+
 static llvm::APInt
 sqMANP_conv2d(llvm::APInt inputNorm, mlir::RankedTensorType weightTy,
               std::optional<mlir::detail::ElementsAttrRange<
@@ -828,6 +836,10 @@ public:
                    llvm::dyn_cast<mlir::concretelang::FHELinalg::FancyIndexOp>(
                        op)) {
       norm2SqEquiv = getSqMANP(fancyIndexOp, operands);
+    } else if (auto fancyAssignOp =
+                   llvm::dyn_cast<mlir::concretelang::FHELinalg::FancyAssignOp>(
+                       op)) {
+      norm2SqEquiv = getSqMANP(fancyAssignOp, operands);
     }
     // Tensor Operators
     // ExtractOp

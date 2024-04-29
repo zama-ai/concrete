@@ -2110,6 +2110,124 @@ struct FancyIndexToTensorGenerate
   };
 };
 
+/// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.fancy_assign` to an instance of `scf.forall`.
+///
+/// Example:
+///
+///   %output = "FHELinalg.fancy_assign"(%input, %indices, %values) :
+///     (tensor<5x!FHE.eint<6>>, tensor<3xindex>, tensor<3x!FHE.eint<6>>) ->
+///     tensor<5x!FHE.eint<6>>
+///
+/// becomes:
+///
+///   %0 = scf.forall (%i) in (3) shared_outs(%output = %input)
+///       -> (tensor<5x!FHE.eint<6>>) {
+///     %index = tensor.extract %indices[%i] : tensor<3xindex>
+///     %value = tensor.extract %values[%i] : tensor<3x!FHE.eint<6>>
+///     %value_slice = tensor.from_elements %value : tensor<1x!FHE.eint<6>>
+///     scf.forall.in_parallel {
+///       tensor.parallel_insert_slice
+///         %value_slice into %output[%index][1][1]
+///         : tensor<1x!FHE.eint<6>> into tensor<5x!FHE.eint<6>>
+///     }
+///   }
+///
+struct FancyAssignToSfcForall
+    : public mlir::OpRewritePattern<FHELinalg::FancyAssignOp> {
+  FancyAssignToSfcForall(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<FHELinalg::FancyAssignOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHELinalg::FancyAssignOp fancyAssignOp,
+                  mlir::PatternRewriter &rewriter) const override {
+
+    auto input = fancyAssignOp.getInput();
+    auto indices = fancyAssignOp.getIndices();
+    auto values = fancyAssignOp.getValues();
+
+    auto inputType = input.getType().dyn_cast<mlir::RankedTensorType>();
+    auto valuesType =
+        fancyAssignOp.getValues().getType().cast<mlir::RankedTensorType>();
+
+    auto inputShape = inputType.getShape();
+    auto inputDimensions = inputShape.size();
+    auto inputIsVector = inputDimensions == 1;
+    auto inputElementType = inputType.getElementType();
+
+    auto upperBounds = llvm::SmallVector<mlir::OpFoldResult>();
+    for (auto dimension : valuesType.getShape()) {
+      upperBounds.push_back(
+          mlir::OpFoldResult(rewriter.getIndexAttr(dimension)));
+    }
+
+    auto body = [=](mlir::OpBuilder &builder, mlir::Location location,
+                    mlir::ValueRange args) {
+      auto output = args[args.size() - 1];
+      auto loopArgs = args.take_front(args.size() - 1);
+
+      std::vector<mlir::Value> index;
+      mlir::Value element;
+
+      if (inputIsVector) {
+        index.push_back(builder.create<tensor::ExtractOp>(
+            location, builder.getIndexType(), indices, loopArgs));
+
+        element = builder
+                      .create<tensor::ExtractOp>(location, inputElementType,
+                                                 values, loopArgs)
+                      .getResult();
+      } else {
+        auto baseArgs =
+            std::vector<mlir::Value>(loopArgs.begin(), loopArgs.end());
+
+        for (size_t i = 0; i < inputShape.size(); i++) {
+          baseArgs.push_back(builder.create<arith::ConstantOp>(
+              location, builder.getIndexType(), builder.getIndexAttr(i)));
+          index.push_back(builder.create<tensor::ExtractOp>(
+              location, builder.getIndexType(), indices, baseArgs));
+          baseArgs.pop_back();
+        }
+
+        element = builder
+                      .create<tensor::ExtractOp>(location, inputElementType,
+                                                 values, loopArgs)
+                      .getResult();
+      }
+
+      if (!element.getType().isa<mlir::TensorType>()) {
+        element =
+            builder.create<mlir::tensor::FromElementsOp>(location, element)
+                .getResult();
+      }
+
+      auto offsets = std::vector<mlir::OpFoldResult>();
+      auto sizes = std::vector<mlir::OpFoldResult>();
+      auto strides = std::vector<mlir::OpFoldResult>();
+
+      for (size_t i = 0; i < index.size(); i++) {
+        offsets.push_back(mlir::OpFoldResult(index[i]));
+        sizes.push_back(mlir::OpFoldResult(builder.getIndexAttr(1)));
+        strides.push_back(mlir::OpFoldResult(builder.getIndexAttr(1)));
+      }
+
+      auto inParallelOp = builder.create<mlir::scf::InParallelOp>(location);
+      builder.setInsertionPointToStart(inParallelOp.getBody());
+
+      builder.create<mlir::tensor::ParallelInsertSliceOp>(
+          location, element, output, offsets, sizes, strides);
+    };
+
+    auto forallOp = rewriter.create<mlir::scf::ForallOp>(
+        fancyAssignOp.getLoc(), upperBounds,
+        mlir::ValueRange{fancyAssignOp.getInput()}, std::nullopt, body);
+
+    rewriter.replaceOp(fancyAssignOp, forallOp->getResult(0));
+    return mlir::success();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -2129,6 +2247,9 @@ void FHETensorOpsToLinalg::runOnOperation() {
   target.addLegalDialect<mlir::arith::ArithDialect>();
   target.addIllegalOp<mlir::concretelang::FHELinalg::Dot>();
   target.addIllegalDialect<mlir::concretelang::FHELinalg::FHELinalgDialect>();
+
+  target.addLegalOp<mlir::scf::ForallOp>();
+  target.addLegalOp<mlir::scf::InParallelOp>();
 
   target.addDynamicallyLegalOp<
       mlir::concretelang::Optimizer::PartitionFrontierOp>(
@@ -2292,6 +2413,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<FromElementToTensorFromElements>(&getContext());
   patterns.insert<TensorPartitionFrontierOpToLinalgGeneric>(&getContext());
   patterns.insert<FancyIndexToTensorGenerate>(&getContext());
+  patterns.insert<FancyAssignToSfcForall>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())

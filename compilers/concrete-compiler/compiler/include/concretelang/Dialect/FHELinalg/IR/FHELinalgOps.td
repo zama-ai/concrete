@@ -1462,5 +1462,60 @@ def FHELinalg_FancyIndexOp : FHELinalg_Op<"fancy_index", [Pure]> {
     let hasVerifier = 1;
 }
 
+def FHELinalg_FancyAssignOp : FHELinalg_Op<"fancy_assign", [Pure]> {
+    let summary = "Assigns a tensor into another tensor at a tensor of indices.";
+
+    let description = [{
+        Examples:
+
+        ```mlir
+        "FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<5x!FHE.eint<16>>, tensor<3xindex>, tensor<3x!FHE.eint<16>>) -> tensor<5x!FHE.eint<16>>
+        //
+        // fancy_assign([10, 20, 30, 40, 50], [3, 1, 2], [1000, 2000, 3000]) = [10, 2000, 3000, 1000, 50]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<5x!FHE.eint<16>>, tensor<2x2xindex>, tensor<2x2x!FHE.eint<16>>) -> tensor<5x!FHE.eint<16>>
+        //
+        // fancy_assign([10, 20, 30, 40, 50], [[3, 1], [2, 0]], [[1000, 2000], [3000, 4000]]) = [4000, 2000, 3000, 1000, 50]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<2x3x!FHE.eint<16>>, tensor<3x2xindex>, tensor<3x!FHE.eint<16>>) -> tensor<2x3x!FHE.eint<16>>
+        //
+        // fancy_assign([[11, 12, 13], [21, 22, 23]], [[1, 0], [0, 2], [0, 0]], [1000, 2000, 3000]) = [[3000, 2000, 13], [1000, 22, 23]]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<3x3x!FHE.eint<16>>, tensor<2x3x2xindex>, tensor<2x3x!FHE.eint<16>>) -> tensor<3x3x!FHE.eint<16>>
+        //
+        // fancy_assign(
+        //     [[11, 12, 13], [21, 22, 23], [31, 32, 33]],
+        //     [[[1, 0], [0, 2], [0, 0]], [[2, 0], [1, 1], [2, 1]]],
+        //     [[1000, 2000, 3000], [4000, 5000, 6000]]
+        // ) = [[3000, 2000, 13], [1000, 5000, 23], [4000, 6000, 33]]
+        //
+        ```
+
+        Notes:
+        - Assigning to the same output position results in undefined behavior.
+    }];
+
+    let arguments = (ins
+        Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$input,
+        Type<And<[TensorOf<[Index]>.predicate, HasStaticShapePred]>>:$indices,
+        Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$values
+    );
+
+    let results = (outs
+        Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$output
+    );
+
+    let hasVerifier = 1;
+}
+
 
 #endif
