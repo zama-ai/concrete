@@ -839,16 +839,41 @@ class Tracer:
 
     def __setitem__(
         self,
-        index: Union[int, np.integer, slice, Tuple[Union[int, np.integer, slice], ...]],
+        index: Union[
+            int,
+            np.integer,
+            slice,
+            np.ndarray,
+            list,
+            Tuple[Union[int, np.integer, slice, np.ndarray, list, "Tracer"], ...],
+            "Tracer",
+        ],
         value: Any,
     ):
         if not isinstance(index, tuple):
             index = (index,)
 
+        is_fancy = False
+        has_slices = False
+
+        reject = False
         for indexing_element in index:
+            if isinstance(indexing_element, list):
+                try:
+                    indexing_element = np.array(indexing_element)
+                except Exception:  # pylint: disable=broad-except
+                    reject = True
+                    break
+
+            if isinstance(indexing_element, np.ndarray):
+                is_fancy = True
+                reject = not np.issubdtype(indexing_element.dtype, np.integer)
+                continue
+
             valid = isinstance(indexing_element, (int, np.integer, slice))
 
             if isinstance(indexing_element, slice):  # noqa: SIM102
+                has_slices = True
                 if (
                     not (
                         indexing_element.start is None
@@ -866,10 +891,20 @@ class Tracer:
                     valid = False
 
             if not valid:
-                message = (
-                    f"Assigning to '{format_indexing_element(indexing_element)}' is not supported"
-                )
-                raise ValueError(message)
+                reject = True
+                break
+
+        if reject or (is_fancy and has_slices):
+            indexing_elements = [
+                format_indexing_element(indexing_element) for indexing_element in index
+            ]
+            formatted_index = (
+                indexing_elements[0]
+                if len(indexing_elements) == 1
+                else ", ".join(str(element) for element in indexing_elements)
+            )
+            message = f"{self}[{formatted_index}] cannot be assigned {value}"
+            raise ValueError(message)
 
         np.zeros(self.output.shape)[index] = 1
 
@@ -881,7 +916,7 @@ class Tracer:
         computation = Node.generic(
             "assign_static",
             [deepcopy(self.output), deepcopy(sanitized_value.output)],
-            self.output,
+            deepcopy(self.output),
             assign,
             kwargs={"index": index},
         )

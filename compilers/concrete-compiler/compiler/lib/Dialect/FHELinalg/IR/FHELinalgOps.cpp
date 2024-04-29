@@ -1509,6 +1509,89 @@ mlir::LogicalResult FancyIndexOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult FancyAssignOp::verify() {
+  auto inputType =
+      this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto indicesType =
+      this->getIndices().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto valuesType =
+      this->getValues().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+  auto inputElementType = inputType.getElementType();
+  auto valuesElementType = valuesType.getElementType();
+  auto outputElementType = outputType.getElementType();
+
+  if (valuesElementType != inputElementType) {
+    this->emitOpError() << "values element type " << valuesElementType
+                        << " doesn't match input element type "
+                        << inputElementType;
+    return mlir::failure();
+  }
+  if (outputElementType != inputElementType) {
+    this->emitOpError() << "output element type " << outputElementType
+                        << " doesn't match input element type "
+                        << inputElementType;
+    return mlir::failure();
+  }
+
+  auto inputShape = inputType.getShape();
+  auto indicesShape = indicesType.getShape();
+  auto valuesShape = valuesType.getShape();
+  auto outputShape = outputType.getShape();
+
+  auto inputIsVector = inputShape.size() == 1;
+  if (!inputIsVector) {
+    if (indicesShape[indicesShape.size() - 1] != (int64_t)inputShape.size()) {
+      this->emitOpError()
+          << "size of the last dimension of indices '"
+          << indicesShape[indicesShape.size() - 1]
+          << "' doesn't match the number of dimensions of input '"
+          << inputShape.size() << "'";
+      return mlir::failure();
+    }
+  }
+
+  auto expectedValuesShape =
+      inputIsVector ? indicesShape
+                    : indicesShape.slice(0, indicesShape.size() - 1);
+  if (valuesShape != expectedValuesShape) {
+    auto stream = this->emitOpError();
+
+    stream << "values shape '<";
+    if (!valuesShape.empty()) {
+      llvm::interleave(valuesShape, stream, "x");
+    }
+    stream << ">' doesn't match the expected values shape '<";
+    if (!expectedValuesShape.empty()) {
+      llvm::interleave(expectedValuesShape, stream, "x");
+    }
+    stream << ">'";
+
+    return mlir::failure();
+  }
+
+  auto expectedOutputShape = inputShape;
+  if (outputShape != expectedOutputShape) {
+    auto stream = this->emitOpError();
+
+    stream << "output shape '<";
+    if (!outputShape.empty()) {
+      llvm::interleave(outputShape, stream, "x");
+    }
+    stream << ">' doesn't match the expected output shape '<";
+    if (!expectedOutputShape.empty()) {
+      llvm::interleave(expectedOutputShape, stream, "x");
+    }
+    stream << ">'";
+
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 /// Avoid addition with constant tensor of 0s
 OpFoldResult AddEintIntOp::fold(FoldAdaptor operands) {
   auto toAdd = operands.getRhs().dyn_cast_or_null<mlir::DenseIntElementsAttr>();

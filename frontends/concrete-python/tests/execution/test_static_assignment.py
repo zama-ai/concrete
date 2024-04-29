@@ -458,6 +458,227 @@ def assignment_case_29():
     return shape, assign
 
 
+def assignment_case_30():
+    """
+    Assignment test case.
+    """
+
+    shape = (5,)
+    index = [0, 2, 4]
+    value = 10
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_31():
+    """
+    Assignment test case.
+    """
+
+    shape = (5,)
+    index = [0, 2, 4]
+    value = [10, 20, 30]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_32():
+    """
+    Assignment test case.
+    """
+
+    shape = (5,)
+    index = [
+        [3, 0],
+        [1, 2],
+    ]
+    value = [
+        [10, 20],
+        [30, 40],
+    ]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_33():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        [0, 0, 4, 4],
+        [0, 3, 0, 3],
+    )
+    value = [10, 20, 30, 40]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_34():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        0,
+        [0, 3, 1, 2],
+    )
+    value = [10, 20, 30, 40]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_35():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        [3, 3, 1, 2],
+        0,
+    )
+    value = [10, 20, 30, 40]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_36():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        [[0, 0], [4, 4]],
+        [[0, 3], [3, 0]],
+    )
+    value = [
+        [10, 20],
+        [30, 40],
+    ]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_37():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        0,
+        [[1, 3], [2, 0]],
+    )
+    value = [
+        [10, 20],
+        [30, 40],
+    ]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_38():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        [[1, 3], [2, 4]],
+        0,
+    )
+    value = [
+        [10, 20],
+        [30, 40],
+    ]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_39():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        [[1, 3], [2, 4]],
+        [0, 2],
+    )
+    value = [
+        [10, 20],
+        [30, 40],
+    ]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
+def assignment_case_40():
+    """
+    Assignment test case.
+    """
+
+    shape = (5, 4)
+    index = (
+        [2, 4],
+        [[1, 3], [2, 0]],
+    )
+    value = [
+        [10, 20],
+        [30, 40],
+    ]
+
+    def assign(x):
+        x[index] = value
+        return x
+
+    return shape, assign
+
+
 @pytest.mark.parametrize(
     "shape,function",
     [
@@ -491,6 +712,17 @@ def assignment_case_29():
         pytest.param(*assignment_case_27()),
         pytest.param(*assignment_case_28()),
         pytest.param(*assignment_case_29()),
+        pytest.param(*assignment_case_30()),
+        pytest.param(*assignment_case_31()),
+        pytest.param(*assignment_case_32()),
+        pytest.param(*assignment_case_33()),
+        pytest.param(*assignment_case_34()),
+        pytest.param(*assignment_case_35()),
+        pytest.param(*assignment_case_36()),
+        pytest.param(*assignment_case_37()),
+        pytest.param(*assignment_case_38()),
+        pytest.param(*assignment_case_39()),
+        pytest.param(*assignment_case_40()),
     ],
 )
 def test_static_assignment(shape, function, helpers):
@@ -502,7 +734,7 @@ def test_static_assignment(shape, function, helpers):
     compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**7, size=shape) for _ in range(100)]
-    circuit = compiler.compile(inputset, configuration)
+    circuit = compiler.compile(inputset, configuration, verbose=True)
 
     sample = np.random.randint(0, 2**7, size=shape)
     helpers.check_execution(circuit, function, sample)
@@ -524,11 +756,14 @@ def test_bad_static_assignment(helpers):
 
     compiler = fhe.Compiler(f, {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
+    inputset = [[1, 2, 3]]
     with pytest.raises(ValueError) as excinfo:
         compiler.compile(inputset, configuration)
 
-    assert str(excinfo.value) == "Assigning to '1.5' is not supported"
+    assert (
+        str(excinfo.value)
+        == "Tracer<output=EncryptedTensor<uint2, shape=(3,)>>[1.5] cannot be assigned 0"
+    )
 
     # with bad slice
     # --------------
@@ -539,8 +774,11 @@ def test_bad_static_assignment(helpers):
 
     compiler = fhe.Compiler(g, {"x": "encrypted"})
 
-    inputset = [np.random.randint(0, 2**3, size=(3,)) for _ in range(100)]
+    inputset = [[1, 2, 3]]
     with pytest.raises(ValueError) as excinfo:
         compiler.compile(inputset, configuration)
 
-    assert str(excinfo.value) == "Assigning to '1.5:2.5' is not supported"
+    assert (
+        str(excinfo.value)
+        == "Tracer<output=EncryptedTensor<uint2, shape=(3,)>>[1.5:2.5] cannot be assigned 0"
+    )
