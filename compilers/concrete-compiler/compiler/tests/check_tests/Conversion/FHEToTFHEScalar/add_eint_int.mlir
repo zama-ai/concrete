@@ -1,4 +1,4 @@
-// RUN: concretecompiler %s --optimize-tfhe=false --optimizer-strategy=dag-mono --action=dump-tfhe 2>&1| FileCheck %s
+// RUN: concretecompiler %s --passes=fhe-to-tfhe-scalar --v0-parameter=2,10,693,4,9,7,2 --action=dump-tfhe 2>&1| FileCheck %s
 
 // CHECK-LABEL: func.func @add_eint_int(%arg0: !TFHE.glwe<sk?>) -> !TFHE.glwe<sk?>
 func.func @add_eint_int(%arg0: !FHE.eint<7>) -> !FHE.eint<7> {
