@@ -43,6 +43,7 @@
 * [Statistics](compilation/statistics.md)
 * [Formatting and drawing](execution-analysis/formatting_and_drawing.md)
 * [Debug](execution-analysis/debug.md)
+* [GPU acceleration](execution-analysis/gpu_acceleration.md)
 
 ## Guides
 

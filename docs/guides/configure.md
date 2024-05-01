@@ -84,6 +84,8 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Enable dataflow parallelization in the compiler.
 * **auto\_parallelize**: bool = False
   * Enable auto parallelization in the compiler.
+* **use_gpu**: bool = False
+  * Enable generating code for GPU in the compiler.
 * **enable\_unsafe\_features**: bool = False
   * Enable unsafe features.
 * **use\_insecure\_key\_cache**: bool = False _(Unsafe)_
