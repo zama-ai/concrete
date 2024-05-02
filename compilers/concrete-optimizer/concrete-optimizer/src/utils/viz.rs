@@ -109,14 +109,14 @@ impl<'dag> Viz for crate::dag::unparametrized::DagOperator<'dag> {
 }
 
 macro_rules! _viz {
-    ($path: expr, $object:ident) => {{
+    ($path: expr, $object:expr) => {{
         let mut path = std::env::temp_dir();
-        path.push($path);
+        path.push($path.as_str());
         let _ = std::process::Command::new("sh")
             .arg("-c")
             .arg(format!(
                 "echo '{}' | dot -Tsvg > {}",
-                $crate::utils::viz::Viz::viz_string(&$object),
+                $crate::utils::viz::Viz::viz_string($object),
                 path.to_str().unwrap()
             ))
             .output()
@@ -127,7 +127,7 @@ macro_rules! _viz {
 /// Dumps the visualization of an object to a given svg file.
 #[allow(unused)]
 macro_rules! viz {
-    ($path: expr, $object:ident) => {
+    ($path: expr, $object:expr) => {
         $crate::utils::viz::_viz!($path, $object);
         println!(
             "Viz of {}:{} visible at {}/{}",
@@ -137,18 +137,16 @@ macro_rules! viz {
             $path
         );
     };
-    ($object:ident) => {
-        $crate::utils::viz::viz!(
-            format!("concrete_optimizer_dbg_{}.svg", rand::random::<u64>()),
-            $object
-        );
+    ($object:expr) => {
+        let name = format!("concrete_optimizer_dbg_{}.svg", rand::random::<u64>());
+        $crate::utils::viz::viz!(name, $object);
     };
 }
 
 /// Dumps the visualization of an object to a given svg file and panics.
 #[allow(unused)]
 macro_rules! vizp {
-    ($path: expr, $object:ident) => {{
+    ($path: expr, $object:expr) => {{
         $crate::utils::viz::_viz!($path, $object);
         panic!(
             "Viz of {}:{} visible at {}/{}",
@@ -158,11 +156,9 @@ macro_rules! vizp {
             $path
         );
     }};
-    ($object:ident) => {
-        $crate::utils::viz::vizp!(
-            format!("concrete_optimizer_dbg_{}.svg", rand::random::<u64>()),
-            $object
-        );
+    ($object:expr) => {
+        let name = format!("concrete_optimizer_dbg_{}.svg", rand::random::<u64>());
+        $crate::utils::viz::vizp!(name, $object);
     };
 }
 
