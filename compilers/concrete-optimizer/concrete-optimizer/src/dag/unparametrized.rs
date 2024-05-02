@@ -24,26 +24,26 @@ pub(crate) enum OutputState {
 impl OutputState {
     /// Creates a fresh output state.
     pub(crate) fn new() -> Self {
-        return OutputState::Unused;
+        Self::Unused
     }
 
     /// Transitions from an `unused` state to a `used` state.
     pub(crate) fn transition_use(&mut self) {
-        if let OutputState::Unused = self {
-            *self = OutputState::Used;
+        if matches!(self, Self::Unused) {
+            *self = Self::Used;
         }
     }
 
     /// Transitions from any state to a `tagged` state.
     pub(crate) fn transition_tag(&mut self) {
-        *self = OutputState::Tagged;
+        *self = Self::Tagged;
     }
 
     /// Tells whether a state corresponds to the operator being an output
-    pub(crate) fn is_output(&self) -> bool {
+    pub(crate) fn is_output(self) -> bool {
         match self {
-            OutputState::Tagged | OutputState::Unused => true,
-            OutputState::Used => false,
+            Self::Tagged | Self::Unused => true,
+            Self::Used => false,
         }
     }
 }
