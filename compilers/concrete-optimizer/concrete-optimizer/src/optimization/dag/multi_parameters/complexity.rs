@@ -10,6 +10,7 @@ pub struct OperationsCount {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct OperationsCost {
     pub costs: OperationsValue,
 }

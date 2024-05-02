@@ -116,6 +116,7 @@ impl PartitionCut {
                     }
                     noise_origins[op_i] = origins;
                 }
+                #[allow(clippy::assigning_clones)]
                 Operator::UnsafeCast { input, .. } => {
                     noise_origins[op_i] = noise_origins[input.0].clone();
                 }

@@ -3,6 +3,7 @@ use crate::parameters::{
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[allow(dead_code)]
 struct ParameterCount {
     pub glwe: usize,
     pub br_decomposition: usize,
