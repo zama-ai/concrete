@@ -1,6 +1,6 @@
 use crate::dag::operator::operator::Operator;
 use crate::dag::operator::OperatorIndex;
-use crate::dag::unparametrized::Dag;
+use crate::dag::unparametrized::{Dag, DagBuilder};
 
 fn reindex_op_inputs(op: &Operator, old_index_to_new: &[usize]) -> Operator {
     let mut op = op.clone();
@@ -20,14 +20,14 @@ fn reindex_op_inputs(op: &Operator, old_index_to_new: &[usize]) -> Operator {
 
 pub(crate) fn regen(
     dag: &Dag,
-    f: &mut dyn FnMut(usize, &Operator, &mut Dag) -> Option<OperatorIndex>,
+    f: &mut dyn FnMut(usize, &Operator, &mut DagBuilder<'_>) -> Option<OperatorIndex>,
 ) -> (Dag, Vec<Vec<OperatorIndex>>) {
     let mut regen_dag = Dag::new();
     let mut old_index_to_new = vec![];
     for (i, op) in dag.operators.iter().enumerate() {
         let op = reindex_op_inputs(op, &old_index_to_new);
         let size = regen_dag.operators.len();
-        if let Some(op_i) = f(i, &op, &mut regen_dag) {
+        if let Some(op_i) = f(i, &op, &mut regen_dag.builder(dag.circuit_tags[i].clone())) {
             old_index_to_new.push(op_i.0);
         } else {
             assert!(size == regen_dag.operators.len());
@@ -35,8 +35,10 @@ pub(crate) fn regen(
             regen_dag.operators.push(op.clone());
             regen_dag.out_precisions.push(dag.out_precisions[i]);
             regen_dag.out_shapes.push(dag.out_shapes[i].clone());
-            regen_dag.output_tags.push(dag.output_tags[i]);
+            regen_dag.output_state.push(dag.output_state[i]);
             regen_dag.circuit_tags.push(dag.circuit_tags[i].clone());
+            op.get_inputs_iter()
+                .for_each(|n| regen_dag.output_state[n.0].transition_use());
         }
     }
     (regen_dag, instructions_multi_map(&old_index_to_new))

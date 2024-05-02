@@ -4,8 +4,49 @@ use crate::dag::operator::{
 };
 use std::{collections::HashSet, fmt};
 
-/// The name of the default. Used when adding operations directly on the dag instead of via a builder.
+/// The name of the default. Used when adding operations directly on the dag instead of via a
+/// builder.
 const DEFAULT_CIRCUIT: &str = "_";
+
+/// A state machine to define if an operator is used as output to a circuit.
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub(crate) enum OutputState {
+    /// The operator was created and neither used as input to another operator, nor tagged as output
+    /// explicitly. It is considered an output.
+    Unused,
+    // The operator was created, never explicitly tagged and eventually, used as input to another
+    // operator. It is not considered an output.
+    Used,
+    // The operator was explicitly tagged as output. It is considered an output.
+    Tagged,
+}
+
+impl OutputState {
+    /// Creates a fresh output state.
+    pub(crate) fn new() -> Self {
+        return OutputState::Unused;
+    }
+
+    /// Transitions from an `unused` state to a `used` state.
+    pub(crate) fn transition_use(&mut self) {
+        if let OutputState::Unused = self {
+            *self = OutputState::Used;
+        }
+    }
+
+    /// Transitions from any state to a `tagged` state.
+    pub(crate) fn transition_tag(&mut self) {
+        *self = OutputState::Tagged;
+    }
+
+    /// Tells whether a state corresponds to the operator being an output
+    pub(crate) fn is_output(&self) -> bool {
+        match self {
+            OutputState::Tagged | OutputState::Unused => true,
+            OutputState::Used => false,
+        }
+    }
+}
 
 /// A type referencing every informations related to an operator of the dag.
 #[derive(Debug, Clone)]
@@ -16,7 +57,7 @@ pub(crate) struct DagOperator<'dag> {
     pub(crate) operator: &'dag Operator,
     pub(crate) shape: &'dag Shape,
     pub(crate) precision: &'dag Precision,
-    pub(crate) output_tag: &'dag bool,
+    pub(crate) output_state: &'dag OutputState,
     pub(crate) circuit_tag: &'dag String,
 }
 
@@ -28,7 +69,7 @@ impl<'dag> DagOperator<'dag> {
 
     /// Returns if the operator is an output.
     pub(crate) fn is_output(&self) -> bool {
-        *self.output_tag
+        self.output_state.is_output()
     }
 
     /// Returns an iterator over the operators used as input to this operator.
@@ -96,9 +137,9 @@ impl<'dag> DagBuilder<'dag> {
         self.dag.out_shapes.push(self.infer_out_shape(&operator));
         operator
             .get_inputs_iter()
-            .for_each(|id| self.dag.output_tags[id.0] = false);
+            .for_each(|id| self.dag.output_state[id.0].transition_use());
         self.dag.operators.push(operator);
-        self.dag.output_tags.push(true);
+        self.dag.output_state.push(OutputState::new());
         self.dag.circuit_tags.push(self.circuit.clone());
         OperatorIndex(i)
     }
@@ -296,7 +337,7 @@ impl<'dag> DagBuilder<'dag> {
     pub fn tag_operator_as_output(&mut self, operator: OperatorIndex) {
         assert!(operator.0 < self.dag.len());
         debug_assert!(self.dag.circuit_tags[operator.0] == self.circuit);
-        self.dag.output_tags[operator.0] = true;
+        self.dag.output_state[operator.0].transition_tag();
     }
 
     pub fn get_circuit(&self) -> DagCircuit<'_> {
@@ -372,8 +413,8 @@ pub struct Dag {
     pub(crate) out_shapes: Vec<Shape>,
     // Collect all operators output precision
     pub(crate) out_precisions: Vec<Precision>,
-    // Collect whether operators are tagged as outputs
-    pub(crate) output_tags: Vec<bool>,
+    // Collect the output state of the operators
+    pub(crate) output_state: Vec<OutputState>,
     // Collect the circuit the operators are associated with
     pub(crate) circuit_tags: Vec<String>,
 }
@@ -400,7 +441,7 @@ impl Dag {
             operators: vec![],
             out_shapes: vec![],
             out_precisions: vec![],
-            output_tags: vec![],
+            output_state: vec![],
             circuit_tags: vec![],
         }
     }
@@ -614,7 +655,7 @@ impl Dag {
             operator: self.operators.get(id.0).unwrap(),
             shape: self.out_shapes.get(id.0).unwrap(),
             precision: self.out_precisions.get(id.0).unwrap(),
-            output_tag: self.output_tags.get(id.0).unwrap(),
+            output_state: self.output_state.get(id.0).unwrap(),
             circuit_tag: self.circuit_tags.get(id.0).unwrap(),
         }
     }
@@ -633,7 +674,7 @@ impl Dag {
     /// tagged using this method.
     pub fn tag_operator_as_output(&mut self, operator: OperatorIndex) {
         assert!(operator.0 < self.len());
-        self.output_tags[operator.0] = true;
+        self.output_state[operator.0].transition_tag();
     }
 
     /// Returns the number of circuits in the dag.
@@ -646,6 +687,18 @@ impl Dag {
 mod tests {
     use super::*;
     use crate::dag::operator::Shape;
+
+    #[test]
+    fn output_marking() {
+        let mut graph = Dag::new();
+        let mut builder = graph.builder("main1");
+        let a = builder.add_input(1, Shape::number());
+        let b = builder.add_input(1, Shape::number());
+        builder.tag_operator_as_output(b);
+        let _ = builder.add_dot([a, b], [1, 1]);
+        assert!(graph.get_operator(b).is_output());
+        assert!(!graph.get_operator(a).is_output());
+    }
 
     #[test]
     #[allow(clippy::many_single_char_names)]
