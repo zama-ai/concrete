@@ -1,9 +1,9 @@
 use crate::dag::operator::{Operator, OperatorIndex};
-use crate::dag::unparametrized::Dag;
+use crate::dag::unparametrized::{Dag, DagBuilder};
 
 use super::regen::regen;
 
-fn regen_round(_: usize, op: &Operator, dag: &mut Dag) -> Option<OperatorIndex> {
+fn regen_round(_: usize, op: &Operator, dag: &mut DagBuilder<'_>) -> Option<OperatorIndex> {
     match *op {
         Operator::Round {
             input,
