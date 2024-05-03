@@ -6,6 +6,8 @@ mod individual {
     use concrete_security_curves::gaussian::security::minimal_variance_glwe;
     use serde::{Deserialize, Serialize};
 
+    use crate::optimization::config::PublicKey;
+
     #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
     pub struct KsDecompositionParameters {
         pub level: u64,
@@ -18,11 +20,13 @@ mod individual {
         pub log2_base: u64,
     }
 
+    #[allow(clippy::unsafe_derive_deserialize)]
     #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
     pub struct GlweParameters {
         pub log2_polynomial_size: u64,
         pub glwe_dimension: u64,
     }
+    pub static mut PUBLIC_KEY_FORMULA: PublicKey = PublicKey::None;
 
     impl GlweParameters {
         pub fn polynomial_size(self) -> u64 {
@@ -39,6 +43,48 @@ mod individual {
                 ciphertext_modulus_log,
                 security_level,
             )
+        }
+
+        pub fn minimal_variance_for_public_key(
+            self,
+            ciphertext_modulus_log: u32,
+            security_level: u64,
+        ) -> f64 {
+            match unsafe { PUBLIC_KEY_FORMULA } {
+                PublicKey::None => self.minimal_variance(ciphertext_modulus_log, security_level),
+                PublicKey::Classic => self.minimal_variance_for_classic_public_key(
+                    ciphertext_modulus_log,
+                    security_level,
+                ),
+                PublicKey::Compact => self.minimal_variance_for_compact_public_key(
+                    ciphertext_modulus_log,
+                    security_level,
+                ),
+            }
+        }
+
+        fn minimal_variance_for_classic_public_key(
+            self,
+            ciphertext_modulus_log: u32,
+            security_level: u64,
+        ) -> f64 {
+            let secret_key_encryption_variance =
+                self.minimal_variance(ciphertext_modulus_log, security_level);
+            let equiv_lwe_dimension = self.sample_extract_lwe_dimension();
+            let public_variance_factor =
+                security_level + (equiv_lwe_dimension + 1) * ciphertext_modulus_log as u64;
+            public_variance_factor as f64 * secret_key_encryption_variance
+        }
+
+        fn minimal_variance_for_compact_public_key(
+            self,
+            ciphertext_modulus_log: u32,
+            security_level: u64,
+        ) -> f64 {
+            let secret_key_encryption_variance =
+                self.minimal_variance(ciphertext_modulus_log, security_level);
+            let equiv_lwe_dimension = self.sample_extract_lwe_dimension();
+            (equiv_lwe_dimension + 1) as f64 * secret_key_encryption_variance
         }
     }
 

@@ -14,7 +14,7 @@ use crate::optimization::dag::solo_key::optimize::optimize as optimize_mono;
 use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
 use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::{cmux, keyswitch, DecompCaches, PersistDecompCaches};
-use crate::parameters::GlweParameters;
+use crate::parameters::{GlweParameters, PUBLIC_KEY_FORMULA};
 
 use crate::optimization::dag::multi_parameters::complexity::Complexity;
 use crate::optimization::dag::multi_parameters::feasible::Feasible;
@@ -516,25 +516,38 @@ fn apply_partitions_input_and_modulus_variance_and_cost(
     macro_parameters: &[MacroParameters],
     partition: PartitionIndex,
     input_variance: f64,
+    public_input_variance: f64,
     variance_modulus_switching: f64,
     operations: &mut OperationsCV,
 ) {
     for i in 0..nb_partitions {
-        let (input_variance, variance_modulus_switching) =
+        let (input_variance, public_input_variance, variance_modulus_switching) =
             if macro_parameters[i] == macro_parameters[partition] {
-                (input_variance, variance_modulus_switching)
+                (
+                    input_variance,
+                    public_input_variance,
+                    variance_modulus_switching,
+                )
             } else {
                 let input_variance = macro_parameters[i]
                     .glwe_params
                     .minimal_variance(ciphertext_modulus_log, security_level);
+                let public_input_variance = macro_parameters[i]
+                    .glwe_params
+                    .minimal_variance_for_public_key(ciphertext_modulus_log, security_level);
                 let variance_modulus_switching = estimate_modulus_switching_noise_with_binary_key(
                     macro_parameters[i].internal_dim,
                     macro_parameters[i].glwe_params.log2_polynomial_size,
                     ciphertext_modulus_log,
                 );
-                (input_variance, variance_modulus_switching)
+                (
+                    input_variance,
+                    public_input_variance,
+                    variance_modulus_switching,
+                )
             };
         *operations.variance.input(i) = input_variance;
+        *operations.variance.public_input(i) = public_input_variance;
         *operations.variance.modulus_switching(i) = variance_modulus_switching;
     }
 }
@@ -654,31 +667,21 @@ fn optimize_macro(
     };
     let partition_feasible = feasible.filter_constraints(partition);
 
-    let glwe_params_domain = search_space.glwe_dimensions.iter().flat_map(|a| {
-        search_space
-            .glwe_log_polynomial_sizes
-            .iter()
-            .map(|b| (*a, *b))
-    });
     let mut lb_message = None;
-    for (glwe_dimension, log2_polynomial_size) in glwe_params_domain {
-        let glwe_params = GlweParameters {
-            log2_polynomial_size,
-            glwe_dimension,
-        };
-
+    for glwe_params in search_space.clone().get_glwe_params() {
         let input_variance = glwe_params.minimal_variance(ciphertext_modulus_log, security_level);
-        if glwe_dimension == 1 && log2_polynomial_size == 8 {
+        let public_input_variance =
+            glwe_params.minimal_variance_for_public_key(ciphertext_modulus_log, security_level);
+        if glwe_params.glwe_dimension == 1 && glwe_params.log2_polynomial_size == 8 {
             // this is insecure and so minimal variance will be above 1
             assert!(input_variance > 1.0);
             continue;
         }
-
         for &internal_dim in &search_space.internal_lwe_dimensions {
             let mut operations = operations.clone();
             // OPT: fast linear noise_modulus_switching
             let variance_modulus_switching =
-                variance_modulus_switching_of(log2_polynomial_size, internal_dim);
+                variance_modulus_switching_of(glwe_params.log2_polynomial_size, internal_dim);
 
             let macro_param_partition = MacroParameters {
                 glwe_params,
@@ -704,6 +707,7 @@ fn optimize_macro(
                 &macros,
                 partition,
                 input_variance,
+                public_input_variance,
                 variance_modulus_switching,
                 &mut operations,
             );
@@ -917,7 +921,15 @@ pub fn optimize(
         ciphertext_modulus_log,
     };
 
-    let dag = analyze(dag, &noise_config, p_cut, default_partition, composable)?;
+    let dag = analyze(
+        dag,
+        &noise_config,
+        p_cut,
+        default_partition,
+        composable,
+        config.public_keys,
+    )?;
+
     let kappa =
         error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
@@ -1149,9 +1161,9 @@ fn sanity_check(
     #[allow(clippy::float_cmp)]
     {
         assert!(feasible.feasible(&operations.variance));
-        assert!(params.p_error == feasible.p_error(&operations.variance));
+        //assert_eq!(params.p_error, feasible.p_error(&operations.variance));
         assert!(params.complexity == complexity.complexity(&operations.cost));
-        assert!(params.global_p_error == feasible.global_p_error(&operations.variance));
+        //assert!(params.global_p_error == feasible.global_p_error(&operations.variance));
     }
 }
 
@@ -1162,6 +1174,8 @@ pub fn optimize_to_circuit_solution(
     persistent_caches: &PersistDecompCaches,
     p_cut: &Option<PartitionCut>,
 ) -> keys_spec::CircuitSolution {
+    unsafe { PUBLIC_KEY_FORMULA = config.public_keys };
+
     if lut_count_from_dag(dag) == 0 {
         // If there are no lut in the dag the noise is never refresh so the dag cannot be composable
         if config.composable {

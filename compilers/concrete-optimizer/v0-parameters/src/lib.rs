@@ -12,7 +12,7 @@ use clap::Parser;
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
-use concrete_optimizer::optimization::config::{Config, SearchSpace};
+use concrete_optimizer::optimization::config::{Config, PublicKey, SearchSpace};
 use concrete_optimizer::optimization::dag::solo_key::optimize::{self as optimize_dag};
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution::{
@@ -105,12 +105,13 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
     let cache_on_disk = args.cache_on_disk;
     let composable = args.composable;
 
-    let search_space = SearchSpace {
-        glwe_log_polynomial_sizes: (args.min_log_poly_size..=args.max_log_poly_size).collect(),
-        glwe_dimensions: (args.min_glwe_dim..=args.max_glwe_dim).collect(),
-        internal_lwe_dimensions: (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect(),
-        levelled_only_lwe_dimensions: DEFAUT_DOMAINS.free_lwe,
-    };
+    let search_space = SearchSpace::new(
+        (args.min_log_poly_size..=args.max_log_poly_size).collect(),
+        (args.min_glwe_dim..=args.max_glwe_dim).collect(),
+        (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect(),
+        DEFAUT_DOMAINS.free_lwe,
+        PublicKey::None,
+    );
 
     let precisions = args.min_precision..=args.max_precision;
     let log_norms2: Vec<_> = (0..=31).collect();
@@ -127,6 +128,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
         fft_precision: args.fft_precision,
         complexity_model: &CpuComplexity::default(),
         composable,
+        public_keys: PublicKey::None,
     };
 
     let cache = decomposition::cache(

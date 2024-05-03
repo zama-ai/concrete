@@ -3,7 +3,7 @@ use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
 use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern::{self as optimize_atomic_pattern};
-use concrete_optimizer::optimization::config::{Config, SearchSpace};
+use concrete_optimizer::optimization::config::{Config, PublicKey, SearchSpace};
 use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 
@@ -27,12 +27,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let processing_unit = config::ProcessingUnit::Cpu;
 
-    let search_space = SearchSpace {
+    let search_space = SearchSpace::new(
         glwe_log_polynomial_sizes,
         glwe_dimensions,
         internal_lwe_dimensions,
-        levelled_only_lwe_dimensions: DEFAUT_DOMAINS.free_lwe,
-    };
+        DEFAUT_DOMAINS.free_lwe,
+        PublicKey::None,
+    );
 
     let precision = 8;
     let log_norm2s = 1_u64..=31;
@@ -48,6 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fft_precision,
         complexity_model: &CpuComplexity::default(),
         composable: false,
+        public_keys: PublicKey::None,
     };
 
     let cache = decomposition::cache(

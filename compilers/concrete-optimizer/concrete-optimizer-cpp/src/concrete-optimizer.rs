@@ -5,7 +5,7 @@ use concrete_optimizer::dag::operator::{
     self, FunctionTable, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
 use concrete_optimizer::dag::unparametrized;
-use concrete_optimizer::optimization::config::{Config, SearchSpace};
+use concrete_optimizer::optimization::config::{Config, PublicKey, SearchSpace};
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::CircuitSolution;
 use concrete_optimizer::optimization::dag::multi_parameters::partition_cut::PartitionCut;
@@ -60,11 +60,12 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
         fft_precision: options.fft_precision,
         complexity_model: &CpuComplexity::default(),
         composable: options.composable,
+        public_keys: options.public_keys.into(),
     };
 
     let sum_size = 1;
 
-    let search_space = SearchSpace::default(processing_unit);
+    let search_space = SearchSpace::default(processing_unit, config.public_keys);
 
     let result = concrete_optimizer::optimization::atomic_pattern::optimize_one(
         sum_size,
@@ -499,9 +500,10 @@ impl Dag {
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
             composable: options.composable,
+            public_keys: options.public_keys.into(),
         };
 
-        let search_space = SearchSpace::default(processing_unit);
+        let search_space = SearchSpace::default(processing_unit, config.public_keys);
 
         let encoding = options.encoding.into();
         if options.composable {
@@ -545,8 +547,9 @@ impl Dag {
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
             composable: options.composable,
+            public_keys: options.public_keys.into(),
         };
-        let search_space = SearchSpace::default(processing_unit);
+        let search_space = SearchSpace::default(processing_unit, config.public_keys);
 
         let encoding = options.encoding.into();
         #[allow(clippy::wildcard_in_or_patterns)]
@@ -690,6 +693,18 @@ impl Into<Encoding> for ffi::Encoding {
     }
 }
 
+#[allow(clippy::from_over_into)]
+impl Into<PublicKey> for ffi::PublicKey {
+    fn into(self) -> PublicKey {
+        match self {
+            Self::None => PublicKey::None,
+            Self::Classic => PublicKey::Classic,
+            Self::Compact => PublicKey::Compact,
+            _ => unreachable!("Internal error: Invalid public key type"),
+        }
+    }
+}
+
 #[allow(unused_must_use, clippy::needless_lifetimes)]
 #[cxx::bridge]
 mod ffi {
@@ -792,6 +807,14 @@ mod ffi {
         Crt,
     }
 
+    #[derive(Debug, Clone, Copy)]
+    #[namespace = "concrete_optimizer"]
+    pub enum PublicKey {
+        None,
+        Classic,
+        Compact,
+    }
+
     #[derive(Clone, Copy)]
     #[namespace = "concrete_optimizer::dag"]
     struct OperatorIndex {
@@ -858,6 +881,7 @@ mod ffi {
         pub ciphertext_modulus_log: u32,
         pub fft_precision: u32,
         pub composable: bool,
+        pub public_keys: PublicKey,
     }
 
     #[namespace = "concrete_optimizer::dag"]

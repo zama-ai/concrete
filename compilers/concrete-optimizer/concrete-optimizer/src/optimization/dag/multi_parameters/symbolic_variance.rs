@@ -52,6 +52,16 @@ impl SymbolicVariance {
         r
     }
 
+    pub fn public_input(nb_partitions: usize, partition: usize) -> Self {
+        let mut r = Self {
+            partition,
+            coeffs: OperationsValue::zero(nb_partitions),
+        };
+        // rust ..., offset cannot be inlined
+        *r.coeffs.public_input(partition) = 1.0;
+        r
+    }
+
     pub fn coeff_input(&self, partition: usize) -> f64 {
         self.coeffs[self.coeffs.index.input(partition)]
     }

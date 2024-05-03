@@ -3,7 +3,7 @@ use crate::dag::operator::{
 };
 use crate::dag::rewrite::round::expand_round_and_index_map;
 use crate::dag::unparametrized;
-use crate::optimization::config::NoiseBoundConfig;
+use crate::optimization::config::{NoiseBoundConfig, PublicKey};
 use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitionning::partitionning_with_preferred;
 use crate::optimization::dag::multi_parameters::partitions::{
@@ -51,6 +51,7 @@ pub fn analyze(
     p_cut: &Option<PartitionCut>,
     default_partition: PartitionIndex,
     composable: bool,
+    public_key: PublicKey,
 ) -> Result<AnalyzedDag> {
     let (dag, instruction_rewrite_index) = expand_round_and_index_map(dag);
     let levelled_complexity = LevelledComplexity::ZERO;
@@ -64,7 +65,8 @@ pub fn analyze(
     let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition, composable);
     let instrs_partition = partitions.instrs_partition;
     let nb_partitions = partitions.nb_partitions;
-    let mut out_variances = self::out_variances(&dag, nb_partitions, &instrs_partition, &None);
+    let mut out_variances =
+        self::out_variances(&dag, nb_partitions, &instrs_partition, &None, public_key);
     if composable {
         // Verify that there is no input symbol in the symbolic variances of the outputs.
         check_composability(&dag, &out_variances, nb_partitions)?;
@@ -85,6 +87,7 @@ pub fn analyze(
             nb_partitions,
             &instrs_partition,
             &Some(largest_output_variances),
+            public_key,
         );
     }
     let variance_constraints =
@@ -224,6 +227,7 @@ fn out_variance(
     nb_partitions: usize,
     instr_partition: &InstructionPartition,
     input_override: Option<Vec<SymbolicVariance>>,
+    public_key: PublicKey,
 ) -> Vec<SymbolicVariance> {
     // If an override is given for input and we have an input node, we override.
     if let (Some(overr), Op::Input { .. }) = (input_override, op) {
@@ -241,7 +245,12 @@ fn out_variance(
     };
     let max_variance = |acc: SymbolicVariance, input: SymbolicVariance| acc.max(&input);
     let variance = match op {
-        Op::Input { .. } => SymbolicVariance::input(nb_partitions, partition),
+        Op::Input { .. } => match public_key {
+            PublicKey::None => SymbolicVariance::input(nb_partitions, partition),
+            PublicKey::Classic | PublicKey::Compact => {
+                SymbolicVariance::public_input(nb_partitions, partition)
+            }
+        },
         Op::Lut { .. } => SymbolicVariance::after_pbs(nb_partitions, partition),
         Op::LevelledOp { inputs, manp, .. } => {
             let inputs_variance = inputs.iter().map(out_variance_of);
@@ -297,6 +306,7 @@ fn out_variances(
     nb_partitions: usize,
     instrs_partition: &[InstructionPartition],
     input_override: &Option<Vec<SymbolicVariance>>,
+    public_key: PublicKey,
 ) -> Vec<Vec<SymbolicVariance>> {
     let nb_ops = dag.operators.len();
     let mut out_variances = Vec::with_capacity(nb_ops);
@@ -308,6 +318,7 @@ fn out_variances(
             nb_partitions,
             instr_partition,
             input_override.clone(),
+            public_key,
         );
         out_variances.push(vf);
     }
@@ -455,7 +466,15 @@ pub mod tests {
         default_partition: PartitionIndex,
     ) -> AnalyzedDag {
         let p_cut = PartitionCut::for_each_precision(dag);
-        super::analyze(dag, &CONFIG, &Some(p_cut), default_partition, false).unwrap()
+        super::analyze(
+            dag,
+            &CONFIG,
+            &Some(p_cut),
+            default_partition,
+            false,
+            PublicKey::None,
+        )
+        .unwrap()
     }
 
     #[allow(clippy::float_cmp)]
@@ -527,7 +546,14 @@ pub mod tests {
         let mut dag = unparametrized::Dag::new();
         let _ = dag.add_input(1, Shape::number());
         let p_cut = PartitionCut::for_each_precision(&dag);
-        let res = super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true);
+        let res = super::analyze(
+            &dag,
+            &CONFIG,
+            &Some(p_cut),
+            LOW_PRECISION_PARTITION,
+            true,
+            PublicKey::None,
+        );
         assert!(res.is_ok());
     }
 
@@ -537,8 +563,15 @@ pub mod tests {
         let input1 = dag.add_input(1, Shape::number());
         let _ = dag.add_lut(input1, FunctionTable::UNKWOWN, 2);
         let p_cut = PartitionCut::for_each_precision(&dag);
-        let dag =
-            super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION, true).unwrap();
+        let dag = super::analyze(
+            &dag,
+            &CONFIG,
+            &Some(p_cut),
+            LOW_PRECISION_PARTITION,
+            true,
+            PublicKey::None,
+        )
+        .unwrap();
         assert!(dag.nb_partitions == 1);
         let actual_constraint_strings = dag
             .variance_constraints
@@ -560,8 +593,15 @@ pub mod tests {
         let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
         let input2 = dag.add_dot([input1, lut3], [1, 1]);
         let _ = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
-        let analyzed_dag =
-            super::analyze(&dag, &CONFIG, &None, LOW_PRECISION_PARTITION, true).unwrap();
+        let analyzed_dag = super::analyze(
+            &dag,
+            &CONFIG,
+            &None,
+            LOW_PRECISION_PARTITION,
+            true,
+            PublicKey::None,
+        )
+        .unwrap();
         assert_eq!(analyzed_dag.nb_partitions, 2);
         let actual_constraint_strings = analyzed_dag
             .variance_constraints
@@ -603,7 +643,7 @@ pub mod tests {
         let b = dag.add_dot([input1, lut3], [1, 1]);
         let _ = dag.add_lut(a, FunctionTable::UNKWOWN, 3);
         let _ = dag.add_lut(b, FunctionTable::UNKWOWN, 3);
-        let analyzed_dag = super::analyze(&dag, &CONFIG, &None, 1, true).unwrap();
+        let analyzed_dag = super::analyze(&dag, &CONFIG, &None, 1, true, PublicKey::None).unwrap();
         assert_eq!(analyzed_dag.nb_partitions, 3);
         let actual_constraint_strings = analyzed_dag
             .variance_constraints
@@ -1037,6 +1077,7 @@ pub mod tests {
             &Some(p_cut.clone()),
             LOW_PRECISION_PARTITION,
             false,
+            PublicKey::None,
         )
         .unwrap();
         assert!(dag.nb_partitions == p_cut.p_cut.len() + 1);

@@ -26,8 +26,9 @@ pub struct Indexing {
 const VALUE_INDEX_FRESH: usize = 0;
 const VALUE_INDEX_PBS: usize = 1;
 const VALUE_INDEX_MODULUS: usize = 2;
+const VALUE_INDEX_FRESH_PUBLIC: usize = 3;
 // number of value always present for a partition
-const STABLE_NB_VALUES_BY_PARTITION: usize = 3;
+const STABLE_NB_VALUES_BY_PARTITION: usize = 4;
 
 pub const COMPRESSED_0_INDEX: usize = 0; // all 0.0 value are indexed here
 pub const COMPRESSED_FIRST_FREE_INDEX: usize = 1;
@@ -83,6 +84,11 @@ impl Indexing {
     pub fn input(&self, partition: usize) -> usize {
         assert!(partition < self.nb_partitions);
         self.maybe_compressed(partition * self.nb_coeff_per_partition() + VALUE_INDEX_FRESH)
+    }
+
+    pub fn public_input(&self, partition: usize) -> usize {
+        assert!(partition < self.nb_partitions);
+        self.maybe_compressed(partition * self.nb_coeff_per_partition() + VALUE_INDEX_FRESH_PUBLIC)
     }
 
     pub fn pbs(&self, partition: usize) -> usize {
@@ -174,6 +180,10 @@ impl OperationsValue {
 
     pub fn input(&mut self, partition: usize) -> &mut f64 {
         &mut self.values[self.index.input(partition)]
+    }
+
+    pub fn public_input(&mut self, partition: usize) -> &mut f64 {
+        &mut self.values[self.index.public_input(partition)]
     }
 
     pub fn pbs(&mut self, partition: usize) -> &mut f64 {
