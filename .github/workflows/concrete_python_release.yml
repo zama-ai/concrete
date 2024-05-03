@@ -193,6 +193,8 @@ jobs:
     needs: [build-linux-x86, build-macos]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+
       - uses: actions/download-artifact@v4
         with:
           path: wheels
@@ -215,6 +217,21 @@ jobs:
             -u "${{ secrets.PUBLIC_PYPI_USER }}" \
             -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" \
             -r pypi
+
+      - name: Upload wheels to S3
+        if: ${{ env.RELEASE_TYPE == 'public' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.AWS_CLOUDFRONT_PYPI_DISTRIBUTION_ID }}
+        run: |
+          pip install boto3 bigtree
+          # upload wheels
+          aws s3 sync ./wheels/ s3://${S3_BUCKET_NAME}/concrete-python
+          # update indexes and invalidate cloudfront cache
+          python .github/workflows/scripts/s3_update_html_indexes.py
 
       - name: Start pushing Docker images
         if: ${{ env.RELEASE_TYPE == 'public' }}
