@@ -14,6 +14,7 @@ from concrete.fhe.tracing.tracer import Tracer
 
 WEIGHT_TO_TLU = True
 ENFORCE_BITWDTH = True
+RESCALE_BEFORE_TLU = True
 
 @dataclass
 class BitLocation:
@@ -65,7 +66,6 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
             print(f" {arities}")
             print(f" nb luts: {len(layer)}")
 
-    results_type = [params[result[0].base_name] for result in circuit.results]
     used_count = {}
     for tlu in scheduled_nodes:
         for value in tlu.arguments:
@@ -79,6 +79,42 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
                 used_count[res_bit.name] += 1
             except KeyError:
                 used_count[res_bit.name] = 1
+
+    bit_location = {}
+    for name in circuit.parameters:
+        ty_l = params[name]
+        if not isinstance(ty_l, list):
+            ty_l = [ty_l]
+        bit_location[name] = {}
+        g_index = 0
+        for i_word, ty in enumerate(ty_l):
+            for bit_index in range(ty.dtype.bit_width):
+                bit = circuit.parameters[name][g_index]
+                assert bit.origin.bit_index == g_index
+                bit_location[name][bit.name] = BitLocation(
+                    word=i_word,
+                    local_bit_index=bit_index,
+                    global_bit_index=g_index,
+                )
+                g_index += 1
+
+    for result in circuit.results:
+        name = result[0].base_name
+        ty_l = params[name]
+        if not isinstance(ty_l, list):
+            ty_l = [ty_l]
+        bit_location[name] = {}
+        g_index = 0
+        for i_word, ty in enumerate(ty_l):
+            for bit_index in range(ty.dtype.bit_width):
+                bit = result[g_index]
+                assert bit.origin.bit_index == g_index
+                bit_location[name][bit.name] = BitLocation(
+                    word=i_word,
+                    local_bit_index=bit_index,
+                    global_bit_index=g_index,
+                )
+                g_index += 1
 
     # collect max arity use for all values
     max_arity_use = {}
@@ -95,7 +131,11 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
     # Result can be either precision correct on single use or < 7 or converted
     for result in circuit.results:
         for res_bit in result:
-            bit_width = params[res_bit.base_name].dtype.bit_width
+            if isinstance(params[res_bit.base_name], list):
+                word_i = bit_location[res_bit.base_name][res_bit.name].word
+                bit_width = params[res_bit.base_name][word_i].dtype.bit_width
+            else:
+                bit_width = params[res_bit.base_name].dtype.bit_width
             if used_count.get(res_bit.name, 1) == 1:
                 # print("solo use", res_bit.name, bitwidth)
                 max_arity_use[res_bit.name] = bit_width
@@ -113,7 +153,8 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
             min_scale[value.name] = 1
     for result in circuit.results:
         for i, res_bit in enumerate(result):
-            min_scale[res_bit.name] = 2**i
+            local_bit_index = bit_location[res_bit.base_name][res_bit.name].local_bit_index
+            min_scale[res_bit.name] = 2 ** local_bit_index
     for tlu in scheduled_nodes:
         for i, value in enumerate(tlu.arguments):
             min_scale[value.name] = min(min_scale[value.name], 2**i)
@@ -170,13 +211,30 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
         tracer.output.dtype.bit_width = out_type.dtype.bit_width
         return tracer
 
-    def repack_scaled_bits(scaled_bit_values):
+    def reduce_precision_before_tlu(v, previous_bit_width, new_bit_width):
+        # TODO: to be replaced by fhe.reduce_precision
+        assert previous_bit_width > new_bit_width
+        lsbs_to_remove = previous_bit_width - new_bit_width
+        overflow_protection = False
+        exactness = fhe.Exactness.APPROXIMATE
+        v *= 2 ** lsbs_to_remove
+        v = fhe.round_bit_pattern(v, lsbs_to_remove, overflow_protection, exactness)
+        tbl = fhe.LookupTable([
+            i // 2**lsbs_to_remove
+            for i in range(2**previous_bit_width)
+        ])
+        v = with_bit_width(tbl[v], new_bit_width) # required, hint is not sufficient
+        # we assume the tlu will be fuzed so it's free
+        return v
+
+    def repack_scaled_bits(scaled_bit_values, before_tlu=True):
         nonlocal max_weight
         scaled_bit_values = list(scaled_bit_values)
         assert scaled_bit_values
         bit_width = len(scaled_bit_values)
         assert bit_width > 0
         repacked_bits = None
+        arg_max_bit_width = 0
         for i, (scale, value) in enumerate(scaled_bit_values):
             if i == 0:
                 assert scale == 1
@@ -191,6 +249,7 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
             weight = 2**i // scale
             max_weight = max(max_weight, weight)
             if isinstance(value, Tracer):
+                arg_max_bit_width = max(arg_max_bit_width, value.output.dtype.bit_width)
                 if value.output.dtype.bit_width < bit_width:
                     # print("oversizing", value.output.dtype.bit_width, bit_width)
                     value = fhe.hint(fhe.LookupTable(list(range(2**value.output.dtype.bit_width)))[value], bit_width=bit_width)
@@ -199,8 +258,12 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
                 repacked_bits = add
             else:
                 repacked_bits += add
+
+        extra_bits = arg_max_bit_width - bit_width
         if repacked_bits is None:
             repacked_bits = 0
+        elif extra_bits > 0 and before_tlu and RESCALE_BEFORE_TLU:
+            repacked_bits = reduce_precision_before_tlu(repacked_bits, arg_max_bit_width, bit_width)
         return with_bit_width(repacked_bits, bit_width)
 
 
@@ -214,18 +277,46 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
                 msg = f"{circuit.name}() got an unexpected keyword argument '{name}'"
                 raise TypeError(msg)
 
+        # TODO: uniformize to list
+        # TODO: mapping i => (word_j, k)
+
+        for name, value in kwargs.items():
+            if name in params:
+                if isinstance(params[name], list):
+                    if isinstance(value, int):
+                        msg = f"`{name}` should be a list or a tensor or an iterable"
+                        raise TypeError(msg)
+                else:
+                    kwargs[name] = [value]
+
+        all_input_in_clear = True
         # decompose parameters into bits
         with fhe.tag("bit_extractions"):
-            parameters = {
-                bit.name: with_bit_width(
-                    fhe.bits(with_unsigned(value))[bit.origin.bit_index],
-                    bit_width=max_arity_use[bit.name],
-                )
-                for name, value in kwargs.items()
-                for bit in circuit.parameters[name]
-            }
+            # TODO: direct result, that are also reused should be shielded
+            parameters = {}
+            for name, value in kwargs.items():
+                for bit, bit_loc in zip(circuit.parameters[name], bit_location[name].values()):
+                    word_i = bit_loc.word
+                    word_bit_i = bit_loc.local_bit_index
+                    assert bit_loc.global_bit_index == bit.origin.bit_index
+                    try:
+                        word_value = value[word_i]
+                    except IndexError:
+                        bit_value = 0
+                    else:
+                        if not isinstance(word_value, int):
+                            all_input_in_clear = False
+                        bit_value = with_bit_width(
+                            fhe.bits(with_unsigned(word_value))[word_bit_i],
+                            bit_width=max_arity_use[bit.name],
+                        )
+                    parameters[bit.name] = bit_value
         # contains all intermediate tracer
         intermediate_values = dict(parameters)
+
+        display = verbose and all_input_in_clear
+        if display:
+            print("input values:", intermediate_values)
 
         # handle special case first
         # constant tlu and identity
@@ -244,6 +335,10 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
                 else:
                     msg = "Unknown Constant TLU content"
                     raise ValueError(msg)
+            else:
+                continue
+            if display:
+                print(f"{output_name} = {intermediate_values[output_name]}")
 
         with fhe.tag("synthesis"):
             # apply all tlus
@@ -270,24 +365,33 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
                 else:
                     print("UNKOWN P FOR ", output_name)
                 intermediate_values[output_name] = result
+                if display:
+                    print(f"{output_name} = {intermediate_values[output_name]}")
 
         with fhe.tag("bit_assemble"):
             # recompose bits into result
-            results = tuple(
-                repack_scaled_bits(
+            results = []
+            for result in circuit.results:
+                bits = [
                     (min_scale[res_bit.name], intermediate_values[res_bit.name])
                     for res_bit in result
-                )
-                for result in circuit.results
-            )
-            for r_type in results_type:
-                assert not isinstance(r_type, list)
-            # Provide the right result type
-            results = tuple(
-                with_result_type(result, r_type) for result, r_type in zip(results, results_type)
-            )
+                ] # TODO: rely on order, add check
+                ty_result = params.get("result")
+                if ty_result and isinstance(ty_result, list):
+                    words = []
+                    for word_ty in ty_result:
+                        word_bits = bits[:word_ty.dtype.bit_width]
+                        bits = bits[word_ty.dtype.bit_width:]
+                        word_result = repack_scaled_bits(word_bits, before_tlu=False)
+                        word_result = with_result_type(word_result, word_ty)
+                        words += [word_result]
+                    results += [words]
+                else:
+                    result = repack_scaled_bits(bits, before_tlu=False)
+                    result = with_result_type(result, ty_result)
+                    results += [result]
             if len(results) == 1:
                 return results[0]
-            return results
+            return tuple(results)
 
     return tracer

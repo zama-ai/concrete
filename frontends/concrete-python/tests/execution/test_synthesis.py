@@ -152,3 +152,75 @@ def test_relu_limit():
             return relu(a=v)
 
     assert str(err.value) == "NoParametersFound"
+
+
+def convert_to_radix(v, tys):
+    if not(isinstance(tys, list)):
+        return v
+    shift_left = 0
+    signed = any(ty.dtype.is_signed for ty in tys)
+    words = []
+    for i, ty in enumerate(tys):
+        last = (i + 1) == len(tys)
+        v_word = (v >> shift_left)
+        if signed and last:
+            assert -(2**(ty.dtype.bit_width - 1)) <= v_word < 2**(ty.dtype.bit_width - 1)
+        else:
+            if last:
+                assert v_word < 2 ** ty.dtype.bit_width
+            v_word = v_word % (2 ** ty.dtype.bit_width)
+        shift_left += ty.dtype.bit_width
+        words.append(v_word)
+    return words
+
+def test_input_radix_relu_correctness():
+    """
+    Check relu with input in radix encoding.
+    """
+    ty_out = fhe.int5
+    ty_in = [fhe.uint3, fhe.int2]
+    params = {"a": ty_in}
+    expression = "(a >= 0) ? a : 0"
+
+    relu = synth.verilog_expression(params, expression, ty_out)
+
+    @fhe.circuit({"a0": "encrypted", "a1": "encrypted"})
+    def circuit(a0: ty_in[0], a1:ty_in[1]):
+        return relu(a=[a0, a1])
+
+    def ref_relu(v):
+        return v if v >= 0 else 0
+
+    r = reversed(list(range(0, 2**4)) + list(range(-(2**4), 0)))
+    for a in r:
+        a_words = convert_to_radix(a, ty_in)
+        assert relu(a=a_words) == convert_to_radix(ref_relu(a), ty_out), a
+        assert circuit.simulate(*a_words) == convert_to_radix(ref_relu(a), ty_out), a
+
+
+def test_radix_signed_mul_correctness():
+    """
+    Check signed mul with radix encoding.
+    """
+    ty_out = [fhe.uint1, fhe.uint1, fhe.int3]
+    a_ty_in = [fhe.uint3, fhe.int2]
+    b_ty_in = [fhe.uint2, fhe.int3]
+    params = {"a": a_ty_in, "b": b_ty_in}
+    expression = "a * b"
+
+    op = synth.verilog_expression(params, expression, ty_out)
+
+    conf = fhe.Configuration(approximate_rounding_config=fhe.ApproximateRoundingConfig(symetrize_deltas=False))
+
+    @fhe.circuit({"a0": "encrypted", "a1": "encrypted", "b0": "encrypted", "b1": "encrypted"}, conf)
+    def circuit(a0: a_ty_in[0], a1: a_ty_in[1], b0: b_ty_in[0], b1: b_ty_in[1]):
+        return tuple(op(a=[a0, a1], b=[b0, b1]))
+
+    r = signed_range(5)
+    for a in r:
+        for b in r:
+            a_words = convert_to_radix(a, a_ty_in)
+            b_words = convert_to_radix(b, b_ty_in)
+            expected = convert_to_radix(signed_modulo(a * b, 5), ty_out)
+            assert list(op(a=a_words,b=b_words)) == expected
+            assert list(circuit.simulate(*a_words, *b_words)) == expected

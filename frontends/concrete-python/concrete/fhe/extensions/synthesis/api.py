@@ -116,7 +116,7 @@ def verilog_expression(in_params, expression, out_type, **kwargs):
     verilog_params = {
         name: Ty(
             bit_width=sum(ty.dtype.bit_width for ty in _uniformize_as_list(type_list)),
-            is_signed=_uniformize_as_list(type_list)[0].dtype.is_signed,
+            is_signed=any(ty.dtype.is_signed for ty in _uniformize_as_list(type_list)),
         )
         for name, type_list in in_params.items()
     }
