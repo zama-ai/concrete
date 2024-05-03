@@ -433,6 +433,120 @@ Effects: MemoryEffects::Effect{}
 | :----: | ----------- |
 | `out` | 
 
+### `FHELinalg.fancy_assign` (::mlir::concretelang::FHELinalg::FancyAssignOp)
+
+Assigns a tensor into another tensor at a tensor of indices.
+
+Examples:
+
+```mlir
+"FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<5x!FHE.eint<16>>, tensor<3xindex>, tensor<3x!FHE.eint<16>>) -> tensor<5x!FHE.eint<16>>
+//
+// fancy_assign([10, 20, 30, 40, 50], [3, 1, 2], [1000, 2000, 3000]) = [10, 2000, 3000, 1000, 50]
+//
+```
+
+```mlir
+"FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<5x!FHE.eint<16>>, tensor<2x2xindex>, tensor<2x2x!FHE.eint<16>>) -> tensor<5x!FHE.eint<16>>
+//
+// fancy_assign([10, 20, 30, 40, 50], [[3, 1], [2, 0]], [[1000, 2000], [3000, 4000]]) = [4000, 2000, 3000, 1000, 50]
+//
+```
+
+```mlir
+"FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<2x3x!FHE.eint<16>>, tensor<3x2xindex>, tensor<3x!FHE.eint<16>>) -> tensor<2x3x!FHE.eint<16>>
+//
+// fancy_assign([[11, 12, 13], [21, 22, 23]], [[1, 0], [0, 2], [0, 0]], [1000, 2000, 3000]) = [[3000, 2000, 13], [1000, 22, 23]]
+//
+```
+
+```mlir
+"FHELinalg.fancy_assign"(%t, %i, %a) : (tensor<3x3x!FHE.eint<16>>, tensor<2x3x2xindex>, tensor<2x3x!FHE.eint<16>>) -> tensor<3x3x!FHE.eint<16>>
+//
+// fancy_assign(
+//     [[11, 12, 13], [21, 22, 23], [31, 32, 33]],
+//     [[[1, 0], [0, 2], [0, 0]], [[2, 0], [1, 1], [2, 1]]],
+//     [[1000, 2000, 3000], [4000, 5000, 6000]]
+// ) = [[3000, 2000, 13], [1000, 5000, 23], [4000, 6000, 33]]
+//
+```
+
+Notes:
+- Assigning to the same output position results in undefined behavior.
+
+Traits: AlwaysSpeculatableImplTrait
+
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+
+Effects: MemoryEffects::Effect{}
+
+#### Operands:
+
+| Operand | Description |
+| :-----: | ----------- |
+| `input` | 
+| `indices` | 
+| `values` | 
+
+#### Results:
+
+| Result | Description |
+| :----: | ----------- |
+| `output` | 
+
+### `FHELinalg.fancy_index` (::mlir::concretelang::FHELinalg::FancyIndexOp)
+
+Index into a tensor using a tensor of indices.
+
+Examples:
+
+```mlir
+"FHELinalg.fancy_index"(%t, %i) : (tensor<5x!FHE.eint<6>>, tensor<3xindex>) -> tensor<3x!FHE.eint<6>>
+//
+// fancy_index([10, 20, 30, 40, 50], [3, 1, 2]) = [40, 20, 30]
+//
+```
+
+```mlir
+"FHELinalg.fancy_index"(%t, %i) : (tensor<5x!FHE.eint<6>>, tensor<3x2xindex>) -> tensor<3x2x!FHE.eint<6>>
+//
+// fancy_index([10, 20, 30, 40, 50], [[3, 1], [2, 2], [0, 4]]) = [[40, 20], [30, 30], [10, 50]]
+//
+```
+
+```mlir
+"FHELinalg.fancy_index"(%t, %i) : (tensor<2x3x!FHE.eint<6>>, tensor<3x2xindex>) -> tensor<3x!FHE.eint<6>>
+//
+// fancy_index([[11, 12, 13], [21, 22, 23]], [[1, 0], [0, 2], [0, 0]]) = [21, 13, 11]
+//
+```
+
+```mlir
+"FHELinalg.fancy_index"(%t, %i) : (tensor<3x3x!FHE.eint<6>>, tensor<2x3x2xindex>) -> tensor<2x3x!FHE.eint<6>>
+//
+// fancy_index([[11, 12, 13], [21, 22, 23], [31, 32, 33]], [[[1, 0], [0, 2], [0, 0]], [[2, 0], [1, 1], [2, 1]]]) = [[21, 13, 11], [31, 22, 32]]
+//
+```
+
+Traits: AlwaysSpeculatableImplTrait
+
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+
+Effects: MemoryEffects::Effect{}
+
+#### Operands:
+
+| Operand | Description |
+| :-----: | ----------- |
+| `input` | 
+| `indices` | 
+
+#### Results:
+
+| Result | Description |
+| :----: | ----------- |
+| `output` | 
+
 ### `FHELinalg.from_element` (::mlir::concretelang::FHELinalg::FromElementOp)
 
 Creates a tensor with a single element.
