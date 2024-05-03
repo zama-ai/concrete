@@ -2,7 +2,6 @@
 Declaration of various functions and constants related to compilation.
 """
 
-import json
 import os
 import re
 from copy import deepcopy
@@ -11,12 +10,11 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Un
 import networkx as nx
 import numpy as np
 
-from ..dtypes import Float, Integer, SignedInteger, UnsignedInteger
+from ..dtypes import Float, Integer
 from ..representation import Graph, Node, Operation
 from ..tracing import ScalarAnnotation
 from ..values import ValueDescription
 from .artifacts import FunctionDebugArtifacts
-from .specs import ClientSpecs
 
 # ruff: noqa: ERA001
 
@@ -63,99 +61,6 @@ def inputset(
 
         result.append(tuple(sample))
     return result
-
-
-def validate_input_args(
-    client_specs: ClientSpecs,
-    *args: Optional[Union[int, np.ndarray, List]],
-    function_name: str = "main",
-) -> List[Optional[Union[int, np.ndarray]]]:
-    """Validate input arguments.
-
-    Args:
-        client_specs (ClientSpecs):
-            client specification
-        *args (Optional[Union[int, np.ndarray, List]]):
-            argument(s) for evaluation
-        function_name (str): name of the function to verify
-
-    Returns:
-        List[Optional[Union[int, np.ndarray]]]: ordered validated args
-    """
-    functions_parameters = json.loads(client_specs.client_parameters.serialize())["circuits"]
-    client_parameters_json = next(
-        filter(lambda x: x["name"] == function_name, functions_parameters)
-    )
-    assert "inputs" in client_parameters_json
-    input_specs = client_parameters_json["inputs"]
-    if len(args) != len(input_specs):
-        message = f"Expected {len(input_specs)} inputs but got {len(args)}"
-        raise ValueError(message)
-
-    sanitized_args: Dict[int, Optional[Union[int, np.ndarray]]] = {}
-    for index, (arg, spec) in enumerate(zip(args, input_specs)):
-        if arg is None:
-            sanitized_args[index] = None
-            continue
-
-        if isinstance(arg, list):
-            arg = np.array(arg)
-
-        is_valid = isinstance(arg, (int, np.integer)) or (
-            isinstance(arg, np.ndarray) and np.issubdtype(arg.dtype, np.integer)
-        )
-
-        if "lweCiphertext" in spec["typeInfo"].keys():
-            type_info = spec["typeInfo"]["lweCiphertext"]
-            is_encrypted = True
-            shape = tuple(type_info["abstractShape"]["dimensions"])
-            assert "integer" in type_info["encoding"].keys()
-            width = type_info["encoding"]["integer"]["width"]
-            is_signed = type_info["encoding"]["integer"]["isSigned"]
-        elif "plaintext" in spec["typeInfo"].keys():
-            type_info = spec["typeInfo"]["plaintext"]
-            is_encrypted = False
-            width = type_info["integerPrecision"]
-            is_signed = type_info["isSigned"]
-            shape = tuple(type_info["shape"]["dimensions"])
-        else:
-            message = f"Expected a valid type in {spec['typeInfo'].keys()}"
-            raise ValueError(message)
-
-        expected_dtype = SignedInteger(width) if is_signed else UnsignedInteger(width)
-        expected_value = ValueDescription(expected_dtype, shape, is_encrypted)
-        if is_valid:
-            expected_min = expected_dtype.min()
-            expected_max = expected_dtype.max()
-
-            if not is_encrypted:
-                # clear integers are signless
-                # (e.g., 8-bit clear integer can be in range -128, 255)
-                expected_min = -(expected_max // 2) - 1
-
-            actual_min = arg if isinstance(arg, int) else arg.min()
-            actual_max = arg if isinstance(arg, int) else arg.max()
-            actual_shape = () if isinstance(arg, int) else arg.shape
-
-            is_valid = (
-                actual_min >= expected_min
-                and actual_max <= expected_max
-                and actual_shape == expected_value.shape
-            )
-
-            if is_valid:
-                sanitized_args[index] = arg
-
-        if not is_valid:
-            try:
-                actual_value = str(ValueDescription.of(arg, is_encrypted=is_encrypted))
-            except ValueError:
-                actual_value = type(arg).__name__
-            message = f"Expected argument {index} to be {expected_value} but it's {actual_value}"
-            raise ValueError(message)
-
-    ordered_sanitized_args = [sanitized_args[i] for i in range(len(sanitized_args))]
-    return ordered_sanitized_args
 
 
 def fuse(graph: Graph, artifacts: Optional[FunctionDebugArtifacts] = None):

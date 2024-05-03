@@ -8,12 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import (
-    CompilationContext,
-    Parameter,
-    SimulatedValueDecrypter,
-    SimulatedValueExporter,
-)
+from concrete.compiler import CompilationContext, Parameter, SimulatedValueDecrypter
 from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
@@ -22,8 +17,8 @@ from .client import Client
 from .configuration import Configuration
 from .keys import Keys
 from .server import Server
-from .utils import validate_input_args
 from .value import Value
+from .value_exporter import ValueExporter
 
 # pylint: enable=import-error,no-member,no-name-in-module
 
@@ -120,25 +115,11 @@ class FheFunction:
         """
         assert isinstance(self.runtime, SimulationRt)
 
-        ordered_validated_args = validate_input_args(
-            self.runtime.server.client_specs, *args, function_name=self.name
-        )
-
-        exporter = SimulatedValueExporter.new(
+        exporter = ValueExporter.new_simulated(
             self.runtime.server.client_specs.client_parameters, self.name
         )
-        exported = [
-            None
-            if arg is None
-            else Value(
-                exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
-                if isinstance(arg, np.ndarray) and arg.shape != ()
-                else exporter.export_scalar(position, int(arg))
-            )
-            for position, arg in enumerate(ordered_validated_args)
-        ]
 
-        results = self.runtime.server.run(*exported, function_name=self.name)
+        results = self.runtime.server.run(exporter.encrypt(*args), function_name=self.name)
         if not isinstance(results, tuple):
             results = (results,)
 

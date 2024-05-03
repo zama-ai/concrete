@@ -182,6 +182,7 @@ class Server:
 
         options.set_enable_tlu_fusing(configuration.enable_tlu_fusing)
         options.set_print_tlu_fusing(configuration.print_tlu_fusing)
+        options.set_public_keys(configuration.with_public_keys)
 
         try:
             if configuration.compiler_debug_mode:  # pragma: no cover

@@ -10,10 +10,16 @@ from typing import List, Optional, Tuple, Union, get_type_hints
 
 import numpy as np
 
+# pylint: disable=import-error,no-name-in-module
+from mlir._mlir_libs._concretelang._compiler import PublicKeyKind
+
 from ..dtypes import Integer
 from ..representation import GraphProcessor
 from ..values import ValueDescription
 from .utils import friendly_type_format
+
+# pylint: enable=import-error,no-name-in-module
+
 
 MAXIMUM_TLU_BIT_WIDTH = 16
 
@@ -990,6 +996,7 @@ class Configuration:
     enable_tlu_fusing: bool
     print_tlu_fusing: bool
     optimize_tlu_based_on_original_bit_width: Union[bool, int]
+    with_public_keys: PublicKeyKind
 
     def __init__(
         self,
@@ -1055,6 +1062,7 @@ class Configuration:
         enable_tlu_fusing: bool = True,
         print_tlu_fusing: bool = False,
         optimize_tlu_based_on_original_bit_width: Union[bool, int] = 8,
+        with_public_keys: PublicKeyKind = PublicKeyKind.NONE,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1154,6 +1162,7 @@ class Configuration:
         self.print_tlu_fusing = print_tlu_fusing
 
         self.optimize_tlu_based_on_original_bit_width = optimize_tlu_based_on_original_bit_width
+        self.with_public_keys = with_public_keys
 
         self._validate()
 
@@ -1223,6 +1232,7 @@ class Configuration:
         enable_tlu_fusing: Union[Keep, bool] = KEEP,
         print_tlu_fusing: Union[Keep, bool] = KEEP,
         optimize_tlu_based_on_original_bit_width: Union[Keep, bool, int] = KEEP,
+        with_public_keys: Union[Keep, PublicKeyKind] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
