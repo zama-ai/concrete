@@ -9,7 +9,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 )
 
 from .client_parameters import ClientParameters
-from .key_set import KeySet
+from .key_set import KeySet, PublicKeySet
 from .value import Value
 from .wrapper import WrapperCpp
 
@@ -49,6 +49,18 @@ class ValueExporter(WrapperCpp):
         """
         return ValueExporter(
             _ValueExporter.create(keyset.cpp(), client_parameters.cpp(), circuit_name)
+        )
+
+    @staticmethod
+    # pylint: disable=arguments-differ
+    def new_public(
+        keyset: PublicKeySet, client_parameters: ClientParameters, circuit_name: str = "main"
+    ) -> "ValueExporter":
+        """
+        Create a public value exporter.
+        """
+        return ValueExporter(
+            _ValueExporter.create_public(keyset.cpp(), client_parameters.cpp(), circuit_name)
         )
 
     def export_scalar(self, position: int, value: int) -> Value:

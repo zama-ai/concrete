@@ -13,6 +13,7 @@ from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
 from mlir._mlir_libs._concretelang._compiler import (
     set_llvm_debug_flag,
     set_compiler_logging,
+    PublicKeyKind,
 )
 
 # pylint: enable=no-name-in-module,import-error
@@ -23,6 +24,7 @@ from .key_set_cache import KeySetCache
 from .client_parameters import ClientParameters
 from .compilation_feedback import ProgramCompilationFeedback, CircuitCompilationFeedback
 from .key_set import KeySet
+from .public_key_set import PublicKeySet
 from .public_result import PublicResult
 from .public_arguments import PublicArguments
 from .lambda_argument import LambdaArgument

@@ -15,7 +15,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 # pylint: enable=no-name-in-module,import-error
 from .wrapper import WrapperCpp
 from .evaluation_keys import EvaluationKeys
-
+from .public_key_set import PublicKeySet
 
 class KeySet(WrapperCpp):
     """KeySet stores the different keys required for an encrypted computation.
@@ -72,3 +72,13 @@ class KeySet(WrapperCpp):
                 evaluation keys for execution
         """
         return EvaluationKeys(self.cpp().get_evaluation_keys())
+
+    def generate_public_key_set(self) -> PublicKeySet:
+        """
+        Get evaluation keys for execution.
+
+        Returns:
+            PublicKeySet:
+                public keyset for public encryption
+        """
+        return PublicKeySet(self.cpp().generate_public_key_set())

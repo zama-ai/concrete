@@ -408,6 +408,25 @@ createValueExporter(concretelang::clientlib::KeySet &keySet,
   return maybeExporter.value();
 }
 
+concretelang::clientlib::ValueExporter createPublicValueExporter(
+    concretelang::keysets::ClientPublicKeyset &keySet,
+    concretelang::clientlib::ClientParameters &clientParameters,
+    const std::string &circuitName) {
+  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
+      clientParameters.programInfo.asReader());
+  if (maybeProgram.has_failure()) {
+    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
+  }
+  auto maybeExporter = maybeProgram.value().getPublicValueExporter(
+      circuitName, keySet,
+      std::make_shared<::concretelang::csprng::SecretCSPRNG>(
+          ::concretelang::csprng::SecretCSPRNG(0)));
+  if (maybeExporter.has_failure()) {
+    throw std::runtime_error(maybeExporter.as_failure().error().mesg);
+  }
+  return maybeExporter.value();
+}
+
 concretelang::clientlib::ValueExporter createSimulatedValueExporter(
     concretelang::clientlib::ClientParameters &clientParameters,
     const std::string &circuitName) {
@@ -720,6 +739,12 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .value("NATIVE", concrete_optimizer::Encoding::Native)
       .export_values();
 
+  pybind11::enum_<concrete_optimizer::PublicKey>(m, "PublicKeyKind")
+      .value("NONE", concrete_optimizer::PublicKey::None)
+      .value("CLASSIC", concrete_optimizer::PublicKey::Classic)
+      .value("COMPACT", concrete_optimizer::PublicKey::Compact)
+      .export_values();
+
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
       .def(pybind11::init([](mlir::concretelang::Backend backend) {
         return CompilationOptions(backend);
@@ -743,6 +768,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_compress_input_ciphertexts",
            [](CompilationOptions &options, bool b) {
              options.compressInputCiphertexts = b;
+           })
+      .def("set_public_keys",
+           [](CompilationOptions &options,
+              concrete_optimizer::PublicKey public_keys) {
+             options.optimizerConfig.public_keys = public_keys;
            })
       .def("set_optimize_concrete", [](CompilationOptions &options,
                                        bool b) { options.optimizeTFHE = b; })
@@ -1211,7 +1241,23 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](::concretelang::clientlib::KeySet &keySet) {
              return ::concretelang::clientlib::EvaluationKeys{
                  keySet.keyset.server};
-           });
+           })
+      .def(
+          "generate_public_key_set",
+          [](::concretelang::clientlib::KeySet &keySet, uint64_t encSeedMsb,
+             uint64_t encSeedLsb) {
+            auto encryptionSeed =
+                (((__uint128_t)encSeedMsb) << 64) | encSeedLsb;
+            ::concretelang::csprng::EncryptionCSPRNG encCsprng(encryptionSeed);
+            GET_OR_THROW_RESULT(
+                auto publicKeySet,
+                keySet.keyset.generateClientPublicKeyset(encCsprng));
+            return publicKeySet;
+          },
+          pybind11::arg("encSeedMsb") = 0, pybind11::arg("encSeedLsb") = 0);
+
+  pybind11::class_<::concretelang::keysets::ClientPublicKeyset>(m,
+                                                                "PublicKeySet");
 
   pybind11::class_<::concretelang::clientlib::SharedScalarOrTensorData>(m,
                                                                         "Value")
@@ -1274,6 +1320,14 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              ::concretelang::clientlib::ClientParameters &clientParameters,
              const std::string &circuitName) {
             return createValueExporter(keySet, clientParameters, circuitName);
+          })
+      .def_static(
+          "create_public",
+          [](::concretelang::keysets::ClientPublicKeyset &keySet,
+             ::concretelang::clientlib::ClientParameters &clientParameters,
+             const std::string &circuitName) {
+            return createPublicValueExporter(keySet, clientParameters,
+                                             circuitName);
           })
       .def("export_scalar",
            [](::concretelang::clientlib::ValueExporter &exporter,
