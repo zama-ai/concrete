@@ -2,6 +2,10 @@
 Convert the simple Tlu Dag to a concrete-python Tracer function.
 """
 
+# TODO: reduce_precision_before_tlu should be a mul + reinterpret_precision
+# TODO: reduce output size in multi-word should be a mul + reinterpret_precision
+# TODO: replace with_bit_width and with_result_type with proper hint when it works
+
 from dataclasses import dataclass
 from copy import deepcopy
 from typing import Dict, List
