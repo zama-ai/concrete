@@ -54,13 +54,17 @@ class ValueExporter(WrapperCpp):
     @staticmethod
     # pylint: disable=arguments-differ
     def new_public(
-        keyset: PublicKeySet, client_parameters: ClientParameters, circuit_name: str = "main"
+        keyset: PublicKeySet,
+        client_parameters: ClientParameters,
+        circuit_name: str = "main",
     ) -> "ValueExporter":
         """
         Create a public value exporter.
         """
         return ValueExporter(
-            _ValueExporter.create_public(keyset.cpp(), client_parameters.cpp(), circuit_name)
+            _ValueExporter.create_public(
+                keyset.cpp(), client_parameters.cpp(), circuit_name
+            )
         )
 
     def export_scalar(self, position: int, value: int) -> Value:

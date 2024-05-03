@@ -16,6 +16,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 # pylint: enable=no-name-in-module,import-error
 from .wrapper import WrapperCpp
 
+
 class PublicKeySet(WrapperCpp):
     """KeySet stores the different keys required for a public computation.
 
