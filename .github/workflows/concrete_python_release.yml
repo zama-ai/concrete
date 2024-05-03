@@ -219,7 +219,7 @@ jobs:
             -r pypi
 
       - name: Upload wheels to S3
-        if: ${{ env.RELEASE_TYPE == 'public' }}
+        if: ${{ env.RELEASE_TYPE == 'private' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
