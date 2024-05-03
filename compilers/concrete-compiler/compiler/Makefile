@@ -302,7 +302,7 @@ run-end-to-end-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-t
 	$(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test $(GTEST_PARALLEL_SEPARATOR) \
 	--retry-failing-tests=5 $(FIXTURE_CPU_DIR)/*.yaml
 
-OPTIONS_TO_TESTS=--simulate --compress-evaluation-keys --compress-input-ciphertexts --optimizer-strategy=dag-mono --optimizer-key-sharing=false
+OPTIONS_TO_TESTS=--simulate --compress-evaluation-keys --compress-input-ciphertexts --optimizer-strategy=dag-mono --optimizer-key-sharing=false --public-keys=compact
 run-random-end-to-end-tests-for-each-options: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
 	$(foreach option,$(OPTIONS_TO_TESTS), \
 	  $(GTEST_PARALLEL_CMD) $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test $(GTEST_PARALLEL_SEPARATOR) \
