@@ -1,44 +1,44 @@
 root: ./docs
 
 redirects:
-  getting-started/fhe_basics: core-features/fhe_basics.md
+  getting-started/fhe\_basics: core-features/fhe\_basics.md
   getting-started/installing: get-started/installing.md
-  getting-started/quick_start: get-started/quick_start.md
+  getting-started/quick\_start: get-started/quick\_start.md
   getting-started/compatibility: get-started/compatibility.md
-  getting-started/terminology_and_structure: get-started/terminology.md
+  getting-started/terminology\_and\_structure: get-started/terminology.md
   tutorial/decorator: compilation/decorator.md
   tutorial/progressbar: execution-analysis/progressbar.md
-  tutorial/formatting: execution-analysis/formatting_and_drawing.md
+  tutorial/formatting: execution-analysis/formatting\_and\_drawing.md
   tutorial/tagging: core-features/tagging.md
   tutorial/extensions: core-features/extensions.md
   tutorial/comparisons: core-features/comparisons.md
   tutorial/minmax: core-features/minmax.md
   tutorial/bitwise: core-features/bitwise.md
-  tutorial/table_lookups: core-features/table_lookups.md
-  tutorial/bit_extraction: core-features/bit_extraction.md
+  tutorial/table\_lookups: core-features/table\_lookups.md
+  tutorial/bit\_extraction: core-features/bit\_extraction.md
   tutorial/truncating: core-features/truncating.md
   tutorial/rounding: core-features/rounding.md
-  tutorial/floating_points: core-features/floating_points.md
-  tutorial/multi_precision: compilation/multi_precision.md
-  tutorial/multi_parameters: compilation/multi_parameters.md
+  tutorial/floating\_points: core-features/floating\_points.md
+  tutorial/multi\_precision: compilation/multi\_precision.md
+  tutorial/multi\_parameters: compilation/multi\_parameters.md
   tutorial/simulation: execution-analysis/simulation.md
-  tutorial/direct_circuits: compilation/direct_circuits.md
+  tutorial/direct\_circuits: compilation/direct\_circuits.md
   tutorial/statistics: compilation/statistics.md
   tutorial/workarounds: core-features/workarounds.md
   tutorial/composition: compilation/composition.md
-  application-tutorial/key_value_database: tutorials/see-all-tutorials.md
+  application-tutorial/key\_value\_database: tutorials/see-all-tutorials.md
   application-tutorial/sha256: tutorials/see-all-tutorials.md
-  application-tutorial/game_of_life: tutorials/see-all-tutorials.md
+  application-tutorial/game\_of\_life: tutorials/see-all-tutorials.md
   howto/configure: guides/configure.md
-  howto/manage_keys: guides/manage_keys.md
+  howto/manage\_keys: guides/manage\_keys.md
   howto/deploy: guides/deploy.md
-  howto/reuse_arguments: compilation/reuse_arguments.md
+  howto/reuse\_arguments: compilation/reuse\_arguments.md
   howto/debug: execution-analysis/debug.md
-  howto/call_from_other_language: explanations/call_from_other_language.md
+  howto/call\_from\_other\_language: explanations/call\_from\_other\_language.md
   dev/fusing: explanations/fusing.md
   dev/backends: explanations/backends/README.md
-  dev/backends/new_backend: explanations/backends/new_backend.md
-  dev/compilation: dev/compilation/compiler_workflow.md
+  dev/backends/new\_backend: explanations/backends/new\_backend.md
+  dev/compilation: dev/compilation/compiler\_workflow.md
   dev/compilation/optimizer: explanations/optimizer.md
   dev/compilation/dialects: explanations/dialects.md
   dev/compilation/FHELinalgDialect: explanations/FHELinalgDialect.md
@@ -48,6 +48,6 @@ redirects:
   dev/compilation/TracingDialect: explanations/TracingDialect.md
   dev/compilation/RTDialect: explanations/RTDialect.md
   dev/compilation/SDFGDialect: explanations/SDFGDialect.md
-  dev/security/security_curves: explanations/security.md
-  explanations/security_curves: explanations/security.md
+  dev/security/security\_curves: explanations/security.md
+  explanations/security\_curves: explanations/security.md
   dev/setup/layout: explanations/layout.md
