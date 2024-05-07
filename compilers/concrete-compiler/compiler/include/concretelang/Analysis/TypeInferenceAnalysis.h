@@ -922,13 +922,39 @@ protected:
 
   // Updates the lattice for the inferred type for the value `v` using
   // its inferred type specified by `state`.
-  void updateLatticeValuesFromState(LocalInferenceState &state, mlir::Value v) {
+  void updateLatticeValuesAndDependenciesFromState(LocalInferenceState &state,
+                                                   mlir::Value v,
+                                                   mlir::Operation *op) {
     TypeInferenceLattice *lattice =
         this->template getOrCreate<TypeInferenceLattice>(v);
+
+    this->addDependency(lattice, op);
+
     auto latticeValue = lattice->getValue();
     latticeValue.setType(state.find(v));
     mlir::ChangeResult res = lattice->join(latticeValue);
     this->propagateIfChanged(lattice, res);
+  }
+
+  // Visits all operations recursively by invoking `doVisitOperation`
+  // on them. Since `doVisitOperation` registers dependencies between
+  // related values an operations explicitly, this ensures that all
+  // operations are visited upon an update of any of their
+  // dependencies, even those for which the dataflow analysis
+  // framework does invoke `visitOperation`.
+  void initializeRecursively(mlir::Operation *op) {
+    for (Region &region : op->getRegions()) {
+      for (Operation &op : region.getOps()) {
+        doVisitOperation(&op);
+        initializeRecursively(&op);
+      }
+    }
+  }
+
+  LogicalResult initialize(mlir::Operation *op) override {
+    initializeRecursively(op);
+
+    return AnalysisT::initialize(op);
   }
 
   // Visits a single operation: looks up the lattice values for the
@@ -964,7 +990,7 @@ protected:
 
     // Store the resulting state in the lattice values
     resolver.iterateRelatedValues(op, [&](mlir::Value v) {
-      updateLatticeValuesFromState(state, v);
+      updateLatticeValuesAndDependenciesFromState(state, v, op);
       return true;
     });
   }
