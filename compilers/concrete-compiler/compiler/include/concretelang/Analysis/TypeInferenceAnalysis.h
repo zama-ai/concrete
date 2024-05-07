@@ -362,7 +362,11 @@ protected:
       llvm::function_ref<const TypeInferenceLattice *(mlir::Value)> lookup) {
     const TypeInferenceLattice *latticeOperand = lookup(v);
 
-    return InferredType(latticeOperand->getValue().getInferredType());
+    if (latticeOperand) {
+      return InferredType(latticeOperand->getValue().getInferredType());
+    } else {
+      return InferredType{};
+    }
   }
 };
 
