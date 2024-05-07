@@ -59,6 +59,25 @@ public:
       return mlir::failure();
     }
 
+    // Re-write temporary function names and erase old functions that
+    // have been rewritten
+    llvm::SmallVector<mlir::func::FuncOp> funcsToErase;
+
+    for (auto [fromOp, toOp] : mapping.getOperationMap()) {
+      mlir::func::FuncOp fromFunc = llvm::dyn_cast<mlir::func::FuncOp>(fromOp);
+      mlir::func::FuncOp toFunc = llvm::dyn_cast<mlir::func::FuncOp>(toOp);
+
+      if (fromFunc && toFunc) {
+        std::string fromFuncName = fromFunc.getName().str();
+        toFunc.setName(fromFuncName);
+        funcsToErase.push_back(fromFunc);
+      }
+    }
+
+    for (mlir::func::FuncOp funcToErase : funcsToErase) {
+      funcToErase.erase();
+    }
+
     mlir::OpBuilder::InsertionGuard guard(rewriter);
     return this->postRewriteHook(rewriter, module, module);
   }
@@ -191,11 +210,10 @@ protected:
         return mlir::failure();
     }
 
-    // Replace original function and remove suffix from the name of the new
-    // function
-    std::string oldFuncName = func.getName().str();
-    rewriter.replaceOp(func, newFunc->getResults());
-    newFunc.setName(oldFuncName);
+    // Replace results of the original function, but do not yet erase
+    // it, since it may still be referenced in functions that have not
+    // been rewritten, yet
+    func->replaceAllUsesWith(newFunc->getResults());
 
     return mlir::success();
   }
