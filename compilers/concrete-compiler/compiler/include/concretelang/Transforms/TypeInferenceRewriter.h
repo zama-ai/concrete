@@ -64,6 +64,57 @@ public:
   }
 
 protected:
+  // Rewrites all the blocks of all regions of `srcOp` into `tgtOp`
+  mlir::LogicalResult rewriteRegions(mlir::Operation *srcOp,
+                                     mlir::Operation *tgtOp,
+                                     const LocalInferenceState &resolvedTypes,
+                                     mlir::IRRewriter &rewriter) {
+    for (size_t regionIdx = 0; regionIdx < srcOp->getNumRegions();
+         regionIdx++) {
+      mlir::Region &oldRegion = srcOp->getRegion(regionIdx);
+      mlir::Region &newRegion = tgtOp->getRegion(regionIdx);
+
+      // Create empty blocks with the right argument types
+      for (auto [blockIdx, oldBlock] : llvm::enumerate(oldRegion.getBlocks())) {
+        mlir::Block *newBlock = new Block();
+        mapping.map(&oldBlock, newBlock);
+
+        for (auto [argIdx, oldArg] : llvm::enumerate(oldBlock.getArguments())) {
+          mlir::Type newArgType =
+              typeResolver.isUnresolvedType(oldArg.getType())
+                  ? resolvedTypes.lookup(oldArg)
+                  : oldArg.getType();
+
+          if (!newArgType || typeResolver.isUnresolvedType(newArgType)) {
+            srcOp->emitError()
+                << "Type of block argument #" << argIdx << " of block #"
+                << blockIdx << " of region #" << regionIdx << " is unresolved";
+            return mlir::failure();
+          }
+
+          mlir::BlockArgument newArg =
+              newBlock->addArgument(newArgType, oldArg.getLoc());
+
+          mapping.map(oldArg, newArg);
+        }
+
+        newRegion.getBlocks().insert(newRegion.end(), newBlock);
+      }
+
+      // Rewrite the contents of the blocks
+      for (auto [oldBlock, newBlock] :
+           llvm::zip_equal(oldRegion.getBlocks(), newRegion.getBlocks())) {
+        rewriter.setInsertionPointToEnd(&newBlock);
+
+        for (mlir::Operation &oldOp : oldBlock)
+          if (rewrite(&oldOp, rewriter).failed())
+            return mlir::failure();
+      }
+    }
+
+    return mlir::success();
+  }
+
   // Rewrite a single function
   mlir::LogicalResult rewrite(mlir::func::FuncOp func,
                               mlir::IRRewriter &rewriter) {
@@ -80,18 +131,48 @@ protected:
     llvm::SmallVector<mlir::Type> argTypes =
         resolvedTypes.lookup(func.getBody().getArguments());
 
-    llvm::SmallVector<mlir::Type> returnTypes = resolvedTypes.lookup(
-        func.getRegion().getBlocks().front().getTerminator()->getOperands());
-
-    if (checkAllResolved(func, argTypes, "argument").failed() ||
-        checkAllResolved(func, returnTypes, "return value").failed()) {
+    // Check that all argument types have been resolved
+    if (checkAllResolved(func, argTypes, "argument").failed()) {
       return mlir::failure();
+    }
+
+    std::optional<llvm::SmallVector<mlir::Type>> returnTypes;
+
+    // Check that the types of the values returned by all func.return
+    // terminators have the same types
+    for (auto &[i, block] : llvm::enumerate(func.getRegion().getBlocks())) {
+      if (mlir::func::ReturnOp returnOp =
+              llvm::dyn_cast<mlir::func::ReturnOp>(block.getTerminator())) {
+        if (!returnTypes.has_value()) {
+          returnTypes = resolvedTypes.lookup(returnOp->getOperands());
+
+          // Check that the types of the values returned through first
+          // terminator have all been resolved
+          if (checkAllResolved(returnOp, *returnTypes, "argument").failed()) {
+            return mlir::failure();
+          }
+        } else {
+          for (auto [j, operand] : llvm::enumerate(returnOp->getOperands())) {
+            mlir::Type thisOperandType = resolvedTypes.lookup(operand);
+            mlir::Type firstReturnOperand = (*returnTypes)[j];
+
+            if (thisOperandType != firstReturnOperand) {
+              func->emitError("Resolved type ")
+                  << thisOperandType << " for operand #" << i
+                  << " of terminator #" << j << " differs from the type "
+                  << firstReturnOperand
+                  << " of the same operand of the first "
+                     "return operation";
+            }
+          }
+        }
+      }
     }
 
     // Temporarily create a new function with an suffix for the name
     // that later replaces the original function
     mlir::FunctionType ft =
-        FunctionType::get(func.getContext(), argTypes, returnTypes);
+        FunctionType::get(func.getContext(), argTypes, *returnTypes);
 
     std::string funcName =
         (func.getName() + "__rewriting_type_inference_rewriter").str();
@@ -100,22 +181,9 @@ protected:
 
     mapping.map(func.getOperation(), newFunc.getOperation());
 
-    newFunc.addEntryBlock();
-
-    for (auto [oldOperand, newOperand] : llvm::zip_equal(
-             func.getBody().getArguments(), newFunc.getBody().getArguments())) {
-      mapping.map(oldOperand, newOperand);
-    }
-
-    mlir::Block &entryBlock = func.getBody().getBlocks().front();
-    mlir::Block &newEntryBlock = newFunc.getBody().getBlocks().front();
-    rewriter.setInsertionPointToStart(&newEntryBlock);
-
-    // Recurse into the body of the function
-    for (mlir::Operation &op : entryBlock.getOperations()) {
-      if (rewrite(&op, rewriter).failed())
-        return mlir::failure();
-    }
+    // Recurse into nested regions and blocks
+    if (rewriteRegions(func, newFunc, resolvedTypes, rewriter).failed())
+      return mlir::failure();
 
     {
       mlir::OpBuilder::InsertionGuard guard(rewriter);
@@ -217,55 +285,21 @@ protected:
       }
     }
 
+    SmallVector<Block *> newSuccessors;
+    for (Block *successor : op->getSuccessors()) {
+      newSuccessors.push_back(mapping.lookupOrDefault(successor));
+    }
+
     mlir::Operation *newOp = Operation::create(
         op->getLoc(), op->getName(), resolvedResultTypes, newOperands,
-        op->getAttrs(), op->getSuccessors(), op->getNumRegions());
+        op->getAttrs(), newSuccessors, op->getNumRegions());
 
     rewriter.insert(newOp);
     mapping.map(op, newOp);
 
     // Recurse into nested regions and blocks
-    for (size_t regionIdx = 0; regionIdx < op->getNumRegions(); regionIdx++) {
-      mlir::Region &oldRegion = op->getRegion(regionIdx);
-      mlir::Region &newRegion = newOp->getRegion(regionIdx);
-
-      // Create empty blocks with the right argument types
-      for (auto [blockIdx, oldBlock] : llvm::enumerate(oldRegion.getBlocks())) {
-        mlir::Block *newBlock = new Block();
-        mapping.map(&oldBlock, newBlock);
-
-        for (auto [argIdx, oldArg] : llvm::enumerate(oldBlock.getArguments())) {
-          mlir::Type newArgType =
-              typeResolver.isUnresolvedType(oldArg.getType())
-                  ? resolvedTypes.lookup(oldArg)
-                  : oldArg.getType();
-
-          if (!newArgType || typeResolver.isUnresolvedType(newArgType)) {
-            op->emitError()
-                << "Type of block argument #" << argIdx << " of block #"
-                << blockIdx << " of region #" << regionIdx << " is unresolved";
-            return mlir::failure();
-          }
-
-          mlir::BlockArgument newArg =
-              newBlock->addArgument(newArgType, oldArg.getLoc());
-
-          mapping.map(oldArg, newArg);
-        }
-
-        newRegion.getBlocks().insert(newRegion.end(), newBlock);
-      }
-
-      // Rewrite the contents of the blocks
-      for (auto [oldBlock, newBlock] :
-           llvm::zip_equal(oldRegion.getBlocks(), newRegion.getBlocks())) {
-        rewriter.setInsertionPointToEnd(&newBlock);
-
-        for (mlir::Operation &oldOp : oldBlock)
-          if (rewrite(&oldOp, rewriter).failed())
-            return mlir::failure();
-      }
-    }
+    if (rewriteRegions(op, newOp, resolvedTypes, rewriter).failed())
+      return mlir::failure();
 
     rewriter.setInsertionPointAfter(newOp);
 

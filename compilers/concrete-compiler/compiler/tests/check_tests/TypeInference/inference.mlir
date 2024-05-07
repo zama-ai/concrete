@@ -332,3 +332,26 @@ func.func @tiled_2(%arg0: tensor<8x4x!TFHE.glwe<sk?>>, %arg1: tensor<4x2xi7>) ->
   }
   return %5 : tensor<8x2x!TFHE.glwe<sk?>>
 }
+
+// -----
+
+// CHECK:      func.func @multi_block(%arg0: !TFHE.glwe<sk[1]<12,1024>>, %arg1: !TFHE.glwe<sk[1]<12,1024>>, %arg2: !TFHE.glwe<sk[1]<12,1024>>, %arg3: i1, %arg4: i1) -> !TFHE.glwe<sk[1]<12,1024>> {
+// CHECK-NEXT:   cf.cond_br %arg3, ^bb1, ^bb2
+// CHECK-NEXT: ^bb1:  // 2 preds: ^bb0, ^bb1
+// CHECK-NEXT:   cf.cond_br %arg4, ^bb1, ^bb2
+// CHECK-NEXT: ^bb2:  // 2 preds: ^bb0, ^bb1
+// CHECK-NEXT:   %0 = "TFHE.add_glwe"(%arg1, %arg0) : (!TFHE.glwe<sk[1]<12,1024>>, !TFHE.glwe<sk[1]<12,1024>>) -> !TFHE.glwe<sk[1]<12,1024>>
+// CHECK-NEXT:   return %0 : !TFHE.glwe<sk[1]<12,1024>>
+// CHECK-NEXT: }
+func.func @multi_block(%arg0: !TFHE.glwe<sk[1]<12,1024>>, %arg1: !TFHE.glwe<sk[1]<12,1024>>, %arg2: !TFHE.glwe<sk[1]<12,1024>>, %cond: i1, %cond2: i1) -> !TFHE.glwe<sk?> {
+  %a0 = "TypeInference.propagate_downward"(%arg0) : (!TFHE.glwe<sk[1]<12,1024>>) -> (!TFHE.glwe<sk?>)
+  %a1 = "TypeInference.propagate_downward"(%arg1) : (!TFHE.glwe<sk[1]<12,1024>>) -> (!TFHE.glwe<sk?>)
+  %a2 = "TypeInference.propagate_downward"(%arg2) : (!TFHE.glwe<sk[1]<12,1024>>) -> (!TFHE.glwe<sk?>)
+  cf.cond_br %cond, ^bb0(%a0: !TFHE.glwe<sk?>), ^bb1(%a1: !TFHE.glwe<sk?>)
+^bb0(%bbarg0 : !TFHE.glwe<sk?>):
+  %0 = "TFHE.add_glwe"(%a1, %a1): (!TFHE.glwe<sk?>, !TFHE.glwe<sk?>) -> (!TFHE.glwe<sk?>)
+  cf.cond_br %cond2, ^bb0(%0: !TFHE.glwe<sk?>), ^bb1(%0: !TFHE.glwe<sk?>)
+^bb1(%bbarg1 : !TFHE.glwe<sk?>):
+  %1 = "TFHE.add_glwe"(%a1, %a0): (!TFHE.glwe<sk?>, !TFHE.glwe<sk?>) -> (!TFHE.glwe<sk?>)
+  return %1: !TFHE.glwe<sk?>
+}
