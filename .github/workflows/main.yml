@@ -276,11 +276,3 @@ jobs:
     with:
       command: concrete-python-release
       user_inputs: 'private'
-
-  concrete-python-docker-release:
-    needs: [concrete-python-public-release]
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    uses: ./.github/workflows/concrete_python_push_docker_image.yml
-    secrets: inherit
-    with:
-      tag: ${{ github.ref_name }}
