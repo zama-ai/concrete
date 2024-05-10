@@ -34,6 +34,7 @@ from ..compilation.configuration import (
 from ..dtypes import Integer
 from ..extensions.bits import MAX_EXTRACTABLE_BIT, MIN_EXTRACTABLE_BIT
 from ..representation import Graph, GraphProcessor, Node
+from ..tfhers.dtypes import TFHERSIntegerType
 from ..values import ValueDescription
 from .conversion import Conversion, ConversionType
 from .utils import MAXIMUM_TLU_BIT_WIDTH, Comparison, _FromElementsOp
@@ -131,6 +132,21 @@ class Context:
 
         assert isinstance(value.dtype, Integer)
         bit_width = value.dtype.bit_width
+
+        # TODO: what about the element type? only unsigned? or not eint at all?
+        if isinstance(value.dtype, TFHERSIntegerType):
+            msg_width = value.dtype.msg_width
+            # padding is not really considered as part of the message
+            # However it is part of the result type
+            carry_width = value.dtype.carry_width
+            assert bit_width % msg_width == 0
+            # we need ct_shape ct of msg_width (+ carry_width) bits to represent
+            # a single ct of bit_width bits
+            ct_shape = (bit_width // msg_width,)
+            # we add the dimension of ciphertexts at the end (old_dims..., ct_shape)
+            shape = value.shape + ct_shape
+            element_type = self.eint(msg_width + carry_width)
+            return self.tensor(element_type, shape)
 
         if value.is_clear:
             result = self.i(bit_width)
@@ -905,7 +921,10 @@ class Context:
             optimal_chunk_size = min(chunk_size, int(np.ceil(min_original_input_bit_width / 2)))
             chunk_ranges = [
                 (0, optimal_chunk_size),
-                (optimal_chunk_size, min(2 * optimal_chunk_size, min_original_input_bit_width)),
+                (
+                    optimal_chunk_size,
+                    min(2 * optimal_chunk_size, min_original_input_bit_width),
+                ),
             ]
 
         last_chunk_range = chunk_ranges[-1]
@@ -1592,7 +1611,7 @@ class Context:
         if x.is_clear and y.is_clear:
             highlights = {
                 x.origin: "lhs is clear",
-                y.origin: "rhs is clear" if x.origin is not y.origin else "operand is clear",
+                y.origin: ("rhs is clear" if x.origin is not y.origin else "operand is clear"),
                 self.converting: "but clear-clear additions are not supported",
             }
             self.error(highlights)
@@ -1653,7 +1672,10 @@ class Context:
         original_bit_width = max(element.original_bit_width for element in sanitized_elements)
         mlir_elements = [element.result for element in sanitized_elements]
         return self.operation(
-            _FromElementsOp, resulting_type, *mlir_elements, original_bit_width=original_bit_width
+            _FromElementsOp,
+            resulting_type,
+            *mlir_elements,
+            original_bit_width=original_bit_width,
         )
 
     def assign_static(
@@ -2152,7 +2174,7 @@ class Context:
         if x.is_clear and y.is_clear:
             highlights: Dict[Node, Union[str, List[str]]] = {
                 x.origin: "lhs is clear",
-                y.origin: "rhs is clear" if x.origin is not y.origin else "operand is clear",
+                y.origin: ("rhs is clear" if x.origin is not y.origin else "operand is clear"),
                 self.converting: "but clear-clear dot products are not supported",
             }
             self.error(highlights)
@@ -2653,7 +2675,7 @@ class Context:
         if x.is_clear and y.is_clear:
             highlights: Dict[Node, Union[str, List[str]]] = {
                 x.origin: "lhs is clear",
-                y.origin: "rhs is clear" if x.origin is not y.origin else "operand is clear",
+                y.origin: ("rhs is clear" if x.origin is not y.origin else "operand is clear"),
                 self.converting: "but clear-clear matrix multiplications are not supported",
             }
             self.error(highlights)
@@ -3457,7 +3479,9 @@ class Context:
                         # pragma: no-cover
                         self.reinterpret(unskewed, bit_width=3)
                     unskewed = self.mul(
-                        unskewed.type, unskewed, self.constant(self.i(unskewed.bit_width + 1), 2)
+                        unskewed.type,
+                        unskewed,
+                        self.constant(self.i(unskewed.bit_width + 1), 2),
                     )
                     rounded = self.reinterpret(unskewed, bit_width=intermediate_type.bit_width - 1)
                     # The TLU after may be adjusted to the right precision (see `Converter.tlu`)
@@ -3581,7 +3605,7 @@ class Context:
                 resulting_type,
                 packed_x_and_b,
                 [
-                    (x_value << b_value) if orientation == "left" else (x_value >> b_value)
+                    ((x_value << b_value) if orientation == "left" else (x_value >> b_value))
                     for x_value in range(2**x.original_bit_width)
                     for b_value in range(2**b.original_bit_width)
                 ],
@@ -3681,7 +3705,7 @@ class Context:
         if x.is_clear and y.is_clear:
             highlights = {
                 x.origin: "lhs is clear",
-                y.origin: "rhs is clear" if x.origin is not y.origin else "operand is clear",
+                y.origin: ("rhs is clear" if x.origin is not y.origin else "operand is clear"),
                 self.converting: "but clear-clear subtractions are not supported",
             }
             self.error(highlights)
@@ -3770,7 +3794,10 @@ class Context:
         )
 
         return self.operation(
-            _FromElementsOp, resulting_type, x.result, original_bit_width=x.original_bit_width
+            _FromElementsOp,
+            resulting_type,
+            x.result,
+            original_bit_width=x.original_bit_width,
         )
 
     def tlu(self, resulting_type: ConversionType, on: Conversion, table: Sequence[int]):

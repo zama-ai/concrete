@@ -7,6 +7,7 @@ import pytest
 
 from concrete.fhe.dtypes import UnsignedInteger
 from concrete.fhe.representation import Node
+from concrete.fhe.tfhers import int8_2_2, int8_2_2_value
 from concrete.fhe.values import ClearScalar, EncryptedScalar, EncryptedTensor, ValueDescription
 
 
@@ -44,7 +45,10 @@ def test_node_bad_constant(constant, expected_error, expected_message):
         pytest.param(
             Node.generic(
                 name="add",
-                inputs=[ValueDescription.of(4), ValueDescription.of(10, is_encrypted=True)],
+                inputs=[
+                    ValueDescription.of(4),
+                    ValueDescription.of(10, is_encrypted=True),
+                ],
                 output=ValueDescription.of(14),
                 operation=lambda x, y: x + y,
             ),
@@ -56,7 +60,10 @@ def test_node_bad_constant(constant, expected_error, expected_message):
         pytest.param(
             Node.generic(
                 name="add",
-                inputs=[ValueDescription.of(4), ValueDescription.of(10, is_encrypted=True)],
+                inputs=[
+                    ValueDescription.of(4),
+                    ValueDescription.of(10, is_encrypted=True),
+                ],
                 output=ValueDescription.of(14),
                 operation=lambda x, y: x + y,
             ),
@@ -68,7 +75,10 @@ def test_node_bad_constant(constant, expected_error, expected_message):
         pytest.param(
             Node.generic(
                 name="add",
-                inputs=[ValueDescription.of([3, 4]), ValueDescription.of(10, is_encrypted=True)],
+                inputs=[
+                    ValueDescription.of([3, 4]),
+                    ValueDescription.of(10, is_encrypted=True),
+                ],
                 output=ValueDescription.of([13, 14]),
                 operation=lambda x, y: x + y,
             ),
@@ -125,6 +135,20 @@ def test_node_bad_constant(constant, expected_error, expected_message):
             ValueError,
             "Evaluation of generic 'unknown' node resulted in array([1, 2, 3]) "
             "which does not have the expected shape of ()",
+        ),
+        pytest.param(
+            Node.generic(
+                name="unknown",
+                inputs=[],
+                output=ValueDescription(int8_2_2, (3,), True),
+                operation=lambda: int8_2_2_value([1, 2, 3]),
+            ),
+            [],
+            ValueError,
+            "Evaluation of generic 'unknown' node resulted in TFHEInteger(dtype=tfhers<int8, 2, 2>"
+            ", shape=(3,), value=[1 2 3]) of type TFHERSInteger which is not acceptable either "
+            "because of the type or because of overflow",
+            id="TFHERSInteger in a non-input node",
         ),
     ],
 )

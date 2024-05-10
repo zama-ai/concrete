@@ -539,7 +539,11 @@ class Converter:
             if shifter != 1:
                 shift_amount = int(np.log2(shifter))
                 pred = ctx.reinterpret(
-                    ctx.mul(pred.type, pred, ctx.constant(ctx.i(pred.bit_width + 1), shifter)),
+                    ctx.mul(
+                        pred.type,
+                        pred,
+                        ctx.constant(ctx.i(pred.bit_width + 1), shifter),
+                    ),
                     bit_width=(pred.bit_width - shift_amount),
                 )
                 final_lsbs_to_remove -= shift_amount
@@ -769,7 +773,11 @@ class Converter:
                 reduce_precision = approx_config.reduce_precision_after_approximate_clipping
                 if len(tables) == 1:
                     lut_values = self.tlu_adjust(
-                        lut_values, variable_input, rounded_bit_width, clipping, reduce_precision
+                        lut_values,
+                        variable_input,
+                        rounded_bit_width,
+                        clipping,
+                        reduce_precision,
                     )
                 else:
                     for sub_i, sub_lut_values in enumerate(lut_values):
@@ -811,5 +819,95 @@ class Converter:
     def zeros(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 0
         return ctx.zeros(ctx.typeof(node))
+
+    def tfhers_to_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        tfhers_int = preds[0]
+        dtype = node.properties["attributes"]["type"]
+        result_bit_width, carry_width, msg_width = (
+            dtype.bit_width,
+            dtype.carry_width,
+            dtype.msg_width,
+        )
+
+        # number of ciphertexts representing a single integer
+        num_cts = tfhers_int.shape[-1]
+        # first table maps to the lsb, and last one maps to the msb
+        tables = [
+            # we consider carry bits for all ciphertexts.
+            # This means that overflow can happen, and it's undefined behavior
+            [value << (msg_width * i) for value in range(2 ** (msg_width + carry_width))]
+            for i in range(num_cts)
+        ]
+        # ciphertexts are oganized msb first, and tables are lsb first
+        mapping = np.broadcast_to(np.array(list(reversed(range(num_cts)))), tfhers_int.shape)
+
+        # intermediate type increase bit_width via TLU but keep the same shape
+        interm_type = ctx.tensor(ctx.eint(result_bit_width), tfhers_int.shape)
+        mapped = ctx.multi_tlu(interm_type, tfhers_int, tables, mapping)
+
+        # sum will remove the last dim which is the dim of ciphertexts
+        result_shape = tfhers_int.shape[:-1]
+        # if result_shape is () then ctx.tensor would return a scalar type
+        result_type = ctx.tensor(ctx.eint(result_bit_width), result_shape)
+        return ctx.sum(result_type, mapped, axes=-1)
+
+    def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+        dtype = node.properties["attributes"]["type"]
+        input_bit_width, carry_width, msg_width = (
+            dtype.bit_width,
+            dtype.carry_width,
+            dtype.msg_width,
+        )
+        native_int = preds[0]
+
+        assert (
+            input_bit_width >= native_int.bit_width
+        ), f"input_bit_width: {input_bit_width}, native_int.bit_width: {native_int.bit_width}"
+        assert (
+            input_bit_width % msg_width == 0
+        ), f"input_bit_width: {input_bit_width}, msg_width: {msg_width}"
+
+        # TODO: we may want to remove the cast and work with the number of bits provided
+        # this will make the operation faster by avoiding unnecessary bit extractions
+        if native_int.bit_width < input_bit_width:
+            native_int = ctx.cast(
+                ctx.tensor(
+                    (
+                        ctx.eint(input_bit_width)
+                        if native_int.is_unsigned
+                        else ctx.esint(input_bit_width)
+                    ),
+                    native_int.shape,
+                ),
+                native_int,
+            )
+
+        # number of ciphertexts representing a single integer
+        num_cts = input_bit_width // msg_width
+
+        # adds a dimension of ciphertexts for the result
+        result_shape = native_int.shape + (num_cts,)
+        result_type = ctx.tensor(ctx.eint(msg_width + carry_width), result_shape)
+
+        # we reshape so that we can concatenate later over the last dim (ciphertext dim)
+        reshaped_native_int = ctx.reshape(native_int, native_int.shape + (1,))
+
+        # we want to extract `msg_width` bits at a time, and store them
+        # in a `msg_width + carry_width` bits eint
+        bits_shape = ctx.tensor(ctx.eint(msg_width + carry_width), reshaped_native_int.shape)
+        # we extract lsb first
+        extracted_bits = [
+            ctx.extract_bits(
+                bits_shape,
+                reshaped_native_int,
+                bits=slice(i * msg_width, (i + 1) * msg_width, 1),
+            )
+            for i in range(num_cts)
+        ]
+
+        # we are extracting lsb first so we reverse it so we have msb first
+        return ctx.concatenate(result_type, extracted_bits[::-1], axis=-1)
 
     # pylint: enable=missing-function-docstring,unused-argument
