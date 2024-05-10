@@ -239,7 +239,13 @@ class Node:
                 # if it fails we raise the exception below
                 pass
 
-        if not isinstance(result, (np.bool_, np.integer, np.floating, np.ndarray)):
+        result_is_well_typed = isinstance(result, (np.bool_, np.integer, np.floating, np.ndarray))
+        # it's only allowed to have them in input nodes
+        # we don't use isinstance to avoid a cyclic import
+        result_is_acceptable_if_tfhers = (
+            type(result).__name__ == "TFHERSInteger" and self.operation == Operation.Input
+        )
+        if not result_is_well_typed and not result_is_acceptable_if_tfhers:
             message = (
                 f"{generic_error_message()} resulted in {repr(result)} "
                 f"of type {result.__class__.__name__} "

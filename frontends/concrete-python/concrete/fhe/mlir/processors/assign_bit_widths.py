@@ -181,7 +181,11 @@ class AdditionalConstraints:
                 symbolic bit-width which will be assigned to node once constraints are solved
         """
 
-        assert node.operation in {Operation.Generic, Operation.Constant, Operation.Input}
+        assert node.operation in {
+            Operation.Generic,
+            Operation.Constant,
+            Operation.Input,
+        }
         operation_name = (
             node.properties["name"]
             if node.operation == Operation.Generic
