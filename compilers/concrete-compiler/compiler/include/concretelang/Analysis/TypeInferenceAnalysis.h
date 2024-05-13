@@ -1055,15 +1055,7 @@ protected:
   // the name of the operation, followed by the types inferred for
   // each operand, followed by `->`, followed by the types inferred
   // for the results.
-  void dumpAllState(mlir::Operation *op) {
-    mlir::Operation *funcOp = op;
-    while (funcOp && !llvm::isa<mlir::func::FuncOp>(funcOp))
-      funcOp = funcOp->getParentOp();
-
-    assert(funcOp);
-
-    dumpStateForOp(funcOp, 0);
-  }
+  void dumpAllState(mlir::ModuleOp module) { dumpStateForOp(module, 0); }
 
   TypeResolver &resolver;
 };
