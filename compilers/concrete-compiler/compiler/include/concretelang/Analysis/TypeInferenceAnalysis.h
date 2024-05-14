@@ -716,11 +716,8 @@ public:
 
 protected:
   mlir::Type getNestedType(mlir::Type t) override {
-    if (mlir::RankedTensorType rtt =
-            llvm::dyn_cast<mlir::RankedTensorType>(t)) {
-      return rtt.getElementType();
-    } else if (mlir::MemRefType mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
-      return mrt.getElementType();
+    if (mlir::ShapedType sht = llvm::dyn_cast<mlir::ShapedType>(t)) {
+      return sht.getElementType();
     } else {
       return t;
     }

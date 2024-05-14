@@ -4,6 +4,9 @@
 // for license information.
 
 #include "concrete-optimizer.hpp"
+#include "concretelang/Dialect/RT/IR/RTOps.h"
+#include "concretelang/Dialect/RT/IR/RTTypes.h"
+#include "concretelang/Dialect/RT/TypeInference.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEParameters.h"
 #include "concretelang/Dialect/TypeInference/IR/TypeInferenceOps.h"
 
@@ -34,10 +37,13 @@ template <class T> static std::optional<T> tryGetScalarType(mlir::Type t) {
   if (T ctt = t.dyn_cast<T>())
     return ctt;
 
-  if (mlir::RankedTensorType rtt = t.dyn_cast<mlir::RankedTensorType>())
-    return tryGetScalarType<T>(rtt.getElementType());
-  else if (mlir::MemRefType mrt = t.dyn_cast<mlir::MemRefType>())
-    return tryGetScalarType<T>(mrt.getElementType());
+  if (mlir::ShapedType sht = t.dyn_cast<mlir::ShapedType>()) {
+    return tryGetScalarType<T>(sht.getElementType());
+  } else if (RT::PointerType rtptr = llvm::dyn_cast<RT::PointerType>(t)) {
+    return tryGetScalarType<T>(rtptr.getElementType());
+  } else if (RT::FutureType futt = llvm::dyn_cast<RT::FutureType>(t)) {
+    return tryGetScalarType<T>(futt.getElementType());
+  }
 
   return std::nullopt;
 }
@@ -205,6 +211,44 @@ public:
       : solution(solution) {}
 
   // Adds constraints that ensure that the argument types of `funcOp`
+  // and the operand types of `createAsyncTaskOp` are compatible and
+  // that the result types of all return operations of `funcOp` are
+  // compatible with the output arguments of `callOp`
+  void
+  addFuncAndCreateTaskConstraints(TypeConstraintSet<> &cs,
+                                  mlir::func::FuncOp funcOp,
+                                  RT::CreateAsyncTaskOp createAsyncTaskOp) {
+    for (auto [createArg, funcArg] :
+         llvm::zip_equal(createAsyncTaskOp.getOperands().drop_front(3),
+                         funcOp.getArguments())) {
+      if (llvm::isa<RT::PointerType>(createArg.getType()) &&
+          llvm::isa<RT::FutureType>(
+              llvm::cast<RT::PointerType>(createArg.getType())
+                  .getElementType())) {
+        // This is an input argument of type
+        // RT.rtptr<!RT.future<...>>, the corresponding function
+        // argument type is !RT.rtptr<...>
+        cs.addConstraint<RT::SameNestedTypeContraint<
+            DynamicTypeConstraint<DynamicFunctorYield>, 2, 1>>(
+            [createArg = createArg]() { return createArg; },
+            [funcArg = funcArg]() { return funcArg; });
+      } else if (llvm::isa<RT::FutureType>(createArg.getType()) &&
+                 llvm::isa<RT::PointerType>(funcArg.getType())) {
+        // This is an output argument of type
+        // !RT.future<...>, the corresponding function
+        // argument type is !RT.rtptr<...>
+        cs.addConstraint<RT::SameNestedTypeContraint<
+            DynamicTypeConstraint<DynamicFunctorYield>, 1, 1>>(
+            [createArg = createArg]() { return createArg; },
+            [funcArg = funcArg]() { return funcArg; });
+      } else {
+        llvm_unreachable("Asynchronous task creation with unknown scheme "
+                         "for argument types");
+      }
+    }
+  }
+
+  // Adds constraints that ensure that the argument types of `funcOp`
   // and the operand types of `callOp` are equal and that the result
   // types of all return operations of `funcOp` are equal to the
   // result types of `callOp`
@@ -344,6 +388,14 @@ public:
           mlir::ModuleOp module =
               op->template getParentOfType<mlir::ModuleOp>();
 
+          module.walk([&](RT::CreateAsyncTaskOp createAsyncTaskOp) {
+            mlir::SymbolRefAttr workfnSymbol = createAsyncTaskOp.getWorkfn();
+
+            if (workfnSymbol.getRootReference() == op.getName()) {
+              addFuncAndCreateTaskConstraints(cs, op, createAsyncTaskOp);
+            }
+          });
+
           module.walk([&](mlir::func::CallOp callOp) {
             if (callOp.getCallee() == op.getName()) {
               addFuncAndCallConstraints(cs, op, callOp);
@@ -393,10 +445,15 @@ public:
               TFHE::EncodeLutForCrtWopPBSOp, TFHE::EncodePlaintextWithCrtOp,
               TFHE::WopPBSGLWEOp, mlir::func::ReturnOp,
               Tracing::TraceCiphertextOp, mlir::tensor::EmptyOp,
-              mlir::tensor::DimOp>([&](auto op) {
+              mlir::tensor::DimOp, RT::BuildReturnPtrPlaceholderOp,
+              RT::RegisterTaskWorkFunctionOp>([&](auto op) {
           converge<NoTypeConstraint>(op, state, inferredTypes);
         })
-
+        .Case<mlir::arith::SelectOp>([&](auto op) {
+          converge<SameOperandTypeConstraint<1, 2>,
+                   SameOperandAndResultTypeConstraint<1, 0>>(op, state,
+                                                             inferredTypes);
+        })
         .Case<TFHE::AddGLWEOp, TFHE::ABatchedAddGLWEOp>([&](auto op) {
           converge<SameOperandTypeConstraint<0, 1>,
                    SameOperandAndResultTypeConstraint<0, 0>>(op, state,
@@ -558,6 +615,40 @@ public:
                 DynamicSameElementTypeConstraint<DynamicFunctorYield>>(
                 [=]() { return result; }, [=]() { return terminatorOperand; });
           }
+          cs.converge(op, *this, state, inferredTypes);
+        })
+        .Case<RT::DerefWorkFunctionArgumentPtrPlaceholderOp,
+              RT::DerefReturnPtrPlaceholderOp>([&](auto _op) {
+          converge<RT::SamePointerTypeContraint<
+              StaticTypeConstraint<OperandAndResultValueYield<0, 0>>, true,
+              false>>(op, state, inferredTypes);
+        })
+        .Case<RT::WorkFunctionReturnOp>([&](auto _op) {
+          converge<RT::SamePointerTypeContraint<
+              StaticTypeConstraint<OperandValueYield<0, 1>>, false, true>>(
+              op, state, inferredTypes);
+        })
+        .Case<RT::MakeReadyFutureOp>([&](auto _op) {
+          converge<RT::SameFutureTypeContraint<
+              StaticTypeConstraint<OperandAndResultValueYield<0, 0>>, false,
+              true>>(op, state, inferredTypes);
+        })
+        .Case<RT::AwaitFutureOp>([&](auto _op) {
+          converge<RT::SameFutureTypeContraint<
+              StaticTypeConstraint<OperandAndResultValueYield<0, 0>>, true,
+              false>>(op, state, inferredTypes);
+        })
+        .Case<RT::CreateAsyncTaskOp>([&](auto op) {
+          TypeConstraintSet<> cs;
+
+          mlir::SymbolRefAttr workfnSymbol = op.getWorkfn();
+          mlir::ModuleOp module =
+              op->template getParentOfType<mlir::ModuleOp>();
+
+          mlir::func::FuncOp workfn =
+              module.lookupSymbol<mlir::func::FuncOp>(workfnSymbol);
+
+          addFuncAndCreateTaskConstraints(cs, workfn, op);
 
           cs.converge(op, *this, state, inferredTypes);
         })
@@ -567,7 +658,11 @@ public:
   }
 
   static bool staticIsUnresolvedType(mlir::Type t) {
-    if (mlir::ShapedType sht = llvm::dyn_cast<mlir::ShapedType>(t)) {
+    if (RT::PointerType rtptr = llvm::dyn_cast<RT::PointerType>(t)) {
+      return staticIsUnresolvedType(rtptr.getElementType());
+    } else if (RT::FutureType futt = llvm::dyn_cast<RT::FutureType>(t)) {
+      return staticIsUnresolvedType(futt.getElementType());
+    } else if (mlir::ShapedType sht = llvm::dyn_cast<mlir::ShapedType>(t)) {
       return staticIsUnresolvedType(sht.getElementType());
     } else if (mlir::FunctionType funct =
                    llvm::dyn_cast<mlir::FunctionType>(t)) {
@@ -589,6 +684,19 @@ public:
       return false;
 
     return mlir::TypeSwitch<mlir::Operation *, bool>(op)
+        .Case<RT::CreateAsyncTaskOp>([&](auto op) {
+          mlir::SymbolRefAttr workfnSymbol = op.getWorkfn();
+          mlir::ModuleOp module =
+              op->template getParentOfType<mlir::ModuleOp>();
+
+          auto workfn = module.lookupSymbol<mlir::func::FuncOp>(workfnSymbol);
+
+          for (mlir::Value v : workfn.getArguments())
+            if (!fn(v))
+              return false;
+
+          return true;
+        })
         .Case<mlir::func::CallOp, mlir::func::ConstantOp>(
             [&](mlir::Operation *op) {
               mlir::StringRef funcName = "";
@@ -633,6 +741,31 @@ public:
                 return true;
               }
             })
+        .Case<mlir::func::FuncOp>([&](auto op) {
+          mlir::ModuleOp module =
+              op->template getParentOfType<mlir::ModuleOp>();
+
+          if (module
+                  .walk([&](RT::CreateAsyncTaskOp createAsyncTaskOp) {
+                    mlir::SymbolRefAttr workfnSymbol =
+                        createAsyncTaskOp.getWorkfn();
+
+                    if (workfnSymbol.getRootReference() == op.getName()) {
+                      for (mlir::Value operand :
+                           createAsyncTaskOp.getOperands().drop_front(3)) {
+                        if (!fn(operand))
+                          return mlir::WalkResult::interrupt();
+                      }
+                    }
+
+                    return mlir::WalkResult::advance();
+                  })
+                  .wasInterrupted()) {
+            return false;
+          } else {
+            return true;
+          }
+        })
         .Default([&](auto _op) { return true; });
   }
 
