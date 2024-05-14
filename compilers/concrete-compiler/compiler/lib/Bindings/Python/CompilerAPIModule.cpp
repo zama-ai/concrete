@@ -1226,7 +1226,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               ::concretelang::clientlib::PublicArguments &publicArguments,
               ::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
              SignalGuard signalGuard;
-             auto &keyset = evaluationKeys.keyset;
+             auto keyset = evaluationKeys.keyset;
              auto values = publicArguments.values;
              GET_OR_THROW_RESULT(auto output, circuit.call(keyset, values));
              ::concretelang::clientlib::PublicResult res{output};

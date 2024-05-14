@@ -89,7 +89,7 @@ public:
                   Message<concreteprotocol::LweBootstrapKeyInfo> info)
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
         info(info), decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(false){};
+        decompressed(std::make_shared<bool>(false)){};
 
   /// @brief Initialize the key from the protocol message.
   static LweBootstrapKey
@@ -111,7 +111,7 @@ private:
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
         buffer(std::make_shared<std::vector<uint64_t>>()), info(info),
         decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(false){};
+        decompressed(std::make_shared<bool>(false)){};
   LweBootstrapKey() = delete;
 
   /// @brief  The buffer of the seeded key if needed.
@@ -127,7 +127,7 @@ private:
   std::shared_ptr<std::mutex> decompress_mutext;
 
   /// @brief A boolean that indicates if the decompression is done or not
-  bool decompressed;
+  std::shared_ptr<bool> decompressed;
 };
 
 class LweKeyswitchKey {
@@ -141,7 +141,7 @@ public:
                   Message<concreteprotocol::LweKeyswitchKeyInfo> info)
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
         info(info), decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(false){};
+        decompressed(std::make_shared<bool>(false)){};
 
   /// @brief Initialize the key from the protocol message.
   static LweKeyswitchKey
@@ -163,7 +163,7 @@ private:
       : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
         buffer(std::make_shared<std::vector<uint64_t>>()), info(info),
         decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(false){};
+        decompressed(std::make_shared<bool>(false)){};
 
   /// @brief  The buffer of the seeded key if needed.
   std::shared_ptr<std::vector<uint64_t>> seededBuffer;
@@ -178,7 +178,7 @@ private:
   std::shared_ptr<std::mutex> decompress_mutext;
 
   /// @brief A boolean that indicates if the decompression is done or not
-  bool decompressed;
+  std::shared_ptr<bool> decompressed;
 };
 
 class PackingKeyswitchKey {

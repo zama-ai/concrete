@@ -47,7 +47,7 @@ class ServerCircuit {
 
 public:
   /// Call the circuit with public arguments.
-  Result<std::vector<TransportValue>> call(ServerKeyset &serverKeyset,
+  Result<std::vector<TransportValue>> call(const ServerKeyset &serverKeyset,
                                            std::vector<TransportValue> &args);
 
   /// Simulate the circuit with public arguments.
@@ -65,7 +65,7 @@ private:
                     std::shared_ptr<DynamicModule> dynamicModule,
                     bool useSimulation);
 
-  void invoke(ServerKeyset &serverKeyset);
+  void invoke(const ServerKeyset &serverKeyset);
 
   Message<concreteprotocol::CircuitInfo> circuitInfo;
   bool useSimulation;
