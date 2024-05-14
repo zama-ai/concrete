@@ -189,10 +189,10 @@ void LweBootstrapKey::decompress() {
   case concreteprotocol::Compression::NONE:
     return;
   case concreteprotocol::Compression::SEED: {
-    if (decompressed)
+    if (*decompressed)
       return;
     const std::lock_guard<std::mutex> guard(*decompress_mutext);
-    if (decompressed)
+    if (*decompressed)
       return;
     auto params = info.asReader().getParams();
     buffer->resize(concrete_cpu_bootstrap_key_size_u64(
@@ -204,7 +204,7 @@ void LweBootstrapKey::decompress() {
         buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
         params.getPolynomialSize(), params.getGlweDimension(),
         params.getLevelCount(), params.getBaseLog(), seed, Parallelism::Rayon);
-    decompressed = true;
+    *decompressed = true;
     return;
   }
   default:
@@ -309,10 +309,10 @@ void LweKeyswitchKey::decompress() {
   case concreteprotocol::Compression::NONE:
     return;
   case concreteprotocol::Compression::SEED: {
-    if (decompressed)
+    if (*decompressed)
       return;
     const std::lock_guard<std::mutex> guard(*decompress_mutext);
-    if (decompressed)
+    if (*decompressed)
       return;
     auto params = info.asReader().getParams();
     buffer->resize(concrete_cpu_keyswitch_key_size_u64(
@@ -324,7 +324,7 @@ void LweKeyswitchKey::decompress() {
         buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
         params.getOutputLweDimension(), params.getLevelCount(),
         params.getBaseLog(), seed, Parallelism::Rayon);
-    decompressed = true;
+    *decompressed = true;
     return;
   }
   default:
