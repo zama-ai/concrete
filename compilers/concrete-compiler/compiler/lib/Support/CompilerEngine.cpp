@@ -308,16 +308,6 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
 
   auto dataflowParallelize =
       options.autoParallelize || options.dataflowParallelize;
-  if (options.optimizerConfig.strategy == optimizer::Strategy::DAG_MULTI &&
-      dataflowParallelize == true) {
-    // FIXME: DF is not currently compatible with multi-parameters as
-    // the generation of dataflow tasks obfuscates the code before the
-    // analysis can be done. Until this is fixed we cannot allow both.
-    dataflowParallelize = false;
-    warnx("WARNING: dataflow parallelization is not compatible with the "
-          "optimizer strategy [dag-multi]. Continuing with dataflow "
-          "parallelization disabled.");
-  }
   auto loopParallelize = options.autoParallelize || options.loopParallelize;
 
   if (loopParallelize)
