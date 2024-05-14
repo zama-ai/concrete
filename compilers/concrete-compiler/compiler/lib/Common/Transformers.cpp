@@ -505,7 +505,7 @@ Result<Transformer> getEncryptionTransformer(
 
     for (size_t i = 0; i < inputTensor.values.size(); i++) {
       concrete_cpu_encrypt_lwe_ciphertext_u64(
-          key.getRawPtr(), &outputTensor.values[i * lweSize],
+          key.getBufferConst().data(), &outputTensor.values[i * lweSize],
           inputTensor.values[i], lweDimension, variance, csprng->ptr);
     }
 
@@ -535,7 +535,7 @@ Result<Transformer> getSeededEncryptionTransformer(
       csprng::writeSeed(seed, &outputTensor.values[i * 3]);
       // Encrypt
       concrete_cpu_encrypt_seeded_lwe_ciphertext_u64(
-          key.getRawPtr(), &outputTensor.values[i * 3 + 2],
+          key.getBufferConst().data(), &outputTensor.values[i * 3 + 2],
           inputTensor.values[i], lweDimension, seed, variance);
     }
     return Value{outputTensor};
@@ -577,8 +577,8 @@ Result<Transformer> getDecryptionTransformer(
 
     for (size_t i = 0; i < outputTensor.values.size(); i++) {
       concrete_cpu_decrypt_lwe_ciphertext_u64(
-          key.getRawPtr(), &inputTensor.values[i * lweSize], lweDimension,
-          &outputTensor.values[i]);
+          key.getBufferConst().data(), &inputTensor.values[i * lweSize],
+          lweDimension, &outputTensor.values[i]);
     }
 
     return Value{outputTensor};

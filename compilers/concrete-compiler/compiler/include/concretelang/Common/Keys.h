@@ -32,50 +32,144 @@ inline void getApproval() {
 namespace concretelang {
 namespace keys {
 
-/// An object representing an lwe Secret key
-class LweSecretKey {
-  friend class Keyset;
-  friend class KeysetCache;
-  friend class LweBootstrapKey;
-  friend class LweKeyswitchKey;
-  friend class PackingKeyswitchKey;
-
+template <typename ProtoKey, typename ProtoInfo, typename Key>
+class KeyWithBuffer {
 public:
-  typedef Message<concreteprotocol::LweSecretKeyInfo> InfoType;
+  typedef Message<ProtoKey> Proto;
 
-  LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
-               concretelang::csprng::SecretCSPRNG &csprng);
-  LweSecretKey() = delete;
-  LweSecretKey(std::shared_ptr<std::vector<uint64_t>> buffer,
-               Message<concreteprotocol::LweSecretKeyInfo> info)
-      : buffer(buffer), info(info){};
-
-  static LweSecretKey
-  fromProto(const Message<concreteprotocol::LweSecretKey> &proto);
-
-  Message<concreteprotocol::LweSecretKey> toProto() const;
-
-  const uint64_t *getRawPtr() const;
-
-  size_t getSize() const;
-
-  const Message<concreteprotocol::LweSecretKeyInfo> &getInfo() const;
-
-  const std::vector<uint64_t> &getBuffer() const;
-
-  const std::vector<uint64_t> &getTransportBuffer() const {
-    return getBuffer();
+  /// @brief Initialize the key from the protocol message.
+  static Key fromProto(const Proto &proto) {
+    auto key = Key(Message<ProtoInfo>(proto.asReader().getInfo()));
+    key.buffer = concretelang::protocol::protoPayloadToSharedVector<uint64_t>(
+        proto.asReader().getPayload());
+    return key;
   };
 
-private:
+  /// @brief Returns the proto representation of the key.
+  Proto toProto() const {
+    Proto msg;
+    auto builder = msg.asBuilder();
+    builder.setInfo(getInfo().asReader());
+    builder.setPayload(
+        concretelang::protocol::vectorToProtoPayload(getTransportBuffer())
+            .asReader());
+    return std::move(msg);
+  }
+
+  /// @brief Returns info of the key.
+  const Message<ProtoInfo> &getInfo() const { return this->info; }
+
+  const std::vector<uint64_t> &getBufferConst() const { return *buffer; }
+
+  /// @brief Returns the buffer which contains the raw key.
+  virtual const std::vector<uint64_t> &getBuffer() { return *buffer; }
+
+  /// @brief Returns the buffer used for the transport.
+  virtual const std::vector<uint64_t> &getTransportBuffer() const {
+    return *buffer;
+  }
+
+protected:
+  virtual ~KeyWithBuffer(){};
+  KeyWithBuffer(const Message<ProtoInfo> info)
+      : info(info), buffer(std::make_shared<std::vector<uint64_t>>()){};
+
+  /// @brief The metadata of the key.
+  Message<ProtoInfo> info;
+
+  /// @brief The buffer of the actual key.
   std::shared_ptr<std::vector<uint64_t>> buffer;
-  Message<concreteprotocol::LweSecretKeyInfo> info;
 };
 
-class LweBootstrapKey {
-public:
-  typedef Message<concreteprotocol::LweBootstrapKeyInfo> InfoType;
+template <typename ProtoKey, typename ProtoInfo, typename Key>
+class KeyWithCompression : public KeyWithBuffer<ProtoKey, ProtoInfo, Key> {
 
+public:
+  /// @brief Initialize the key from the protocol message.
+  static Key fromProto(const Message<ProtoKey> &proto) {
+    auto info = proto.asReader().getInfo();
+    auto vector = concretelang::protocol::protoPayloadToSharedVector<uint64_t>(
+        proto.asReader().getPayload());
+    auto key = Key(Message<ProtoInfo>(info));
+    if (info.getCompression() == concreteprotocol::Compression::NONE) {
+      key.buffer = vector;
+    } else {
+      key.compressedBuffer = vector;
+    }
+    return key;
+  };
+
+  /// @brief Returns the buffer which contains the raw key, can lazily
+  /// decompress the key if needed.
+  const std::vector<uint64_t> &getBuffer() override {
+    decompress();
+    return *S::buffer;
+  }
+
+  /// @brief Returns the buffer used for the transport.
+  const std::vector<uint64_t> &getTransportBuffer() const override {
+    if (S::getInfo().asReader().getCompression() ==
+        concreteprotocol::Compression::NONE) {
+      return *S::buffer;
+    } else {
+      return *compressedBuffer;
+    }
+  }
+
+  /// @brief Force the decompression of the key if not yet done.
+  void decompress() {
+    if (*decompressed)
+      return;
+    const std::lock_guard<std::mutex> guard(*decompress_mutext);
+    if (*decompressed)
+      return;
+    this->_decompress();
+    *decompressed = true;
+  }
+
+protected:
+  virtual ~KeyWithCompression(){};
+  KeyWithCompression(const Message<ProtoInfo> info)
+      : KeyWithBuffer<ProtoKey, ProtoInfo, Key>(info),
+        compressedBuffer(std::make_shared<std::vector<uint64_t>>()),
+        decompress_mutext(std::make_shared<std::mutex>()),
+        decompressed(std::make_shared<bool>(false)){};
+  virtual void _decompress() = 0;
+
+protected:
+  /// @brief  The buffer of the compressed key if needed.
+  std::shared_ptr<std::vector<uint64_t>> compressedBuffer;
+
+  /// @brief Mutex to guard the decompression
+  std::shared_ptr<std::mutex> decompress_mutext;
+
+  /// @brief A boolean that indicates if the decompression is done or not
+  std::shared_ptr<bool> decompressed;
+
+private:
+  typedef KeyWithBuffer<ProtoKey, ProtoInfo, Key> S;
+};
+
+class LweSecretKey
+    : public KeyWithBuffer<concreteprotocol::LweSecretKey,
+                           concreteprotocol::LweSecretKeyInfo, LweSecretKey> {
+
+public:
+  LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
+               concretelang::csprng::SecretCSPRNG &csprng);
+
+protected:
+  friend class KeyWithBuffer;
+
+  LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info)
+      : KeyWithBuffer(info){};
+};
+
+class LweBootstrapKey
+    : public KeyWithCompression<concreteprotocol::LweBootstrapKey,
+                                concreteprotocol::LweBootstrapKeyInfo,
+                                LweBootstrapKey> {
+public:
   /// @brief Constructor of a bootstrap key that initialize according with the
   /// given specification.
   /// @param info The info of the key to initialize.
@@ -83,139 +177,50 @@ public:
   /// @param outputKey The output secret key of the bootstraping key.
   /// @param csprng An encryption csprng that used to encrypt the secret keys.
   LweBootstrapKey(Message<concreteprotocol::LweBootstrapKeyInfo> info,
-                  const LweSecretKey &inputKey, const LweSecretKey &outputKey,
+                  LweSecretKey &inputKey, LweSecretKey &outputKey,
                   concretelang::csprng::EncryptionCSPRNG &csprng);
-  LweBootstrapKey(std::shared_ptr<std::vector<uint64_t>> buffer,
-                  Message<concreteprotocol::LweBootstrapKeyInfo> info)
-      : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
-        info(info), decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(std::make_shared<bool>(false)){};
 
-  /// @brief Initialize the key from the protocol message.
-  static LweBootstrapKey
-  fromProto(const Message<concreteprotocol::LweBootstrapKey> &proto);
+protected:
+  friend class KeyWithCompression;
 
-  /// @brief Returns the serialized form of the key.
-  Message<concreteprotocol::LweBootstrapKey> toProto() const;
-
-  const Message<concreteprotocol::LweBootstrapKeyInfo> &getInfo() const;
-
-  const std::vector<uint64_t> &getBuffer();
-
-  const std::vector<uint64_t> &getTransportBuffer() const;
-
-  void decompress();
-
-private:
+  void _decompress() override;
   LweBootstrapKey(Message<concreteprotocol::LweBootstrapKeyInfo> info)
-      : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
-        buffer(std::make_shared<std::vector<uint64_t>>()), info(info),
-        decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(std::make_shared<bool>(false)){};
-  LweBootstrapKey() = delete;
-
-  /// @brief  The buffer of the seeded key if needed.
-  std::shared_ptr<std::vector<uint64_t>> seededBuffer;
-
-  /// @brief The buffer of the actual bootstrap key.
-  std::shared_ptr<std::vector<uint64_t>> buffer;
-
-  /// @brief The metadata of the bootrap key.
-  Message<concreteprotocol::LweBootstrapKeyInfo> info;
-
-  /// @brief Mutex to guard the decompression
-  std::shared_ptr<std::mutex> decompress_mutext;
-
-  /// @brief A boolean that indicates if the decompression is done or not
-  std::shared_ptr<bool> decompressed;
+      : KeyWithCompression(info){};
 };
 
-class LweKeyswitchKey {
+class LweKeyswitchKey
+    : public KeyWithCompression<concreteprotocol::LweKeyswitchKey,
+                                concreteprotocol::LweKeyswitchKeyInfo,
+                                LweKeyswitchKey> {
 public:
-  typedef Message<concreteprotocol::LweKeyswitchKeyInfo> InfoType;
-
   LweKeyswitchKey(Message<concreteprotocol::LweKeyswitchKeyInfo> info,
-                  const LweSecretKey &inputKey, const LweSecretKey &outputKey,
+                  LweSecretKey &inputKey, LweSecretKey &outputKey,
                   concretelang::csprng::EncryptionCSPRNG &csprng);
-  LweKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
-                  Message<concreteprotocol::LweKeyswitchKeyInfo> info)
-      : seededBuffer(std::make_shared<std::vector<uint64_t>>()), buffer(buffer),
-        info(info), decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(std::make_shared<bool>(false)){};
 
-  /// @brief Initialize the key from the protocol message.
-  static LweKeyswitchKey
-  fromProto(const Message<concreteprotocol::LweKeyswitchKey> &proto);
+protected:
+  friend class KeyWithCompression;
 
-  /// @brief Returns the serialized form of the key.
-  Message<concreteprotocol::LweKeyswitchKey> toProto() const;
+  void _decompress() override;
 
-  const Message<concreteprotocol::LweKeyswitchKeyInfo> &getInfo() const;
-
-  const std::vector<uint64_t> &getBuffer();
-
-  const std::vector<uint64_t> &getTransportBuffer() const;
-
-  void decompress();
-
-private:
   LweKeyswitchKey(Message<concreteprotocol::LweKeyswitchKeyInfo> info)
-      : seededBuffer(std::make_shared<std::vector<uint64_t>>()),
-        buffer(std::make_shared<std::vector<uint64_t>>()), info(info),
-        decompress_mutext(std::make_shared<std::mutex>()),
-        decompressed(std::make_shared<bool>(false)){};
-
-  /// @brief  The buffer of the seeded key if needed.
-  std::shared_ptr<std::vector<uint64_t>> seededBuffer;
-
-  /// @brief The buffer of the actual bootstrap key.
-  std::shared_ptr<std::vector<uint64_t>> buffer;
-
-  /// @brief The metadata of the bootrap key.
-  Message<concreteprotocol::LweKeyswitchKeyInfo> info;
-
-  /// @brief Mutex to guard the decompression
-  std::shared_ptr<std::mutex> decompress_mutext;
-
-  /// @brief A boolean that indicates if the decompression is done or not
-  std::shared_ptr<bool> decompressed;
+      : KeyWithCompression(info){};
 };
 
-class PackingKeyswitchKey {
-  friend class Keyset;
+class PackingKeyswitchKey
+    : public KeyWithBuffer<concreteprotocol::PackingKeyswitchKey,
+                           concreteprotocol::PackingKeyswitchKeyInfo,
+                           PackingKeyswitchKey> {
 
 public:
-  typedef Message<concreteprotocol::PackingKeyswitchKeyInfo> InfoType;
-
   PackingKeyswitchKey(Message<concreteprotocol::PackingKeyswitchKeyInfo> info,
-                      const LweSecretKey &inputKey,
-                      const LweSecretKey &outputKey,
+                      LweSecretKey &inputKey, LweSecretKey &outputKey,
                       concretelang::csprng::EncryptionCSPRNG &csprng);
-  PackingKeyswitchKey() = delete;
-  PackingKeyswitchKey(std::shared_ptr<std::vector<uint64_t>> buffer,
-                      Message<concreteprotocol::PackingKeyswitchKeyInfo> info)
-      : buffer(buffer), info(info){};
 
-  static PackingKeyswitchKey
-  fromProto(const Message<concreteprotocol::PackingKeyswitchKey> &proto);
+protected:
+  friend class KeyWithBuffer;
 
-  Message<concreteprotocol::PackingKeyswitchKey> toProto() const;
-
-  const uint64_t *getRawPtr() const;
-
-  size_t getSize() const;
-
-  const Message<concreteprotocol::PackingKeyswitchKeyInfo> &getInfo() const;
-
-  const std::vector<uint64_t> &getBuffer() const;
-
-  const std::vector<uint64_t> &getTransportBuffer() const {
-    return getBuffer();
-  };
-
-private:
-  std::shared_ptr<std::vector<uint64_t>> buffer;
-  Message<concreteprotocol::PackingKeyswitchKeyInfo> info;
+  PackingKeyswitchKey(Message<concreteprotocol::PackingKeyswitchKeyInfo> info)
+      : KeyWithBuffer(info){};
 };
 
 } // namespace keys

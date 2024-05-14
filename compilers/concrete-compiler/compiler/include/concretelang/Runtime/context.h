@@ -66,7 +66,7 @@ typedef struct RuntimeContext {
   }
 
   virtual const uint64_t *fp_keyswitch_key_buffer(size_t keyId) {
-    return serverKeyset.packingKeyswitchKeys[keyId].getRawPtr();
+    return serverKeyset.packingKeyswitchKeys[keyId].getBuffer().data();
   }
 
   virtual const struct Fft *fft(size_t keyId) { return ffts[keyId].fft; }

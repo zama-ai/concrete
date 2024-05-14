@@ -160,7 +160,7 @@ DistributedRuntimeContext::fp_keyswitch_key_buffer(size_t keyId) {
   }
   auto it = pksks.find(keyId);
   assert(it != pksks.end());
-  return it->second.getRawPtr();
+  return it->second.getBuffer().data();
 }
 
 const struct Fft *DistributedRuntimeContext::fft(size_t keyId) {
