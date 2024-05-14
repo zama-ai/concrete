@@ -20,6 +20,7 @@
 #include <mlir/Analysis/DataFlow/SparseAnalysis.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
@@ -203,14 +204,177 @@ public:
       std::optional<CircuitSolutionWrapper> solution)
       : solution(solution) {}
 
+  // Adds constraints that ensure that the argument types of `funcOp`
+  // and the operand types of `callOp` are equal and that the result
+  // types of all return operations of `funcOp` are equal to the
+  // result types of `callOp`
+  void addFuncAndCallConstraints(TypeConstraintSet<> &cs,
+                                 mlir::func::FuncOp funcOp,
+                                 mlir::func::CallOp callOp) {
+    // Ensure that the operands of the call op have the same
+    // type as the function arguments
+    for (auto [callOperand, funcArgument] :
+         llvm::zip_equal(callOp->getOperands(), funcOp.getArguments())) {
+      cs.addConstraint<DynamicSameTypeConstraint<DynamicFunctorYield>>(
+          [callOperand = callOperand]() { return callOperand; },
+          [funcArgument = funcArgument]() { return funcArgument; });
+    }
+
+    // Ensure that the return types of the function defined via
+    // its return ops are equal to the result types of the call
+    for (mlir::Block &block : funcOp.getRegion().getBlocks()) {
+      if (mlir::func::ReturnOp returnOp =
+              llvm::dyn_cast<mlir::func::ReturnOp>(block.getTerminator())) {
+        for (auto [returnOperand, callResult] :
+             llvm::zip_equal(returnOp->getOperands(), callOp->getResults())) {
+          cs.addConstraint<DynamicSameTypeConstraint<DynamicFunctorYield>>(
+              [returnOperand = returnOperand]() { return returnOperand; },
+              [callResult = callResult]() { return callResult; });
+        }
+      }
+    }
+  }
+
+  // Attempts to assemble the types for arguments and return values of
+  // the function with the name `funcName` from `state`. The (partial)
+  // result if passed in `retArgTypes` and `retResTypes`.
+  void
+  assembleInferredFunctionType(mlir::ModuleOp module, StringRef funcName,
+                               const LocalInferenceState &state,
+                               llvm::SmallVector<mlir::Type> &retArgTypes,
+                               llvm::SmallVector<mlir::Type> &retResTypes) {
+    mlir::func::FuncOp func = lookupFunction(module, funcName);
+    mlir::FunctionType funcType = func.getFunctionType();
+    llvm::SmallVector<mlir::Type> argTypes;
+    llvm::SmallVector<mlir::Type> resTypes(funcType.getNumResults());
+
+    // Assemble argument types
+    for (mlir::Value arg : func.getArguments()) {
+      argTypes.push_back(isUnresolvedType(arg.getType()) ? state.lookup(arg)
+                                                         : arg.getType());
+    }
+
+    // Assemble result types from types inferred for the operands
+    // of return ops
+    for (mlir::Block &block : func.getRegion().getBlocks()) {
+      if (mlir::func::ReturnOp returnOp =
+              llvm::dyn_cast<mlir::func::ReturnOp>(block.getTerminator()))
+        for (auto [i, operand] : llvm::enumerate(returnOp.getOperands())) {
+          if (!resTypes[i]) {
+            resTypes[i] = isUnresolvedType(operand.getType())
+                              ? state.lookup(operand)
+                              : operand.getType();
+          }
+        }
+    }
+
+    retArgTypes = std::move(argTypes);
+    retResTypes = std::move(resTypes);
+  }
+
+  // Attemps to infer the type of a function from `state`. If the
+  // function type cannot be inferred entirely (e.g., the type for at
+  // least one argument or one result cannot be inferred), the
+  // function returns an empty function type.
+  mlir::FunctionType
+  tryGetFullyInferredFunctionType(mlir::ModuleOp module, StringRef funcName,
+                                  const LocalInferenceState &state) {
+    llvm::SmallVector<mlir::Type> argTypes;
+    llvm::SmallVector<mlir::Type> resTypes;
+
+    assembleInferredFunctionType(module, funcName, state, argTypes, resTypes);
+
+    auto typeDefined = [=](mlir::Type t) { return !!t; };
+
+    if (llvm::all_of(argTypes, typeDefined) &&
+        llvm::all_of(resTypes, typeDefined)) {
+      return mlir::FunctionType::get(module.getContext(), argTypes, resTypes);
+    }
+
+    return nullptr;
+  }
+
+  // Returns the function operation for the function with the name
+  // `funcName`.
+  mlir::func::FuncOp lookupFunction(mlir::ModuleOp module,
+                                    llvm::StringRef funcName) {
+    mlir::func::FuncOp ret;
+
+    module.walk([&](mlir::func::FuncOp funcOp) {
+      if (funcOp.getName() == funcName) {
+        ret = funcOp;
+        return mlir::WalkResult::interrupt();
+      }
+
+      return mlir::WalkResult::advance();
+    });
+
+    return ret;
+  }
+
   LocalInferenceState
   resolve(mlir::Operation *op,
           const LocalInferenceState &inferredTypes) override {
     LocalInferenceState state = inferredTypes;
 
     mlir::TypeSwitch<mlir::Operation *>(op)
+        .Case<mlir::func::CallOp>([&](auto op) {
+          TypeConstraintSet<> cs;
+
+          mlir::ModuleOp module =
+              op->template getParentOfType<mlir::ModuleOp>();
+
+          mlir::func::FuncOp funcOp = lookupFunction(module, op.getCallee());
+          addFuncAndCallConstraints(cs, funcOp, op);
+          cs.converge(op, *this, state, inferredTypes);
+        })
+        .Case<mlir::func::ConstantOp>([&](auto op) {
+          // One-way dependency from the argument and return types of
+          // the corresponding function to the constant op
+          mlir::ModuleOp module =
+              op->template getParentOfType<mlir::ModuleOp>();
+          if (mlir::FunctionType funcType = tryGetFullyInferredFunctionType(
+                  module, op.getValue(), state)) {
+            state.set(op.getResult(), funcType);
+          }
+        })
         .Case<mlir::func::FuncOp>([&](auto op) {
           TypeConstraintSet<> cs;
+
+          mlir::ModuleOp module =
+              op->template getParentOfType<mlir::ModuleOp>();
+
+          module.walk([&](mlir::func::CallOp callOp) {
+            if (callOp.getCallee() == op.getName()) {
+              addFuncAndCallConstraints(cs, op, callOp);
+            }
+          });
+
+          // Make sure that all return operations have the same operand types
+          mlir::func::ReturnOp firstReturnOp;
+
+          for (mlir::Block &block : op.getRegion().getBlocks()) {
+            if (mlir::func::ReturnOp returnOp =
+                    llvm::dyn_cast<mlir::func::ReturnOp>(
+                        block.getTerminator())) {
+              if (!firstReturnOp) {
+                firstReturnOp = returnOp;
+              } else {
+                for (auto [returnOperand, firstReturnOperand] :
+                     llvm::zip_equal(returnOp->getOperands(),
+                                     firstReturnOp->getResults())) {
+                  cs.addConstraint<
+                      DynamicSameTypeConstraint<DynamicFunctorYield>>(
+                      [returnOperand = returnOperand]() {
+                        return returnOperand;
+                      },
+                      [firstReturnOperand = firstReturnOperand]() {
+                        return firstReturnOperand;
+                      });
+                }
+              }
+            }
+          }
 
           if (solution.has_value()) {
             cs.addConstraint<ApplySolverSolutionToFunctionArgsConstraint>(
@@ -402,8 +566,74 @@ public:
     return state;
   }
 
+  static bool staticIsUnresolvedType(mlir::Type t) {
+    if (mlir::ShapedType sht = llvm::dyn_cast<mlir::ShapedType>(t)) {
+      return staticIsUnresolvedType(sht.getElementType());
+    } else if (mlir::FunctionType funct =
+                   llvm::dyn_cast<mlir::FunctionType>(t)) {
+      return llvm::any_of(funct.getInputs(), staticIsUnresolvedType) ||
+             llvm::any_of(funct.getResults(), staticIsUnresolvedType);
+    } else {
+      return isUnparametrizedGLWEType(t);
+    }
+  }
+
   bool isUnresolvedType(mlir::Type t) const override {
-    return isUnparametrizedGLWEType(t);
+    return staticIsUnresolvedType(t);
+  }
+
+  bool iterateRelatedValues(
+      mlir::Operation *op,
+      llvm::function_ref<bool(mlir::Value)> fn) const override {
+    if (!TypeResolver::iterateRelatedValues(op, fn))
+      return false;
+
+    return mlir::TypeSwitch<mlir::Operation *, bool>(op)
+        .Case<mlir::func::CallOp, mlir::func::ConstantOp>(
+            [&](mlir::Operation *op) {
+              mlir::StringRef funcName = "";
+
+              if (mlir::func::CallOp callOp =
+                      llvm::dyn_cast<mlir::func::CallOp>(op)) {
+                funcName = callOp.getCallee();
+              } else if (mlir::func::ConstantOp cstOp =
+                             llvm::dyn_cast<mlir::func::ConstantOp>(op)) {
+                funcName = cstOp.getValue();
+              }
+
+              mlir::ModuleOp module =
+                  op->template getParentOfType<mlir::ModuleOp>();
+
+              if (module
+                      .walk([&](mlir::func::FuncOp func) {
+                        if (func.getName() == funcName) {
+                          for (mlir::Value arg : func.getArguments()) {
+                            if (!fn(arg))
+                              return mlir::WalkResult::interrupt();
+                          }
+
+                          for (mlir::Block &block :
+                               func.getRegion().getBlocks()) {
+                            if (mlir::func::ReturnOp returnOp =
+                                    llvm::dyn_cast<mlir::func::ReturnOp>(
+                                        block.getTerminator())) {
+                              for (mlir::Value res : returnOp->getOperands()) {
+                                if (!fn(res))
+                                  return mlir::WalkResult::interrupt();
+                              }
+                            }
+                          }
+                        }
+
+                        return mlir::WalkResult::advance();
+                      })
+                      .wasInterrupted()) {
+                return false;
+              } else {
+                return true;
+              }
+            })
+        .Default([&](auto _op) { return true; });
   }
 
 protected:
