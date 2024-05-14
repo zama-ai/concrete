@@ -1,10 +1,12 @@
 # Installation
 
-Concrete is natively supported on Linux and macOS from Python 3.8 to 3.11 inclusive. If you have Docker in your platform, you can use the docker image to use Concrete.
+This document explains the steps to install **Concrete** into your project. 
+
+**Concrete** is natively supported on Linux and macOS from Python 3.8 to 3.11 inclusive. If you have Docker in your platform, you can use the docker image to use **Concrete**.
 
 ## Using PyPI
 
-You can install Concrete from PyPI:
+Install **Concrete** from PyPI using the following commands:
 
 ```shell
 pip install -U pip wheel setuptools
@@ -14,7 +16,7 @@ pip install concrete-python
 Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding `--extra-index-url https://pypi.zama.ai`.
 {% endhint %}
 
-There are some optional features which can be enabled by installing the `full` version:
+To enable all the optional features, install the `full` version of **Concrete**:
 
 ```shell
 pip install -U pip wheel setuptools
@@ -22,13 +24,13 @@ pip install concrete-python[full]
 ```
 
 {% hint style="info" %}
-Full version depends on [pygraphviz](https://pygraphviz.github.io/), which needs [graphviz](https://graphviz.org/) to be installed in the operating system so please [install](https://pygraphviz.github.io/documentation/stable/install.html) the operating system dependencies before installing `concrete-python[full]`. 
+The full version requires [pygraphviz](https://pygraphviz.github.io/), which depends on [graphviz](https://graphviz.org/). Make sure to [install](https://pygraphviz.github.io/documentation/stable/install.html) all the dependencies on your operating system before installing `concrete-python[full]`. 
 {% endhint %}
 
 {% hint style="info" %}
-Installing `pygraphviz` on macOS can be problematic (see https://github.com/pygraphviz/pygraphviz/issues/11).
+Installing `pygraphviz` on macOS can be problematic (see more details [here](https://github.com/pygraphviz/pygraphviz/issues/11)).
 
-If you're using homebrew, you may try the following:
+If you're using homebrew, you can try the following way:
 ```shell
 brew install graphviz
 CFLAGS=-I$(brew --prefix graphviz)/include LDFLAGS=-L$(brew --prefix graphviz)/lib pip --no-cache-dir install pygraphviz
@@ -41,7 +43,7 @@ pip install concrete-python[full]
 
 ## Using Docker
 
-You can also get the Concrete docker image (replace "v2.4.0" below by the correct version you want):
+You can also get the **Concrete** docker image. Replace `v2.4.0` below by the version you want to install:
 
 ```shell
 docker pull zamafhe/concrete-python:v2.4.0

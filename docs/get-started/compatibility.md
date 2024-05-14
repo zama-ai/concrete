@@ -2,10 +2,10 @@
 
 ## Supported operations
 
-Here are the operations you can use inside the function you are compiling:
+This document lists the operations you can use inside the function that you are compiling.
 
 {% hint style="info" %}
-Some of these operations are not supported between two encrypted values. A detailed error will be raised if you try to do something that is not supported.
+Some operations are not supported between two encrypted values. If attempted, a detailed error message will be raised.
 {% endhint %}
 
 ### Supported Python operators.
@@ -164,14 +164,14 @@ Some of these operations are not supported between two encrypted values. A detai
 
 ## Limitations
 
-### Control flow constraints.
+### Control flow constraints
 
-Some Python control flow statements are not supported. You cannot have an `if` statement or a `while` statement for which the condition depends on an encrypted value. However, such statements are supported with constant values (e.g., `for i in range(SOME_CONSTANT)`, `if os.environ.get("SOME_FEATURE") == "ON":`).
+Concrete doesn not support some control flow statements, including the `if` and `while` statement when the condition depends on an encrypted value. However, control flow statements with constant values are allowed, for example, `for i in range(SOME_CONSTANT)`, `if os.environ.get("SOME_FEATURE") == "ON":`.
 
-### Type constraints.
+### Type constraints
 
-You cannot have floating-point inputs or floating-point outputs. You can have floating-point intermediate values as long as they can be converted to an integer Table Lookup (e.g., `(60 * np.sin(x)).astype(np.int64)`).
+Floating-point inputs or floating-point outputs are not supported. You can have floating-point intermediate values as long as they can be converted to an integer Table Lookup, for example, `(60 * np.sin(x)).astype(np.int64)`.
 
-### Bit width constraints.
+### Bit width constraints
 
-There is a limit on the bit width of encrypted values. We are constantly working on increasing this bit width. If you go above the limit, you will get an error.
+Bit width of encrypted values has a limit. We are constantly working on increasing the bit width limit. Exceeding this limit will trigger an error.

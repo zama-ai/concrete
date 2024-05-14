@@ -1,11 +1,12 @@
 # Terminology and Structure
 
-## Terminology
+This document provides clear definitions of key concepts used in **Concrete** framework.
 
-Some terms used throughout the project include:
+* **Computation graph:** A data structure to represent a computation. It takes the form of a directed acyclic graph where nodes represent inputs, constants, or operations.
 
-* **computation graph:** A data structure to represent a computation. This is basically a directed acyclic graph in which nodes are either inputs, constants, or operations on other nodes.
-* **tracing:** A technique that takes a Python function from the user and generates a corresponding computation graph.
-* **bounds:** Before computation graphs are converted to MLIR, we need to know which value should have which type (e.g., uint3 vs int5). We use inputsets for this purpose. We simulate the graph with the inputs in the inputset to remember the minimum and the maximum value for each node, which is what we call bounds, and use bounds to determine the appropriate type for each node.
-* **circuit:** The result of compilation. A circuit is made of the client and server components. It has methods for everything from printing to evaluation.
+* **Tracing:** A method that takes a Python function provided by the user and generates a corresponding computation graph.
+
+* **Bounds:** The minimum and the maximum value that each node in the computation graph can take. Bounds are used to determine the appropriate data type (for example, uint3 or int5) for each node before the computation graphs are converted to MLIR. **Concrete** simulates the graph with the inputs in the inputset to record the minimum and the maximum value for each node.
+
+* **Circuit:** The result of compilation. A circuit includes both client and server components. It has methods for various operations, such as printing and evaluation.
 
