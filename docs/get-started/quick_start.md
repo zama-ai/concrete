@@ -1,8 +1,14 @@
 # Quick Start
 
-To compute on encrypted data, you first need to define the function you want to compute, then compile it into a Concrete `Circuit`, which you can use to perform homomorphic evaluation.
+This document covers how to compute on encrypted data homomorphically using the **Concrete** framework. We will walk you through a complete example step-by-step.
 
-Here is the full example that we will walk through:
+
+The basic workflow of computation is as follows:
+1. Define the function you want to compute
+2. Compile the function into a Concrete `Circuit`
+3. Use the `Circuit` to perform homomorphic evaluation
+
+Here is the complete example, which we will explain step by step in the following paragraphs.
 
 ```python
 from concrete import fhe
@@ -30,7 +36,7 @@ assert result == add(2, 6)
 
 ## Importing the library
 
-Everything you need to perform homomorphic evaluation is included in a single module:
+Import the `fhe` module, which includes everything you need to perform homomorphic evaluation:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -39,7 +45,7 @@ from concrete import fhe
 
 ## Defining the function to compile
 
-In this example, we compile a simple addition function:
+Here we define a simple addition function:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -49,14 +55,14 @@ def add(x, y):
 
 ## Creating a compiler
 
-To compile the function, you need to create a `Compiler` by specifying the function to compile and the encryption status of its inputs:
+To compile the function, you first need to create a `Compiler` by specifying the function to compile and the encryption status of its inputs:
 
 <!--pytest-codeblocks:skip-->
 ```python
 compiler = fhe.Compiler(add, {"x": "encrypted", "y": "encrypted"})
 ```
 
-To set that e.g. `y` is in the clear, it would be
+For instance, to set the input y as clear:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -65,29 +71,30 @@ compiler = fhe.Compiler(add, {"x": "encrypted", "y": "clear"})
 
 ## Defining an inputset
 
-An inputset is a collection representing the typical inputs to the function. It is used to determine the bit widths and shapes of the variables within the function.
+An inputset is a collection representing the typical inputs of the function. It is used to determine the bit widths and shapes of the variables within the function.
 
-It should be in iterable, yielding tuples, of the same length as the number of arguments of the function being compiled:
+The inputset should be an iterable that yields tuples of the same length as the number of arguments of the compiled function. 
+
+For example:
 
 <!--pytest-codeblocks:skip-->
 ```python
 inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
 ```
 
-Here, our inputset is made of 10 pairs of integers, whose the minimum pair is `(0, 0)` and the maximum is `(7, 7)`.
+Here, our inputset consists of 10 integer pairs, ranging from a minimum of `(0, 0)` to a maximum of `(7, 7)`.
 
 {% hint style="warning" %}
-Choosing a representative inputset is critical to allow the compiler to find accurate bounds of all the intermediate values (find more details [here](https://docs.zama.ai/concrete/explanations/compilation#bounds-measurement). Later if you evaluate the circuit with values that make under or overflows it results to an undefined behavior.
+Choosing a representative inputset is critical to allow the compiler to find accurate bounds of all the intermediate values (see more details [here](https://docs.zama.ai/concrete/explanations/compilation#bounds-measurement)). Evaluating the circuit with input values under or over the bounds may result in undefined behavior.
 {% endhint %}
 
 {% hint style="warning" %}
-There is a utility function called `fhe.inputset(...)` for easily creating random inputsets, see its
-[documentation](../core-features/extensions.md#fheinputset) to learn more!
+You can use the `fhe.inputset(...)` function to easily create random inputsets, see more details in [this documentation](../core-features/extensions.md#fheinputset).
 {% endhint %}
 
 ## Compiling the function
 
-You can use the `compile` method of the `Compiler` class with an inputset to perform the compilation and get the resulting circuit back:
+Use the `compile` method of the `Compiler` class with an inputset to perform the compilation and get the resulting circuit:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -97,7 +104,7 @@ circuit = compiler.compile(inputset)
 
 ## Generating the keys
 
-You can use the `keygen` method of the `Circuit` class to generate the keys (public and private):
+Use the `keygen` method of the `Circuit` class to generate the keys (public and private):
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -106,7 +113,7 @@ circuit.keygen()
 ```
 
 {% hint style="info" %}
-If you don't call the key generation explicitly keys will be generated lazily when it needed.
+If you don't call the key generation explicitly, keys will be generated lazily when needed.
 {% endhint %}
 
 ## Performing homomorphic evaluation
