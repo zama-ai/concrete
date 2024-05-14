@@ -228,7 +228,8 @@ public:
               TFHE::BatchedBootstrapGLWEOp, TFHE::EncodeExpandLutForBootstrapOp,
               TFHE::EncodeLutForCrtWopPBSOp, TFHE::EncodePlaintextWithCrtOp,
               TFHE::WopPBSGLWEOp, mlir::func::ReturnOp,
-              Tracing::TraceCiphertextOp, mlir::tensor::EmptyOp>([&](auto op) {
+              Tracing::TraceCiphertextOp, mlir::tensor::EmptyOp,
+              mlir::tensor::DimOp>([&](auto op) {
           converge<NoTypeConstraint>(op, state, inferredTypes);
         })
 
