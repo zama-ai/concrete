@@ -1,0 +1,39 @@
+name: Push Wheels to Public PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'version of concrete-python to pull from Zama PyPI and push to public PyPI'
+        required: true
+        type: string
+
+
+jobs:
+  pull_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull wheels from S3
+        continue-on-error: true
+        if: ${{ env.RELEASE_TYPE == 'public' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
+        run: |
+          mkdir wheels
+          aws s3 cp "s3://${S3_BUCKET_NAME}/concrete-python/concrete_python-${{ inputs.version }}*" ./wheels/
+          echo "============== Downloaded wheels ==============="
+          ls -la ./wheels/
+
+      - name: Push wheels to public PyPI (public)
+        continue-on-error: true
+        if: ${{ env.RELEASE_TYPE == 'public' }}
+        run: |
+          pip install twine==4.0.2
+          twine upload wheels/*.whl \
+            -u "${{ secrets.PUBLIC_PYPI_USER }}" \
+            -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" \
+            -r pypi
+ 
