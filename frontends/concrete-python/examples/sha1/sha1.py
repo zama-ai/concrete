@@ -21,6 +21,7 @@
 #        IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 #        CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+<<<<<<< HEAD
 import struct
 import io
 import numpy
@@ -30,6 +31,18 @@ import string
 
 from concrete import fhe
 from hashlib import sha1 as hashlib_sha1
+=======
+import io
+import random
+import string
+import struct
+import time
+from hashlib import sha1 as hashlib_sha1
+
+import numpy
+
+from concrete import fhe
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 
 
 def _left_rotate(n, b):
@@ -187,6 +200,10 @@ my_module = MyModule.compile(
     p_error=10**-8,
 )
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 # Split and encrypt on the client side
 def message_schedule_and_split_and_encrypt(chunk):
 
@@ -419,8 +436,13 @@ def print_timed_sha1(data):
 if __name__ == "__main__":
     # Imports required for command line parsing. No need for these elsewhere
     import argparse
+<<<<<<< HEAD
     import sys
     import os
+=======
+    import os
+    import sys
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 
     # Parse the incoming arguments
     parser = argparse.ArgumentParser()

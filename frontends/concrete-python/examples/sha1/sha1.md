@@ -151,6 +151,11 @@ functions in FHE.
 Compiling with `show_mlir = True` allows to see the different MLIR implementations. Typically, with
 current Concrete version, it would give something like:
 
+<<<<<<< HEAD
+=======
+- `add2` function
+<details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 ```
   func.func @add2(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -448,7 +453,14 @@ current Concrete version, it would give something like:
     return %inserted_slice_125 : tensor<32x!FHE.eint<2>>
   }
 ```
+<<<<<<< HEAD
 
+=======
+</details>
+
+- `add5` function
+<details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 ```
   func.func @add5(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>, %arg3: tensor<32x!FHE.eint<2>>, %arg4: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -1511,7 +1523,14 @@ current Concrete version, it would give something like:
     return %inserted_slice_509 : tensor<32x!FHE.eint<2>>
   }
 ```
+<<<<<<< HEAD
 
+=======
+</details>
+
+- `iftern` function
+<details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 ```
   func.func @iftern(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %c2_i3 = arith.constant 2 : i3
@@ -1530,7 +1549,14 @@ current Concrete version, it would give something like:
     return %8 : tensor<32x!FHE.eint<2>>
   }
 ```
+<<<<<<< HEAD
 
+=======
+</details>
+
+- `maj` function
+<details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 ```
   func.func @maj(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %c2_i3 = arith.constant 2 : i3
@@ -1550,7 +1576,14 @@ current Concrete version, it would give something like:
     return %9 : tensor<32x!FHE.eint<2>>
   }
 ```
+<<<<<<< HEAD
 
+=======
+</details>
+
+- `rotate30` function
+<details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 ```
   func.func @rotate30(%arg0: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -1561,7 +1594,14 @@ current Concrete version, it would give something like:
     return %inserted_slice_1 : tensor<32x!FHE.eint<2>>
   }
 ```
+<<<<<<< HEAD
 
+=======
+</details>
+
+- `rotate5` function
+<details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 ```
   func.func @rotate5(%arg0: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -1572,7 +1612,14 @@ current Concrete version, it would give something like:
     return %inserted_slice_1 : tensor<32x!FHE.eint<2>>
   }
 ```
+<<<<<<< HEAD
 
+=======
+</details>
+
+- `xor3` function
+<details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 ```
   func.func @xor3(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %c2_i3 = arith.constant 2 : i3
@@ -1588,6 +1635,10 @@ current Concrete version, it would give something like:
   }
 }
 ```
+<<<<<<< HEAD
+=======
+</details>
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 
 ## Testing or Using
 
@@ -1599,8 +1650,100 @@ One can check that the implementation works in FHE by running `python sha1.py --
 pick a certain number of random inputs, hash them in FHE and compare the result with the `hashlib`
 standard implementation.
 
+<<<<<<< HEAD
 One can also hash a given value with:
 ``
+=======
+One can also hash a given value with
+`echo -n "The quick brown fox jumps over the lazy dog" | python sha1.py`, and it will print
+something like:
+
+```
+sha1-digest: 2fd4e1c67a2d28fced849ee1bb76e7391b93eb12
+computed in: 320.265383 seconds
+```
+
+## Benchmarks
+
+We have executed our implementation on an HPC7a machine with Concrete 2.7.0rc1.
+
+`python sha1.py --autotest` typically returns:
+
+```
+Checking SHA1(fdASguUMBwhPcKuDpPqoRlQXLrLQbnxEvPJSQSIUDTBoaqrJlBualgoWEINmDZDYSuGuSOpGBWwWzjAfktWYZZUliv) for an input length 90
+sha1-digest: 5bb539fd423875ccc8a33148dae724f5b2cf9391
+computed in: 295.306287 seconds
+Checking SHA1(BYwXTbqE) for an input length 8
+sha1-digest: 90a8dcad6ddff7ca8fd487b80a37fcd250c56bed
+computed in: 145.341164 seconds
+Checking SHA1(rnPZh) for an input length 5
+sha1-digest: 47610d2c26ee8b45ab0f4c8f8e4d405b2cd37f1f
+computed in: 145.318081 seconds
+Checking SHA1(orRaJMGbUJtxITQvqiOCPjKJWYuHomuiexCQQgZyTeAAFJcgCftDCRAkcLKjRECelIMPQphGEUlSNthE) for an input length 80
+sha1-digest: bd74b4e64349d308f3b95b54cf61ee416bdd6b18
+computed in: 288.240576 seconds
+Checking SHA1(ROokDcdczajNPjlCPoWotaRJHBtOVyiyxMIIeCtxaDCjk) for an input length 45
+sha1-digest: 1ff546c3a64f27339781c095cbc097f392c2cccd
+computed in: 143.621941 seconds
+Checking SHA1(KbCXFt) for an input length 6
+sha1-digest: 7e5789f0c83fa5102004fbeeef3ac22244d1cdac
+computed in: 143.509567 seconds
+Checking SHA1(mpKnkHtrgokxgQSzcIjFtxKnhmMfZbIbkJavnkSxW) for an input length 41
+sha1-digest: 1308d9f7cba634ab2617edb5116b8bdf434f16f5
+computed in: 143.341450 seconds
+Checking SHA1(oauoWKJGyjjTcXqRIxFGuVuMwiwjKYfttQ) for an input length 34
+sha1-digest: 60367153b7049ca92eb979ad7b809c5a3f47a64e
+computed in: 143.693254 seconds
+Checking SHA1(ZMGiaIOmBJPncOsUCxj) for an input length 19
+sha1-digest: fafba9f2fe6b5a0fddad4ad765909c8fc32117c6
+computed in: 143.720215 seconds
+Checking SHA1(HwCXIHnFoGUgIBqaQrrpDnhEvPBX) for an input length 28
+sha1-digest: 5224cace20f8d20fa3ea8d9974b5ff3a0be7fd48
+computed in: 143.523006 seconds
+Checking SHA1(AfyzsimngrqeWoqZKOBRwVuvttfgJTpegMbiHjUNdWzTg) for an input length 45
+sha1-digest: 8ca27aca1c362ca63e50d58aa7065b4322f028a0
+computed in: 143.481069 seconds
+Checking SHA1(hNEUPakrqQpGGZvtHvht) for an input length 20
+sha1-digest: 36ae34ed85e62ac0f922e36fc98b23e725695be1
+computed in: 143.478666 seconds
+Checking SHA1(CjgfYYlNKqZdHeXFfqTwhycbGBeSpzpxKPwWItriiNKZCcEJRZlM) for an input length 52
+sha1-digest: 3c012f41c5fe4581f80e2901fc4bbbb70ff7a9ba
+computed in: 143.490262 seconds
+Checking SHA1(EXIGkYzWpcqpfRKCSbBJJqqmUBkFwWfPGooJvsVAshWjMr) for an input length 46
+sha1-digest: 2518c4d13ec7608f59632ac993b726e572c3aaae
+computed in: 143.840785 seconds
+Checking SHA1(sgzaAqZnhXmFJOJMyfGxweYFMmLeUHmMCWETfqzstzpFYKaGpnasiLHPTcJtukHztEQpXzquREcbtoJDaoqjfM) for an input length 86
+sha1-digest: 46f4b0653ed7ea0ce89cc18f6720e5e334d63a45
+computed in: 288.155301 seconds
+Checking SHA1(oRaisdHJovDxCnwyComEGejqMceBTOVhJucVnwgC) for an input length 40
+sha1-digest: 909f9c6275aa9f41d8ecaf52203bb0e24cf978d7
+computed in: 143.466817 seconds
+Checking SHA1(mtTWxtHerQgLdBGftWdiCwBKqtu) for an input length 27
+sha1-digest: 624a7dcec460061a2a6499dae978fe4afd674110
+computed in: 145.389956 seconds
+Checking SHA1(beYzkJLvZMmoXbQwqoVThpyaQ) for an input length 25
+sha1-digest: 25a9df47bd055384a9ee614c1dc7213c04f2087c
+computed in: 147.234881 seconds
+Checking SHA1(CpQWXXRNlXIoSZNxmXUwWHqmUAdlOrDyZPzzOhznlpGntrUgvktlZ) for an input length 53
+sha1-digest: f2bde6574d8f6aa360929f6a5f919700b16e093b
+computed in: 147.154393 seconds
+Checking SHA1(busWigrVdsXnkjTh) for an input length 16
+sha1-digest: fe47568d433278a38a4729f7891d03eaacdb0e40
+computed in: 147.465694 seconds
+Checking SHA1()
+sha1-digest: da39a3ee5e6b4b0d3255bfef95601890afd80709
+computed in: 147.256297 seconds
+Checking SHA1(The quick brown fox jumps over the lazy dog)
+sha1-digest: 2fd4e1c67a2d28fced849ee1bb76e7391b93eb12
+computed in: 147.697102 seconds
+```
+
+means that:
+- one block of compression takes about 147 seconds
+- two blocks of compression take about 290 seconds
+
+
+>>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 
 
 
