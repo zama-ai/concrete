@@ -16,9 +16,11 @@ from ..representation import Node
 
 
 SCALAR_INT_SEARCH_REGEX = re.compile(r"^i([0-9]+)$")
+SCALAR_INDEX_SEARCH_REGEX = re.compile(r"^index$")
 SCALAR_EINT_SEARCH_REGEX = re.compile(r"^!FHE\.e(s)?int<([0-9]+)>$")
 
 TENSOR_INT_SEARCH_REGEX = re.compile(r"^tensor<(([0-9]+x)+)i([0-9]+)>$")
+TENSOR_INDEX_SEARCH_REGEX = re.compile(r"^tensor<(([0-9]+x)+)index>$")
 TENSOR_EINT_SEARCH_REGEX = re.compile(r"^tensor<(([0-9]+x)+)!FHE\.e(s)?int<([0-9]+)>>$")
 
 
@@ -34,9 +36,13 @@ class ConversionType:
     is_signed: bool
     shape: Tuple[int, ...]
 
+    is_index: bool
+
     def __init__(self, mlir: MlirType):
         self.mlir = mlir
         mlir_type_str = str(mlir)
+
+        self.is_index = False
 
         search = SCALAR_INT_SEARCH_REGEX.search(mlir_type_str)
         if search:
@@ -46,6 +52,16 @@ class ConversionType:
             self.is_encrypted = False
             self.is_signed = True
             self.shape = ()
+
+            return
+
+        search = SCALAR_INDEX_SEARCH_REGEX.search(mlir_type_str)
+        if search:
+            self.bit_width = 64
+            self.is_encrypted = False
+            self.is_signed = False
+            self.shape = ()
+            self.is_index = True
 
             return
 
@@ -68,6 +84,18 @@ class ConversionType:
             self.is_encrypted = False
             self.is_signed = True
             self.shape = tuple(int(size) for size in matched_shape.rstrip("x").split("x"))
+
+            return
+
+        search = TENSOR_INDEX_SEARCH_REGEX.search(mlir_type_str)
+        if search:
+            matched_shape, _ = search.groups()
+
+            self.bit_width = 64
+            self.is_encrypted = False
+            self.is_signed = False
+            self.shape = tuple(int(size) for size in matched_shape.rstrip("x").split("x"))
+            self.is_index = True
 
             return
 

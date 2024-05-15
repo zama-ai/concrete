@@ -8,7 +8,7 @@ pytest==7.2.2
 black==24.4.0
 isort==5.12.0
 
-mypy==1.1.1
+mypy==1.10.0
 pydocstyle==6.3.0
 pylint==2.17.1
 ruff==0.0.259

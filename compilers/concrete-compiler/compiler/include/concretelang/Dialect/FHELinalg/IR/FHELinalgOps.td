@@ -1159,12 +1159,12 @@ def FHELinalg_ConcatOp : FHELinalg_Op<"concat", [Pure]> {
     }];
 
     let arguments = (ins
-        Variadic<Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>>:$ins,
+        Variadic<Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>>:$ins,
         DefaultValuedAttr<I64Attr, "0">:$axis
     );
 
     let results = (outs
-        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$out
+        Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$out
     );
 
     let hasVerifier = 1;
@@ -1513,6 +1513,78 @@ def FHELinalg_FancyAssignOp : FHELinalg_Op<"fancy_assign", [Pure]> {
     let results = (outs
         Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$output
     );
+
+    let hasVerifier = 1;
+}
+
+def FHELinalg_BroadcastOp: FHELinalg_Op<"broadcast", [Pure, ConstantNoise]> {
+    let summary = "Broadcasts a tensor to a shape.";
+    let description = [{
+        Broadcasting is used for expanding certain dimensions of a tensor
+        or adding new dimensions to it at the beginning.
+
+        An example could be broadcasting
+        a tensor with shape    <1x2x1x4x1>
+        to a tensor of shape <6x1x2x3x4x5>.
+
+        In this example:
+        - last dimension of the input (1) is expanded to (5)
+        - the dimension before that (4) is kept
+        - the dimension before that (1) is expanded to (3)
+        - the dimension before that (2) is kept
+        - the dimension before that (1) is kept
+        - a new dimension (6) is added to the beginning
+
+        See https://numpy.org/doc/stable/user/basics.broadcasting.html#general-broadcasting-rules
+        for the semantics of broadcasting.
+
+        Examples:
+
+        ```mlir
+        "FHELinalg.broadcast"(%t) : (tensor<1xindex>) -> tensor<3xindex>
+        //
+        // broadcast([5]) = [5, 5, 5]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.broadcast"(%t) : (tensor<1xindex>) -> tensor<3x2xindex>
+        //
+        // broadcast([5]) = [[5, 5], [5, 5], [5, 5]]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.broadcast"(%t) : (tensor<2xindex>) -> tensor<3x2xindex>
+        //
+        // broadcast([2, 6]) = [[2, 6], [2, 6], [2, 6]]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.broadcast"(%t) : (tensor<3x1xindex>) -> tensor<3x2xindex>
+        //
+        // broadcast([[1], [2], [3]]) = [[1, 1], [2, 2], [3, 3]]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.broadcast"(%t) : (tensor<2xindex>) -> tensor<2x3x2xindex>
+        //
+        // broadcast([2, 6]) = [[[2, 6], [2, 6], [2, 6]], [[2, 6], [2, 6], [2, 6]]]
+        //
+        ```
+
+        ```mlir
+        "FHELinalg.broadcast"(%t) : (tensor<3x1xindex>) -> tensor<2x3x2xindex>
+        //
+        // broadcast([[1], [2], [3]]) = [[[1, 1], [2, 2], [3, 3]], [[1, 1], [2, 2], [3, 3]]]
+        //
+        ```
+    }];
+
+    let arguments = (ins Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$input);
+    let results = (outs Type<And<[TensorOf<[AnyType]>.predicate, HasStaticShapePred]>>:$output);
 
     let hasVerifier = 1;
 }

@@ -282,6 +282,90 @@ Effects: MemoryEffects::Effect{}
 | :----: | ----------- |
 &laquo;unnamed&raquo; | 
 
+### `FHELinalg.broadcast` (::mlir::concretelang::FHELinalg::BroadcastOp)
+
+Broadcasts a tensor to a shape.
+
+Broadcasting is used for expanding certain dimensions of a tensor
+or adding new dimensions to it at the beginning.
+
+An example could be broadcasting
+a tensor with shape    <1x2x1x4x1>
+to a tensor of shape <6x1x2x3x4x5>.
+
+In this example:
+- last dimension of the input (1) is expanded to (5)
+- the dimension before that (4) is kept
+- the dimension before that (1) is expanded to (3)
+- the dimension before that (2) is kept
+- the dimension before that (1) is kept
+- a new dimension (6) is added to the beginning
+
+See https://numpy.org/doc/stable/user/basics.broadcasting.html#general-broadcasting-rules
+for the semantics of broadcasting.
+
+Examples:
+
+```mlir
+"FHELinalg.broadcast"(%t) : (tensor<1xindex>) -> tensor<3xindex>
+//
+// broadcast([5]) = [5, 5, 5]
+//
+```
+
+```mlir
+"FHELinalg.broadcast"(%t) : (tensor<1xindex>) -> tensor<3x2xindex>
+//
+// broadcast([5]) = [[5, 5], [5, 5], [5, 5]]
+//
+```
+
+```mlir
+"FHELinalg.broadcast"(%t) : (tensor<2xindex>) -> tensor<3x2xindex>
+//
+// broadcast([2, 6]) = [[2, 6], [2, 6], [2, 6]]
+//
+```
+
+```mlir
+"FHELinalg.broadcast"(%t) : (tensor<3x1xindex>) -> tensor<3x2xindex>
+//
+// broadcast([[1], [2], [3]]) = [[1, 1], [2, 2], [3, 3]]
+//
+```
+
+```mlir
+"FHELinalg.broadcast"(%t) : (tensor<2xindex>) -> tensor<2x3x2xindex>
+//
+// broadcast([2, 6]) = [[[2, 6], [2, 6], [2, 6]], [[2, 6], [2, 6], [2, 6]]]
+//
+```
+
+```mlir
+"FHELinalg.broadcast"(%t) : (tensor<3x1xindex>) -> tensor<2x3x2xindex>
+//
+// broadcast([[1], [2], [3]]) = [[[1, 1], [2, 2], [3, 3]], [[1, 1], [2, 2], [3, 3]]]
+//
+```
+
+Traits: AlwaysSpeculatableImplTrait
+
+Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface)
+
+Effects: MemoryEffects::Effect{}
+
+#### Operands:
+
+| Operand | Description |
+| :-----: | ----------- |
+| `input` | 
+
+#### Results:
+
+| Result | Description |
+| :----: | ----------- |
+| `output` | 
+
 ### `FHELinalg.concat` (::mlir::concretelang::FHELinalg::ConcatOp)
 
 Concatenates a sequence of tensors along an existing axis.

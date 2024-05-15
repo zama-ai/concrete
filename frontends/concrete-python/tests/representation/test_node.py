@@ -8,7 +8,13 @@ import pytest
 from concrete.fhe.dtypes import UnsignedInteger
 from concrete.fhe.representation import Node
 from concrete.fhe.tfhers import int8_2_2, int8_2_2_value
-from concrete.fhe.values import ClearScalar, EncryptedScalar, EncryptedTensor, ValueDescription
+from concrete.fhe.values import (
+    ClearScalar,
+    ClearTensor,
+    EncryptedScalar,
+    EncryptedTensor,
+    ValueDescription,
+)
 
 
 @pytest.mark.parametrize(
@@ -241,6 +247,63 @@ def test_node_bad_call(node, args, expected_error, expected_message):
             ["%0", "%1"],
             "(%0[1, 2] = %1)",
         ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8,)),
+                    ClearTensor(UnsignedInteger(3), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None,)},
+            ),
+            ["%0", "%1"],
+            "%0[%1]",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearTensor(UnsignedInteger(3), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None, 0)},
+            ),
+            ["%0", "%1"],
+            "%0[%1, 0]",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearTensor(UnsignedInteger(2), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (0, None)},
+            ),
+            ["%0", "%1"],
+            "%0[0, %1]",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearTensor(UnsignedInteger(3), shape=(3,)),
+                    ClearTensor(UnsignedInteger(2), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None, None)},
+            ),
+            ["%0", "%1", "%2"],
+            "%0[%1, %2]",
+        ),
     ],
 )
 def test_node_format(node, predecessors, expected_result):
@@ -307,6 +370,59 @@ def test_node_format(node, predecessors, expected_result):
                 kwargs={"index": (1, 2)},
             ),
             "□[1, 2] = □",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8,)),
+                    ClearTensor(UnsignedInteger(3), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None,)},
+            ),
+            "□[□]",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearTensor(UnsignedInteger(3), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None, 0)},
+            ),
+            "□[□, 0]",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearTensor(UnsignedInteger(2), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (0, None)},
+            ),
+            "□[0, □]",
+        ),
+        pytest.param(
+            Node.generic(
+                name="index_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearTensor(UnsignedInteger(3), shape=(3,)),
+                    ClearTensor(UnsignedInteger(2), shape=(3,)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(3,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None, None)},
+            ),
+            "□[□, □]",
         ),
     ],
 )

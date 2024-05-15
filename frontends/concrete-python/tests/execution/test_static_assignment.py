@@ -734,7 +734,7 @@ def test_static_assignment(shape, function, helpers):
     compiler = fhe.Compiler(function, {"x": "encrypted"})
 
     inputset = [np.random.randint(0, 2**7, size=shape) for _ in range(100)]
-    circuit = compiler.compile(inputset, configuration, verbose=True)
+    circuit = compiler.compile(inputset, configuration)
 
     sample = np.random.randint(0, 2**7, size=shape)
     helpers.check_execution(circuit, function, sample)

@@ -669,6 +669,13 @@ getSqMANP(mlir::concretelang::FHELinalg::ConcatOp op,
           llvm::ArrayRef<const MANPLattice *> operandMANPs) {
 
   llvm::APInt result = llvm::APInt{1, 0, false};
+  if (!op.getType()
+           .cast<RankedTensorType>()
+           .getElementType()
+           .isa<FHE::FheIntegerInterface>()) {
+    return result;
+  }
+
   for (const MANPLattice *operandMANP : operandMANPs) {
     llvm::APInt candidate = operandMANP->getValue().getMANP().value();
     if (candidate.getLimitedValue() >= result.getLimitedValue()) {

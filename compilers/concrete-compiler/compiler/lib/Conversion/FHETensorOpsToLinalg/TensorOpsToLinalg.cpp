@@ -1347,7 +1347,10 @@ struct ConcatRewritePattern
     size_t outputDimensions = outputShape.size();
 
     mlir::Value result =
-        rewriter.create<FHE::ZeroTensorOp>(location, outputType).getResult();
+        rewriter
+            .create<tensor::EmptyOp>(location, outputShape,
+                                     outputType.getElementType())
+            .getResult();
 
     auto offsets = llvm::SmallVector<int64_t, 3>{};
     auto sizes = llvm::SmallVector<int64_t, 3>{};
@@ -2228,6 +2231,195 @@ struct FancyAssignToSfcForall
   };
 };
 
+/// This rewrite pattern transforms any instance of operators
+/// `arith.index_cast` and `arith.extsi` to an instance of `linalg.generic`.
+///
+/// Example:
+///
+///   %output = arith.index_cast %input : tensor<3xi4> to tensor<3xindex>
+///
+/// becomes:
+///
+///   #map = affine_map<(d0) -> (d0)>
+///
+///   %empty = tensor.empty() : tensor<3xindex>
+///   %output = linalg.generic
+///     {
+///       indexing_maps = [#map, #map],
+///       iterator_types = ["parallel"]
+///     }
+///     ins(%input : tensor<3xi4>)
+///     outs(%empty : tensor<3xindex>)
+///     {
+///
+///       ^bb0(%element: i4, %output: index):
+///           %casted = arith.index_cast %element : i4 to index
+///           linalg.yield %casted : index
+///
+///     } -> tensor<3xindex>
+///
+template <typename Op>
+struct TensorMapToLinalgGeneric : public mlir::OpRewritePattern<Op> {
+  TensorMapToLinalgGeneric(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<Op>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(Op op, mlir::PatternRewriter &rewriter) const override {
+
+    mlir::Location location = op.getLoc();
+
+    mlir::Value input = op.getOperand();
+    mlir::Value output = op.getResult();
+
+    auto inputType = input.getType().dyn_cast_or_null<mlir::RankedTensorType>();
+    auto outputType =
+        output.getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+    if (!inputType || !outputType) {
+      return mlir::failure();
+    }
+
+    llvm::ArrayRef<int64_t> inputShape = inputType.getShape();
+    int64_t inputDimensions = inputShape.size();
+
+    mlir::Value empty =
+        rewriter
+            .create<tensor::EmptyOp>(location, outputType.getShape(),
+                                     outputType.getElementType())
+            .getResult();
+
+    auto ins = llvm::SmallVector<mlir::Value, 1>{input};
+    auto outs = llvm::SmallVector<mlir::Value, 1>{empty};
+
+    mlir::AffineMap identityMap = mlir::AffineMap::getMultiDimIdentityMap(
+        inputDimensions, this->getContext());
+
+    auto maps = llvm::SmallVector<mlir::AffineMap, 2>{identityMap, identityMap};
+
+    auto iteratorTypes = llvm::SmallVector<mlir::utils::IteratorType, 3>(
+        inputDimensions, mlir::utils::IteratorType::parallel);
+
+    auto regionBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                             mlir::Location nestedLoc,
+                             mlir::ValueRange blockArgs) {
+      mlir::Value value = blockArgs[0];
+      auto cast = nestedBuilder.create<Op>(location,
+                                           outputType.getElementType(), value);
+      nestedBuilder.create<linalg::YieldOp>(location, cast.getResult());
+    };
+
+    auto resultTypes = llvm::SmallVector<mlir::Type, 1>{outputType};
+    linalg::GenericOp genericOp = rewriter.create<linalg::GenericOp>(
+        location, resultTypes, ins, outs, maps, iteratorTypes, regionBuilder);
+
+    if (op->hasAttr("tile-sizes")) {
+      genericOp->setAttr("tile-sizes", op->getAttr("tile-sizes"));
+    }
+
+    mlir::Value replacement = genericOp.getResult(0);
+
+    rewriter.replaceOp(op, {replacement});
+    return mlir::success();
+  };
+};
+
+/// This rewrite pattern transforms any instance of operators
+/// `FHELinalg.broadcast` to an instance of `linalg.generic`.
+///
+/// Example:
+///
+///   %output =  "FHELinalg.broadcast"(%input)
+///     : (tensor<3xindex>) -> tensor<4x3xindex>
+///
+/// becomes:
+///
+///   #map1 = affine_map<(d0, d1) -> (d1)>
+///   #map2 = affine_map<(d0, d1) -> (d0, d1)>
+///
+///   %empty = tensor.empty() : tensor<4x3xindex>
+///   %output = linalg.generic
+///     {
+///       indexing_maps = [#map1, #map2],
+///       iterator_types = ["parallel", "parallel"]
+///     }
+///     ins(%input : tensor<3xindex>)
+///     outs(%empty : tensor<4x3xindex>)
+///     {
+///
+///       ^bb0(%element: index, %output: index):
+///           linalg.yield %element : index
+///
+///     } -> tensor<4x3xindex>
+///
+struct BroadcastToLinalgGeneric
+    : public mlir::OpRewritePattern<FHELinalg::BroadcastOp> {
+  BroadcastToLinalgGeneric(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<FHELinalg::BroadcastOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHELinalg::BroadcastOp broadcastOp,
+                  mlir::PatternRewriter &rewriter) const override {
+
+    auto location = broadcastOp.getLoc();
+
+    auto input = broadcastOp.getInput();
+    auto output = broadcastOp.getOutput();
+
+    auto inputType = input.getType().dyn_cast<mlir::RankedTensorType>();
+    auto outputType = output.getType().dyn_cast<mlir::RankedTensorType>();
+
+    auto inputShape = inputType.getShape();
+    auto outputShape = outputType.getShape();
+
+    auto inputDimensions = inputShape.size();
+    auto outputDimensions = outputShape.size();
+
+    auto emptyTensorOp = rewriter.create<tensor::EmptyOp>(location, outputType,
+                                                          mlir::ValueRange{});
+
+    auto inputAffineExpressions = llvm::SmallVector<mlir::AffineExpr, 3>{};
+    for (size_t i = 0; i < inputDimensions; i++) {
+      if (inputShape[i] == 1) {
+        inputAffineExpressions.push_back(rewriter.getAffineConstantExpr(0));
+      } else {
+        auto dim = i + (outputDimensions - inputDimensions);
+        inputAffineExpressions.push_back(rewriter.getAffineDimExpr(dim));
+      }
+    }
+
+    mlir::AffineMap inputMap = mlir::AffineMap::get(
+        outputDimensions, 0, inputAffineExpressions, rewriter.getContext());
+
+    llvm::SmallVector<mlir::Type, 1> resultTypes{outputType};
+    auto ins = llvm::SmallVector<mlir::Value, 1>{input};
+    auto outs = llvm::SmallVector<mlir::Value, 1>{emptyTensorOp.getResult()};
+    llvm::SmallVector<mlir::AffineMap, 2> maps{
+        inputMap,
+        mlir::AffineMap::getMultiDimIdentityMap(outputDimensions,
+                                                this->getContext()),
+    };
+    auto iteratorTypes = parallelIteratorType(outputDimensions);
+    auto regionBuilder = [&](mlir::OpBuilder &nestedBuilder,
+                             mlir::Location nestedLoc,
+                             mlir::ValueRange blockArgs) {
+      mlir::Value item = blockArgs[0];
+      nestedBuilder.create<linalg::YieldOp>(location, item);
+    };
+
+    auto genericOp = rewriter.create<linalg::GenericOp>(
+        location, resultTypes, ins, outs, maps, iteratorTypes, regionBuilder);
+
+    if (broadcastOp->hasAttr("tile-sizes")) {
+      genericOp->setAttr("tile-sizes", broadcastOp->getAttr("tile-sizes"));
+    }
+
+    rewriter.replaceOp(broadcastOp, genericOp.getResults());
+    return mlir::success();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -2250,6 +2442,18 @@ void FHETensorOpsToLinalg::runOnOperation() {
 
   target.addLegalOp<mlir::scf::ForallOp>();
   target.addLegalOp<mlir::scf::InParallelOp>();
+
+  target.addIllegalOp<arith::IndexCastOp>();
+  target.addDynamicallyLegalOp<arith::IndexCastOp>([&](arith::IndexCastOp op) {
+    return !op.getOperand().getType().isa<mlir::RankedTensorType>() ||
+           !op.getResult().getType().isa<mlir::RankedTensorType>();
+  });
+
+  target.addIllegalOp<arith::ExtSIOp>();
+  target.addDynamicallyLegalOp<arith::ExtSIOp>([&](arith::ExtSIOp op) {
+    return !op.getOperand().getType().isa<mlir::RankedTensorType>() ||
+           !op.getResult().getType().isa<mlir::RankedTensorType>();
+  });
 
   target.addDynamicallyLegalOp<
       mlir::concretelang::Optimizer::PartitionFrontierOp>(
@@ -2414,6 +2618,11 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<TensorPartitionFrontierOpToLinalgGeneric>(&getContext());
   patterns.insert<FancyIndexToTensorGenerate>(&getContext());
   patterns.insert<FancyAssignToSfcForall>(&getContext());
+
+  patterns.insert<TensorMapToLinalgGeneric<arith::IndexCastOp>>(&getContext());
+  patterns.insert<TensorMapToLinalgGeneric<arith::ExtSIOp>>(&getContext());
+
+  patterns.insert<BroadcastToLinalgGeneric>(&getContext());
 
   if (mlir::applyPartialConversion(function, target, std::move(patterns))
           .failed())
