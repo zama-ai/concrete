@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Pull wheels from S3
-        continue-on-error: true
-        if: ${{ env.RELEASE_TYPE == 'public' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
@@ -28,8 +26,6 @@ jobs:
           ls -la ./wheels/
 
       - name: Push wheels to public PyPI (public)
-        continue-on-error: true
-        if: ${{ env.RELEASE_TYPE == 'public' }}
         run: |
           pip install twine==4.0.2
           twine upload wheels/*.whl \
