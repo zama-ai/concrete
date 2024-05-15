@@ -1,4 +1,4 @@
-# Game of Life
+# Game of life
 
 In the associated [Python file](game_of_life.py), you can run the Game of Life, written in Concrete Python.
 
