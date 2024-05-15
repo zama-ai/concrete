@@ -680,6 +680,22 @@ class FheModule:
             name: FheFunction(name, self.runtime, self.graphs[name]) for name in self.graphs.keys()
         }
 
+    @property
+    def server(self) -> Server:
+        """
+        Get the server object tied to the module.
+        """
+        return self.runtime.server
+
+    @property
+    def client(self) -> Optional[Client]:
+        """
+        Returns the client object tied to the module if not in simulation mode.
+        """
+        if isinstance(self.runtime, ExecutionRt):
+            return self.runtime.client
+        return None
+
     def __getattr__(self, item):
         if item not in list(self.graphs.keys()):
             error = f"No attribute {item}"
