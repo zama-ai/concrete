@@ -212,16 +212,6 @@ jobs:
             -p "${{ secrets.INTERNAL_PYPI_PASSWORD }}" \
             --repository-url "${{ secrets.INTERNAL_PYPI_URL }}"
 
-      - name: Push wheels to public PyPI (public)
-        continue-on-error: true
-        if: ${{ env.RELEASE_TYPE == 'public' }}
-        run: |
-          pip install twine==4.0.2
-          twine upload wheels/*.whl \
-            -u "${{ secrets.PUBLIC_PYPI_USER }}" \
-            -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" \
-            -r pypi
-
       - name: Upload wheels to S3
         continue-on-error: true
         if: ${{ env.RELEASE_TYPE == 'public' }}
