@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, 
 import numpy as np
 from concrete.lang.dialects import fhe, fhelinalg
 from concrete.lang.dialects.fhe import EncryptedIntegerType, EncryptedSignedIntegerType
-from mlir.dialects import arith, tensor
+from mlir.dialects import arith, scf, tensor
 from mlir.ir import ArrayAttr as MlirArrayAttr
 from mlir.ir import Attribute as MlirAttribute
 from mlir.ir import BoolAttr as MlirBoolAttr
@@ -17,12 +17,13 @@ from mlir.ir import Context as MlirContext
 from mlir.ir import DenseElementsAttr as MlirDenseElementsAttr
 from mlir.ir import DenseI64ArrayAttr as MlirDenseI64ArrayAttr
 from mlir.ir import IndexType
+from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import IntegerAttr as MlirIntegerAttr
 from mlir.ir import IntegerType
 from mlir.ir import Location as MlirLocation
+from mlir.ir import NoneType
 from mlir.ir import OpResult as MlirOperation
 from mlir.ir import RankedTensorType
-from mlir.ir import Type as MlirType
 
 from ..compilation.configuration import (
     BitwiseStrategy,
@@ -70,7 +71,7 @@ class Context:
     conversions: Dict[Node, Conversion]
     converting: Node
 
-    conversion_cache: Dict[Tuple, Conversion]
+    conversion_cache: Dict[Tuple, Tuple[Conversion, ...]]
     constant_cache: Dict[MlirAttribute, MlirOperation]
 
     configuration: Configuration
@@ -107,11 +108,17 @@ class Context:
         """
         return ConversionType(EncryptedSignedIntegerType.get(self.context, width))
 
-    def index_type(self) -> MlirType:
+    def index_type(self) -> ConversionType:
         """
         Get index type.
         """
         return ConversionType(IndexType.parse("index"))
+
+    def none_type(self) -> ConversionType:
+        """
+        Get none type.
+        """
+        return ConversionType(NoneType.get())
 
     def tensor(self, element_type: ConversionType, shape: Tuple[int, ...]) -> ConversionType:
         """
@@ -123,10 +130,14 @@ class Context:
             else element_type
         )
 
-    def typeof(self, value: Union[ValueDescription, Node]) -> ConversionType:
+    def typeof(self, value: Optional[Union[ValueDescription, Node]]) -> ConversionType:
         """
         Get type corresponding to a value or a node.
         """
+
+        if value is None:  # pragma: no cover
+            return self.none_type()
+
         if isinstance(value, Node):
             value = value.output
 
@@ -156,6 +167,25 @@ class Context:
             result = self.eint(bit_width)
 
         return result if value.is_scalar else self.tensor(result, value.shape)
+
+    def element_typeof(self, value: Union[Conversion, ConversionType]) -> ConversionType:
+        """
+        Get type corresponding to the elements of a tensor type.
+        """
+
+        if isinstance(value, Conversion):
+            value = value.type
+
+        if value.is_index:
+            return self.index_type()
+
+        if value.is_clear:
+            return self.i(value.bit_width)
+
+        if value.is_signed:
+            return self.esint(value.bit_width)
+
+        return self.eint(value.bit_width)
 
     def fork_type(
         self,
@@ -259,9 +289,10 @@ class Context:
     def operation(
         self,
         operation: Callable,
-        resulting_type: ConversionType,
+        resulting_type: Optional[ConversionType],
         *args,
         original_bit_width: Optional[int] = None,
+        use_cache: bool = True,
         **kwargs,
     ) -> Conversion:
         """
@@ -271,14 +302,17 @@ class Context:
             operation (Callable):
                 MLIR operation to create (e.g., fhe.AddEintOp)
 
-            resulting_type (ConversionType):
-                type of the output of the operation
+            resulting_type (Optional[ConversionType]):
+                optional type of the output of the operation
 
             *args (Any):
                 args to pass to the operation
 
             original_bit_width (Optional[int], default = None):
                 original bit width of the resulting conversion
+
+            use_cache (bool, default = True):
+                whether to use the operation cache or not
 
             *kwargs (Any):
                 kwargs to pass to the operation
@@ -287,25 +321,227 @@ class Context:
                 resulting conversion
         """
 
-        cache_key = (resulting_type.mlir, operation, *args, *kwargs)
-        cached_conversion = self.conversion_cache.get(cache_key)
+        cache_key = (
+            resulting_type.mlir if resulting_type is not None else None,
+            operation,
+            *args,
+            *kwargs,
+        )
+        cached_conversions = self.conversion_cache.get(cache_key) if use_cache else None
 
-        if cached_conversion is None:
+        if cached_conversions is None or not use_cache:
             # since the operations are cached
             # if an operation is repeated in a different location,
             # it'll have the location of the first instance of that operation
-            if operation not in [tensor.ExtractOp, tensor.InsertSliceOp]:
-                result = operation(resulting_type.mlir, *args, **kwargs, loc=self.location()).result
+            if operation in [
+                arith.AddIOp,
+                arith.CmpIOp,
+                scf.YieldOp,
+                tensor.ExtractOp,
+                tensor.InsertSliceOp,
+                tensor.YieldOp,
+            ]:
+                resulting_operation = operation(*args, **kwargs, loc=self.location())
+
             else:
-                result = operation(*args, **kwargs, loc=self.location()).result
+                assert resulting_type is not None
+                resulting_operation = operation(
+                    resulting_type.mlir,
+                    *args,
+                    **kwargs,
+                    loc=self.location(),
+                )
 
-            cached_conversion = Conversion(self.converting, result)
-            if original_bit_width is not None:
-                cached_conversion.set_original_bit_width(original_bit_width)
+            resulting_conversions = []
+            for result in resulting_operation.results:
+                resulting_conversion = Conversion(self.converting, result)
+                if original_bit_width is not None:
+                    resulting_conversion.set_original_bit_width(original_bit_width)
+                resulting_conversions.append(resulting_conversion)
 
-            self.conversion_cache[cache_key] = cached_conversion
+            cached_conversions = tuple(resulting_conversions)
+            if use_cache:
+                self.conversion_cache[cache_key] = cached_conversions
 
-        return cached_conversion
+        if len(cached_conversions) == 1:
+            return cached_conversions[0]
+
+        return cached_conversions  # type: ignore
+
+    # scf
+
+    def conditional(
+        self,
+        resulting_type: Optional[ConversionType],
+        condition: Conversion,
+        then_builder: Callable[[], Optional[Conversion]],
+        else_builder: Optional[Callable[[], Optional[Conversion]]] = None,
+    ) -> Optional[Conversion]:
+        """
+        Create an if conditional.
+
+        Args:
+            resulting_type (Optional[ConversionType]):
+                resulting type of the operation
+
+            condition (Conversion):
+                condition of conditional
+
+            then_builder (Callable[[], Optional[Conversion]]):
+                builder of then block of conditional
+
+            else_builder (Optional[Callable[[], Optional[Conversion]]], default = None):
+                optional builder of else block of conditional
+
+        Returns:
+            Optional[Conversion]:
+                None if resulting type is None
+                conversion of the created operation otherwise
+
+        Notes:
+            - if resulting type is not None
+              both then and else builders need to return a conversion
+              with the same type as resulting type
+        """
+
+        conditional_operation = scf.IfOp(
+            condition.result,
+            [resulting_type.mlir] if resulting_type is not None else [],
+            hasElse=(else_builder is not None),
+            loc=self.location(),
+        )
+
+        then_block = conditional_operation.regions[0].blocks[0]
+        with MlirInsertionPoint.at_block_begin(then_block):  # pragma: no cover
+            yielded = then_builder()
+            if yielded is not None:
+                self.operation(
+                    scf.YieldOp,
+                    resulting_type,
+                    (yielded.result,),
+                    use_cache=False,
+                )
+            else:
+                self.operation(
+                    scf.YieldOp,
+                    self.none_type(),
+                    (),
+                    use_cache=False,
+                )
+
+        if else_builder is not None:
+            else_block = conditional_operation.regions[1].blocks[0]
+            with MlirInsertionPoint.at_block_begin(else_block):  # pragma: no cover
+                yielded = else_builder()
+                if yielded is not None:
+                    self.operation(
+                        scf.YieldOp,
+                        resulting_type,
+                        (yielded.result,),
+                        use_cache=False,
+                    )
+                else:
+                    self.operation(
+                        scf.YieldOp,
+                        self.none_type(),
+                        (),
+                        use_cache=False,
+                    )
+
+        if len(conditional_operation.results) > 0:
+            resulting_conversion = Conversion(self.converting, conditional_operation.result)
+            return resulting_conversion
+
+        return None
+
+    def for_loop(
+        self,
+        lower_bound: int,
+        upper_bound: int,
+        body: Union[
+            Callable[[Conversion], Optional[Conversion]],
+            Callable[[Conversion, Conversion], Optional[Conversion]],
+        ],
+        output: Optional[Conversion] = None,
+        *,
+        step: int = 1,
+    ) -> Optional[Conversion]:
+        """
+        Create a for loop.
+
+        Args:
+            lower_bound (int):
+                starting position of the for loop
+
+            upper_bound (int):
+                upper bound of the for loop
+
+            body (Union[
+                Callable[[Conversion], Optional[Conversion]],
+                Callable[[Conversion, Conversion], Optional[Conversion]],
+            ]):
+                body of the for loop
+
+            output (Optional[Conversion], default = None):
+                initial value of the output of the for loop
+
+            step (int, default = 1):
+                step between the iterations of the for loop
+
+        Returns:
+            Optional[Conversion]:
+                None if output is None
+                conversion of the created operation otherwise
+
+        Notes:
+            - if output is None
+              body builder must take a single indexing variable argument
+            - if output is not None
+              body builder must take an indexing variable and output arguments
+              and body must end with an scf yield operation with the updated output
+        """
+
+        lower_bound = self.constant(self.index_type(), lower_bound, use_cache=False)
+        upper_bound = self.constant(self.index_type(), upper_bound, use_cache=False)
+        step = self.constant(self.index_type(), step, use_cache=False)
+
+        for_operation = scf.ForOp(
+            lower_bound.result,
+            upper_bound.result,
+            step.result,
+            [output.result] if output is not None else None,
+            loc=self.location(),
+        )
+
+        block = for_operation.regions[0].blocks[0]
+        with MlirInsertionPoint.at_block_begin(block):  # pragma: no cover
+            i = Conversion(self.converting, block.arguments[0])
+            if len(block.arguments) == 1:
+                yielded = body(i)  # type: ignore
+            else:
+                output = Conversion(self.converting, block.arguments[1])
+                yielded = body(i, output)  # type: ignore
+
+            if yielded is not None:
+                self.operation(
+                    scf.YieldOp,
+                    yielded.type,
+                    (yielded.result,),
+                    use_cache=False,
+                )
+            else:
+                self.operation(
+                    scf.YieldOp,
+                    self.none_type(),
+                    (),
+                    use_cache=False,
+                )
+
+        if len(for_operation.results) > 0:  # pragma: no cover
+            resulting_conversion = Conversion(self.converting, for_operation.result)
+            return resulting_conversion
+
+        return None
 
     # comparisons
 
@@ -1581,7 +1817,7 @@ class Context:
         Cast a value to its original bit width using multiplication and reinterpretation.
         """
 
-        if value.bit_width == value.original_bit_width:
+        if value.bit_width == value.original_bit_width:  # pragma: no cover
             return value
 
         shift_amount = value.bit_width - value.original_bit_width
@@ -1640,7 +1876,6 @@ class Context:
         )
 
     def array(self, resulting_type: ConversionType, elements: List[Conversion]) -> Conversion:
-        assert resulting_type.is_encrypted
         assert self.is_bit_width_compatible(resulting_type, *elements)
 
         sanitized_elements = []
@@ -1999,25 +2234,17 @@ class Context:
         return self.bitwise(resulting_type, x, y, lambda a, b: a ^ b)
 
     def broadcast_to(self, x: Conversion, shape: Tuple[int, ...]):
-        if x.is_clear:
-            highlights = {
-                x.origin: "value is clear",
-                self.converting: "but clear values cannot be broadcasted",
-            }
-            self.error(highlights)
-
         if x.shape == shape:
             return x
 
-        resulting_type = self.typeof(
-            ValueDescription(
-                dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
-                shape=shape,
-                is_encrypted=x.is_encrypted,
-            )
-        )
+        if x.is_scalar:
+            x = self.array(self.tensor(x.type, (1,)), [x])
 
-        return self.add(resulting_type, x, self.zeros(resulting_type))
+        return self.operation(
+            fhelinalg.BroadcastOp,
+            self.tensor(self.element_typeof(x), shape),
+            x.result,
+        )
 
     def cast(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
         assert x.original_bit_width <= resulting_type.bit_width
@@ -2041,16 +2268,11 @@ class Context:
         xs: List[Conversion],
         axis: Optional[int],
     ) -> Conversion:
-        if resulting_type.is_clear:
-            highlights = {x.origin: "value is clear" for x in xs}
-            highlights[self.converting] = "but clear concatenation is not supported"
-            self.error(highlights)
-
         assert self.is_bit_width_compatible(resulting_type, *xs)
 
         sanitized_xs = []
         for x in xs:
-            if x.is_clear:
+            if x.is_clear and resulting_type.is_encrypted:
                 encrypted_type = self.typeof(
                     ValueDescription(
                         dtype=Integer(
@@ -2082,13 +2304,18 @@ class Context:
             axis=MlirIntegerAttr.get(self.i(64).mlir, axis),
         )
 
-    def constant(self, resulting_type: ConversionType, data: Any) -> Conversion:
+    def constant(
+        self,
+        resulting_type: ConversionType,
+        data: Any,
+        use_cache: bool = True,
+    ) -> Conversion:
         assert resulting_type.is_clear
 
         attribute = self.attribute(resulting_type, data)
 
         cache_key = attribute
-        cached_conversion = self.constant_cache.get(cache_key)
+        cached_conversion = self.constant_cache.get(cache_key) if use_cache else None
 
         if cached_conversion is None:
             cached_conversion = Conversion(
@@ -2101,7 +2328,8 @@ class Context:
             except Exception:  # pylint: disable=broad-except
                 pass
 
-            self.constant_cache[cache_key] = cached_conversion
+            if use_cache:
+                self.constant_cache[cache_key] = cached_conversion
 
         return cached_conversion
 
@@ -2477,181 +2705,19 @@ class Context:
 
         return result
 
-    def index_static(
+    def index(
         self,
         resulting_type: ConversionType,
         x: Conversion,
-        index: Sequence[Union[int, np.integer, slice, np.ndarray, list]],
+        index: Sequence[Union[int, np.integer, slice, np.ndarray, list, Conversion]],
     ) -> Conversion:
-        assert self.is_bit_width_compatible(resulting_type, x)
-        assert resulting_type.is_encrypted == x.is_encrypted
+        # This import needs to happen here to avoid circular imports.
+        # pylint: disable=import-outside-toplevel
+        from .operations.indexing import indexing
 
-        x = self.to_signedness(x, of=resulting_type)
+        # pylint: enable=import-outside-toplevel
 
-        if any(isinstance(indexing_element, (list, np.ndarray)) for indexing_element in index):
-            return self.index_static_fancy(resulting_type, x, index)
-
-        index = list(index)
-        while len(index) < len(x.shape):
-            index.append(slice(None, None, None))
-
-        if all(isinstance(i, (int, np.integer)) for i in index):
-            indices = []
-            for indexing_element, dimension_size in zip(index, x.shape):
-                indexing_element = int(indexing_element)  # type: ignore
-                if indexing_element < 0:
-                    indexing_element += dimension_size
-                indices.append(self.constant(self.index_type(), indexing_element).result)
-
-            return self.operation(
-                tensor.ExtractOp,
-                resulting_type,
-                x.result,
-                tuple(indices),
-                original_bit_width=x.original_bit_width,
-            )
-
-        offsets = []
-        sizes = []
-        strides = []
-
-        destroyed_dimensions = []
-        for dimension, (indexing_element, dimension_size) in enumerate(zip(index, x.shape)):
-            if isinstance(indexing_element, slice):
-                size = int(np.zeros(dimension_size)[indexing_element].shape[0])
-                stride = int(indexing_element.step if indexing_element.step is not None else 1)
-                offset = int(
-                    (
-                        indexing_element.start
-                        if indexing_element.start >= 0
-                        else indexing_element.start + dimension_size
-                    )
-                    if indexing_element.start is not None
-                    else (0 if stride > 0 else dimension_size - 1)
-                )
-
-            else:
-                assert isinstance(indexing_element, (int, np.integer))
-                destroyed_dimensions.append(dimension)
-                size = 1
-                stride = 1
-                offset = int(
-                    (
-                        indexing_element
-                        if indexing_element >= 0
-                        else indexing_element + dimension_size
-                    ),
-                )
-
-            offsets.append(offset)
-            sizes.append(size)
-            strides.append(stride)
-
-        if len(destroyed_dimensions) == 0:
-            return self.operation(
-                tensor.ExtractSliceOp,
-                resulting_type,
-                x.result,
-                (),
-                (),
-                (),
-                MlirDenseI64ArrayAttr.get(offsets),
-                MlirDenseI64ArrayAttr.get(sizes),
-                MlirDenseI64ArrayAttr.get(strides),
-                original_bit_width=x.original_bit_width,
-            )
-
-        intermediate_shape = list(resulting_type.shape)
-        for dimension in destroyed_dimensions:
-            intermediate_shape.insert(dimension, 1)
-
-        intermediate_type = self.typeof(
-            ValueDescription(
-                dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
-                shape=tuple(intermediate_shape),
-                is_encrypted=x.is_encrypted,
-            )
-        )
-
-        intermediate = self.operation(
-            tensor.ExtractSliceOp,
-            intermediate_type,
-            x.result,
-            (),
-            (),
-            (),
-            MlirDenseI64ArrayAttr.get(offsets),
-            MlirDenseI64ArrayAttr.get(sizes),
-            MlirDenseI64ArrayAttr.get(strides),
-        )
-
-        reassociaton = []
-
-        current_intermediate_dimension = 0
-        for _ in range(len(resulting_type.shape)):
-            indices = [current_intermediate_dimension]
-            while current_intermediate_dimension in destroyed_dimensions:
-                current_intermediate_dimension += 1
-                indices.append(current_intermediate_dimension)
-
-            reassociaton.append(indices)
-            current_intermediate_dimension += 1
-        while current_intermediate_dimension < len(intermediate_shape):
-            reassociaton[-1].append(current_intermediate_dimension)
-            current_intermediate_dimension += 1
-
-        return self.operation(
-            tensor.CollapseShapeOp,
-            resulting_type,
-            intermediate.result,
-            MlirArrayAttr.get(
-                [
-                    MlirArrayAttr.get(
-                        [MlirIntegerAttr.get(self.i(64).mlir, index) for index in indices],
-                    )
-                    for indices in reassociaton
-                ],
-            ),
-        )
-
-    def index_static_fancy(
-        self,
-        resulting_type: ConversionType,
-        x: Conversion,
-        index: Sequence[Union[int, np.integer, slice, np.ndarray, list]],
-    ) -> Conversion:
-        indices = []
-        for destination_position in np.ndindex(resulting_type.shape):
-            source_position = []
-            for indexing_element in index:
-                if isinstance(indexing_element, (int, np.integer)):
-                    source_position.append(indexing_element)
-
-                elif isinstance(indexing_element, (list, np.ndarray)):
-                    position = indexing_element[destination_position[0]]
-                    for n in range(1, len(destination_position)):
-                        position = position[destination_position[n]]
-                    source_position.append(position)
-
-                else:  # pragma: no cover
-                    message = f"invalid indexing element of type {type(indexing_element)}"
-                    raise AssertionError(message)
-
-            indices.append(source_position)
-
-        indices_shape = resulting_type.shape
-        if len(x.shape) > 1:
-            indices_shape = (*indices_shape, len(x.shape))
-
-        return self.operation(
-            fhelinalg.FancyIndexOp,
-            resulting_type,
-            x.result,
-            self.constant(
-                self.tensor(self.index_type(), indices_shape),
-                np.array(indices).reshape(indices_shape),
-            ).result,
-        )
+        return indexing(self, resulting_type, x, index)
 
     def less(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.LESS})
@@ -3234,13 +3300,7 @@ class Context:
         if input_shape == output_shape:
             return x
 
-        resulting_type = self.typeof(
-            ValueDescription(
-                dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
-                shape=output_shape,
-                is_encrypted=x.is_encrypted,
-            )
-        )
+        resulting_type = self.tensor(self.element_typeof(x), shape)
 
         # we can either collapse or expand, which changes the number of dimensions
         # this is a limitation of the current compiler, it will be improved in the future (#1060)
@@ -3785,17 +3845,9 @@ class Context:
         if x.is_tensor:
             return x
 
-        resulting_type = self.typeof(
-            ValueDescription(
-                dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
-                shape=(1,),
-                is_encrypted=x.is_encrypted,
-            )
-        )
-
         return self.operation(
             _FromElementsOp,
-            resulting_type,
+            self.tensor(x.type, (1,)),
             x.result,
             original_bit_width=x.original_bit_width,
         )

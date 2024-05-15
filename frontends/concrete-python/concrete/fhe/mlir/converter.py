@@ -232,6 +232,9 @@ class Converter:
                 ),
             ]
             + configuration.additional_post_processors
+            + [
+                AssignNodeIds(),
+            ]
         )
 
         for processor in pipeline:
@@ -404,9 +407,28 @@ class Converter:
         assert len(preds) == 1
         return ctx.identity(ctx.typeof(node), preds[0])
 
+    def index_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) >= 2
+
+        x = preds[0]
+        dynamic_indices = preds[1:]
+        static_indices = node.properties["kwargs"]["static_indices"]
+
+        indices = []
+
+        cursor = 0
+        for index in static_indices:
+            if index is None:
+                indices.append(dynamic_indices[cursor])
+                cursor += 1
+            else:
+                indices.append(index)
+
+        return ctx.index(ctx.typeof(node), x, indices)
+
     def index_static(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-        return ctx.index_static(
+        return ctx.index(
             ctx.typeof(node),
             preds[0],
             index=node.properties["kwargs"]["index"],
@@ -580,7 +602,7 @@ class Converter:
 
             assert all(size == 1 for size in preds[0].shape)
             index = (0,) * len(preds[0].shape)
-            return ctx.index_static(ctx.typeof(node), preds[0], index)
+            return ctx.index(ctx.typeof(node), preds[0], index)
 
         # otherwise, a simple reshape would work as we already have the correct shape
         return ctx.reshape(preds[0], shape=node.output.shape)
@@ -753,7 +775,10 @@ class Converter:
 
             if variable_input.bit_width > original_bit_width:
                 bit_width_difference = variable_input.bit_width - original_bit_width
-                shifter = ctx.constant(ctx.i(variable_input.bit_width + 1), 2**bit_width_difference)
+                shifter = ctx.constant(
+                    ctx.i(variable_input.bit_width + 1),
+                    2**bit_width_difference,
+                )
                 variable_input = ctx.mul(variable_input.type, variable_input, shifter)
 
             variable_input = ctx.reinterpret(variable_input, bit_width=truncated_bit_width)

@@ -27,14 +27,22 @@ def test_broadcast_to(from_shape, to_shape, helpers):
     Test broadcast to.
     """
 
-    def function(x):
-        return np.broadcast_to(x, to_shape)
-
     configuration = helpers.configuration()
-    compiler = fhe.Compiler(function, {"x": "encrypted"})
+    for status in ["clear", "encrypted"]:
+        if status == "encrypted":
 
-    inputset = [np.random.randint(0, 2**2, size=from_shape) for _ in range(100)]
-    circuit = compiler.compile(inputset, configuration)
+            def function(x):
+                return np.broadcast_to(x, to_shape)
 
-    sample = np.random.randint(0, 2**2, size=from_shape)
-    helpers.check_execution(circuit, function, sample)
+        else:
+
+            def function(x):
+                return fhe.zero() + np.broadcast_to(x, to_shape)
+
+        compiler = fhe.Compiler(function, {"x": status})
+
+        inputset = [np.random.randint(0, 2**2, size=from_shape) for _ in range(100)]
+        circuit = compiler.compile(inputset, configuration)
+
+        sample = np.random.randint(0, 2**2, size=from_shape)
+        helpers.check_execution(circuit, function, sample)

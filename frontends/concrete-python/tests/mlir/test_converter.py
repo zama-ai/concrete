@@ -190,23 +190,6 @@ return %2
             """,  # noqa: E501
         ),
         pytest.param(
-            lambda x: np.broadcast_to(x, shape=(2, 2)),
-            {"x": "clear"},
-            [[1, 2], [3, 4]],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be compiled
-
-%0 = x                                     # ClearTensor<uint3, shape=(2,)>          ∈ [1, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ value is clear
-%1 = broadcast_to(%0, shape=(2, 2))        # ClearTensor<uint3, shape=(2, 2)>        ∈ [1, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear values cannot be broadcasted
-return %1
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
             assign,
             {"x": "clear", "y": "encrypted"},
             [([1, 2, 3], 0)],
@@ -279,25 +262,6 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rhs is signed
 %2 = bitwise_and(%0, %1)        # EncryptedScalar<uint3>        ∈ [4, 4]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only unsigned-unsigned bitwise operations are supported
-return %2
-
-            """,  # noqa: E501
-        ),
-        pytest.param(
-            lambda x, y: np.concatenate((x, y)),
-            {"x": "clear", "y": "clear"},
-            [([1, 2], [3, 4])],
-            RuntimeError,
-            """
-
-Function you are trying to compile cannot be compiled
-
-%0 = x                            # ClearTensor<uint2, shape=(2,)>        ∈ [1, 2]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ value is clear
-%1 = y                            # ClearTensor<uint3, shape=(2,)>        ∈ [3, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ value is clear
-%2 = concatenate((%0, %1))        # ClearTensor<uint3, shape=(4,)>        ∈ [1, 4]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but clear concatenation is not supported
 return %2
 
             """,  # noqa: E501
@@ -1671,6 +1635,270 @@ module {
     %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<6>, tensor<64xi64>) -> !FHE.eint<6>
     %1 = "FHE.add_eint"(%arg0, %0) : (!FHE.eint<6>, !FHE.eint<6>) -> !FHE.eint<6>
     return %1 : !FHE.eint<6>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [0, 7], "status": "clear", "shape": ()},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": False,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i4) -> !FHE.eint<4> {
+    %0 = arith.index_cast %arg1 : i4 to index
+    %extracted = tensor.extract %arg0[%0] : tensor<8x!FHE.eint<4>>
+    return %extracted : !FHE.eint<4>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [-8, 7], "status": "clear", "shape": ()},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": False,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i5) -> !FHE.eint<4> {
+    %c8_i5 = arith.constant 8 : i5
+    %c0_i5 = arith.constant 0 : i5
+    %0 = arith.cmpi slt, %arg1, %c0_i5 : i5
+    %1 = scf.if %0 -> (i5) {
+      %3 = arith.addi %arg1, %c8_i5 : i5
+      scf.yield %3 : i5
+    } else {
+      scf.yield %arg1 : i5
+    }
+    %2 = arith.index_cast %1 : i5 to index
+    %extracted = tensor.extract %arg0[%2] : tensor<8x!FHE.eint<4>>
+    return %extracted : !FHE.eint<4>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [0, 7], "status": "clear", "shape": ()},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i4) -> !FHE.eint<4> {
+    %c8_i5 = arith.constant 8 : i5
+    %0 = arith.extsi %arg1 : i4 to i5
+    %1 = arith.cmpi sge, %0, %c8_i5 : i5
+    scf.if %1 {
+      "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+    }
+    %c0_i5 = arith.constant 0 : i5
+    %2 = arith.cmpi slt, %0, %c0_i5 : i5
+    scf.if %2 {
+      "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+    }
+    %3 = arith.index_cast %arg1 : i4 to index
+    %extracted = tensor.extract %arg0[%3] : tensor<8x!FHE.eint<4>>
+    return %extracted : !FHE.eint<4>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [-8, 7], "status": "clear", "shape": ()},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i5) -> !FHE.eint<4> {
+    %c8_i5 = arith.constant 8 : i5
+    %c0_i5 = arith.constant 0 : i5
+    %0 = arith.cmpi slt, %arg1, %c0_i5 : i5
+    %1 = scf.if %0 -> (i5) {
+      %5 = arith.addi %arg1, %c8_i5 : i5
+      scf.yield %5 : i5
+    } else {
+      scf.yield %arg1 : i5
+    }
+    %2 = arith.cmpi sge, %1, %c8_i5 : i5
+    scf.if %2 {
+      "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+    }
+    %3 = arith.cmpi slt, %1, %c0_i5 : i5
+    scf.if %3 {
+      "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+    }
+    %4 = arith.index_cast %1 : i5 to index
+    %extracted = tensor.extract %arg0[%4] : tensor<8x!FHE.eint<4>>
+    return %extracted : !FHE.eint<4>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [0, 7], "status": "clear", "shape": (3, 2)},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": False,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi4>) -> tensor<3x2x!FHE.eint<4>> {
+    %0 = arith.index_cast %arg1 : tensor<3x2xi4> to tensor<3x2xindex>
+    %1 = "FHELinalg.fancy_index"(%arg0, %0) : (tensor<8x!FHE.eint<4>>, tensor<3x2xindex>) -> tensor<3x2x!FHE.eint<4>>
+    return %1 : tensor<3x2x!FHE.eint<4>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [-8, 7], "status": "clear", "shape": (3, 2)},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": False,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi5>) -> tensor<3x2x!FHE.eint<4>> {
+    %c8_i5 = arith.constant 8 : i5
+    %generated = tensor.generate  {
+    ^bb0(%arg2: index, %arg3: index):
+      %extracted = tensor.extract %arg1[%arg2, %arg3] : tensor<3x2xi5>
+      %c0_i5 = arith.constant 0 : i5
+      %2 = arith.cmpi slt, %extracted, %c0_i5 : i5
+      %3 = scf.if %2 -> (i5) {
+        %4 = arith.addi %extracted, %c8_i5 : i5
+        scf.yield %4 : i5
+      } else {
+        scf.yield %extracted : i5
+      }
+      tensor.yield %3 : i5
+    } : tensor<3x2xi5>
+    %0 = arith.index_cast %generated : tensor<3x2xi5> to tensor<3x2xindex>
+    %1 = "FHELinalg.fancy_index"(%arg0, %0) : (tensor<8x!FHE.eint<4>>, tensor<3x2xindex>) -> tensor<3x2x!FHE.eint<4>>
+    return %1 : tensor<3x2x!FHE.eint<4>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [0, 7], "status": "clear", "shape": (3, 2)},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi4>) -> tensor<3x2x!FHE.eint<4>> {
+    %c8_i5 = arith.constant 8 : i5
+    %0 = arith.extsi %arg1 : tensor<3x2xi4> to tensor<3x2xi5>
+    %c0 = arith.constant 0 : index
+    %c3 = arith.constant 3 : index
+    %c1 = arith.constant 1 : index
+    scf.for %arg2 = %c0 to %c3 step %c1 {
+      %c0_0 = arith.constant 0 : index
+      %c2 = arith.constant 2 : index
+      %c1_1 = arith.constant 1 : index
+      scf.for %arg3 = %c0_0 to %c2 step %c1_1 {
+        %extracted = tensor.extract %0[%arg2, %arg3] : tensor<3x2xi5>
+        %3 = arith.cmpi sge, %extracted, %c8_i5 : i5
+        scf.if %3 {
+          "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+        }
+        %c0_i5 = arith.constant 0 : i5
+        %4 = arith.cmpi slt, %extracted, %c0_i5 : i5
+        scf.if %4 {
+          "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+        }
+      }
+    }
+    %1 = arith.index_cast %arg1 : tensor<3x2xi4> to tensor<3x2xindex>
+    %2 = "FHELinalg.fancy_index"(%arg0, %1) : (tensor<8x!FHE.eint<4>>, tensor<3x2xindex>) -> tensor<3x2x!FHE.eint<4>>
+    return %2 : tensor<3x2x!FHE.eint<4>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x, y: x[y],
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (8,)},
+                "y": {"range": [-8, 7], "status": "clear", "shape": (3, 2)},
+            },
+            {
+                "dynamic_indexing_check_out_of_bounds": True,
+            },
+            """
+
+module {
+  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi5>) -> tensor<3x2x!FHE.eint<4>> {
+    %c8_i5 = arith.constant 8 : i5
+    %generated = tensor.generate  {
+    ^bb0(%arg2: index, %arg3: index):
+      %extracted = tensor.extract %arg1[%arg2, %arg3] : tensor<3x2xi5>
+      %c0_i5 = arith.constant 0 : i5
+      %2 = arith.cmpi slt, %extracted, %c0_i5 : i5
+      %3 = scf.if %2 -> (i5) {
+        %6 = arith.addi %extracted, %c8_i5 : i5
+        scf.yield %6 : i5
+      } else {
+        scf.yield %extracted : i5
+      }
+      %4 = arith.cmpi sge, %3, %c8_i5 : i5
+      scf.if %4 {
+        "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+      }
+      %c0_i5_0 = arith.constant 0 : i5
+      %5 = arith.cmpi slt, %3, %c0_i5_0 : i5
+      scf.if %5 {
+        "Tracing.trace_message"() {msg = "Runtime Warning: Index out of range on \\22%2 = %0[%1]\\22\\0A"} : () -> ()
+      }
+      tensor.yield %3 : i5
+    } : tensor<3x2xi5>
+    %0 = arith.index_cast %generated : tensor<3x2xi5> to tensor<3x2xindex>
+    %1 = "FHELinalg.fancy_index"(%arg0, %0) : (tensor<8x!FHE.eint<4>>, tensor<3x2xindex>) -> tensor<3x2x!FHE.eint<4>>
+    return %1 : tensor<3x2x!FHE.eint<4>>
   }
 }
 

@@ -991,6 +991,7 @@ class Configuration:
     print_tlu_fusing: bool
     optimize_tlu_based_on_original_bit_width: Union[bool, int]
     detect_overflow_in_simulation: bool
+    dynamic_indexing_check_out_of_bounds: bool
 
     def __init__(
         self,
@@ -1057,6 +1058,7 @@ class Configuration:
         print_tlu_fusing: bool = False,
         optimize_tlu_based_on_original_bit_width: Union[bool, int] = 8,
         detect_overflow_in_simulation: bool = False,
+        dynamic_indexing_check_out_of_bounds: bool = True,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1159,6 +1161,8 @@ class Configuration:
 
         self.detect_overflow_in_simulation = detect_overflow_in_simulation
 
+        self.dynamic_indexing_check_out_of_bounds = dynamic_indexing_check_out_of_bounds
+
         self._validate()
 
     class Keep:
@@ -1231,6 +1235,7 @@ class Configuration:
         print_tlu_fusing: Union[Keep, bool] = KEEP,
         optimize_tlu_based_on_original_bit_width: Union[Keep, bool, int] = KEEP,
         detect_overflow_in_simulation: Union[Keep, bool] = KEEP,
+        dynamic_indexing_check_out_of_bounds: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

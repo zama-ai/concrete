@@ -303,6 +303,23 @@ class Node:
 
         name = self.properties["name"]
 
+        if name == "index_dynamic":
+            dynamic_indices = predecessors[1:]
+            static_indices = self.properties["kwargs"]["static_indices"]
+
+            indices = []
+
+            cursor = 0
+            for index in static_indices:
+                if index is None:
+                    indices.append(dynamic_indices[cursor])
+                    cursor += 1
+                else:
+                    indices.append(index)
+
+            elements = [format_indexing_element(element) for element in indices]
+            return f"{predecessors[0]}[{', '.join(elements)}]"
+
         if name == "index_static":
             index = self.properties["kwargs"]["index"]
             elements = [format_indexing_element(element) for element in index]
@@ -364,6 +381,9 @@ class Node:
 
         name = self.properties["name"]
 
+        if name == "index_dynamic":
+            name = self.format(["□"] * len(self.inputs))
+
         if name == "index_static":
             name = self.format(["□"])
 
@@ -416,6 +436,7 @@ class Node:
             "dot",
             "dynamic_tlu",
             "expand_dims",
+            "index_dynamic",
             "index_static",
             "matmul",
             "maxpool",

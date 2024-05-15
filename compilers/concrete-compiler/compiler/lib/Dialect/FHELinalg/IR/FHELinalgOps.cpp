@@ -591,8 +591,7 @@ mlir::LogicalResult ConcatOp::verify() {
   mlir::Value out = this->getOut();
 
   auto outVectorType = out.getType().dyn_cast<mlir::TensorType>();
-  auto outElementType =
-      outVectorType.getElementType().dyn_cast<FHE::FheIntegerInterface>();
+  auto outElementType = outVectorType.getElementType();
 
   llvm::ArrayRef<int64_t> outShape = outVectorType.getShape();
   size_t outDims = outShape.size();
@@ -607,11 +606,12 @@ mlir::LogicalResult ConcatOp::verify() {
   size_t index = 0;
   for (mlir::Value in : this->getIns()) {
     auto inVectorType = in.getType().dyn_cast<mlir::TensorType>();
-    auto inElementType =
-        inVectorType.getElementType().dyn_cast<FHE::FheIntegerInterface>();
-    if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
-            *this->getOperation(), inElementType, outElementType)) {
-      return ::mlir::failure();
+    auto inElementType = inVectorType.getElementType();
+    if (inElementType != outElementType) {
+      this->emitOpError() << "input element type (" << inElementType
+                          << ") doesn't match output element type ("
+                          << outElementType << ")";
+      return mlir::failure();
     }
 
     llvm::ArrayRef<int64_t> inShape = inVectorType.getShape();
@@ -1583,6 +1583,65 @@ mlir::LogicalResult FancyAssignOp::verify() {
     stream << ">' doesn't match the expected output shape '<";
     if (!expectedOutputShape.empty()) {
       llvm::interleave(expectedOutputShape, stream, "x");
+    }
+    stream << ">'";
+
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
+mlir::LogicalResult BroadcastOp::verify() {
+  auto inputType =
+      this->getInput().getType().dyn_cast<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast<mlir::RankedTensorType>();
+
+  auto inputElementType = inputType.getElementType();
+  auto outputElementType = outputType.getElementType();
+
+  if (inputElementType != outputElementType) {
+    this->emitOpError() << "input element type " << inputElementType
+                        << " doesn't match output element type "
+                        << outputElementType;
+    return mlir::failure();
+  }
+
+  auto inputShape = inputType.getShape();
+  auto outputShape = outputType.getShape();
+
+  auto inputDimensions = inputShape.size();
+  auto outputDimensions = outputShape.size();
+
+  auto cannot_be_done = false;
+  if (inputDimensions > outputDimensions) {
+    cannot_be_done = true;
+    return mlir::failure();
+  } else {
+    auto modifiedInputShape =
+        llvm::SmallVector<int64_t>(outputDimensions - inputDimensions, 1);
+    modifiedInputShape.append(inputShape.begin(), inputShape.end());
+
+    for (size_t i = 0; i < outputDimensions; i++) {
+      if (modifiedInputShape[i] != outputShape[i] &&
+          modifiedInputShape[i] != 1) {
+        cannot_be_done = true;
+        break;
+      }
+    }
+  }
+
+  if (cannot_be_done) {
+    auto stream = this->emitOpError();
+
+    stream << "input shape '<";
+    if (!inputShape.empty()) {
+      llvm::interleave(inputShape, stream, "x");
+    }
+    stream << ">' cannot be broadcasted to output shape '<";
+    if (!outputShape.empty()) {
+      llvm::interleave(outputShape, stream, "x");
     }
     stream << ">'";
 

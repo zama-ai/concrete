@@ -11,7 +11,7 @@ func.func @main() -> tensor<0x!FHE.eint<7>> {
 // -----
 
 func.func @main(%x: tensor<4x!FHE.eint<7>>, %y: tensor<3x!FHE.eint<7>>) -> tensor<7x!FHE.eint<6>> {
-  // expected-error @+1 {{'FHELinalg.concat' op should have the width of encrypted inputs and result equal}}
+  // expected-error @+1 {{'FHELinalg.concat' op input element type ('!FHE.eint<7>') doesn't match output element type ('!FHE.eint<6>')}}
   %0 = "FHELinalg.concat"(%x, %y) : (tensor<4x!FHE.eint<7>>, tensor<3x!FHE.eint<7>>) -> tensor<7x!FHE.eint<6>>
   return %0 : tensor<7x!FHE.eint<6>>
 }
@@ -19,7 +19,7 @@ func.func @main(%x: tensor<4x!FHE.eint<7>>, %y: tensor<3x!FHE.eint<7>>) -> tenso
 // -----
 
 func.func @main(%x: tensor<4x!FHE.eint<6>>, %y: tensor<3x!FHE.eint<6>>) -> tensor<7x!FHE.eint<7>> {
-  // expected-error @+1 {{'FHELinalg.concat' op should have the width of encrypted inputs and result equal}}
+  // expected-error @+1 {{'FHELinalg.concat' op input element type ('!FHE.eint<6>') doesn't match output element type ('!FHE.eint<7>')}}
   %0 = "FHELinalg.concat"(%x, %y) : (tensor<4x!FHE.eint<6>>, tensor<3x!FHE.eint<6>>) -> tensor<7x!FHE.eint<7>>
   return %0 : tensor<7x!FHE.eint<7>>
 }
@@ -27,7 +27,7 @@ func.func @main(%x: tensor<4x!FHE.eint<6>>, %y: tensor<3x!FHE.eint<6>>) -> tenso
 // -----
 
 func.func @main(%x: tensor<4x!FHE.eint<6>>, %y: tensor<3x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>> {
-  // expected-error @+1 {{'FHELinalg.concat' op should have the width of encrypted inputs and result equal}}
+  // expected-error @+1 {{'FHELinalg.concat' op input element type ('!FHE.eint<6>') doesn't match output element type ('!FHE.eint<7>')}}
   %0 = "FHELinalg.concat"(%x, %y) : (tensor<4x!FHE.eint<6>>, tensor<3x!FHE.eint<7>>) -> tensor<7x!FHE.eint<7>>
   return %0 : tensor<7x!FHE.eint<7>>
 }
