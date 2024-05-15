@@ -403,13 +403,19 @@ struct LowerSDFGPut
              "SDFG streams only support memrefs and integers.");
       funcName = stream_emulator_put_uint64;
     }
+    // Add data ownership flag - if the put operation takes ownership
+    // of the memref data, set to 0 by default.
+    mlir::SmallVector<mlir::Value> operands(putOp->getOperands());
+    operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+        putOp.getLoc(), rewriter.getI64IntegerAttr(0)));
+
     if (insertGenericForwardDeclaration(putOp, rewriter, funcName,
-                                        putOp->getOperandTypes(),
+                                        mlir::ValueRange{operands}.getTypes(),
                                         putOp->getResultTypes())
             .failed())
       return ::mlir::failure();
     mlir::SmallVector<mlir::Value> newOps;
-    castDynamicTensorOps(putOp, rewriter, putOp->getOperands(), newOps);
+    castDynamicTensorOps(putOp, rewriter, operands, newOps);
     rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         putOp, funcName, putOp->getResultTypes(), newOps);
     return ::mlir::success();

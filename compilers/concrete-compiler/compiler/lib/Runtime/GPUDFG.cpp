@@ -1540,12 +1540,14 @@ void *stream_emulator_make_memref_stream(const char *name, stream_type stype) {
 }
 void stream_emulator_put_memref(void *stream, uint64_t *allocated,
                                 uint64_t *aligned, uint64_t offset,
-                                uint64_t size, uint64_t stride) {
+                                uint64_t size, uint64_t stride,
+                                uint64_t data_ownership = 0) {
   assert(stride == 1 && "Strided memrefs not supported");
   Stream *s = (Stream *)stream;
   MemRef2 m = {allocated, aligned, offset, {1, size}, {size, stride}};
   Dependence *dep =
-      new Dependence(host_location, memref_copy_alloc(m), nullptr, true, true);
+      new Dependence(host_location, (data_ownership) ? m : memref_copy_alloc(m),
+                     nullptr, true, true);
   s->put(dep);
   s->generation++;
 }
@@ -1569,12 +1571,14 @@ void *stream_emulator_make_memref_batch_stream(const char *name,
 void stream_emulator_put_memref_batch(void *stream, uint64_t *allocated,
                                       uint64_t *aligned, uint64_t offset,
                                       uint64_t size0, uint64_t size1,
-                                      uint64_t stride0, uint64_t stride1) {
+                                      uint64_t stride0, uint64_t stride1,
+                                      uint64_t data_ownership = 0) {
   assert(stride1 == 1 && "Strided memrefs not supported");
   Stream *s = (Stream *)stream;
   MemRef2 m = {allocated, aligned, offset, {size0, size1}, {stride0, stride1}};
   Dependence *dep =
-      new Dependence(host_location, memref_copy_alloc(m), nullptr, true, true);
+      new Dependence(host_location, (data_ownership) ? m : memref_copy_alloc(m),
+                     nullptr, true, true);
   s->put(dep);
   s->generation++;
 }

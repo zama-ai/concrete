@@ -83,7 +83,8 @@ uint64_t stream_emulator_get_uint64(void *stream);
 void *stream_emulator_make_memref_stream(const char *name, stream_type stype);
 void stream_emulator_put_memref(void *stream, uint64_t *allocated,
                                 uint64_t *aligned, uint64_t offset,
-                                uint64_t size, uint64_t stride);
+                                uint64_t size, uint64_t stride,
+                                uint64_t data_ownership);
 void stream_emulator_get_memref(void *stream, uint64_t *out_allocated,
                                 uint64_t *out_aligned, uint64_t out_offset,
                                 uint64_t out_size, uint64_t out_stride);
@@ -93,7 +94,8 @@ void *stream_emulator_make_memref_batch_stream(const char *name,
 void stream_emulator_put_memref_batch(void *stream, uint64_t *allocated,
                                       uint64_t *aligned, uint64_t offset,
                                       uint64_t size0, uint64_t size1,
-                                      uint64_t stride0, uint64_t stride1);
+                                      uint64_t stride0, uint64_t stride1,
+                                      uint64_t data_ownership);
 void stream_emulator_get_memref_batch(void *stream, uint64_t *out_allocated,
                                       uint64_t *out_aligned,
                                       uint64_t out_offset, uint64_t out_size0,
