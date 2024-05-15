@@ -1,4 +1,4 @@
-# Xor Distance
+# Xor distance
 
 We describe how to compute a XOR distance (as known as an Hamming weight distance) in Concrete. This
 can be useful in particular for biometry use-cases, where obviously, private is a very interesting
