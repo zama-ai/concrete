@@ -66,6 +66,8 @@ pip install -U pip wheel setuptools
 pip install concrete-python
 ```
 
+**Note:** Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding `--extra-index-url https://pypi.zama.ai`.
+
 #### Docker
 You can get the concrete-python docker image by pulling the latest docker image:
 

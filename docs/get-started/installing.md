@@ -10,6 +10,9 @@ You can install Concrete from PyPI:
 pip install -U pip wheel setuptools
 pip install concrete-python
 ```
+{% hint style="info" %}
+Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding `--extra-index-url https://pypi.zama.ai`.
+{% endhint %}
 
 There are some optional features which can be enabled by installing the `full` version:
 
