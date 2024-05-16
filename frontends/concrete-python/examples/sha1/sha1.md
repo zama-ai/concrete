@@ -119,7 +119,7 @@ It contains 7 functions which can be combined together:
 - `add5` adds five values together
 
 This module is then compiled. Remark we set `p_error=10**-8` to a very small value, to avoid
-errors in computations. Thanks to the Module computation, all these functions can be combined
+errors in computations. Thanks to the Module feature, all these functions can be combined
 together, i.e., outputs of some of them can be reused as inputs of some other ones. It is very
 convenient to have a larger function, with some control-flow (conditions, branches, loops) done in
 the clear and operating with these small functions. In our case, it's done in
@@ -129,7 +129,7 @@ the clear and operating with these small functions. In our case, it's done in
 
 `_process_encrypted_chunk_server_side` uses inputs which are encrypted, and returns encrypted
 values. Everything is a 32-bit word when done in the clear. Here, words will be represented as 32
-1-bit encrypted values, to simplify (and speed) the non-linear operations in SHA1.
+1-bit encrypted values, to simplify (and accelerate) the non-linear operations in SHA1.
 
 Then, we have the main loop of the compression function which is done in the clear with
 `for i in range(80):`. There, we also have the different conditions (`if 0 <= i <= 19:`,
@@ -151,11 +151,8 @@ functions in FHE.
 Compiling with `show_mlir = True` allows to see the different MLIR implementations. Typically, with
 current Concrete version, it would give something like:
 
-<<<<<<< HEAD
-=======
 - `add2` function
-<details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
+
 ```
   func.func @add2(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -453,14 +450,9 @@ current Concrete version, it would give something like:
     return %inserted_slice_125 : tensor<32x!FHE.eint<2>>
   }
 ```
-<<<<<<< HEAD
-
-=======
-</details>
 
 - `add5` function
-<details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
+
 ```
   func.func @add5(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>, %arg3: tensor<32x!FHE.eint<2>>, %arg4: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -1523,14 +1515,9 @@ current Concrete version, it would give something like:
     return %inserted_slice_509 : tensor<32x!FHE.eint<2>>
   }
 ```
-<<<<<<< HEAD
-
-=======
-</details>
 
 - `iftern` function
-<details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
+
 ```
   func.func @iftern(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %c2_i3 = arith.constant 2 : i3
@@ -1549,14 +1536,9 @@ current Concrete version, it would give something like:
     return %8 : tensor<32x!FHE.eint<2>>
   }
 ```
-<<<<<<< HEAD
-
-=======
-</details>
 
 - `maj` function
-<details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
+
 ```
   func.func @maj(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %c2_i3 = arith.constant 2 : i3
@@ -1576,14 +1558,9 @@ current Concrete version, it would give something like:
     return %9 : tensor<32x!FHE.eint<2>>
   }
 ```
-<<<<<<< HEAD
-
-=======
-</details>
 
 - `rotate30` function
-<details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
+
 ```
   func.func @rotate30(%arg0: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -1594,14 +1571,9 @@ current Concrete version, it would give something like:
     return %inserted_slice_1 : tensor<32x!FHE.eint<2>>
   }
 ```
-<<<<<<< HEAD
-
-=======
-</details>
 
 - `rotate5` function
-<details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
+
 ```
   func.func @rotate5(%arg0: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %0 = "FHE.zero_tensor"() : () -> tensor<32x!FHE.eint<2>>
@@ -1612,14 +1584,9 @@ current Concrete version, it would give something like:
     return %inserted_slice_1 : tensor<32x!FHE.eint<2>>
   }
 ```
-<<<<<<< HEAD
-
-=======
-</details>
 
 - `xor3` function
-<details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
+
 ```
   func.func @xor3(%arg0: tensor<32x!FHE.eint<2>>, %arg1: tensor<32x!FHE.eint<2>>, %arg2: tensor<32x!FHE.eint<2>>) -> tensor<32x!FHE.eint<2>> {
     %c2_i3 = arith.constant 2 : i3
@@ -1635,10 +1602,6 @@ current Concrete version, it would give something like:
   }
 }
 ```
-<<<<<<< HEAD
-=======
-</details>
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
 
 ## Testing or Using
 
@@ -1650,10 +1613,6 @@ One can check that the implementation works in FHE by running `python sha1.py --
 pick a certain number of random inputs, hash them in FHE and compare the result with the `hashlib`
 standard implementation.
 
-<<<<<<< HEAD
-One can also hash a given value with:
-``
-=======
 One can also hash a given value with
 `echo -n "The quick brown fox jumps over the lazy dog" | python sha1.py`, and it will print
 something like:
@@ -1741,21 +1700,3 @@ computed in: 147.697102 seconds
 means that:
 - one block of compression takes about 147 seconds
 - two blocks of compression take about 290 seconds
-
-
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

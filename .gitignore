@@ -13,8 +13,4 @@ compilers/concrete-compiler/compiler/hpx*
 tmp_directory_for_cml_tests
 
 # Temp file
-<<<<<<< HEAD
 frontends/concrete-python/examples/sha1/tmp_sha1_test_file.txt
-=======
-frontends/concrete-python/examples/sha1/tmp_sha1_test_file.txt
->>>>>>> 78decb21 (docs(frontend): adding a SHA1 tutorial with modules)

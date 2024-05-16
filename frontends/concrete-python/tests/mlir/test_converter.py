@@ -544,7 +544,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit bitwise operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -559,8 +563,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit bitwise operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: x != y,
@@ -580,7 +589,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -595,8 +608,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: x >= y,
@@ -616,7 +634,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -631,8 +653,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit comparison operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: x << y,
@@ -653,7 +680,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this shift operation resulted in 37-bits but only up to 16-bit shift operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -669,8 +700,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this shift operation resulted in 37-bits but only up to 16-bit shift operations are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: x * y,
@@ -692,7 +728,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted multiplications are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -708,8 +748,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted multiplications are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: np.dot(x, y),
@@ -736,7 +781,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -752,8 +801,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted dot products are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: x @ y,
@@ -786,7 +840,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -802,8 +860,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit encrypted matrix multiplications are supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: np.dot(x, y),
@@ -887,7 +950,11 @@ Function you are trying to compile cannot be compiled
                                                                                  table shape should have been (2,)
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -903,8 +970,13 @@ Function you are trying to compile cannot be compiled
                                                                                  table shape should have been (8,)
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y, z: fhe.multivariate(lambda x, y, z: x + y // z)(x, y, z),
@@ -957,7 +1029,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit minimum operation is supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -972,8 +1048,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit minimum operation is supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x, y: np.maximum(x, y),
@@ -998,7 +1079,11 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit maximum operation is supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
+=======
+            """  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
                 if USE_MULTI_PRECISION
                 else """
 
@@ -1013,8 +1098,13 @@ Function you are trying to compile cannot be compiled
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but only up to 16-bit maximum operation is supported
 return %2
 
+<<<<<<< HEAD
                 """  # noqa: E501
             ),
+=======
+            """
+            ),  # noqa: E501
+>>>>>>> 7a471f2b8 (docs(frontend): review)
         ),
         pytest.param(
             lambda x: fhe.truncate_bit_pattern(x, lsbs_to_remove=2),
