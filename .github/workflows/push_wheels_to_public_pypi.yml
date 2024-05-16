@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'version of concrete-python to pull from Zama PyPI and push to public PyPI'
+        description: 'version of concrete-python to pull from Zama PyPI and push to public PyPI. Use the version as it appears in the wheel file (e.g. 2.7.0rc1)'
         required: true
         type: string
 
