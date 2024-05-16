@@ -21,14 +21,14 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
         run: |
           mkdir wheels
-          aws s3 cp "s3://${S3_BUCKET_NAME}/concrete-python/concrete_python-${{ inputs.version }}*" ./wheels/
+          aws s3 cp s3://${S3_BUCKET_NAME}/concrete-python/ ./wheels/ --recursive --exclude "*" --include "concrete_python-${{ inputs.version }}*"
           echo "============== Downloaded wheels ==============="
           ls -la ./wheels/
 
       - name: Push wheels to public PyPI (public)
         run: |
           pip install twine==4.0.2
-          twine upload wheels/*.whl \
+          twine upload wheels/concrete_python-${{ inputs.version }}*.whl \
             -u "${{ secrets.PUBLIC_PYPI_USER }}" \
             -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" \
             -r pypi
