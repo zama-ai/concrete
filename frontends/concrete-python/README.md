@@ -8,6 +8,8 @@ End-users should install `concrete-python` using `pip`:
 pip install concrete-python
 ```
 
+**Note:** Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding `--extra-index-url https://pypi.zama.ai`.
+
 ## Setup for development
 
 Developers that want to contribute to the Concrete-Python project can use the following
