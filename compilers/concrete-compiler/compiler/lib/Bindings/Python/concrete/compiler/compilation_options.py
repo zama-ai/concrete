@@ -61,18 +61,27 @@ class CompilationOptions(WrapperCpp):
 
     # pylint: enable=arguments-differ
 
-    def set_composable(self, composable: bool):
-        """Set option for composition.
+    def add_composition(self, from_func: str, from_pos: int, to_func: str, to_pos: int):
+        """Adds a composition rule.
 
         Args:
-            composable (bool): whether to turn it on or off
+            from_func(str): the name of the circuit the output comes from.
+            from_pos(int): the return position of the output.
+            to_func(str): the name of the circuit the input targets.
+            to_pos(int): the argument position of the input.
 
         Raises:
-            TypeError: if the value to set is not boolean
+            TypeError: if the inputs do not have the proper type.
         """
-        if not isinstance(composable, bool):
-            raise TypeError("can't set the option to a non-boolean value")
-        self.cpp().set_composable(composable)
+        if not isinstance(from_func, str):
+            raise TypeError("expected `from_func` to be (str)")
+        if not isinstance(from_pos, int):
+            raise TypeError("expected `from_pos` to be (int)")
+        if not isinstance(to_func, str):
+            raise TypeError("expected `to_func` to be (str)")
+        if not isinstance(from_pos, int):
+            raise TypeError("expected `to_pos` to be (int)")
+        self.cpp().add_composition(from_func, from_pos, to_func, to_pos)
 
     def set_auto_parallelize(self, auto_parallelize: bool):
         """Set option for auto parallelization.

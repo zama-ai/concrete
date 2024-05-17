@@ -9,6 +9,7 @@ import os
 import traceback
 from copy import deepcopy
 from enum import Enum, unique
+from itertools import product, repeat
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
@@ -21,6 +22,7 @@ from ..tracing import Tracer
 from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .circuit import Circuit
+from .composition import CompositionClause, CompositionRule
 from .configuration import Configuration
 from .utils import fuse, get_terminal_size
 
@@ -520,9 +522,26 @@ class Compiler:
 
                     print()
 
+            # We generate the composition rules if needed:
+            composition_rules = []
+            if self.configuration.composable:
+                compo_froms = map(
+                    CompositionClause.create,
+                    zip(repeat(self.graph.name), range(len(self.graph.output_nodes))),
+                )
+                compo_tos = map(
+                    CompositionClause.create,
+                    zip(repeat(self.graph.name), range(len(self.graph.input_nodes))),
+                )
+                composition_rules = list(
+                    map(CompositionRule.create, product(compo_froms, compo_tos))
+                )
+
             # in-memory MLIR module
             mlir_context = self.compilation_context.mlir_context()
-            mlir_module = GraphConverter(self.configuration).convert(self.graph, mlir_context)
+            mlir_module = GraphConverter(self.configuration, composition_rules).convert(
+                self.graph, mlir_context
+            )
             # textual representation of the MLIR module
             mlir_str = str(mlir_module).strip()
             if self.artifacts is not None:
@@ -589,6 +608,7 @@ class Compiler:
                 mlir_module,
                 self.compilation_context,
                 self.configuration,
+                composition_rules,
             )
 
             if hasattr(circuit, "client"):

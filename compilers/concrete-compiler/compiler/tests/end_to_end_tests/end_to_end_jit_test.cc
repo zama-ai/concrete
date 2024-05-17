@@ -396,23 +396,25 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
 
 TEST(CompileNotComposable, not_composable_1) {
   mlir::concretelang::CompilationOptions options;
-  options.optimizerConfig.composable = true;
+  options.optimizerConfig.composition_rules.push_back({"main", 0, "main", 0});
   options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MULTI;
   TestProgram circuit(options);
   auto err = circuit.compile(R"XXX(
 func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
-  %cst_1 = arith.constant 1 : i4
-  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
+  %cst_2 = arith.constant 2 : i4
+  %1 = "FHE.mul_eint_int"(%arg0, %cst_2) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
   return %1: !FHE.eint<3>
 }
 )XXX");
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(
-      err, "Program can not be composed: No luts in the circuit.");
+      err, "Program can not be composed: Dag is not composable, because of "
+           "output 1: Partition 0 has input coefficient 4");
 }
 
 TEST(CompileNotComposable, not_composable_2) {
   mlir::concretelang::CompilationOptions options;
-  options.optimizerConfig.composable = true;
+  options.optimizerConfig.composition_rules.push_back({"main", 0, "main", 0});
+  options.optimizerConfig.composition_rules.push_back({"main", 1, "main", 0});
   options.optimizerConfig.display = true;
   options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MULTI;
   TestProgram circuit(options);
@@ -430,25 +432,9 @@ func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
            "output 1: Partition 0 has input coefficient 4");
 }
 
-TEST(CompileComposable, composable_supported_dag_mono) {
-  mlir::concretelang::CompilationOptions options;
-  options.optimizerConfig.composable = true;
-  options.optimizerConfig.display = true;
-  options.optimizerConfig.strategy = mlir::concretelang::optimizer::DAG_MONO;
-  TestProgram circuit(options);
-  auto err = circuit.compile(R"XXX(
-func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
-  %cst_1 = arith.constant 1 : i4
-  %1 = "FHE.add_eint_int"(%arg0, %cst_1) : (!FHE.eint<3>, i4) -> !FHE.eint<3>
-  return %1: !FHE.eint<3>
-}
-)XXX");
-  assert(err.has_value());
-}
-
 TEST(CompileComposable, composable_supported_v0) {
   mlir::concretelang::CompilationOptions options;
-  options.optimizerConfig.composable = true;
+  options.optimizerConfig.composition_rules.push_back({"main", 0, "main", 0});
   options.optimizerConfig.display = true;
   options.optimizerConfig.strategy = mlir::concretelang::optimizer::V0;
   TestProgram circuit(options);

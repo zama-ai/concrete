@@ -1,5 +1,5 @@
 """
-Tests of everything related to multi-circuit.
+Tests of everything related to modules.
 """
 
 import tempfile
@@ -41,28 +41,6 @@ def test_empty_module():
         class Module:
             def square(x):
                 return x**2
-
-
-def test_wrong_config(helpers):
-    """
-    Test that defining a module with wrong configuration raises an error.
-    """
-
-    with pytest.raises(RuntimeError) as excinfo:
-
-        @fhe.module()
-        class Module:
-            @fhe.function({"x": "encrypted"})
-            def add(x):
-                return x + 2
-
-        inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
-        module = Module.compile(
-            {"add": inputset},
-            composable=False,
-        )
-
-    assert str(excinfo.value) == ("Module can only be compiled with `composable` activated.")
 
 
 def test_wrong_info():
@@ -429,3 +407,151 @@ def test_key_set():
         x_enc = module.inc.run(x_enc)
     x_dec = module.inc.decrypt(x_enc)
     assert x_dec == 15
+
+
+def test_composition_policy_default():
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def square(x):
+            return x**2
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def add_sub(x, y):
+            return (x + y), (x - y)
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def mul(x, y):
+            return x * y
+
+    assert isinstance(Module.composition, fhe.CompositionPolicy)
+    assert isinstance(Module.composition, fhe.AllComposable)
+
+
+def test_composition_policy_all_composable():
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def square(x):
+            return x**2
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def add_sub(x, y):
+            return (x + y), (x - y)
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def mul(x, y):
+            return x * y
+
+        composition = fhe.AllComposable()
+
+    assert isinstance(Module.composition, fhe.CompositionPolicy)
+    assert isinstance(Module.composition, fhe.AllComposable)
+
+
+def test_composition_policy_wires():
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def square(x):
+            return x**2
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def add_sub(x, y):
+            return (x + y), (x - y)
+
+        composition = fhe.Wired(
+            [
+                fhe.Wire(fhe.AllOutputs(add_sub), fhe.AllInputs(add_sub)),
+                fhe.Wire(fhe.AllOutputs(add_sub), fhe.Input(square, 0)),
+            ]
+        )
+
+    assert isinstance(Module.composition, fhe.CompositionPolicy)
+    assert isinstance(Module.composition, fhe.Wired)
+
+
+def test_composition_wired_enhances_complexity():
+    @fhe.module()
+    class Module1:
+        @fhe.function({"x": "encrypted"})
+        def _1(x):
+            return (x * 2) % 20
+
+        @fhe.function({"x": "encrypted"})
+        def _2(x):
+            return (x * 2) % 200
+
+        composition = fhe.Wired(
+            [
+                fhe.Wire(fhe.Output(_1, 0), fhe.Input(_2, 0)),
+            ]
+        )
+
+    module1 = Module1.compile(
+        {
+            "_1": [np.random.randint(1, 20, size=()) for _ in range(100)],
+            "_2": [np.random.randint(1, 200, size=()) for _ in range(100)],
+        },
+    )
+
+    @fhe.module()
+    class Module2:
+        @fhe.function({"x": "encrypted"})
+        def _1(x):
+            return (x * 2) % 20
+
+        @fhe.function({"x": "encrypted"})
+        def _2(x):
+            return (x * 2) % 200
+
+        composition = fhe.AllComposable()
+
+    module2 = Module2.compile(
+        {
+            "_1": [np.random.randint(1, 20, size=()) for _ in range(100)],
+            "_2": [np.random.randint(1, 200, size=()) for _ in range(100)],
+        },
+    )
+
+    assert module1.complexity < module2.complexity
+
+
+def test_composition_wired_compilation():
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def a(x):
+            return (x * 2) % 20
+
+        @fhe.function({"x": "encrypted"})
+        def b(x):
+            return (x * 2) % 50
+
+        @fhe.function({"x": "encrypted"})
+        def c(x):
+            return (x * 2) % 100
+
+        composition = fhe.Wired(
+            [
+                fhe.Wire(fhe.Output(a, 0), fhe.Input(b, 0)),
+                fhe.Wire(fhe.Output(b, 0), fhe.Input(c, 0)),
+            ]
+        )
+
+    module = Module.compile(
+        {
+            "a": [np.random.randint(1, 20, size=()) for _ in range(100)],
+            "b": [np.random.randint(1, 50, size=()) for _ in range(100)],
+            "c": [np.random.randint(1, 100, size=()) for _ in range(100)],
+        },
+        p_error=0.01,
+    )
+
+    inp_enc = module.a.encrypt(5)
+    a_enc = module.a.run(inp_enc)
+    assert module.a.decrypt(a_enc) == 10
+    b_enc = module.b.run(a_enc)
+    assert module.b.decrypt(b_enc) == 20
+    c_enc = module.c.run(b_enc)
+    assert module.c.decrypt(c_enc) == 40

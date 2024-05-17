@@ -25,7 +25,6 @@ double DEFAULT_global_p_error = TEST_ERROR_RATE;
 bool DEFAULT_chunkedIntegers = false;
 unsigned int DEFAULT_chunkSize = 4;
 unsigned int DEFAULT_chunkWidth = 2;
-bool DEFAULT_composable = false;
 bool DEFAULT_use_multi_parameter = true;
 
 // Jit-compiles the function specified by `func` from `src` and
@@ -41,7 +40,6 @@ inline Result<TestProgram> internalCheckedJit(
     bool chunkedIntegers = DEFAULT_chunkedIntegers,
     unsigned int chunkSize = DEFAULT_chunkSize,
     unsigned int chunkWidth = DEFAULT_chunkWidth,
-    bool composable = DEFAULT_composable,
     bool use_multi_parameter = DEFAULT_use_multi_parameter) {
 
   auto options = mlir::concretelang::CompilationOptions();
@@ -59,11 +57,6 @@ inline Result<TestProgram> internalCheckedJit(
   options.dataflowParallelize = dataflowParallelize;
 #endif
   options.batchTFHEOps = batchTFHEOps;
-  if (composable) {
-    options.optimizerConfig.composable = composable;
-    options.optimizerConfig.strategy =
-        mlir::concretelang::optimizer::Strategy::DAG_MULTI;
-  }
 
   if (!use_multi_parameter)
     options.optimizerConfig.strategy =

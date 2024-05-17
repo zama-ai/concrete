@@ -21,7 +21,7 @@ use crate::optimization::dag::multi_parameters::feasible::Feasible;
 use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
-use crate::optimization::Err::{NoParametersFound, NotComposable};
+use crate::optimization::Err::NoParametersFound;
 
 use super::keys_spec::InstructionKeys;
 
@@ -1165,13 +1165,7 @@ pub fn optimize_to_circuit_solution(
     persistent_caches: &PersistDecompCaches,
     p_cut: &Option<PartitionCut>,
 ) -> keys_spec::CircuitSolution {
-    if lut_count_from_dag(dag) == 0 {
-        // If there are no lut in the dag the noise is never refresh so the dag cannot be composable
-        if dag.is_composed() {
-            return keys_spec::CircuitSolution::no_solution(
-                NotComposable("No luts in the circuit.".into()).to_string(),
-            );
-        }
+    if lut_count_from_dag(dag) == 0 && !dag.is_composed() {
         let nb_instr = dag.operators.len();
         if let Some(sol) = optimize_mono(dag, config, search_space, persistent_caches).best_solution
         {

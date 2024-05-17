@@ -237,9 +237,6 @@ std::string getOptionsName(mlir::concretelang::CompilationOptions compilation) {
   if (compilation.optimizerConfig.security !=
       defaultOptions.optimizerConfig.security)
     os << "_optimizerSecurity" << compilation.optimizerConfig.security;
-  if (compilation.optimizerConfig.composable !=
-      defaultOptions.optimizerConfig.composable)
-    os << "_optimizerSecurity" << compilation.optimizerConfig.composable;
 
   /// GPU
   if (compilation.emitGPUOps != defaultOptions.emitGPUOps)

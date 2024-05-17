@@ -2,11 +2,11 @@
 Declaration of `AssignBitWidths` graph processor.
 """
 
-from itertools import chain
 from typing import Dict, List
 
 import z3
 
+from ...compilation.composition import CompositionRule
 from ...compilation.configuration import (
     BitwiseStrategy,
     ComparisonStrategy,
@@ -31,7 +31,7 @@ class AssignBitWidths(MultiGraphProcessor):
     """
 
     single_precision: bool
-    composable: bool
+    composition_rules: List[CompositionRule]
     comparison_strategy_preference: List[ComparisonStrategy]
     bitwise_strategy_preference: List[BitwiseStrategy]
     shifts_with_promotion: bool
@@ -41,7 +41,7 @@ class AssignBitWidths(MultiGraphProcessor):
     def __init__(
         self,
         single_precision: bool,
-        composable: bool,
+        composition_rules: List[CompositionRule],
         comparison_strategy_preference: List[ComparisonStrategy],
         bitwise_strategy_preference: List[BitwiseStrategy],
         shifts_with_promotion: bool,
@@ -49,7 +49,7 @@ class AssignBitWidths(MultiGraphProcessor):
         min_max_strategy_preference: List[MinMaxStrategy],
     ):
         self.single_precision = single_precision
-        self.composable = composable
+        self.composition_rules = composition_rules
         self.comparison_strategy_preference = comparison_strategy_preference
         self.bitwise_strategy_preference = bitwise_strategy_preference
         self.shifts_with_promotion = shifts_with_promotion
@@ -99,11 +99,11 @@ class AssignBitWidths(MultiGraphProcessor):
                 for bit_width in bit_widths.values():
                     optimizer.add(bit_width == max_bit_width)
 
-            if self.composable:
-                input_output_bitwidth = z3.Int("input_output")
-                for node in chain(graph.input_nodes.values(), graph.output_nodes.values()):
-                    bit_width = bit_widths[node]
-                    optimizer.add(bit_width == input_output_bitwidth)
+        if self.composition_rules:
+            for compo in self.composition_rules:
+                from_node = graphs[compo.from_.func].ordered_outputs()[compo.from_.pos]
+                to_node = graphs[compo.to.func].ordered_inputs()[compo.to.pos]
+                optimizer.add(bit_widths[from_node] == bit_widths[to_node])
 
         optimizer.minimize(sum(bit_width for bit_width in bit_widths.values()))
 

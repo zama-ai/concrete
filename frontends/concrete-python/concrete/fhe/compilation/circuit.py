@@ -5,7 +5,7 @@ Declaration of `Circuit` class.
 # pylint: disable=import-error,no-member,no-name-in-module
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 from concrete.compiler import (
@@ -19,6 +19,7 @@ from mlir.ir import Module as MlirModule
 from ..internal.utils import assert_that
 from ..representation import Graph
 from .client import Client
+from .composition import CompositionRule
 from .configuration import Configuration
 from .keys import Keys
 from .server import Server
@@ -38,6 +39,7 @@ class Circuit:
     graph: Graph
     mlir_module: MlirModule
     compilation_context: CompilationContext
+    composition_rules: Optional[List[CompositionRule]]
 
     client: Client
     server: Server
@@ -49,8 +51,10 @@ class Circuit:
         mlir: MlirModule,
         compilation_context: CompilationContext,
         configuration: Optional[Configuration] = None,
+        composition_rules: Optional[Iterable[CompositionRule]] = None,
     ):
         self.configuration = configuration if configuration is not None else Configuration()
+        self.composition_rules = list(composition_rules) if composition_rules else []
 
         self.graph = graph
         self.mlir_module = mlir
@@ -118,6 +122,7 @@ class Circuit:
                 self.configuration,
                 is_simulated=True,
                 compilation_context=self.compilation_context,
+                composition_rules=self.composition_rules,
             )
 
     def enable_fhe_execution(self):
@@ -127,7 +132,10 @@ class Circuit:
 
         if not hasattr(self, "server"):
             self.server = Server.create(
-                self.mlir_module, self.configuration, compilation_context=self.compilation_context
+                self.mlir_module,
+                self.configuration,
+                compilation_context=self.compilation_context,
+                composition_rules=self.composition_rules,
             )
 
             keyset_cache_directory = None

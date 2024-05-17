@@ -7,7 +7,7 @@ Declaration of `Server` class.
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 # mypy: disable-error-code=attr-defined
 import concrete.compiler
@@ -35,6 +35,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
+from .composition import CompositionRule
 from .configuration import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
@@ -95,6 +96,7 @@ class Server:
         configuration: Configuration,
         is_simulated: bool = False,
         compilation_context: Optional[CompilationContext] = None,
+        composition_rules: Optional[Iterable[CompositionRule]] = None,
     ) -> "Server":
         """
         Create a server using MLIR and output sign information.
@@ -111,6 +113,9 @@ class Server:
 
             compilation_context (CompilationContext):
                 context to use for the Compiler
+
+            composition_rules (Iterable[Tuple[str, int, str, int]]):
+                composition rules to be applied when compiling
         """
 
         backend = Backend.GPU if configuration.use_gpu else Backend.CPU
@@ -123,10 +128,12 @@ class Server:
         options.set_auto_parallelize(configuration.auto_parallelize)
         options.set_compress_evaluation_keys(configuration.compress_evaluation_keys)
         options.set_compress_input_ciphertexts(configuration.compress_input_ciphertexts)
-        options.set_composable(configuration.composable)
         options.set_enable_overflow_detection_in_simulation(
             configuration.detect_overflow_in_simulation
         )
+        composition_rules = composition_rules if composition_rules else []
+        for rule in composition_rules:
+            options.add_composition(rule.from_.func, rule.from_.pos, rule.to.func, rule.to.pos)
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member

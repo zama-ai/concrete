@@ -972,7 +972,7 @@ struct Dag final : public ::rust::Opaque {
   ::rust::Box<::concrete_optimizer::DagBuilder> builder(::rust::String circuit) noexcept;
   ::rust::String dump() const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
-  void add_compositions(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> froms, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> tos) noexcept;
+  void add_composition(::std::string const &from_func, ::std::size_t from_pos, ::std::string const &to_func, ::std::size_t to_pos) noexcept;
   void add_all_compositions() noexcept;
   ::std::size_t get_circuit_count() const noexcept;
   ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options options) const noexcept;
@@ -1319,7 +1319,7 @@ void concrete_optimizer$cxxbridge1$DagBuilder$tag_operator_as_output(::concrete_
 
 void concrete_optimizer$cxxbridge1$Dag$optimize(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
 
-void concrete_optimizer$cxxbridge1$Dag$add_compositions(::concrete_optimizer::Dag &self, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> froms, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> tos) noexcept;
+void concrete_optimizer$cxxbridge1$Dag$add_composition(::concrete_optimizer::Dag &self, ::std::string const &from_func, ::std::size_t from_pos, ::std::string const &to_func, ::std::size_t to_pos) noexcept;
 
 void concrete_optimizer$cxxbridge1$Dag$add_all_compositions(::concrete_optimizer::Dag &self) noexcept;
 } // extern "C"
@@ -1449,8 +1449,8 @@ void DagBuilder::tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex
   return ::std::move(return$.value);
 }
 
-void Dag::add_compositions(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> froms, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> tos) noexcept {
-  concrete_optimizer$cxxbridge1$Dag$add_compositions(*this, froms, tos);
+void Dag::add_composition(::std::string const &from_func, ::std::size_t from_pos, ::std::string const &to_func, ::std::size_t to_pos) noexcept {
+  concrete_optimizer$cxxbridge1$Dag$add_composition(*this, from_func, from_pos, to_func, to_pos);
 }
 
 void Dag::add_all_compositions() noexcept {

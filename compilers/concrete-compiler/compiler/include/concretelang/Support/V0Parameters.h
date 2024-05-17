@@ -67,20 +67,19 @@ struct V0Parameter {
 };
 
 namespace optimizer {
-constexpr double DEFAULT_GLOBAL_P_ERROR = 1.0 / 100000.0;
-constexpr double UNSPECIFIED_P_ERROR = NAN; // will use DEFAULT_GLOBAL_P_ERROR
-constexpr double UNSPECIFIED_GLOBAL_P_ERROR =
+const double DEFAULT_GLOBAL_P_ERROR = 1.0 / 100000.0;
+const double UNSPECIFIED_P_ERROR = NAN; // will use DEFAULT_GLOBAL_P_ERROR
+const double UNSPECIFIED_GLOBAL_P_ERROR =
     NAN; // will use DEFAULT_GLOBAL_P_ERROR
-constexpr uint DEFAULT_SECURITY = 128;
-constexpr uint DEFAULT_FALLBACK_LOG_NORM_WOPPBS = 8;
-constexpr bool DEFAULT_DISPLAY = false;
-constexpr bool DEFAULT_USE_GPU_CONSTRAINTS = false;
-constexpr concrete_optimizer::Encoding DEFAULT_ENCODING =
+const uint DEFAULT_SECURITY = 128;
+const uint DEFAULT_FALLBACK_LOG_NORM_WOPPBS = 8;
+const bool DEFAULT_DISPLAY = false;
+const bool DEFAULT_USE_GPU_CONSTRAINTS = false;
+const concrete_optimizer::Encoding DEFAULT_ENCODING =
     concrete_optimizer::Encoding::Auto;
-constexpr bool DEFAULT_CACHE_ON_DISK = true;
-constexpr uint32_t DEFAULT_CIPHERTEXT_MODULUS_LOG = 64;
-constexpr uint32_t DEFAULT_FFT_PRECISION = 53;
-constexpr bool DEFAULT_COMPOSABLE = false;
+const bool DEFAULT_CACHE_ON_DISK = true;
+const uint32_t DEFAULT_CIPHERTEXT_MODULUS_LOG = 64;
+const uint32_t DEFAULT_FFT_PRECISION = 53;
 
 /// The strategy of the crypto optimization
 enum Strategy {
@@ -96,10 +95,19 @@ enum Strategy {
 
 std::string const StrategyLabel[] = {"V0", "dag-mono", "dag-multi"};
 
-constexpr Strategy DEFAULT_STRATEGY = Strategy::DAG_MULTI;
-constexpr concrete_optimizer::MultiParamStrategy DEFAULT_MULTI_PARAM_STRATEGY =
+const Strategy DEFAULT_STRATEGY = Strategy::DAG_MULTI;
+const concrete_optimizer::MultiParamStrategy DEFAULT_MULTI_PARAM_STRATEGY =
     concrete_optimizer::MultiParamStrategy::ByPrecision;
-constexpr bool DEFAULT_KEY_SHARING = true;
+const bool DEFAULT_KEY_SHARING = true;
+
+struct CompositionRule {
+  std::string from_func;
+  size_t from_pos;
+  std::string to_func;
+  size_t to_pos;
+};
+
+const std::vector<CompositionRule> DEFAULT_COMPOSITION_RULES = {};
 
 struct Config {
   double p_error;
@@ -115,10 +123,10 @@ struct Config {
   bool cache_on_disk;
   uint32_t ciphertext_modulus_log;
   uint32_t fft_precision;
-  bool composable;
+  std::vector<CompositionRule> composition_rules;
 };
 
-constexpr Config DEFAULT_CONFIG = {
+const Config DEFAULT_CONFIG = {
     UNSPECIFIED_P_ERROR,
     UNSPECIFIED_GLOBAL_P_ERROR,
     DEFAULT_DISPLAY,
@@ -132,7 +140,7 @@ constexpr Config DEFAULT_CONFIG = {
     DEFAULT_CACHE_ON_DISK,
     DEFAULT_CIPHERTEXT_MODULUS_LOG,
     DEFAULT_FFT_PRECISION,
-    DEFAULT_COMPOSABLE,
+    DEFAULT_COMPOSITION_RULES,
 };
 
 using Dag = rust::Box<concrete_optimizer::Dag>;

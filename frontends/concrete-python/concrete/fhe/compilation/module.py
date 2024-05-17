@@ -5,7 +5,7 @@ Declaration of `FheModule` classes.
 # pylint: disable=import-error,no-member,no-name-in-module
 
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 from concrete.compiler import (
@@ -19,6 +19,7 @@ from mlir.ir import Module as MlirModule
 from ..internal.utils import assert_that
 from ..representation import Graph
 from .client import Client
+from .composition import CompositionRule
 from .configuration import Configuration
 from .keys import Keys
 from .server import Server
@@ -530,6 +531,7 @@ class FheModule:
         mlir: MlirModule,
         compilation_context: CompilationContext,
         configuration: Optional[Configuration] = None,
+        composition_rules: Optional[Iterable[CompositionRule]] = None,
     ):
         assert configuration and (configuration.fhe_simulation or configuration.fhe_execution)
 
@@ -548,7 +550,10 @@ class FheModule:
             self.runtime = SimulationRt(server)
         else:
             server = Server.create(
-                self.mlir_module, self.configuration, compilation_context=self.compilation_context
+                self.mlir_module,
+                self.configuration,
+                compilation_context=self.compilation_context,
+                composition_rules=composition_rules,
             )
 
             keyset_cache_directory = None

@@ -20,7 +20,7 @@ INTERFACE_CPP =  src/cpp/concrete-optimizer.cpp
 SOURCES = $(shell find $(ROOT)/concrete-optimizer/src) \
 	$(shell find $(ROOT)/concrete-optimizer-cpp/src -name '*.rs')
 
-build: $(INTERFACE_LIB)
+build: $(INTERFACE_LIB) $(INTERFACE_CPP) $(INTERFACE_HEADER)
 
 $(INTERFACE_LIB_ORIG) $(INTERFACE_HEADER_ORIG) $(INTERFACE_CPP_ORIG): $(SOURCES)
 	cd $(ROOT) && cargo build -p concrete-optimizer-cpp --profile $(CARGO_PROFILE)

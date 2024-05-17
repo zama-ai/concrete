@@ -81,7 +81,7 @@ func.func @main(%arg0: tensor<200x4x!FHE.eint<4>>) -> tensor<200x8x!FHE.eint<4>>
 )XXX",
              "main", false, true, true, DEFAULT_batchTFHEOps,
              DEFAULT_global_p_error, DEFAULT_chunkedIntegers, DEFAULT_chunkSize,
-             DEFAULT_chunkWidth, DEFAULT_composable, false);
+             DEFAULT_chunkWidth, false);
 
   const size_t dim0 = 200;
   const size_t dim1 = 4;
@@ -121,8 +121,7 @@ TEST(Distributed, nn_med_sequential) {
 )XXX",
                "main", false, false, false, DEFAULT_batchTFHEOps,
                DEFAULT_global_p_error, DEFAULT_chunkedIntegers,
-               DEFAULT_chunkSize, DEFAULT_chunkWidth, DEFAULT_composable,
-               false);
+               DEFAULT_chunkSize, DEFAULT_chunkWidth, false);
 
     const size_t dim0 = 200;
     const size_t dim1 = 4;
