@@ -184,6 +184,7 @@ macro_rules! _viz {
             ))
             .output()
             .expect("Failed to execute dot. Do you have graphviz installed ?");
+        path
     }};
 }
 
@@ -191,13 +192,12 @@ macro_rules! _viz {
 #[allow(unused)]
 macro_rules! viz {
     ($path: expr, $object:expr) => {
-        $crate::utils::viz::_viz!($path, $object);
+        let path = $crate::utils::viz::_viz!($path, $object);
         println!(
-            "Viz of {}:{} visible at {}/{}",
+            "Viz of {}:{} visible at {}",
             file!(),
             line!(),
-            std::env::temp_dir().display(),
-            $path
+            path.display()
         );
     };
     ($object:expr) => {
@@ -210,13 +210,12 @@ macro_rules! viz {
 #[allow(unused)]
 macro_rules! vizp {
     ($path: expr, $object:expr) => {{
-        $crate::utils::viz::_viz!($path, $object);
+        let path = $crate::utils::viz::_viz!($path, $object);
         panic!(
-            "Viz of {}:{} visible at {}/{}",
+            "Viz of {}:{} visible at {}",
             file!(),
             line!(),
-            std::env::temp_dir().display(),
-            $path
+            path.display()
         );
     }};
     ($object:expr) => {

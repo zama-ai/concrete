@@ -6,7 +6,7 @@ Declaration of `Converter` class.
 
 import math
 import sys
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import concrete.lang
 import concrete.lang.dialects.tracing
@@ -18,6 +18,7 @@ from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import Location as MlirLocation
 from mlir.ir import Module as MlirModule
 
+from ..compilation.composition import CompositionRule
 from ..compilation.configuration import Configuration, Exactness
 from ..representation import Graph, GraphProcessor, MultiGraphProcessor, Node, Operation
 from .context import Context
@@ -34,9 +35,15 @@ class Converter:
     """
 
     configuration: Configuration
+    composition_rules: List[CompositionRule]
 
-    def __init__(self, configuration: Configuration):
+    def __init__(
+        self,
+        configuration: Configuration,
+        composition_rules: Optional[Iterable[CompositionRule]] = None,
+    ):
         self.configuration = configuration
+        self.composition_rules = list(composition_rules) if composition_rules else []
 
     def convert_many(
         self,
@@ -213,6 +220,7 @@ class Converter:
         """
 
         configuration = self.configuration
+        composition_rules = self.composition_rules
 
         pipeline = (
             configuration.additional_pre_processors
@@ -220,7 +228,7 @@ class Converter:
                 CheckIntegerOnly(),
                 AssignBitWidths(
                     single_precision=configuration.single_precision,
-                    composable=configuration.composable,
+                    composition_rules=composition_rules,
                     comparison_strategy_preference=configuration.comparison_strategy_preference,
                     bitwise_strategy_preference=configuration.bitwise_strategy_preference,
                     shifts_with_promotion=configuration.shifts_with_promotion,

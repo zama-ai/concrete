@@ -377,7 +377,7 @@ getSolution(optimizer::Description &descr, ProgramCompilationFeedback &feedback,
     if (encoding != concrete_optimizer::Encoding::Crt) {
       config.encoding = concrete_optimizer::Encoding::Native;
       auto sol = getDagMultiSolution(descr.dag.value(), config);
-      if (sol.is_feasible || config.composable) {
+      if (sol.is_feasible || !config.composition_rules.empty()) {
         displayOptimizer(sol, descr, config);
         return toCompilerSolution(sol, feedback, config);
       }

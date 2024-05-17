@@ -953,7 +953,7 @@ struct Dag final : public ::rust::Opaque {
   ::rust::Box<::concrete_optimizer::DagBuilder> builder(::rust::String circuit) noexcept;
   ::rust::String dump() const noexcept;
   ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
-  void add_compositions(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> froms, ::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> tos) noexcept;
+  void add_composition(::std::string const &from_func, ::std::size_t from_pos, ::std::string const &to_func, ::std::size_t to_pos) noexcept;
   void add_all_compositions() noexcept;
   ::std::size_t get_circuit_count() const noexcept;
   ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options options) const noexcept;

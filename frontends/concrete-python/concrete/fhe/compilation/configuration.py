@@ -977,7 +977,6 @@ class Configuration:
     shifts_with_promotion: bool
     multivariate_strategy_preference: List[MultivariateStrategy]
     min_max_strategy_preference: List[MinMaxStrategy]
-    composable: bool
     use_gpu: bool
     relu_on_bits_threshold: int
     relu_on_bits_chunk_size: int

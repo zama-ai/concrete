@@ -231,79 +231,6 @@ TEST test_multi_parameters_2_precision_crt() {
   assert(circuit_solution.circuit_keys.conversion_keyswitch_keys.size() == 0);
 }
 
-TEST test_composable_dag_mono_fallback_on_dag_multi() {
-  auto dag = concrete_optimizer::dag::empty();
-  auto builder = dag->builder("test");
-
-  std::vector<uint64_t> shape = {};
-
-  concrete_optimizer::dag::OperatorIndex input1 =
-      builder->add_input(PRECISION_8B, slice(shape));
-
-  std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {input1};
-  std::vector<int64_t> weight_vec = {1 << 8};
-  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights1 =
-    concrete_optimizer::weights::vector(slice(weight_vec));
-
-  input1 = builder->add_dot(slice(inputs), std::move(weights1));
-  std::vector<u_int64_t> table = {};
-  auto lut1 = builder->add_lut(input1, slice(table), PRECISION_8B);
-  std::vector<concrete_optimizer::dag::OperatorIndex> lut1v = {lut1};
-  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights2 =
-    concrete_optimizer::weights::vector(slice(weight_vec));
-  auto id = builder->add_dot(slice(lut1v), std::move(weights2));
-  builder->tag_operator_as_output(id);
-
-  auto options = default_options();
-  auto solution1 = dag->optimize(options);
-  assert(!solution1.use_wop_pbs);
-  assert(solution1.p_error < options.maximum_acceptable_error_probability);
-
-  dag->add_all_compositions();
-  auto solution2 = dag->optimize(options);
-  assert(!solution2.use_wop_pbs);
-  assert(solution2.p_error < options.maximum_acceptable_error_probability);
-  assert(solution1.complexity < solution2.complexity);
-}
-
-TEST test_non_composable_dag_mono_fallback_on_woppbs() {
-  auto dag = concrete_optimizer::dag::empty();
-  auto builder = dag->builder("test");
-
-  std::vector<uint64_t> shape = {};
-
-  concrete_optimizer::dag::OperatorIndex input1 =
-      builder->add_input(PRECISION_8B, slice(shape));
-
-
-  std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {input1};
-  std::vector<int64_t> weight_vec = {1 << 16};
-  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights1 =
-    concrete_optimizer::weights::vector(slice(weight_vec));
-
-  input1 = builder->add_dot(slice(inputs), std::move(weights1));
-  std::vector<u_int64_t> table = {};
-  auto lut1 = builder->add_lut(input1, slice(table), PRECISION_8B);
-  std::vector<concrete_optimizer::dag::OperatorIndex> lut1v = {lut1};
-  rust::cxxbridge1::Box<concrete_optimizer::Weights> weights2 =
-    concrete_optimizer::weights::vector(slice(weight_vec));
-  auto id = builder->add_dot(slice(lut1v), std::move(weights2));
-  builder->tag_operator_as_output(id);
-
-  auto options = default_options();
-
-  auto solution1 = dag->optimize(options);
-  assert(!solution1.use_wop_pbs);
-  assert(solution1.p_error < options.maximum_acceptable_error_probability);
-
-  dag->add_all_compositions();
-  auto solution2 = dag->optimize(options);
-  assert(solution2.p_error < options.maximum_acceptable_error_probability);
-  assert(solution1.complexity < solution2.complexity);
-  assert(solution2.use_wop_pbs);
-
-}
-
 int main() {
 
   test_v0();
@@ -314,8 +241,6 @@ int main() {
   test_multi_parameters_1_precision();
   test_multi_parameters_2_precision();
   test_multi_parameters_2_precision_crt();
-  test_composable_dag_mono_fallback_on_dag_multi();
-  test_non_composable_dag_mono_fallback_on_woppbs();
 
   return 0;
 }

@@ -971,6 +971,20 @@ class Graph:
 
         return result
 
+    @property
+    def inputs_count(self) -> int:
+        """
+        Returns the number of inputs of the graph.
+        """
+        return len(self.input_nodes)
+
+    @property
+    def outputs_count(self) -> int:
+        """
+        Returns the number of outputs of the graph.
+        """
+        return len(self.output_nodes)
+
 
 class GraphProcessor(ABC):
     """

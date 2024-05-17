@@ -4,6 +4,7 @@
 // for license information.
 
 #include "concretelang/Bindings/Python/CompilerAPIModule.h"
+#include "concrete-optimizer.hpp"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/ClientLib/ClientLib.h"
 #include "concretelang/Common/Compat.h"
@@ -744,9 +745,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](CompilationOptions &options, double global_p_error) {
              options.optimizerConfig.global_p_error = global_p_error;
            })
-      .def("set_composable",
-           [](CompilationOptions &options, bool composable) {
-             options.optimizerConfig.composable = composable;
+      .def("add_composition",
+           [](CompilationOptions &options, std::string from_func,
+              size_t from_pos, std::string to_func, size_t to_pos) {
+             options.optimizerConfig.composition_rules.push_back(
+                 {from_func, from_pos, to_func, to_pos});
            })
       .def("set_security_level",
            [](CompilationOptions &options, int security_level) {

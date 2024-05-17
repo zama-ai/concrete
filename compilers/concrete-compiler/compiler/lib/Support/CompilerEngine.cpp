@@ -178,12 +178,6 @@ CompilerEngine::getConcreteOptimizerDescription(CompilationResult &res) {
   if (!description->has_value()) { // The pass has not been run
     return std::nullopt;
   }
-  if (description->value().dag.value()->get_circuit_count() > 1 &&
-      config.strategy !=
-          mlir::concretelang::optimizer::V0) { // Multi circuits without V0
-    return StreamStringError(
-        "Multi-circuits is only supported for V0 optimization.");
-  }
   return description;
 }
 

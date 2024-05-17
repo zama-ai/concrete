@@ -7,8 +7,21 @@ Declaration of `MultiCompiler` class.
 import inspect
 import traceback
 from copy import deepcopy
+from itertools import chain, product, repeat
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Protocol,
+    Tuple,
+    Union,
+    runtime_checkable,
+)
 
 import numpy as np
 from concrete.compiler import CompilationContext
@@ -20,6 +33,7 @@ from ..tracing import Tracer
 from ..values import ValueDescription
 from .artifacts import FunctionDebugArtifacts, ModuleDebugArtifacts
 from .compiler import EncryptionStatus
+from .composition import CompositionClause, CompositionPolicy, CompositionRule
 from .configuration import Configuration
 from .module import ExecutionRt, FheModule
 from .utils import fuse, get_terminal_size
@@ -233,6 +247,164 @@ class FunctionDef:
 
         self.inputset.append(sample)
         return self.graph(*args)
+
+
+class NotComposable:
+    """
+    Composition policy that does not allow the forwarding of any output to any input.
+    """
+
+    def get_rules_iter(self, _funcs: List[FunctionDef]) -> Iterable[CompositionRule]:
+        """
+        Return an iterator over composition rules.
+        """
+        return []
+
+
+class AllComposable:
+    """
+    Composition policy that allows to forward any output of the module to any of its input.
+    """
+
+    def get_rules_iter(self, funcs: List[Graph]) -> Iterable[CompositionRule]:
+        """
+        Return an iterator over composition rules.
+        """
+        outputs = chain(
+            *[
+                map(CompositionClause.create, zip(repeat(f.name), range(len(f.output_nodes))))
+                for f in funcs
+            ]
+        )
+        inputs = chain(
+            *[
+                map(CompositionClause.create, zip(repeat(f.name), range(len(f.input_nodes))))
+                for f in funcs
+            ]
+        )
+        return map(CompositionRule.create, product(outputs, inputs))
+
+
+@runtime_checkable
+class WireOutput(Protocol):
+    """
+    A protocol for wire outputs.
+    """
+
+    def get_outputs_iter(self) -> Iterable[CompositionClause]:
+        """
+        Return an iterator over the possible outputs of the wire output.
+        """
+
+
+@runtime_checkable
+class WireInput(Protocol):
+    """
+    A protocol for wire inputs.
+    """
+
+    def get_inputs_iter(self) -> Iterable[CompositionClause]:
+        """
+        Return an iterator over the possible inputs of the wire input.
+        """
+
+
+class Output(NamedTuple):
+    """
+    The output of a given function of a module.
+    """
+
+    func: FunctionDef
+    pos: int
+
+    def get_outputs_iter(self) -> Iterable[CompositionClause]:
+        """
+        Return an iterator over the possible outputs of the wire output.
+        """
+        return [CompositionClause(self.func.name, self.pos)]
+
+
+class AllOutputs(NamedTuple):
+    """
+    All the outputs of a given function of a module.
+    """
+
+    func: FunctionDef
+
+    def get_outputs_iter(self) -> Iterable[CompositionClause]:
+        """
+        Return an iterator over the possible outputs of the wire output.
+        """
+        assert self.func.graph
+        return map(
+            CompositionClause.create,
+            zip(repeat(self.func.name), range(self.func.graph.outputs_count)),
+        )
+
+
+class Input(NamedTuple):
+    """
+    The input of a given function of a module.
+    """
+
+    func: FunctionDef
+    pos: int
+
+    def get_inputs_iter(self) -> Iterable[CompositionClause]:
+        """
+        Return an iterator over the possible inputs of the wire input.
+        """
+        return [CompositionClause(self.func.name, self.pos)]
+
+
+class AllInputs(NamedTuple):
+    """
+    All the inputs of a given function of a module.
+    """
+
+    func: FunctionDef
+
+    def get_inputs_iter(self) -> Iterable[CompositionClause]:
+        """
+        Return an iterator over the possible inputs of the wire input.
+        """
+        assert self.func.graph
+        return map(
+            CompositionClause.create,
+            zip(repeat(self.func.name), range(self.func.graph.inputs_count)),
+        )
+
+
+class Wire(NamedTuple):
+    """
+    A forwarding rule between an output and an input.
+    """
+
+    output: WireOutput
+    input: WireInput
+
+    def get_rules_iter(self, _) -> Iterable[CompositionRule]:
+        """
+        Return an iterator over composition rules.
+        """
+        return map(
+            CompositionRule.create,
+            product(self.output.get_outputs_iter(), self.input.get_inputs_iter()),
+        )
+
+
+class Wired(NamedTuple):
+    """
+    Composition policy which allows the forwarding of certain outputs to certain inputs.
+    """
+
+    wires: List[Wire]
+
+    def get_rules_iter(self, _) -> Iterable[CompositionRule]:
+        """
+        Return an iterator over composition rules.
+        """
+        return chain(*[w.get_rules_iter(_) for w in self.wires])
 
 
 class DebugManager:
@@ -450,15 +622,16 @@ class ModuleCompiler:
     default_configuration: Configuration
     functions: Dict[str, FunctionDef]
     compilation_context: CompilationContext
+    composition: CompositionPolicy
 
-    def __init__(self, functions: List[FunctionDef]):
+    def __init__(self, functions: List[FunctionDef], composition: CompositionPolicy):
         self.default_configuration = Configuration(
             p_error=0.00001,
-            composable=True,
-            parameter_selection_strategy="v0",
+            parameter_selection_strategy="multi",
         )
         self.functions = {function.name: function for function in functions}
         self.compilation_context = CompilationContext.new()
+        self.composition = composition
 
     def compile(
         self,
@@ -492,9 +665,6 @@ class ModuleCompiler:
         configuration = deepcopy(configuration)
         if len(kwargs) != 0:
             configuration = configuration.fork(**kwargs)
-        if not configuration.composable:
-            error = "Module can only be compiled with `composable` activated."
-            raise RuntimeError(error)
 
         module_artifacts = (
             module_artifacts if module_artifacts is not None else ModuleDebugArtifacts()
@@ -518,10 +688,18 @@ class ModuleCompiler:
             # Convert the graphs to an mlir module
             mlir_context = self.compilation_context.mlir_context()
             graphs = {}
+
             for name, function in self.functions.items():
                 assert function.graph is not None
                 graphs[name] = function.graph
-            mlir_module = GraphConverter(configuration).convert_many(graphs, mlir_context)
+
+            # pylint: disable=protected-access
+            mlir_module = GraphConverter(
+                configuration,
+                self.composition.get_rules_iter(
+                    list(filter(None, [f.graph for f in self.functions.values()]))
+                ),
+            ).convert_many(graphs, mlir_context)
             mlir_str = str(mlir_module).strip()
             dbg.debug_mlir(mlir_str)
             module_artifacts.add_mlir_to_compile(mlir_str)
@@ -534,7 +712,16 @@ class ModuleCompiler:
 
             # Compile to a module!
             with dbg.debug_table("Optimizer", activate=dbg.show_optimizer()):
-                output = FheModule(graphs, mlir_module, self.compilation_context, configuration)
+                # pylint: disable=protected-access
+                output = FheModule(
+                    graphs,
+                    mlir_module,
+                    self.compilation_context,
+                    configuration,
+                    self.composition.get_rules_iter(
+                        list(filter(None, [f.graph for f in self.functions.values()]))
+                    ),
+                )
                 if isinstance(output.runtime, ExecutionRt):
                     client_parameters = output.runtime.client.specs.client_parameters
                     module_artifacts.add_client_parameters(client_parameters.serialize())

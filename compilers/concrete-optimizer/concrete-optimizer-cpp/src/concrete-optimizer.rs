@@ -16,6 +16,7 @@ use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::parameters::{BrDecompositionParameters, KsDecompositionParameters};
 use concrete_optimizer::utils::cache::persistent::default_cache_dir;
 use concrete_optimizer::utils::viz::Viz;
+use cxx::CxxString;
 
 fn no_solution() -> ffi::Solution {
     ffi::Solution {
@@ -516,47 +517,48 @@ impl Dag {
         let search_space = SearchSpace::default(processing_unit);
 
         let encoding = options.encoding.into();
+
         if self.0.is_composed() {
-            let circuit_sol =
-                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                    &Some(PartitionCut::empty()),
-                );
-            let circuit_sol: ffi::CircuitSolution = circuit_sol.into();
-            (&circuit_sol).into()
-        } else {
-            let result =
-                concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                );
-            result.map_or_else(no_dag_solution, |solution| solution.into())
+            return no_dag_solution();
         }
+
+        let result = concrete_optimizer::optimization::dag::solo_key::optimize_generic::optimize(
+            &self.0,
+            config,
+            &search_space,
+            encoding,
+            options.default_log_norm2_woppbs,
+            &caches_from(options),
+        );
+        result.map_or_else(no_dag_solution, |solution| solution.into())
     }
 
     fn get_circuit_count(&self) -> usize {
         self.0.get_circuit_count()
     }
 
-    fn add_compositions(&mut self, froms: &[ffi::OperatorIndex], tos: &[ffi::OperatorIndex]) {
-        self.0.add_compositions(
-            froms
-                .iter()
-                .map(|a| OperatorIndex(a.index))
-                .collect::<Vec<_>>(),
-            tos.iter()
-                .map(|a| OperatorIndex(a.index))
-                .collect::<Vec<_>>(),
-        );
+    unsafe fn add_composition<'a>(
+        &mut self,
+        from_func: &'a CxxString,
+        from_pos: usize,
+        to_func: &'a CxxString,
+        to_pos: usize,
+    ) {
+        let from_index = self
+            .0
+            .get_circuit(from_func.to_str().unwrap())
+            .get_output_operators_iter()
+            .nth(from_pos)
+            .unwrap()
+            .id;
+        let to_index = self
+            .0
+            .get_circuit(to_func.to_str().unwrap())
+            .get_input_operators_iter()
+            .nth(to_pos)
+            .unwrap()
+            .id;
+        self.0.add_composition(from_index, to_index);
     }
 
     fn add_all_compositions(&mut self) {
@@ -800,7 +802,13 @@ mod ffi {
 
         fn optimize(self: &Dag, options: Options) -> DagSolution;
 
-        fn add_compositions(self: &mut Dag, froms: &[OperatorIndex], tos: &[OperatorIndex]);
+        unsafe fn add_composition<'a>(
+            self: &mut Dag,
+            from_func: &'a CxxString,
+            from_pos: usize,
+            to_func: &'a CxxString,
+            to_pos: usize,
+        );
 
         fn add_all_compositions(self: &mut Dag);
 
