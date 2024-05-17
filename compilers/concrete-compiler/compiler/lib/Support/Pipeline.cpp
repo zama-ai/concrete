@@ -361,6 +361,7 @@ mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
       pm, mlir::concretelang::createCollapseParallelLoops(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createBatchingPass(maxBatchSize), enablePass);
+  addPotentiallyNestedPass(pm, mlir::createCanonicalizerPass(), enablePass);
 
   return pm.run(module.getOperation());
 }
