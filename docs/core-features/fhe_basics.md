@@ -1,43 +1,52 @@
 # Overview
 
-## Operations on encrypted values
+This document explains the basic principles, key concepts, and workflow of how **Concrete** performs computations on encrypted data homomorphically.
 
-The idea of homomorphic encryption is that you can compute on ciphertexts without knowing the messages they encrypt. A scheme is said to be [fully homomorphic](https://en.wikipedia.org/wiki/Homomorphic\_encryption#Fully\_homomorphic\_encryption), if an unlimited number of additions and multiplications are supported ($$x$$ is a plaintext and $$E[x]$$ is the corresponding ciphertext):
+## Computations on encrypted values
+
+Homomorphic encryption allows you to perform computations on ciphertexts without knowing the underlying messages. A scheme is considered [fully homomorphic](https://en.wikipedia.org/wiki/Homomorphic_encryption#Fully_homomorphic_encryption) if it supports an unlimited number of additions and multiplications.ß
 
 * homomorphic addition: $$E[x] + E[y] = E[x + y]$$
 * homomorphic multiplication: $$E[x] * E[y] = E[x * y]$$
 
-## Noise and Bootstrap
+$$x$$ is a plaintext and $$E[x]$$ is the corresponding ciphertext.
 
-FHE encrypts data as LWE ciphertexts. These ciphertexts can be visually represented as a bit vector with the encrypted message in the higher-order (yellow) bits as well as a random part (gray), that guarantees the security of the encrypted message, called noise.
+## Noise and bootstrap
 
-![](../\_static/basics/Ciphertext.png)
+Fully Homomorphic Encryption (FHE) encrypts data as Learning With Errors (LWE) ciphertexts.
 
-Under the hood, each time you perform an operation on an encrypted value, the noise grows and at a certain point, it may overlap with the message and corrupt its value.
+The following illustration visualizes LWE ciphertexts as a bit vector:
 
-There is a way to decrease the noise of a ciphertext with the **Bootstrap operation**. The bootstrap operation takes as input a noisy ciphertext and generates a new ciphertext encrypting the same message, but with a lower noise. This allows additional operations to be performed on the encrypted message.
+* The higher-order bits in yellow contain the encrypted message
+* The lower-order bits in grey contain a random part called **noise**, ensuring the encrypted message's security.
 
-A typical FHE program will be made up of a series of operations followed by a Bootstrap, this is then repeated many times.
+![](../_static/basics/Ciphertext.png)
 
-## Probability of Error
+Each time you perform an operation on an encrypted value, the noise increases. Eventually, the noise may overlap with the message, corrupting its value. To avoid this, we reduce the noise in a cipher text using the **bootstrapping operation**.
 
-The amount of noise in a ciphertext is not as bounded as it may appear in the above illustration. As the errors are drawn randomly from a Gaussian distribution, they can be of varying size. This means that we need to be careful to ensure the noise terms do not affect the message bits. If the error terms do overflow into the message bits, this can cause an incorrect output (failure) when bootstrapping.
+The bootstrapping operation takes a noisy ciphertext as input and generates a new ciphertext encrypting the same message but with a lower noise. This reduction allows you to perform additional operations on the same encrypted message.
 
-The default failure probability in Concrete is set for the whole program and is $$\frac{1}{100000}$$ by default. This means that 1 execution of every 100,000 may result in an incorrect output. To have a lower probability of error, you need to change the cryptographic parameters, likely resulting in worse performance. On the other side of this trade-off, allowing a higher probability of error will likely speed-up operations.
+A typical FHE program consists of a series of operations followed by a bootstrapping, and then the cycle repeats.
+
+## Probability of error
+
+The amount of noise is drawn randomly from a Gaussian distribution, so the size can vary. It is essential to ensure that the noise terms do not interfere with the message bits. If the noise terms overflow into the message bits, they can cause an incorrect output during bootstrapping.
+
+In **Concrete**, the default probability of error is set to $$frac{1}{100000}$$. This means that 1 out of every 100,000 executions may result in an incorrect output.
+
+A lower probability of error may increase the accuracy but degrade the performance, reversely, a higher probability of error will likely speed up operations. You can change the probability of error by adjusting the cryptographic parameters.
 
 ## Function evaluation
 
-So far, we only introduced arithmetic operations but a typical program usually also involves functions (maximum, minimum, square root…)
+Besides the arithmetic operations that we have introduced, a typical program usually also involves functions such as maximum, minimum, square root, and so on.
 
-During the Bootstrap operation, in TFHE, you could perform a table lookup simultaneously to reduce noise, turning the Bootstrap operation into a Programmable Bootstrap (PBS).
+During the bootstrapping operation, you can perform a [Table Lookup](table_lookups/) (TLU) simultaneously to reduce noise, turning the [bootstrapping operation](fhe_basics.md#noise-and-bootstrap) into a Programmable Bootstrap (PBS).
 
-Concrete uses the PBS to support function evaluation:
+**Concrete** uses the PBS to support function evaluation:
 
-* homomorphic univariate function evaluation: $$f(E[x]) = E[f(x)]$$
+* Homomorphic univariate function evaluation: $$f(E[x]) = E[f(x)]$$
 
-Let's take a simple example. A function (or circuit) that takes a 4 bits input variable and output the maximum value between a clear constant and the encrypted input:
-
-example:
+Here is a simple example: a function that takes a 4-bit input variable and outputs the maximum value between a clear constant and the encrypted input:
 
 ```python
 import numpy as np
@@ -46,7 +55,7 @@ def encrypted_max(x: uint4):
     return np.maximum(5, x)
 ```
 
-could be turned into a table lookup:
+This function can be turned into a TLU:
 
 ```python
 def encrypted_max(x: uint4):
@@ -54,15 +63,15 @@ def encrypted_max(x: uint4):
     return lut[x]
 ```
 
-The Lookup table `lut` being applied during the Programmable Bootstrap.
+**Concrete** applies this lookup table `lut` during the Programmable Bootstrap.
 
 ## PBS management
 
-You should not worry about PBS, they are completely managed by Concrete during the compilation process. Each function evaluation will be turned into a Lookup table and evaluated by a PBS.
+During compilation, **Concrete** handles the entire PBS management by turning each function evaluation into a TLU and then evaluating it by a PBS. You don't have to manage PBS by yourself.
 
-See this in action with the previous example, if you dump the MLIR code produced by the frontend, you will see (forget about MLIR syntax, just see the Lookup table value on the 4th line):
+Refer to the MLIR code produced by the previous example, you'll see the lookup table value on the 4th line:
 
-```c++
+```cpp
 module {
   func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
     %cst = arith.constant dense<[5, 5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]> : tensor<16xi64>
@@ -72,25 +81,41 @@ module {
 }
 ```
 
-The only thing you should keep in mind is that it adds a constraint on the input type, and that is the reason behind having a maximum bit-width supported in Concrete.
+Some considerations about PBS:
 
-Second takeaway is that PBS are the most costly operations in FHE, the less PBS in your circuit the faster it will run. It is an interesting metrics to optimize (you will see that Concrete could give you the number of PBS used in your circuit).
+* **Input type:** PBS adds a constraint on the input type, that's why **Concrete** supports a limited width.
+* **PBS cost:**
+  * PBSs are the most costly operations in FHE.
+    * The number of PBSs used in your circuit is an important metric to optimize the performance. The fewer PBS you have in your circuit, the faster the execution runs.
+  * PBS cost varies with input variable precision.
+    * For example, a circuit with 8-bit PBS will run faster than one with 16-bit PBS.
 
-Note also that PBS cost varies with the input variable precision (a circuit with 8 bit PBS will run faster than one with 16 bits PBS).
+## Development workflow
 
-## Development Workflow
+Computation on encrypted data is particularly useful in the client/server model, especially when the client data are sensitive and the server is not trusted.
 
-Allowing computation on encrypted data is particularly interesting in the client/server model, especially when the client data are sensitive and the server not trusted. You could split the workflow in two main steps: development and deployment.
+You can split the workflow into two steps: development and deployment.
 
 ### Development
 
-During development, you will turn your program into its FHE equivalent. Concrete automates this task with the compilation process but you can make this process even easier by reducing the precision required, reducing the number of PBSs or allowing more parallelization in your code (e.g. working on bit chunks instead of high bit-width variables).
+During development, you will convert your program into its FHE equivalent. **Concrete** automates this task through the compilation process, but you go further by:
 
-Once happy with the code, the development process is over and you will create the compiler artifact that will be used during deployment.
+* Reducing the precision required
+* Decreasing the number of PBSs
+* Allowing more parallelization in your code. For example, working on smaller-bit chunks instead of larger-bit variables.
+
+Once you finish the code, you will create the compiler artifact to use during deployment.
 
 ### Deployment
 
-A typical Concrete deployment will host on a server the compilation artifact: Client specifications required by the compiled circuits and the fhe executable itself. Client will ask for the circuit requirements, generate keys accordingly, then it will send an encrypted payload and receive an encrypted result.
+A typical **Concrete** deployment hosts the compilation artifact on a server, which includes the client specifications that the compiled circuits require and the executable FHE.
+
+The client will go through the following steps:
+
+1. Request the circuit requirements
+2. Generate keys accordingly
+3. Send an encrypted payload
+4. Receive an encrypted result
 
 ```mermaid
 sequenceDiagram
@@ -103,4 +128,4 @@ sequenceDiagram
     Client->>Client: Decrypt(result)
 ```
 
-For more information on deployment, see [Howto - Deploy](../guides/deploy.md)
+For more information on deployment, see [the deployment documentation](../guides/deploy.md).

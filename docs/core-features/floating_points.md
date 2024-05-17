@@ -1,12 +1,18 @@
-# Floating Points
+# Floating points
 
-**Concrete** partly supports floating points. There is no support for floating point inputs or outputs. However, there is support for intermediate values to be floating points (under certain constraints).
+This document explains how **Concrete** handles floating point operations, with examples and limitations.
 
-## Floating points as intermediate values
+## Introduction
 
-**Concrete-Compile**, which is used for compiling the circuit, doesn't support floating points at all. However, it supports table lookups which take an integer and map it to another integer. The constraints of this operation are that there should be a single integer input, and a single integer output.
+**Concrete** partly supports floating points. While it doesn't support floating point inputs or outputs, it does allow floating points as intermediate values under certain constraints.
 
-As long as your floating point operations comply with those constraints, **Concrete** automatically converts them to a table lookup operation:
+The tool to compile circuits - `Concrete-Compile` doesn't support floating points directly. However, it supports Table Lookups (TLUs) which take an integer and map it to another integer. The constraint of this operation is that the input and output must both be single integers.
+
+If your floating point operations comply with the constraint, **Concrete** automatically converts them to TLU operations.
+
+## How to use in FHE
+
+In the following example, `a`, `b`, and `c` are floating-point intermediates used to calculate an integer `d`, which is dependent on another integer `x`. **Concrete** detects this and fuses all of these operations into a single TLU from `x` to `d`:
 
 ```python
 from concrete import fhe
@@ -27,11 +33,10 @@ for x in range(8):
     assert circuit.encrypt_run_decrypt(x) == f(x)
 ```
 
-In the example above, `a`, `b`, and `c` are floating point intermediates. They are used to calculate `d`, which is an integer with a value dependent upon `x`, which is also an integer. **Concrete** detects this and fuses all of these operations into a single table lookup from `x` to `d`.
+## Limitation
 
-This approach works for a variety of use cases, but it comes up short for others:
+This approach works for many use cases, but not for all. In the following example, `d` depends not only on `x` but on both `x` and `y`. **Concrete** cannot fuse these operations, so it raises an error.
 
-<!--pytest-codeblocks:skip-->
 ```python
 from concrete import fhe
 import numpy as np
@@ -71,5 +76,3 @@ RuntimeError: Function you are trying to compile cannot be converted to MLIR
 %7 = astype(%6, dtype=int_)        # EncryptedScalar<uint3>
 return %7
 ```
-
-The reason for the error is that `d` no longer depends solely on `x`; it depends on `y` as well. **Concrete** cannot fuse these operations, so it raises an exception instead.

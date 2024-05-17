@@ -1,6 +1,8 @@
 # Tagging
 
-When you have big circuits, keeping track of which node corresponds to which part of your code becomes difficult. A tagging system can simplify such situations:
+This document introduces the tagging feature to keep track of the correspondence between nodes and your code.
+
+When you have big circuits, a tagging system can simplify node tracking:
 
 ```python
 def g(z):
@@ -49,8 +51,8 @@ Subgraphs:
         return %2
 ```
 
-If you get an error, you'll see exactly where the error occurred (e.g., which layer of the neural network, if you tag layers).
+If you get an error, you'll see exactly where the error occurred. For example, if you tag layers, you can see in which layer of the neural network the error occurs.
 
 {% hint style="info" %}
-In the future, we plan to use tags for additional features (e.g., to measure performance of tagged regions), so it's a good idea to start utilizing them for big circuits.
+We plan to use tags for more additional features in future releases, such as measuring the performance of tagged regions.
 {% endhint %}

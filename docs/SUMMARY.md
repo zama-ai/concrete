@@ -13,17 +13,26 @@
 ## Core features
 
 * [Overview](core-features/fhe_basics.md)
-* [Table lookups](core-features/table_lookups.md)
-* [Bit extraction](core-features/bit_extraction.md)
-* [Rounding](core-features/rounding.md)
-* [Truncating](core-features/truncating.md)
+* [Table Lookups](core-features/table_lookups/README.md)
+  * [Applying Table Lookups](core-features/table_lookups/applying_table_lookups.md)
+  * [Bit extraction](core-features/table_lookups/bit_extraction.md)
+  * [Rounding](core-features/table_lookups/rounding.md)
+  * [Truncating](core-features/table_lookups/truncating.md)
 * [Floating points](core-features/floating_points.md)
-* [Comparisons](core-features/comparisons.md)
-* [Min/Max operations](core-features/minmax.md)
-* [Bitwise operations](core-features/bitwise.md)
-* [Common tips](core-features/workarounds.md)
+* [Comparisons](core-features/comparisons/README.md)
+  * [Chunk](core-features/comparisons/chunk.md)
+  * [Subtraction](core-features/comparisons/subtraction.md)
+  * [Clipping](core-features/comparisons/clipping.md)
+* [Min/Max operations](core-features/minmax/README.md)
+  * [Chunk](core-features/minmax/chunk.md)
+  * [Subtraction](core-features/minmax/subtraction.md)
+* [Bitwise operations](core-features/bitwise/README.md)
+  * [Chunk](core-features/bitwise/chunk.md)
+  * [Packing](core-features/bitwise/packing.md)
+  * [Shift operations](core-features/bitwise/shift_operations.md)
 * [Extensions](core-features/extensions.md)
 * [Tagging](core-features/tagging.md)
+* [Performance optimisation](core-features/workarounds.md)
 
 ## Compilation
 
@@ -84,5 +93,5 @@
 
 * [Contributing](dev/contributing.md)
 * [Release note](https://github.com/zama-ai/concrete/releases)
-* [Feature request](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=feature\&projects=\&template=features.md)
-* [Bug report](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=bug%2C+triage\&projects=\&template=bug_report.md)
+* [Feature request](https://github.com/zama-ai/concrete/issues/new?assignees=&labels=feature&projects=&template=features.md)
+* [Bug report](https://github.com/zama-ai/concrete/issues/new?assignees=&labels=bug%2C+triage&projects=&template=bug_report.md)

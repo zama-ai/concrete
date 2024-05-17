@@ -1,12 +1,16 @@
 # Truncating
 
-Table lookups have a strict constraint on the number of bits they support. This can be limiting, especially if you don't need exact precision. As well as this, using larger bit-widths leads to slower table lookups.
+This document introduces the truncating operations to optimize performance in Table Lookup (TLU) operations, particularly when exact precision is not required.
 
-To overcome these issues, truncated table lookups are introduced. This operation provides a way to zero the least significant bits of a large integer and then apply the table lookup on the resulting (smaller) value.
+## Introduction
 
-Imagine you have a 5-bit value, you can use `fhe.truncate_bit_pattern(value, lsbs_to_remove=2)` to truncate it (here the last 2 bits are discarded). Once truncated, value will remain in 5-bits (e.g., 22 = 0b10110 would be truncated to 20 = 0b10100), and the last 2 bits of it would be zero. Concrete uses this to optimize table lookups on the truncated value, the 5-bit table lookup gets optimized to a 3-bit table lookup, which is much faster!
+Truncating operations provide a way to zero the least significant bits of a large integer and then apply the TLUs on the smaller, truncated value. Because TLUs are computationally intensive, truncating is a good option for performance optimization, and is especially valuable for use cases where exact precision is not required.
 
-Let's see how truncation works in practice:
+## How truncating works
+
+Let's say you have a 5-bit value, you can use `fhe.truncate_bit_pattern(value, lsbs_to_remove=2)` to truncate off the last 2 bits. The value remains 5 bits after truncating, but the last 2 bits are zeroed. For instance, 22 (0b10110) is truncated to 20 (0b10100). This way, **Concrete** optimizes TLU by reducing the bit width from 5 bits to 3 bits, making it much faster.
+
+Here is an example of how truncation works in practice:
 
 ```python
 import matplotlib.pyplot as plt
@@ -50,9 +54,11 @@ ax.set_aspect("equal", adjustable="box")
 plt.show()
 ```
 
-prints:
+<details>
 
-```
+<summary>The printed results</summary>
+
+```python
  0 = 0b_0000[00] => 0b_0000[00] = 0
  1 = 0b_0000[01] => 0b_0000[00] = 0
  2 = 0b_0000[10] => 0b_0000[00] = 0
@@ -94,11 +100,19 @@ prints:
 31 = 0b_0111[11] => 0b_0111[00] = 28
 ```
 
-and displays:
+</details>
 
-![](../\_static/truncating/identity.png)
+<details>
 
-Now, let's see how truncating can be used in FHE.
+<summary>The graph displayed</summary>
+
+![](../../\_static/truncating/identity.png)
+
+</details>
+
+## How to use truncating in FHE
+
+Here is an example of how you can use truncating in FHE:
 
 ```python
 import itertools
@@ -162,7 +176,9 @@ for lsbs_to_remove in range(input_bit_width):
 plt.show()
 ```
 
-prints:
+<details>
+
+<summary>The results printed</summary>
 
 ```
 lsbs_to_remove=0 => 1.00x speedup
@@ -173,25 +189,30 @@ lsbs_to_remove=4 => 3.46x speedup
 lsbs_to_remove=5 => 3.14x speedup
 ```
 
-{% hint style="info" %}
-These speed-ups can vary from system to system.
-{% endhint %}
+</details>
+
+<details>
+
+<summary>The graphs displayed</summary>
+
+<img src="../../_static/truncating/lsbs_to_remove.png" alt="" data-size="original">
+
+</details>
 
 {% hint style="info" %}
-The reason why the speed-up is not increasing with `lsbs_to_remove` is because the truncating operation itself has a cost: each bit removal is a PBS. Therefore, if a lot of bits are removed, truncation itself could take longer than the bigger TLU which is evaluated afterwards.
+**About speedups:**
+
+* The observed speedups can vary depending on system configurations.
+* The speed-up is not increasing with `lsbs_to_remove` because the truncating operation itself has a cost. Each bit removal involves a PBS, so removing many bits can make the truncating take longer than evaluating the larger TLU that follows.
 {% endhint %}
-
-and displays:
-
-![](../\_static/truncating/lsbs_to_remove.png)
 
 ## Auto Truncators
 
-Truncating is very useful but, in some cases, you don't know how many bits your input contains, so it's not reliable to specify `lsbs_to_remove` manually. For this reason, the `AutoTruncator` class is introduced.
+When don't know the bit width of your input, specifying `lsbs_to_remove` manually can be unreliable. `AutoTruncator` allows you to set how many of the most significant bits to keep, it adjusts the number of the least significant bits to remove based on an input set.
 
-`AutoTruncator` allows you to set how many of the most significant bits to keep, but they need to be adjusted using an inputset to determine how many of the least significant bits to remove. This can be done manually using `fhe.AutoTruncator.adjust(function, inputset)`, or by setting `auto_adjust_truncators` configuration to `True` during compilation.
+You can adjust this manually using `fhe.AutoTruncator.adjust(function, inputset)`, or automatically by setting `auto_adjust_truncators` configuration to `True` during compilation.
 
-Here is how auto truncators can be used in FHE:
+The following example demonstrates how to use `AutoTruncator` in FHE:
 
 ```python
 import itertools
@@ -261,7 +282,11 @@ for i, target_msbs in enumerate(reversed(range(1, input_bit_width + 1))):
 plt.show()
 ```
 
-prints:
+This program prints the following results:
+
+<details>
+
+<summary>The results printed</summary>
 
 ```
 target_msbs=6 => 1.00x speedup
@@ -272,10 +297,16 @@ target_msbs=2 => 3.38x speedup
 target_msbs=1 => 3.37x speedup
 ```
 
-and displays:
+</details>
 
-![](../\_static/truncating/msbs_to_keep.png)
+<details>
+
+<summary>The graphs displayed</summary>
+
+<img src="../../_static/truncating/msbs_to_keep.png" alt="" data-size="original">
+
+</details>
 
 {% hint style="warning" %}
-`AutoTruncator`s should be defined outside the function that is being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called. Furthermore, each `AutoTruncator` should be used with exactly one `truncate_bit_pattern` call.
+`AutoTruncator` is designed to store the result of the adjustment process, so you don't have to create one each time the function is called. Therefore, you should define `AutoTruncator` outside the function that is being compiled. Furthermore, use each `AutoTruncator` exactly with one `truncate_bit_pattern` call.
 {% endhint %}

@@ -1,12 +1,16 @@
 # Rounding
 
-Table lookups have a strict constraint on the number of bits they support. This can be limiting, especially if you don't need exact precision. As well as this, using larger bit-widths leads to slower table lookups.
+This document introduces the rounding operations to optimize performance in Table Lookup (TLU) operations, particularly when exact precision is not required.
 
-To overcome these issues, rounded table lookups are introduced. This operation provides a way to round the least significant bits of a large integer and then apply the table lookup on the resulting (smaller) value.
+## Introduction
 
-Imagine you have a 5-bit value, but you want to have a 3-bit table lookup. You can call `fhe.round_bit_pattern(input, lsbs_to_remove=2)` and use the 3-bit value you receive as input to the table lookup.
+Rounding operations provide a way to round the least significant bits of a large integer, and then apply the TLU on the smaller, rounded value. Because TLUs are computationally intensive, rounding is a good option for performance optimization. It is especially valuable for use cases where exact precision is not required.
 
-Let's see how rounding works in practice:
+## How it works
+
+Let's say you have a 5-bit value and need to perform a 3-bit TLU, you can call `fhe.round_bit_pattern(input, lsbs_to_remove=2)` function to round off the last 2 bits of the input value to get the 3-bit value that you need for the TLU.
+
+Here's an example of how rounding works in practice:
 
 ```python
 import matplotlib.pyplot as plt
@@ -50,7 +54,11 @@ ax.set_aspect("equal", adjustable="box")
 plt.show()
 ```
 
-prints:
+This function prints the following results:
+
+<details>
+
+<summary>The results printed</summary>
 
 ```
  0 = 0b_0000[00] => 0b_0000[00] = 0
@@ -95,19 +103,29 @@ prints:
 31 = 0b_0111[11] => 0b_1000[00] = 32
 ```
 
-and displays:
+</details>
 
-![](../_static/rounding/identity.png)
+<details>
+
+<summary>The graph displayed</summary>
+
+<img src="../../_static/rounding/identity.png" alt="" data-size="original">
+
+</details>
 
 {% hint style="info" %}
-If the rounded number is one of the last `2**(lsbs_to_remove - 1)` numbers in the input range `[0, 2**original_bit_width)`, an overflow **will** happen.
+**Overflow protection:**
 
-By default, if an overflow is encountered during inputset evaluation, bit-widths will be adjusted accordingly. This results in a loss of speed, but ensures accuracy.
+An overflow will happen if the rounded number is one of the last `2**(lsbs_to_remove - 1)` numbers in the input range `[0, 2**original_bit_width)`.
 
-You can turn this overflow protection off (e.g., for performance) by using `fhe.round_bit_pattern(..., overflow_protection=False)`. However, this could lead to unexpected behavior at runtime.
+To prevent overflow by default, **Concrete** adjusts the bit width accordingly during inputset evaluation to ensure accuracy. However, this overflow protection could slow down performance.
+
+If performance is a higher priority than absolute precision in your application, you can disable overflow protection by using `fhe.round_bit_pattern(..., overflow_protection=False)`. However, be aware that this might lead to unexpected behavior during runtime.
 {% endhint %}
 
-Now, let's see how rounding can be used in FHE.
+## How to use rounding in FHE
+
+Let's see an example of how to use rounding in FHE:
 
 ```python
 import itertools
@@ -173,7 +191,11 @@ for lsbs_to_remove in range(input_bit_width):
 plt.show()
 ```
 
-prints:
+This prints the following results:
+
+<details>
+
+<summary>The results printed</summary>
 
 ```
 lsbs_to_remove=0 => 1.00x speedup
@@ -184,29 +206,31 @@ lsbs_to_remove=4 => 2.64x speedup
 lsbs_to_remove=5 => 2.61x speedup
 ```
 
-{% hint style="info" %}
-These speed-ups can vary from system to system.
-{% endhint %}
+</details>
+
+<details>
+
+<summary>The graphs displayed</summary>
+
+<img src="../../_static/truncating/lsbs_to_remove.png" alt="" data-size="original">
+
+</details>
 
 {% hint style="info" %}
-The reason why the speed-up is not increasing with `lsbs_to_remove` is because the rounding operation itself has a cost: each bit removal is a PBS. Therefore, if a lot of bits are removed, rounding itself could take longer than the bigger TLU which is evaluated afterwards.
-{% endhint %}
+**About speedups:**
 
-and displays:
-
-![](../_static/rounding/lsbs_to_remove.png)
-
-{% hint style="info" %}
-Feel free to disable overflow protection and see what happens.
+* The observed speedups can vary depending on system configurations.
+* The speedup is not increasing with `lsbs_to_remove` because the rounding operation itself has a cost. Each bit removal involves a PBS, so removing many bits can make the rounding take longer than evaluating the larger TLU that follows.
+* The results will be different if overflow protection is disabled.
 {% endhint %}
 
 ## Auto Rounders
 
-Rounding is very useful but, in some cases, you don't know how many bits your input contains, so it's not reliable to specify `lsbs_to_remove` manually. For this reason, the `AutoRounder` class is introduced.
+When you don't know the bit width of your input, specifying `lsbs_to_remove` manually can be unreliable. `AutoRounder` allows you to set how many of the most significant bits to keep, it adjusts the number of the least significant bits to remove based on an input set.
 
-`AutoRounder` allows you to set how many of the most significant bits to keep, but they need to be adjusted using an inputset to determine how many of the least significant bits to remove. This can be done manually using `fhe.AutoRounder.adjust(function, inputset)`, or by setting `auto_adjust_rounders` configuration to `True` during compilation.
+You can adjust this manually using `fhe.AutoRounder.adjust(function, inputset)`, or automatically by setting `auto_adjust_rounders` configuration to `True` during compilation.
 
-Here is how auto rounders can be used in FHE:
+The following example demonstrates how to use `AutoRounder`s in FHE:
 
 ```python
 import itertools
@@ -276,7 +300,9 @@ for i, target_msbs in enumerate(reversed(range(1, input_bit_width + 1))):
 plt.show()
 ```
 
-prints:
+<details>
+
+<summary>The results printed</summary>
 
 ```
 target_msbs=6 => 1.00x speedup
@@ -287,75 +313,68 @@ target_msbs=2 => 2.23x speedup
 target_msbs=1 => 2.34x speedup
 ```
 
-and displays:
+</details>
 
-![](../_static/rounding/msbs_to_keep.png)
+<details>
+
+<summary>The graphs displayed</summary>
+
+<img src="../../_static/rounding/msbs_to_keep.png" alt="" data-size="original">
+
+</details>
 
 {% hint style="warning" %}
-`AutoRounder`s should be defined outside the function that is being compiled. They are used to store the result of the adjustment process, so they shouldn't be created each time the function is called. Furthermore, each `AutoRounder` should be used with exactly one `round_bit_pattern` call.
+`AutoRounder` is designed to store the result of the adjustment process, so you don't have to create one each time the function is called. Therefore, you should define `AutoRounder` outside the function that is being compiled. Furthermore, use each `AutoRounder` exactly with one `round_bit_pattern` call.
 {% endhint %}
 
+## Approximate rounding
 
-## Exactness
+Rounding speeds up computations by ignoring the lower significant bits usually 2 to 3 times. If your application can tolerate slight inexactness in the rounding itself, you can achieve even faster results with the approximate mode.
 
-One use of rounding is doing faster computation by ignoring the lower significant bits.
-For this usage, you can even get faster results if you accept the rounding it-self to be slightly inexact.
-The speedup is usually around 2x-3x but can be higher for big precision reduction.
-This also enable higher precisions values that are not possible otherwise.
+This method also enables higher precision values that would otherwise be unattainable.
 
-| ![approximate-speedup.png](../_static/rounding/approximate-speedup.png) |
-|:--:|
-| *Using the default configuration in approximate mode. For 3, 4, 5 and 6 reduced precision bits and accumulator precision up to 32bits |
+<figure><img src="../../_static/rounding/approximate-speedup.png" alt=""><figcaption><p>Using the default configuration in approximate mode. For 3, 4, 5, and 6 reduced precision bits and accumulator precision up to 32bits</p></figcaption></figure>
 
+You can enable this mode globally in the configuration:
 
-
-You can turn on this mode either globally on the configuration:
 ```python
 configuration = fhe.Configuration(
     ...
     rounding_exactness=fhe.Exactness.APPROXIMATE
 )
 ```
-or on/off locally:
+
+or toggle it on/off locally:
+
 ```python
 v = fhe.round_bit_pattern(v, lsbs_to_remove=2, exactness=fhe.Exactness.APPROXIMATE)
 v = fhe.round_bit_pattern(v, lsbs_to_remove=2, exactness=fhe.Exactness.EXACT)
 ```
 
-In approximate mode the rounding threshold up or down is not perfectly centered:
-The off-centering is:
-* is bounded, i.e. at worst an off-by-one on the reduced precision value compared to the exact result,
-* is pseudo-random, i.e. it will be different on each call,
-* almost symmetrically distributed,
-* depends on cryptographic properties like the encryption mask, the encryption noise and the crypto-parameters.
+In approximate mode, the rounding threshold is not perfectly centered. The off-centering characteristics are:
 
-| ![approximate-off-by-one-error.png](../_static/rounding/approximate-off-by-one-error.png) |
-|:--:|
-| *In blue the exact value, the red dots are approximate values due to off-centered transition in approximate mode.* |
+* **Bounded errors**: the off-centering causes at worst an off-by-one error in the reduced precision value compared to the exact result.
+* **Pseudo-random**: the off-centering will be different on each call.
+* **Symmetrical distribution**: the rounding errors are almost symmetrically distributed around the actual midpoint.
+* **Dependencies**: the rounding threshold depends on cryptographic properties like the encryption mask, the encryption noise, and the crypto-parameters.
 
-| ![approximate-off-centering-distribution.png](../_static/rounding/approximate-off-centering-distribution.png) |
-|:--:|
-| *Histogram of transitions off-centering delta. Each count correspond to a specific random mask and a specific encryption noise.* |
+<figure><img src="../../_static/rounding/approximate-off-by-one-error.png" alt=""><figcaption><p><em>The blue line represents exact values, and the red dots represent approximate values due to off-centered transitions in approximate mode.</em></p></figcaption></figure>
 
-## Approximate rounding features
-
-With approximate rounding, you can enable an approximate clipping to get further improve performance in the case of overflow handling. Approximate clipping enable to discard the extra bit of overflow protection bit in the successor TLU. For consistency a logical clipping is available when this optimization is not suitable.
-
-### Logical clipping
-
-When fast approximate clipping is not suitable (i.e. slower), it's better to apply logical clipping for consistency and better resilience to code change.
-It has no extra cost since it's fuzed with the successor TLU.
-
-| ![logical-clipping.png](../_static/rounding/approximate-off-by-one-error-logical-clipping.png) |
-|:--:|
-| *Only the last step is clipped.* |
-
+<figure><img src="../../_static/rounding/approximate-off-centering-distribution.png" alt=""><figcaption><p><em>Histogram of transitions off-centering delta. Each count corresponds to a specific random mask and a specific encryption noise.</em></p></figcaption></figure>
 
 ### Approximate clipping
 
-This set the first precision where approximate clipping is enabled, starting from this precision, an extra small precision TLU is introduced to safely remove the extra precision bit used to contain overflow. This way the successor TLU is faster.
-E.g. for a rounding to 7bits, that finishes to a TLU of 8bits due to overflow, forcing to use a TLU of 7bits is 3x faster.
+With approximate rounding, you can enable an approximate clipping to improve performance even more in the case of overflow handling. For consistency, a logical clipping is available when this optimization is not suitable.
 
-| ![approximate-clipping.png](../_static/rounding/approximate-off-by-one-error-approx-clipping.png) |
-|:--:|
-| *The last steps are decreased.* |
+Approximate clipping discards the extra bit of overflow protection bit in the successor TLU and makes the successor TLU faster. To do this, approximate clipping sets the first precision where it is enabled, from this precision, an extra small precision TLU is introduced to safely remove the extra precision bit used for overflow.
+
+For example, if rounding to 7 bits causes an 8-bit TLU due to overflow, you can force it to use a 7-bit TLU, resulting in a 3x speed increase.
+
+<figure><img src="../../_static/rounding/approximate-off-by-one-error-approx-clipping.png" alt=""><figcaption><p><em>The last steps are decreased.</em></p></figcaption></figure>
+
+### Logical clipping
+
+Use logical clipping when fast approximate clipping is not suitable, as it provides consistency and better resilience to code changes. It incurs no extra cost since it's fused with the successor TLU.
+
+<figure><img src="../../_static/rounding/approximate-off-by-one-error-logical-clipping.png" alt=""><figcaption><p><em>Only the last step is clipped.</em></p></figcaption></figure>
+

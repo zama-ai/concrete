@@ -67,9 +67,9 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
 * **auto\_adjust\_rounders**: bool = False
   * Adjust rounders automatically.
 * **p\_error**: Optional\[float] = None
-  * Error probability for individual table lookups. If set, all table lookups will have the probability of a non-exact result smaller than the set value. See [Exactness](../core-features/table\_lookups.md#table-lookup-exactness) to learn more.
+  * Error probability for individual table lookups. If set, all table lookups will have the probability of a non-exact result smaller than the set value. See [Exactness](../core-features/table\_lookups/#table-lookup-exactness) to learn more.
 * **global\_p\_error**: Optional\[float] = None
-  * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../core-features/table\_lookups.md#table-lookup-exactness) to learn more.
+  * Global error probability for the whole circuit. If set, the whole circuit will have the probability of a non-exact result smaller than the set value. See [Exactness](../core-features/table\_lookups/#table-lookup-exactness) to learn more.
 * **single\_precision**: bool = False
   * Use single precision for the whole circuit.
 * **parameter\_selection\_strategy**: (fhe.ParameterSelectionStrategy) = fhe.ParameterSelectionStrategy.MULTI
@@ -84,7 +84,7 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * Enable dataflow parallelization in the compiler.
 * **auto\_parallelize**: bool = False
   * Enable auto parallelization in the compiler.
-* **use_gpu**: bool = False
+* **use\_gpu**: bool = False
   * Enable generating code for GPU in the compiler.
 * **enable\_unsafe\_features**: bool = False
   * Enable unsafe features.
@@ -107,34 +107,34 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
 * **compiler\_verbose\_mode**: bool = False,
   * Enable/disable verbose mode of the compiler. This mainly shows logs from the compiler, and is less verbose than the debug mode.
 * **comparison\_strategy\_preference**: Optional\[Union\[ComparisonStrategy, str, List\[Union\[ComparisonStrategy, str]]]] = None
-  * Specify preference for comparison strategies, can be a single strategy or an ordered list of strategies. See [Comparisons](../core-features/comparisons.md) to learn more.
+  * Specify preference for comparison strategies, can be a single strategy or an ordered list of strategies. See [Comparisons](../core-features/comparisons/) to learn more.
 * **bitwise\_strategy\_preference**: Optional\[Union\[BitwiseStrategy, str, List\[Union\[BitwiseStrategy, str]]]] = None
-  * Specify preference for bitwise strategies, can be a single strategy or an ordered list of strategies. See [Bitwise](../core-features/bitwise.md) to learn more.
+  * Specify preference for bitwise strategies, can be a single strategy or an ordered list of strategies. See [Bitwise](../core-features/bitwise/) to learn more.
 * **shifts\_with\_promotion**: bool = True,
-  * Enable promotions in encrypted shifts instead of casting in runtime. See [Bitwise#Shifts](../core-features/bitwise.md#Shifts) to learn more.
+  * Enable promotions in encrypted shifts instead of casting in runtime. See [Bitwise#Shifts](../core-features/bitwise/#Shifts) to learn more.
 * **composable**: bool = False,
   * Specify that the function must be composable with itself.
 * **relu\_on\_bits\_threshold**: int = 7,
-  * Bit-width to start implementing the ReLU extension with [fhe.bits](../core-features/bit\_extraction.md).
+  * Bit-width to start implementing the ReLU extension with [fhe.bits](../core-features/table\_lookups/bit\_extraction.md).
 * **relu\_on\_bits\_chunk\_size**: int = 3,
-  * Chunk size of the ReLU extension when [fhe.bits](../core-features/bit\_extraction.md) implementation is used.
+  * Chunk size of the ReLU extension when [fhe.bits](../core-features/table\_lookups/bit\_extraction.md) implementation is used.
 * **if\_then\_else\_chunk\_size**: int = 3
   * Chunk size to use when converting `fhe.if_then_else` extension.
 * **rounding\_exactness** : Exactness = `fhe.Exactness.EXACT`
   * Set default exactness mode for the rounding operation:
   * `EXACT`: threshold for rounding up or down is exactly centered between upper and lower value,
   * `APPROXIMATE`: faster but threshold for rounding up or down is approximately centered with pseudo-random shift.
-  * Precise and more complete behavior is described in [fhe.rounding\_bit\_pattern](../core-features/rounding.md).
+  * Precise and more complete behavior is described in [fhe.rounding\_bit\_pattern](../core-features/table\_lookups/rounding.md).
 * **approximate\_rounding\_config** : ApproximateRoundingConfig = `fhe.ApproximateRoundingConfig()`:
-  * Provide more fine control on [approximate rounding](../core-features/rounding.md#approximate-rounding-features):
+  * Provide more fine control on [approximate rounding](../core-features/table\_lookups/rounding.md#approximate-rounding-features):
   * to enable exact cliping,
   * or/and approximate clipping which make overflow protection faster.
-* **optimize_tlu_based_on_measured_bounds** : bool = False
+* **optimize\_tlu\_based\_on\_measured\_bounds** : bool = False
   * Enables TLU optimizations based on measured bounds.
   * Not enabled by default as it could result in unexpected overflows during runtime.
-* **enable_tlu_fusing** : bool = True
+* **enable\_tlu\_fusing** : bool = True
   * Enables TLU fusing to reduce the number of table lookups.
-* **print_tlu_fusing** : bool = False
+* **print\_tlu\_fusing** : bool = False
   * Enables printing TLU fusing to see which table lookups are fused.
 * **compress\_evaluation\_keys**: bool = False,
   * This specifies that serialization takes the compressed form of evaluation keys.

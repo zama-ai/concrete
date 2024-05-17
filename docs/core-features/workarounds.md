@@ -1,14 +1,10 @@
-# Common tricks
+# Performance optimisation
 
-As explained in the [Basics of FHE](fhe\_basics.md), the challenge for developers is to adapt their code to fit FHE constraints. In this document we have collected some common examples to illustrate the kind of optimization one can do to get better performance.
+This document collects common examples to illustrate how to optimize code for better performance under Fully Homomorphic Encryption (FHE) constraints. (Learn more about these constraints in [Basic of FHE](fhe\_basics.md).)
 
-{% hint style="info" %}
-All code snippets provided here are temporary workarounds. In future versions of Concrete, some functions described here could be directly available in a more generic and efficient form. These code snippets are coming from support answers in our [community forum](https://community.zama.ai)
-{% endhint %}
+## Minimum for two values
 
-## Minimum for Two values
-
-In this first example, we compute a minimum by creating the difference between two numbers `y` and `x` and conditionally remove this diff from `y` to either get `x` if `y>x` or `y` if `x>y`:
+In this example, we compute the minimum of two numbers `y` and `x`,  by computing the difference between two numbers and conditionally subtracting this difference from `y`. This gives either `x` if `y>x` ,or `y` if `x>y`:
 
 ```python
 import numpy as np
@@ -27,9 +23,9 @@ x, y = np.random.randint(0, 16, size=2)
 assert circuit.encrypt_run_decrypt(x, y) == min(x, y)
 ```
 
-## Maximum for Two values
+## Maximum for two values
 
-The companion example of above with the maximum value of two integers instead of the minimum:
+The following example computes the maximum of two integers with the same method as the previous example.
 
 ```python
 import numpy as np
@@ -50,7 +46,7 @@ assert circuit.encrypt_run_decrypt(x, y) == max(x, y)
 
 ## Minimum for several values
 
-And an extension for more than two values:
+Here's an extension for more than two values:
 
 ```python
 import numpy as np
@@ -75,7 +71,7 @@ assert circuit.encrypt_run_decrypt([x1, x2, x3, x4, x5]) == min(x1, x2, x3, x4, 
 
 ## Retrieving a value within an encrypted array with an encrypted index
 
-This example shows how to deal with an array and an encrypted index. It will create a "selection" array filled with `0` except for the requested index that will be `1`, and sum the products of all array values by this selection array:
+This example shows how to handle an array with an encrypted index. It creates a "selection" array filled with `0` s except for the requested index that will be set to `1`, and sum the products of all array values by this selection array:
 
 ```python
 import numpy as np
@@ -100,7 +96,7 @@ assert circuit.encrypt_run_decrypt(array, index) == array[index]
 
 ## Filter an array with comparison (>)
 
-This example filters an encrypted array with an encrypted condition, here a `greater than` with an encrypted value. It packs all values with a selection bit, resulting from the comparison that allow the unpacking of only the filtered values:
+This example filters an encrypted array by an encrypted condition -`greater than` with an encrypted value. It packs all values with a selection bit resulting from the comparison, which allows to only unpack the filtered values:
 
 ```python
 import numpy as np
@@ -132,7 +128,9 @@ assert np.array_equal(circuit.encrypt_run_decrypt(numbers, threshold), list(map(
 
 ## Matrix Row/Col means
 
-In this example Matrix operation, we are introducing a key concept when using Concrete: trying to maximize the parallelization. Here instead of sequentially summing all values to create a mean value, we split the values in sub-groups, and do the mean of the sub-group means:
+In this example matrix operation, we split the values into sub-groups and calculate the mean of the sub-groups instead of sequentially summing all values to calculate the mean value.
+
+This approach applies one of the key optimization concepts in **Concrete -** parallelization.
 
 ```python
 import numpy as np
@@ -200,3 +198,7 @@ assert np.array_equal(circuit.encrypt_run_decrypt(matrix), [round(x) for x in ma
 circuit = mean_of_columns_of_matrix.compile(inputset)
 assert np.array_equal(circuit.encrypt_run_decrypt(matrix), [round(x) for x in matrix.mean(0)])
 ```
+
+{% hint style="info" %}
+All code snippets in this document are temporary workarounds sourced from our [community forum](https://community.zama.ai) support answers.  Future versions of Concrete may include these functions in a more generic and efficient form.
+{% endhint %}
