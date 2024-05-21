@@ -38,7 +38,7 @@ redirects:
   dev/fusing: explanations/fusing.md
   dev/backends: explanations/backends/README.md
   dev/backends/new\_backend: explanations/backends/new\_backend.md
-  dev/compilation: dev/compilation/compiler\_workflow.md
+  dev/compilation: explanations/compiler\_workflow.md
   dev/compilation/optimizer: explanations/optimizer.md
   dev/compilation/dialects: explanations/dialects.md
   dev/compilation/FHELinalgDialect: explanations/FHELinalgDialect.md
