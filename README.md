@@ -161,7 +161,7 @@ There are two ways to contribute to Concrete. You can:
 - [Open issues](https://github.com/zama-ai/concrete/issues/new/choose) to report bugs and typos, or to suggest new ideas
 - Request to become an official contributor by emailing hello@zama.ai.
 
-Becoming an approved contributor involves signing our Contributor License Agreement (CLA)). Only approved contributors can send pull requests (PRs), so get in touch before you do!
+Becoming an approved contributor involves signing our Contributor License Agreement (CLA). Only approved contributors can send pull requests (PRs), so get in touch before you do!
 
 Additionally, you can contribute to advancing the FHE space with Zama by participating in our [Bounty Program and Grant Programs](https://github.com/zama-ai/bounty-and-grant-program)! 
 <br></br>
