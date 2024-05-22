@@ -134,7 +134,7 @@ LweBootstrapKey::LweBootstrapKey(
   default:
     assert(false && "Unsupported compression type for bootstrap key");
   }
-};
+}
 
 LweBootstrapKey LweBootstrapKey::fromProto(
     const Message<concreteprotocol::LweBootstrapKey> &proto) {

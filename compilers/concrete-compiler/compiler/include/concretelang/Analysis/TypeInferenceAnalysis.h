@@ -800,8 +800,8 @@ void addConstraints(std::vector<std::unique_ptr<TypeConstraint>> &constraints,
       constraints, std::forward<ArgTs>(args)...);
 }
 
-}; // namespace impl
-}; // namespace
+} // namespace impl
+} // namespace
 
 // Set of type constraints to be applied on one visit of an
 // operation. The template parameter `maxApplications` sets a limit to
