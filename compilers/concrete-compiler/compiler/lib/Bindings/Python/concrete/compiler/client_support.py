@@ -217,9 +217,11 @@ class ClientSupport(WrapperCpp):
 
             if lambda_arg.is_tensor():
                 return np.array(
-                    lambda_arg.get_signed_tensor_data()
-                    if is_signed
-                    else lambda_arg.get_tensor_data(),
+                    (
+                        lambda_arg.get_signed_tensor_data()
+                        if is_signed
+                        else lambda_arg.get_tensor_data()
+                    ),
                     dtype=(np.int64 if is_signed else np.uint64),
                 ).reshape(lambda_arg.get_tensor_shape())
 
