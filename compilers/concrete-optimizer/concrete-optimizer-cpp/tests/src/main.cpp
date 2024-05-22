@@ -30,7 +30,8 @@ concrete_optimizer::Options default_options() {
       .cache_on_disk = true,
       .ciphertext_modulus_log = CIPHERTEXT_MODULUS_LOG,
       .fft_precision = 53,
-      .composable = false
+      .composable = false,
+      .public_keys = concrete_optimizer::PublicKey::None,
   };
 }
 

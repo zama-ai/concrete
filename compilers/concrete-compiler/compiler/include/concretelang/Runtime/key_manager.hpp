@@ -51,36 +51,27 @@ template <typename LweKeyType> struct KeyWrapper {
   void save(Archive &ar, const unsigned int version) const {
     ar << (size_t)keys.size();
     for (auto k : keys) {
-      auto info = k.getInfo();
-      auto maybe_info_string = info.writeBinaryToString();
-      assert(maybe_info_string.has_value());
-      auto info_string = maybe_info_string.value();
-      ar << (size_t)info_string.size();
-      ar << hpx::serialization::make_array(info_string.c_str(),
-                                           info_string.size());
-      ar << (size_t)k.getTransportBuffer().size();
-      ar << hpx::serialization::make_array(k.getTransportBuffer().data(),
-                                           k.getTransportBuffer().size());
+      auto proto = k.toProto();
+      auto maybe_proto_str = proto.writeBinaryToString();
+      assert(maybe_proto_str.has_value());
+      auto &proto_str = maybe_proto_str.value();
+      ar << (size_t)proto_str.size();
+      ar << hpx::serialization::make_array(proto_str.c_str(), proto_str.size());
     }
   }
   template <class Archive> void load(Archive &ar, const unsigned int version) {
     size_t num_keys;
     ar >> num_keys;
     for (uint i = 0; i < num_keys; ++i) {
-      size_t info_size;
-      ar >> info_size;
-      auto info_vec = std::make_shared<std::vector<char>>();
-      info_vec->resize(info_size);
-      ar >> hpx::serialization::make_array(info_vec->data(), info_size);
-      std::string info_string(info_vec->data(), info_size);
-      typename LweKeyType::InfoType info;
-      assert(info.readBinaryFromString(info_string).has_value());
-      size_t key_size;
-      ar >> key_size;
-      auto buffer = std::make_shared<std::vector<uint64_t>>();
-      buffer->resize(key_size);
-      ar >> hpx::serialization::make_array(buffer->data(), key_size);
-      keys.push_back(LweKeyType(buffer, info));
+      size_t proto_size;
+      ar >> proto_size;
+      auto proto_vec = std::make_shared<std::vector<char>>();
+      proto_vec->resize(proto_size);
+      ar >> hpx::serialization::make_array(proto_vec->data(), proto_size);
+      typename LweKeyType::Proto proto;
+      std::string proto_string(proto_vec->data(), proto_size);
+      assert(proto.readBinaryFromString(proto_string).has_value());
+      keys.push_back(LweKeyType::fromProto(proto));
     }
   }
   HPX_SERIALIZATION_SPLIT_MEMBER()

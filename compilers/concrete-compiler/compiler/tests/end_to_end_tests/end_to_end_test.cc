@@ -164,6 +164,9 @@ void registerEndToEnd(std::string suiteName, EndToEndDesc desc,
   if (desc.v0Constraint.has_value()) {
     options.compilationOptions.v0FHEConstraints = desc.v0Constraint;
   }
+  if (desc.v0Parameter.has_value()) {
+    options.compilationOptions.v0Parameter = desc.v0Parameter;
+  }
   options.compilationOptions.optimizerConfig.encoding = desc.encoding;
   if (desc.p_error.has_value()) {
     options.compilationOptions.optimizerConfig.p_error = *desc.p_error;

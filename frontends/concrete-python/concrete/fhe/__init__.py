@@ -4,7 +4,13 @@ Concrete.
 
 # pylint: disable=import-error,no-name-in-module
 
-from concrete.compiler import EvaluationKeys, Parameter, PublicArguments, PublicResult
+from concrete.compiler import (
+    EvaluationKeys,
+    Parameter,
+    PublicArguments,
+    PublicKeyKind,
+    PublicResult,
+)
 
 from .compilation import (
     DEFAULT_GLOBAL_P_ERROR,
@@ -29,6 +35,7 @@ from .compilation import (
     ParameterSelectionStrategy,
     Server,
     Value,
+    ValueExporter,
     inputset,
 )
 from .compilation.decorators import circuit, compiler, function, module

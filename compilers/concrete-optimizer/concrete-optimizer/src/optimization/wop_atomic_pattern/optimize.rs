@@ -448,41 +448,34 @@ fn optimize_raw(
 
     let mut caches = persistent_caches.caches();
 
-    for &glwe_dim in &search_space.glwe_dimensions {
-        for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
-            let input_lwe_dimension = glwe_dim << glwe_log_poly_size;
-            // Manual experimental CUT
-            if input_lwe_dimension > 1 << 13 {
-                continue;
-            }
+    for glwe_params in search_space.clone().get_glwe_params() {
+        let input_lwe_dimension = glwe_params.glwe_dimension << glwe_params.log2_polynomial_size;
+        // Manual experimental CUT
+        if input_lwe_dimension > 1 << 13 {
+            continue;
+        }
 
-            let glwe_params = GlweParameters {
-                log2_polynomial_size: glwe_log_poly_size,
-                glwe_dimension: glwe_dim,
-            };
+        let pareto_cmux = caches.cmux.pareto_quantities(glwe_params);
 
-            let pareto_cmux = caches.cmux.pareto_quantities(glwe_params);
+        let pareto_pp_switch = caches.pp_switch.pareto_quantities(glwe_params);
 
-            let pareto_pp_switch = caches.pp_switch.pareto_quantities(glwe_params);
+        let pareto_cb = caches.cb_pbs.pareto_quantities(glwe_params);
 
-            let pareto_cb = caches.cb_pbs.pareto_quantities(glwe_params);
+        for &internal_dim in &search_space.internal_lwe_dimensions {
+            let pareto_keyswitch = caches.keyswitch.pareto_quantities(internal_dim);
 
-            for &internal_dim in &search_space.internal_lwe_dimensions {
-                let pareto_keyswitch = caches.keyswitch.pareto_quantities(internal_dim);
-
-                update_state_with_best_decompositions(
-                    &mut state,
-                    &consts,
-                    glwe_params,
-                    internal_dim,
-                    n_functions,
-                    &precisions,
-                    pareto_cmux,
-                    pareto_keyswitch,
-                    pareto_pp_switch,
-                    pareto_cb,
-                );
-            }
+            update_state_with_best_decompositions(
+                &mut state,
+                &consts,
+                glwe_params,
+                internal_dim,
+                n_functions,
+                &precisions,
+                pareto_cmux,
+                pareto_keyswitch,
+                pareto_pp_switch,
+                pareto_cb,
+            );
         }
     }
     persistent_caches.backport(caches);

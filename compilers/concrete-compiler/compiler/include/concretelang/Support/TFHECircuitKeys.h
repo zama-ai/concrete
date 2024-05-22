@@ -16,6 +16,7 @@ namespace TFHE {
 
 struct TFHECircuitKeys {
   llvm::SmallVector<TFHE::GLWESecretKey, 10> secretKeys;
+  llvm::SmallVector<TFHE::GLWESecretKey, 10> inputKeys;
   llvm::SmallVector<TFHE::GLWEBootstrapKeyAttr, 10> bootstrapKeys;
   llvm::SmallVector<TFHE::GLWEKeyswitchKeyAttr, 10> keyswitchKeys;
   llvm::SmallVector<TFHE::GLWEPackingKeyswitchKeyAttr, 10> packingKeyswitchKeys;

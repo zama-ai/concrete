@@ -8,7 +8,7 @@ import pathlib
 from pathlib import Path
 from typing import Optional, Union
 
-from concrete.compiler import ClientSupport, EvaluationKeys, KeySet, KeySetCache
+from concrete.compiler import ClientSupport, EvaluationKeys, KeySet, KeySetCache, PublicKeySet
 
 from .specs import ClientSpecs
 
@@ -28,6 +28,7 @@ class Keys:
 
     _keyset_cache: Optional[KeySetCache]
     _keyset: Optional[KeySet]
+    _public_keyset: Optional[PublicKeySet]
 
     def __init__(
         self,
@@ -204,3 +205,15 @@ class Keys:
         assert self._keyset is not None
 
         return self._keyset.get_evaluation_keys()
+
+    @property
+    def public_key_set(self) -> PublicKeySet:
+        """
+        Get only evaluation keys.
+        """
+
+        self.generate(force=False)
+        assert self._keyset is not None
+
+        self._public_keyset = self._keyset.generate_public_key_set()
+        return self._public_keyset

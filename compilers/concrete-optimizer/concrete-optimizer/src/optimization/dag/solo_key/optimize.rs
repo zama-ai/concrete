@@ -1,5 +1,4 @@
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
-use concrete_security_curves::gaussian::security::minimal_variance_lwe;
 
 use super::analyze;
 use crate::dag::operator::{LevelledComplexity, Precision};
@@ -207,10 +206,8 @@ fn optimize_no_luts(
     search_space: &SearchSpace,
 ) -> OptimizationState {
     let not_feasible = |input_noise_out| !dag.feasible(input_noise_out, 0.0, 0.0, 0.0);
-    let modulus_log = consts.config.ciphertext_modulus_log;
-    let security_level = consts.config.security_level;
-    for lwe in &search_space.levelled_only_lwe_dimensions {
-        let input_noise_out = minimal_variance_lwe(lwe, modulus_log, security_level);
+    for lwe in search_space.clone().get_levelled_only_lwe_dimensions() {
+        let input_noise_out = consts.config.minimal_variance_lwe(lwe);
         if not_feasible(input_noise_out) {
             continue;
         }
@@ -314,59 +311,53 @@ pub fn optimize(
         !dag.feasible(input_noise_out, 0.0, 0.0, noise_modulus_switching)
     };
 
-    for &glwe_dim in &search_space.glwe_dimensions {
-        for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
-            let glwe_params = GlweParameters {
-                log2_polynomial_size: glwe_log_poly_size,
-                glwe_dimension: glwe_dim,
-            };
-            let input_noise_out = minimal_variance(&config, glwe_params);
+    for glwe_params in search_space.clone().get_glwe_params() {
+        let input_noise_out = minimal_variance(&config, glwe_params);
 
-            let cmux_pareto = caches.cmux.pareto_quantities(glwe_params);
+        let cmux_pareto = caches.cmux.pareto_quantities(glwe_params);
 
-            for &internal_dim in &search_space.internal_lwe_dimensions {
-                let ks_pareto = caches.keyswitch.pareto_quantities(internal_dim);
+        for &internal_dim in &search_space.internal_lwe_dimensions {
+            let ks_pareto = caches.keyswitch.pareto_quantities(internal_dim);
 
-                let noise_modulus_switching =
-                    noise_modulus_switching(glwe_log_poly_size, internal_dim);
-                if not_feasible(input_noise_out, noise_modulus_switching) {
-                    // noise_modulus_switching is increasing with internal_dim
-                    break;
-                }
-                if too_complex_macro_parameters(
-                    &state,
-                    &dag,
-                    internal_dim,
-                    glwe_params,
-                    cmux_pareto,
-                    ks_pareto,
-                ) {
-                    break;
-                }
-                if not_feasible_macro_parameters(
-                    &dag,
-                    internal_dim,
-                    input_noise_out,
-                    noise_modulus_switching,
-                    cmux_pareto,
-                    ks_pareto,
-                ) {
-                    continue;
-                }
-                update_best_solution_with_best_decompositions(
-                    &mut state,
-                    &consts,
-                    &dag,
-                    internal_dim,
-                    glwe_params,
-                    input_noise_out,
-                    noise_modulus_switching,
-                    cmux_pareto,
-                    ks_pareto,
-                );
-                if dag.nb_luts == 0 && state.best_solution.is_some() {
-                    return state;
-                }
+            let noise_modulus_switching =
+                noise_modulus_switching(glwe_params.log2_polynomial_size, internal_dim);
+            if not_feasible(input_noise_out, noise_modulus_switching) {
+                // noise_modulus_switching is increasing with internal_dim
+                break;
+            }
+            if too_complex_macro_parameters(
+                &state,
+                &dag,
+                internal_dim,
+                glwe_params,
+                cmux_pareto,
+                ks_pareto,
+            ) {
+                break;
+            }
+            if not_feasible_macro_parameters(
+                &dag,
+                internal_dim,
+                input_noise_out,
+                noise_modulus_switching,
+                cmux_pareto,
+                ks_pareto,
+            ) {
+                continue;
+            }
+            update_best_solution_with_best_decompositions(
+                &mut state,
+                &consts,
+                &dag,
+                internal_dim,
+                glwe_params,
+                input_noise_out,
+                noise_modulus_switching,
+                cmux_pareto,
+                ks_pareto,
+            );
+            if dag.nb_luts == 0 && state.best_solution.is_some() {
+                return state;
             }
         }
     }
@@ -431,7 +422,7 @@ pub(crate) mod tests {
     use crate::config;
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::noise_estimator::p_error::repeat_p_error;
-    use crate::optimization::config::SearchSpace;
+    use crate::optimization::config::{PublicKey, SearchSpace};
     use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
     use crate::optimization::{atomic_pattern, decomposition};
     use crate::utils::square;
@@ -481,9 +472,10 @@ pub(crate) mod tests {
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
             composable: false,
+            public_keys: PublicKey::None,
         };
 
-        let search_space = SearchSpace::default_cpu();
+        let search_space = SearchSpace::default_cpu(PublicKey::None);
 
         super::optimize(dag, config, &search_space, &SHARED_CACHES)
     }
@@ -515,7 +507,7 @@ pub(crate) mod tests {
     fn v0_parameter_ref(precision: u64, weight: u64, times: &mut Times) {
         let processing_unit = config::ProcessingUnit::Cpu;
 
-        let search_space = SearchSpace::default(processing_unit);
+        let search_space = SearchSpace::default(processing_unit, PublicKey::None);
 
         let sum_size = 1;
 
@@ -527,6 +519,7 @@ pub(crate) mod tests {
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
             composable: false,
+            public_keys: PublicKey::None,
         };
 
         _ = optimize_v0(
@@ -616,7 +609,7 @@ pub(crate) mod tests {
             assert_f64_eq(square(weight) as f64, constraint.pareto_in_lut[0].lut_coeff);
         }
 
-        let search_space = SearchSpace::default(processing_unit);
+        let search_space = SearchSpace::default(processing_unit, PublicKey::None);
 
         let config = Config {
             security_level,
@@ -626,6 +619,7 @@ pub(crate) mod tests {
             fft_precision: 53,
             complexity_model: &CpuComplexity::default(),
             composable: false,
+            public_keys: PublicKey::None,
         };
 
         let state = optimize(&dag);

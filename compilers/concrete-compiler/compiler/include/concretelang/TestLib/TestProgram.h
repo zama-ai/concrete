@@ -24,8 +24,6 @@
 #include <string>
 #include <thread>
 
-using concretelang::clientlib::ClientCircuit;
-using concretelang::clientlib::ClientProgram;
 using concretelang::error::Result;
 using concretelang::keysets::Keyset;
 using concretelang::serverlib::ServerCircuit;
@@ -42,14 +40,15 @@ public:
   TestProgram(mlir::concretelang::CompilationOptions options)
       : artifactDirectory(createTempFolderIn(getSystemTempFolderPath())),
         compiler(mlir::concretelang::CompilationContext::createShared()),
-        encryptionCsprng(std::make_shared<csprng::EncryptionCSPRNG>(0)) {
+        encryptionCsprng(std::make_shared<csprng::EncryptionCSPRNG>(0)),
+        secretCsprng(std::make_shared<csprng::SecretCSPRNG>(0)) {
     compiler.setCompilationOptions(options);
   }
 
   TestProgram(TestProgram &&tc)
       : artifactDirectory(tc.artifactDirectory), compiler(tc.compiler),
-        library(tc.library), keyset(tc.keyset),
-        encryptionCsprng(tc.encryptionCsprng) {
+        library(tc.library), keyset(tc.keyset), publicKeyset(tc.publicKeyset),
+        encryptionCsprng(tc.encryptionCsprng), secretCsprng(tc.secretCsprng) {
     tc.artifactDirectory = "";
   };
 
@@ -75,20 +74,28 @@ public:
                               __uint128_t encryptionSeed = 0,
                               bool tryCache = true) {
     if (isSimulation()) {
-      keyset = Keyset{};
       return outcome::success();
     }
     OUTCOME_TRY(auto lib, getLibrary());
     if (tryCache) {
-      OUTCOME_TRY(keyset, getTestKeySetCachePtr()->getKeyset(
-                              lib.getProgramInfo().asReader().getKeyset(),
-                              secretSeed, encryptionSeed));
+      OUTCOME_TRY(auto cachedKeyset,
+                  getTestKeySetCachePtr()->getKeyset(
+                      lib.getProgramInfo().asReader().getKeyset(), secretSeed,
+                      encryptionSeed));
+      keyset.emplace(cachedKeyset);
     } else {
       auto encryptionCsprng = csprng::EncryptionCSPRNG(encryptionSeed);
       auto secretCsprng = csprng::SecretCSPRNG(secretSeed);
       Message<concreteprotocol::KeysetInfo> keysetInfo =
           lib.getProgramInfo().asReader().getKeyset();
-      keyset = Keyset(keysetInfo, secretCsprng, encryptionCsprng);
+      keyset.emplace(Keyset(keysetInfo, secretCsprng, encryptionCsprng));
+    }
+    if (compiler.getCompilationOptions().optimizerConfig.public_keys !=
+        concrete_optimizer::PublicKey::None) {
+      auto encryptionCsprng = csprng::EncryptionCSPRNG(encryptionSeed);
+      OUTCOME_TRY(auto pks,
+                  keyset->generateClientPublicKeyset(encryptionCsprng));
+      publicKeyset.emplace(std::move(pks));
     }
     return outcome::success();
   }
@@ -97,18 +104,18 @@ public:
                                   std::string name = "main") {
     // preprocess arguments
     auto preparedArgs = std::vector<TransportValue>();
-    OUTCOME_TRY(auto clientCircuit, getClientCircuit(name));
+    OUTCOME_TRY(auto exporter, getValueExporter(name));
     for (size_t i = 0; i < inputs.size(); i++) {
-      OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
+      OUTCOME_TRY(auto preparedInput, exporter.prepareInput(inputs[i], i));
       preparedArgs.push_back(preparedInput);
     }
     // Call server
     OUTCOME_TRY(auto returns, callServer(preparedArgs, name));
     // postprocess arguments
+    OUTCOME_TRY(auto decrypter, getValueDecrypter(name));
     std::vector<Value> processedOutputs(returns.size());
     for (size_t i = 0; i < processedOutputs.size(); i++) {
-      OUTCOME_TRY(processedOutputs[i],
-                  clientCircuit.processOutput(returns[i], i));
+      OUTCOME_TRY(processedOutputs[i], decrypter.processOutput(returns[i], i));
     }
     return processedOutputs;
   }
@@ -118,9 +125,9 @@ public:
                                              std::string name = "main") {
     // preprocess arguments
     auto preparedArgs = std::vector<TransportValue>();
-    OUTCOME_TRY(auto clientCircuit, getClientCircuit(name));
+    OUTCOME_TRY(auto exporter, getValueExporter(name));
     for (size_t i = 0; i < inputs.size(); i++) {
-      OUTCOME_TRY(auto preparedInput, clientCircuit.prepareInput(inputs[i], i));
+      OUTCOME_TRY(auto preparedInput, exporter.prepareInput(inputs[i], i));
       preparedArgs.push_back(preparedInput);
     }
     // Call server multiple times in a row
@@ -128,10 +135,11 @@ public:
       OUTCOME_TRY(preparedArgs, callServer(preparedArgs, name));
     }
     // postprocess arguments
+    OUTCOME_TRY(auto decrypter, getValueDecrypter(name));
     std::vector<Value> processedOutputs(preparedArgs.size());
     for (size_t i = 0; i < processedOutputs.size(); i++) {
       OUTCOME_TRY(processedOutputs[i],
-                  clientCircuit.processOutput(preparedArgs[i], i));
+                  decrypter.processOutput(preparedArgs[i], i));
     }
     return processedOutputs;
   }
@@ -148,18 +156,41 @@ public:
     return returns;
   }
 
-  Result<ClientCircuit> getClientCircuit(std::string name = "main") {
+  Result<clientlib::ValueExporter> getValueExporter(std::string name = "main") {
     OUTCOME_TRY(auto lib, getLibrary());
-    Keyset ks{};
+    keysets::ClientKeyset ks;
     if (!isSimulation()) {
-      OUTCOME_TRY(ks, getKeyset());
+      ks = keyset->client;
     }
     auto programInfo = lib.getProgramInfo();
     OUTCOME_TRY(auto clientProgram,
-                ClientProgram::create(programInfo, ks.client, encryptionCsprng,
-                                      isSimulation()));
-    OUTCOME_TRY(auto clientCircuit, clientProgram.getClientCircuit(name));
-    return clientCircuit;
+                clientlib::ClientProgram::create(programInfo));
+    if (compiler.getCompilationOptions().optimizerConfig.public_keys !=
+            concrete_optimizer::PublicKey::None &&
+        !isSimulation()) {
+      OUTCOME_TRY(auto exporter, clientProgram.getPublicValueExporter(
+                                     name, *publicKeyset, secretCsprng));
+      return exporter;
+    }
+    OUTCOME_TRY(auto exporter, clientProgram.getValueExporter(
+                                   name, ks, encryptionCsprng, isSimulation()));
+    return exporter;
+  }
+
+  Result<clientlib::ValueDecrypter>
+  getValueDecrypter(std::string name = "main") {
+    OUTCOME_TRY(auto lib, getLibrary());
+    keysets::ClientKeyset ks;
+    if (!isSimulation()) {
+      ks = keyset->client;
+    }
+    auto programInfo = lib.getProgramInfo();
+    OUTCOME_TRY(auto clientProgram,
+                clientlib::ClientProgram::create(programInfo));
+    OUTCOME_TRY(auto decrypter,
+                clientProgram.getValueDecrypter(name, ks, encryptionCsprng,
+                                                isSimulation()));
+    return decrypter;
   }
 
   Result<ServerCircuit> getServerCircuit(std::string name = "main") {
@@ -196,7 +227,9 @@ private:
   mlir::concretelang::CompilerEngine compiler;
   std::optional<mlir::concretelang::CompilerEngine::Library> library;
   std::optional<Keyset> keyset;
+  std::optional<keysets::ClientPublicKeyset> publicKeyset;
   std::shared_ptr<csprng::EncryptionCSPRNG> encryptionCsprng;
+  std::shared_ptr<csprng::SecretCSPRNG> secretCsprng;
 
 private:
   std::string getSystemTempFolderPath() {

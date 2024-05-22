@@ -11,6 +11,7 @@
 #include <variant>
 
 #include "capnp/message.h"
+#include "concrete-cpu.h"
 #include "concrete-protocol.capnp.h"
 #include "concrete/curves.h"
 #include "concretelang/Common/Protocol.h"
@@ -181,20 +182,22 @@ generateGate(mlir::Type inputType,
 
 Message<concreteprotocol::KeysetInfo>
 extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
-                  concrete::SecurityCurve curve, bool compressEvaluationKeys) {
-
+                  concrete::SecurityCurve curve, bool compressEvaluationKeys,
+                  concrete_optimizer::PublicKey withPublicKeys) {
   auto output = Message<concreteprotocol::KeysetInfo>();
 
-  // Pushing secret keys
+  // Pushing secret keys and public keys if requested
   auto secretKeysBuilder =
       output.asBuilder().initLweSecretKeys(circuitKeys.secretKeys.size());
   for (size_t i = 0; i < circuitKeys.secretKeys.size(); i++) {
     auto infoMessage = Message<concreteprotocol::LweSecretKeyInfo>();
     auto sk = circuitKeys.secretKeys[i];
-    infoMessage.asBuilder().setId(sk.getNormalized()->index);
+    auto skIndex = sk.getNormalized()->index;
+    auto lweDimension = sk.getNormalized().value().dimension;
+    infoMessage.asBuilder().setId(skIndex);
     auto paramsBuilder = infoMessage.asBuilder().initParams();
     paramsBuilder.setIntegerPrecision(64);
-    paramsBuilder.setLweDimension(sk.getNormalized().value().dimension);
+    paramsBuilder.setLweDimension(lweDimension);
     paramsBuilder.setKeyType(concreteprotocol::KeyType::BINARY);
     secretKeysBuilder.setWithCaveats(i, infoMessage.asReader());
   }
@@ -301,6 +304,35 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
     packingKeyswitchKeysBuilder.setWithCaveats(i, infoMessage.asReader());
   }
 
+  if (withPublicKeys == concrete_optimizer::PublicKey::None)
+    return output;
+  auto publicKeysBuilder =
+      output.asBuilder().initLwePublicKeys(circuitKeys.inputKeys.size());
+  for (auto e : llvm::enumerate(circuitKeys.inputKeys)) {
+    Message<concreteprotocol::LwePublicKeyInfo> publicKeyInfo;
+    auto publicKeyInfoBuilder = publicKeyInfo.asBuilder();
+    auto inputKey = e.value();
+    auto skIndex = inputKey.getNormalized()->index;
+    auto lweDimension = inputKey.getNormalized().value().dimension;
+    publicKeyInfoBuilder.setId(skIndex);
+    auto publicKeyParams = publicKeyInfoBuilder.initParams();
+    auto encryptionVariance = curve.getVariance(1, lweDimension, 64);
+    if (withPublicKeys == concrete_optimizer::PublicKey::Classic) {
+      auto classicParams = publicKeyParams.initClassic();
+      classicParams.setIntegerPrecision(64);
+      classicParams.setLweDimension(lweDimension);
+      classicParams.setVariance(encryptionVariance);
+      classicParams.setZeroEncryptionCount(
+          concrete_cpu_public_key_zero_encryption_count(lweDimension));
+    } else if (withPublicKeys == concrete_optimizer::PublicKey::Compact) {
+      auto compactParams = publicKeyParams.initCompact();
+      compactParams.setIntegerPrecision(64);
+      compactParams.setLweDimension(lweDimension);
+      compactParams.setVariance(encryptionVariance);
+    }
+    publicKeysBuilder.setWithCaveats(e.index(), publicKeyInfo.asReader());
+  }
+
   return output;
 }
 
@@ -383,7 +415,8 @@ llvm::Expected<Message<concreteprotocol::ProgramInfo>>
 createProgramInfoFromTfheDialect(
     mlir::ModuleOp module, int bitsOfSecurity,
     const Message<concreteprotocol::ProgramEncodingInfo> &encodings,
-    bool compressEvaluationKeys, bool compressInputCiphertexts) {
+    bool compressEvaluationKeys, bool compressInputCiphertexts,
+    concrete_optimizer::PublicKey withPublicKeys) {
 
   // Check that security curves exist
   const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
@@ -404,7 +437,7 @@ createProgramInfoFromTfheDialect(
 
   // We extract the keys of the circuit
   auto keysetInfo = extractKeysetInfo(TFHE::extractCircuitKeys(module), *curve,
-                                      compressEvaluationKeys);
+                                      compressEvaluationKeys, withPublicKeys);
   output.asBuilder().setKeyset(keysetInfo.asReader());
 
   return output;

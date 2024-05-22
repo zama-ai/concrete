@@ -189,35 +189,28 @@ pub fn optimize_one(
 
     let mut caches = persistent_caches.caches();
 
-    for &glwe_dim in &search_space.glwe_dimensions {
-        for &glwe_log_poly_size in &search_space.glwe_log_polynomial_sizes {
-            assert!(8 <= glwe_log_poly_size);
-            assert!(glwe_log_poly_size < 18);
-            if lower_bound_cut(glwe_log_poly_size) {
-                continue;
-            }
+    for glwe_params in search_space.clone().get_glwe_params() {
+        assert!(8 <= glwe_params.log2_polynomial_size);
+        assert!(glwe_params.log2_polynomial_size < 18);
+        if lower_bound_cut(glwe_params.log2_polynomial_size) {
+            continue;
+        }
 
-            let glwe_params = GlweParameters {
-                log2_polynomial_size: glwe_log_poly_size,
-                glwe_dimension: glwe_dim,
-            };
+        let cmux_quantities = caches.cmux.pareto_quantities(glwe_params);
 
-            let cmux_quantities = caches.cmux.pareto_quantities(glwe_params);
+        for &internal_dim in &search_space.internal_lwe_dimensions {
+            assert!(256 < internal_dim);
 
-            for &internal_dim in &search_space.internal_lwe_dimensions {
-                assert!(256 < internal_dim);
+            let ks_quantities = caches.keyswitch.pareto_quantities(internal_dim);
 
-                let ks_quantities = caches.keyswitch.pareto_quantities(internal_dim);
-
-                update_state_with_best_decompositions(
-                    &mut state,
-                    &consts,
-                    internal_dim,
-                    glwe_params,
-                    cmux_quantities,
-                    ks_quantities,
-                );
-            }
+            update_state_with_best_decompositions(
+                &mut state,
+                &consts,
+                internal_dim,
+                glwe_params,
+                cmux_quantities,
+                ks_quantities,
+            );
         }
     }
 

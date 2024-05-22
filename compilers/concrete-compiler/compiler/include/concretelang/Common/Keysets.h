@@ -25,6 +25,17 @@ using concretelang::keys::PackingKeyswitchKey;
 namespace concretelang {
 namespace keysets {
 
+struct ClientPublicKeyset {
+  std::vector<keys::LwePublicKey> lwePublicKeys;
+
+  static ClientPublicKeyset
+  fromProto(const Message<concreteprotocol::ClientPublicKeyset> &proto);
+
+  Message<concreteprotocol::ClientPublicKeyset> toProto() const;
+
+  Result<keys::LwePublicKey> getLwePublicKey(uint32_t secretKeyId) const;
+};
+
 struct ClientKeyset {
   std::vector<LweSecretKey> lweSecretKeys;
 
@@ -32,6 +43,8 @@ struct ClientKeyset {
   fromProto(const Message<concreteprotocol::ClientKeyset> &proto);
 
   Message<concreteprotocol::ClientKeyset> toProto() const;
+
+  Result<LweSecretKey> getLweSecretKey(uint32_t secretKeyId) const;
 };
 
 struct ServerKeyset {
@@ -49,18 +62,27 @@ struct Keyset {
   ServerKeyset server;
   ClientKeyset client;
 
-  Keyset(){};
-
   /// Generates a fresh keyset from infos.
   Keyset(const Message<concreteprotocol::KeysetInfo> &info,
          concretelang::csprng::SecretCSPRNG &secretCsprng,
          csprng::EncryptionCSPRNG &encryptionCsprng);
-  Keyset(ServerKeyset server, ClientKeyset client)
-      : server(server), client(client) {}
+  Keyset(const Message<concreteprotocol::KeysetInfo> &info, ServerKeyset server,
+         ClientKeyset client)
+      : Keyset(info.asReader().getLwePublicKeys(), server, client) {}
+  Keyset(const Message<capnp::List<concreteprotocol::LwePublicKeyInfo>>
+             &publicKeysInfo,
+         ServerKeyset server, ClientKeyset client)
+      : server(server), client(client), publicKeysInfo(publicKeysInfo) {}
 
   static Keyset fromProto(const Message<concreteprotocol::Keyset> &proto);
 
   Message<concreteprotocol::Keyset> toProto() const;
+
+  Result<ClientPublicKeyset>
+  generateClientPublicKeyset(csprng::EncryptionCSPRNG &encryptionCsprng);
+
+private:
+  const Message<capnp::List<concreteprotocol::LwePublicKeyInfo>> publicKeysInfo;
 };
 
 class KeysetCache {

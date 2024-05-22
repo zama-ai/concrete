@@ -263,6 +263,7 @@ class Helpers:
         sample: Union[Any, List[Any]],
         retries: int = 1,
         only_simulation: bool = False,
+        with_public_keys: bool = False,
     ):
         """
         Assert that `circuit` behaves the same as `function` on `sample`.
@@ -282,6 +283,9 @@ class Helpers:
 
             only_simulation (bool, default = False):
                 whether to just check simulation but not execution
+
+            with_public_keys (bool, default = False):
+                whether to check with public key encryption
         """
         if not isinstance(sample, list):
             sample = [sample]
@@ -304,7 +308,17 @@ class Helpers:
         if not only_simulation:
             for i in range(retries):
                 expected = sanitize(function(*deepcopy(sample)))
-                actual = sanitize(circuit.encrypt_run_decrypt(*deepcopy(sample)))
+                encrypter = (
+                    fhe.ValueExporter.new_public(
+                        circuit.keys.public_key_set,
+                        circuit.server.client_specs.client_parameters,
+                        "main",
+                    )
+                    if with_public_keys
+                    else circuit
+                )
+                encrypted_args = encrypter.encrypt(*deepcopy(sample))
+                actual = sanitize(circuit.decrypt(circuit.run(encrypted_args)))
 
                 if all(np.array_equal(e, a) for e, a in zip(expected, actual)):
                     break

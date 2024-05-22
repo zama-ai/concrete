@@ -81,6 +81,7 @@ constexpr bool DEFAULT_CACHE_ON_DISK = true;
 constexpr uint32_t DEFAULT_CIPHERTEXT_MODULUS_LOG = 64;
 constexpr uint32_t DEFAULT_FFT_PRECISION = 53;
 constexpr bool DEFAULT_COMPOSABLE = false;
+constexpr auto DEFAULT_PUBLIC_KEYS = concrete_optimizer::PublicKey::None;
 
 /// The strategy of the crypto optimization
 enum Strategy {
@@ -95,6 +96,8 @@ enum Strategy {
 };
 
 std::string const StrategyLabel[] = {"V0", "dag-mono", "dag-multi"};
+
+std::string const PublicKeyLabel[] = {"none", "classic", "compact"};
 
 constexpr Strategy DEFAULT_STRATEGY = Strategy::DAG_MULTI;
 constexpr concrete_optimizer::MultiParamStrategy DEFAULT_MULTI_PARAM_STRATEGY =
@@ -116,6 +119,7 @@ struct Config {
   uint32_t ciphertext_modulus_log;
   uint32_t fft_precision;
   bool composable;
+  concrete_optimizer::PublicKey public_keys;
 };
 
 constexpr Config DEFAULT_CONFIG = {
@@ -133,6 +137,7 @@ constexpr Config DEFAULT_CONFIG = {
     DEFAULT_CIPHERTEXT_MODULUS_LOG,
     DEFAULT_FFT_PRECISION,
     DEFAULT_COMPOSABLE,
+    DEFAULT_PUBLIC_KEYS,
 };
 
 using Dag = rust::Box<concrete_optimizer::Dag>;
@@ -193,6 +198,15 @@ static inline std::string toString(mlir::concretelang::optimizer::Strategy s) {
 
 static inline std::ostream &
 operator<<(std::ostream &OS, mlir::concretelang::optimizer::Strategy s) {
+  return OS << toString(s);
+}
+
+static inline std::string toString(concrete_optimizer::PublicKey pk) {
+  return mlir::concretelang::optimizer::PublicKeyLabel[(size_t)pk];
+}
+
+static inline std::ostream &operator<<(std::ostream &OS,
+                                       concrete_optimizer::PublicKey s) {
   return OS << toString(s);
 }
 

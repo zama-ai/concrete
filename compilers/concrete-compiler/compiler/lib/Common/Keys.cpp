@@ -42,7 +42,8 @@ void readSeed(struct Uint128 &seed, std::vector<uint64_t> &buffer) {
 }
 
 LweSecretKey::LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
-                           SecretCSPRNG &csprng) {
+                           SecretCSPRNG &csprng)
+    : LweSecretKey(info) {
   // Allocate the buffer
   buffer = std::make_shared<std::vector<uint64_t>>(
       info.asReader().getParams().getLweDimension());
@@ -62,42 +63,85 @@ LweSecretKey::LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
 #endif
 }
 
-LweSecretKey
-LweSecretKey::fromProto(const Message<concreteprotocol::LweSecretKey> &proto) {
-
-  auto info =
-      Message<concreteprotocol::LweSecretKeyInfo>(proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
-  return LweSecretKey(vector, info);
+void LweSecretKey::encrypt(uint64_t *lwe_ciphertext_buffer,
+                           const uint64_t input, double variance,
+                           csprng::EncryptionCSPRNG &csprng) const {
+  auto params = info.asReader().getParams();
+  auto lweDimension = params.getLweDimension();
+  concrete_cpu_encrypt_lwe_ciphertext_u64(buffer->data(), lwe_ciphertext_buffer,
+                                          input, lweDimension, variance,
+                                          csprng.ptr);
 }
 
-Message<concreteprotocol::LweSecretKey> LweSecretKey::toProto() const {
-  return keyToProto<concreteprotocol::LweSecretKey,
-                    concreteprotocol::LweSecretKeyInfo, LweSecretKey>(*this);
+void LweSecretKey::decrypt(uint64_t &output,
+                           const uint64_t *lwe_ciphertext_buffer) const {
+  auto params = info.asReader().getParams();
+  auto lweDimension = params.getLweDimension();
+  concrete_cpu_decrypt_lwe_ciphertext_u64(buffer->data(), lwe_ciphertext_buffer,
+                                          lweDimension, &output);
 }
 
-const uint64_t *LweSecretKey::getRawPtr() const { return this->buffer->data(); }
-
-size_t LweSecretKey::getSize() const { return this->buffer->size(); }
-
-const Message<concreteprotocol::LweSecretKeyInfo> &
-LweSecretKey::getInfo() const {
-  return this->info;
+LwePublicKey::LwePublicKey(Message<concreteprotocol::LwePublicKeyInfo> info,
+                           LweSecretKey &secretKey, EncryptionCSPRNG &csprng)
+    : LwePublicKey(info) {
+  auto params = info.asReader().getParams();
+  if (params.hasClassic()) {
+    auto classic = params.getClassic();
+    auto lweDimension = classic.getLweDimension();
+    auto zeroEncryptionCount = classic.getZeroEncryptionCount();
+    auto variance = classic.getVariance();
+    // Allocate the buffer
+    buffer = std::make_shared<std::vector<uint64_t>>(
+        concrete_cpu_lwe_public_key_size_u64(lweDimension,
+                                             zeroEncryptionCount));
+    // Initialize the lwe secret key buffer
+    concrete_cpu_init_lwe_public_key_u64(
+        secretKey.getBuffer().data(), buffer->data(), lweDimension,
+        zeroEncryptionCount, variance, csprng.ptr);
+  } else if (params.hasCompact()) {
+    auto compact = params.getCompact();
+    auto lweDimension = compact.getLweDimension();
+    auto variance = compact.getVariance();
+    // Allocate the buffer
+    buffer = std::make_shared<std::vector<uint64_t>>(
+        concrete_cpu_lwe_compact_public_key_size_u64(lweDimension));
+    // Initialize the lwe secret key buffer
+    concrete_cpu_init_lwe_compact_public_key_u64(secretKey.getBuffer().data(),
+                                                 buffer->data(), lweDimension,
+                                                 variance, csprng.ptr);
+  }
 }
 
-const std::vector<uint64_t> &LweSecretKey::getBuffer() const {
-  return *this->buffer;
+void LwePublicKey::encrypt(uint64_t *lwe_ciphertext_buffer,
+                           const uint64_t input,
+                           csprng::SecretCSPRNG &secretCsprng) const {
+  auto params = info.asReader().getParams();
+  if (params.hasClassic()) {
+    auto classic = params.getClassic();
+    auto lweDimension = classic.getLweDimension();
+    auto zeroEncryptionCount = classic.getZeroEncryptionCount();
+    concrete_cpu_encrypt_lwe_ciphertext_with_lwe_public_key_u64(
+        buffer->data(), lwe_ciphertext_buffer, input, lweDimension,
+        zeroEncryptionCount, secretCsprng.ptr);
+  } else if (params.hasCompact()) {
+    auto compact = params.getCompact();
+    auto lweDimension = compact.getLweDimension();
+    auto variance = compact.getVariance();
+    // TODO - argument
+    csprng::EncryptionCSPRNG encryptionCSPRNG(0);
+    concrete_cpu_encrypt_lwe_ciphertext_with_compact_lwe_public_key_u64(
+        buffer->data(), lwe_ciphertext_buffer, input, lweDimension, variance,
+        secretCsprng.ptr, encryptionCSPRNG.ptr);
+  }
 }
 
 LweBootstrapKey::LweBootstrapKey(
-    Message<concreteprotocol::LweBootstrapKeyInfo> info,
-    const LweSecretKey &inputKey, const LweSecretKey &outputKey,
-    EncryptionCSPRNG &csprng)
+    Message<concreteprotocol::LweBootstrapKeyInfo> info, LweSecretKey &inputKey,
+    LweSecretKey &outputKey, EncryptionCSPRNG &csprng)
     : LweBootstrapKey(info) {
-  assert(inputKey.info.asReader().getParams().getLweDimension() ==
+  assert(inputKey.getInfo().asReader().getParams().getLweDimension() ==
          info.asReader().getParams().getInputLweDimension());
-  assert(outputKey.info.asReader().getParams().getLweDimension() ==
+  assert(outputKey.getInfo().asReader().getParams().getLweDimension() ==
          info.asReader().getParams().getGlweDimension() *
              info.asReader().getParams().getPolynomialSize());
 
@@ -110,23 +154,24 @@ LweBootstrapKey::LweBootstrapKey(
         params.getLevelCount(), params.getGlweDimension(),
         params.getPolynomialSize(), params.getInputLweDimension()));
     concrete_cpu_init_lwe_bootstrap_key_u64(
-        buffer->data(), inputKey.buffer->data(), outputKey.buffer->data(),
-        params.getInputLweDimension(), params.getPolynomialSize(),
-        params.getGlweDimension(), params.getLevelCount(), params.getBaseLog(),
-        params.getVariance(), Parallelism::Rayon, csprng.ptr);
+        buffer->data(), inputKey.getBuffer().data(),
+        outputKey.getBuffer().data(), params.getInputLweDimension(),
+        params.getPolynomialSize(), params.getGlweDimension(),
+        params.getLevelCount(), params.getBaseLog(), params.getVariance(),
+        Parallelism::Rayon, csprng.ptr);
     break;
   case concreteprotocol::Compression::SEED:
-    seededBuffer->resize(concrete_cpu_seeded_bootstrap_key_size_u64(
-                             params.getLevelCount(), params.getGlweDimension(),
-                             params.getPolynomialSize(),
-                             params.getInputLweDimension()) +
-                         2 /* For the seed*/);
+    compressedBuffer->resize(
+        concrete_cpu_seeded_bootstrap_key_size_u64(
+            params.getLevelCount(), params.getGlweDimension(),
+            params.getPolynomialSize(), params.getInputLweDimension()) +
+        2 /* For the seed*/);
     struct Uint128 seed;
     csprng::getRandomSeed(&seed);
-    writeSeed(seed, *seededBuffer);
+    writeSeed(seed, *compressedBuffer);
     concrete_cpu_init_seeded_lwe_bootstrap_key_u64(
-        seededBuffer->data() + 2, inputKey.buffer->data(),
-        outputKey.buffer->data(), params.getInputLweDimension(),
+        compressedBuffer->data() + 2, inputKey.getBuffer().data(),
+        outputKey.getBuffer().data(), params.getInputLweDimension(),
         params.getPolynomialSize(), params.getGlweDimension(),
         params.getLevelCount(), params.getBaseLog(), seed, params.getVariance(),
         Parallelism::Rayon);
@@ -136,75 +181,22 @@ LweBootstrapKey::LweBootstrapKey(
   }
 };
 
-LweBootstrapKey LweBootstrapKey::fromProto(
-    const Message<concreteprotocol::LweBootstrapKey> &proto) {
-  auto info = Message<concreteprotocol::LweBootstrapKeyInfo>(
-      proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
-  LweBootstrapKey key(info);
-  switch (info.asReader().getCompression()) {
-  case concreteprotocol::Compression::NONE:
-    key.buffer = vector;
-    break;
-  case concreteprotocol::Compression::SEED:
-    key.seededBuffer = vector;
-    break;
-  default:
-    assert(false && "Unsupported compression type for bootstrap key");
-  }
-  return key;
-}
-
-Message<concreteprotocol::LweBootstrapKey> LweBootstrapKey::toProto() const {
-  return keyToProto<concreteprotocol::LweBootstrapKey,
-                    concreteprotocol::LweBootstrapKeyInfo, LweBootstrapKey>(
-      *this);
-}
-
-const std::vector<uint64_t> &LweBootstrapKey::getBuffer() {
-  decompress();
-  return *buffer;
-}
-
-const std::vector<uint64_t> &LweBootstrapKey::getTransportBuffer() const {
-  switch (info.asReader().getCompression()) {
-  case concreteprotocol::Compression::NONE:
-    return *buffer;
-  case concreteprotocol::Compression::SEED:
-    assert(!seededBuffer->empty());
-    return *seededBuffer;
-  default:
-    assert(false && "Unsupported compression type for bootstrap key");
-  }
-}
-
-const Message<concreteprotocol::LweBootstrapKeyInfo> &
-LweBootstrapKey::getInfo() const {
-  return this->info;
-}
-
-void LweBootstrapKey::decompress() {
+void LweBootstrapKey::_decompress() {
   switch (info.asReader().getCompression()) {
   case concreteprotocol::Compression::NONE:
     return;
   case concreteprotocol::Compression::SEED: {
-    if (*decompressed)
-      return;
-    const std::lock_guard<std::mutex> guard(*decompress_mutext);
-    if (*decompressed)
-      return;
     auto params = info.asReader().getParams();
     buffer->resize(concrete_cpu_bootstrap_key_size_u64(
         params.getLevelCount(), params.getGlweDimension(),
         params.getPolynomialSize(), params.getInputLweDimension()));
     struct Uint128 seed;
-    readSeed(seed, *seededBuffer);
+    readSeed(seed, *compressedBuffer);
     concrete_cpu_decompress_seeded_lwe_bootstrap_key_u64(
-        buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
-        params.getPolynomialSize(), params.getGlweDimension(),
-        params.getLevelCount(), params.getBaseLog(), seed, Parallelism::Rayon);
-    *decompressed = true;
+        buffer->data(), compressedBuffer->data() + 2,
+        params.getInputLweDimension(), params.getPolynomialSize(),
+        params.getGlweDimension(), params.getLevelCount(), params.getBaseLog(),
+        seed, Parallelism::Rayon);
     return;
   }
   default:
@@ -213,13 +205,12 @@ void LweBootstrapKey::decompress() {
 }
 
 LweKeyswitchKey::LweKeyswitchKey(
-    Message<concreteprotocol::LweKeyswitchKeyInfo> info,
-    const LweSecretKey &inputKey, const LweSecretKey &outputKey,
-    EncryptionCSPRNG &csprng)
+    Message<concreteprotocol::LweKeyswitchKeyInfo> info, LweSecretKey &inputKey,
+    LweSecretKey &outputKey, EncryptionCSPRNG &csprng)
     : LweKeyswitchKey(info) {
-  assert(inputKey.info.asReader().getParams().getLweDimension() ==
+  assert(inputKey.getInfo().asReader().getParams().getLweDimension() ==
          info.asReader().getParams().getInputLweDimension());
-  assert(outputKey.info.asReader().getParams().getLweDimension() ==
+  assert(outputKey.getInfo().asReader().getParams().getLweDimension() ==
          info.asReader().getParams().getOutputLweDimension());
 
   auto params = info.asReader().getParams();
@@ -231,22 +222,22 @@ LweKeyswitchKey::LweKeyswitchKey(
         params.getLevelCount(), params.getInputLweDimension(),
         params.getOutputLweDimension()));
     concrete_cpu_init_lwe_keyswitch_key_u64(
-        buffer->data(), inputKey.buffer->data(), outputKey.buffer->data(),
-        params.getInputLweDimension(), params.getOutputLweDimension(),
-        params.getLevelCount(), params.getBaseLog(), params.getVariance(),
-        csprng.ptr);
+        buffer->data(), inputKey.getBuffer().data(),
+        outputKey.getBuffer().data(), params.getInputLweDimension(),
+        params.getOutputLweDimension(), params.getLevelCount(),
+        params.getBaseLog(), params.getVariance(), csprng.ptr);
     return;
   case concreteprotocol::Compression::SEED:
-    seededBuffer->resize(
+    compressedBuffer->resize(
         concrete_cpu_seeded_keyswitch_key_size_u64(
             params.getLevelCount(), params.getInputLweDimension()) +
         2 /* for seed*/);
     struct Uint128 seed;
     csprng::getRandomSeed(&seed);
-    writeSeed(seed, *seededBuffer);
+    writeSeed(seed, *compressedBuffer);
     concrete_cpu_init_seeded_lwe_keyswitch_key_u64(
-        seededBuffer->data() + 2, inputKey.buffer->data(),
-        outputKey.buffer->data(), params.getInputLweDimension(),
+        compressedBuffer->data() + 2, inputKey.getBuffer().data(),
+        outputKey.getBuffer().data(), params.getInputLweDimension(),
         params.getOutputLweDimension(), params.getLevelCount(),
         params.getBaseLog(), seed, params.getVariance());
     return;
@@ -256,75 +247,21 @@ LweKeyswitchKey::LweKeyswitchKey(
   }
 }
 
-LweKeyswitchKey LweKeyswitchKey::fromProto(
-    const Message<concreteprotocol::LweKeyswitchKey> &proto) {
-  auto info = Message<concreteprotocol::LweKeyswitchKeyInfo>(
-      proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
-  LweKeyswitchKey key(info);
-  switch (info.asReader().getCompression()) {
-  case concreteprotocol::Compression::NONE:
-    key.buffer = vector;
-    break;
-  case concreteprotocol::Compression::SEED:
-    key.seededBuffer = vector;
-    break;
-  default:
-    assert(false && "Unsupported compression type for bootstrap key");
-  }
-  return key;
-}
-
-Message<concreteprotocol::LweKeyswitchKey> LweKeyswitchKey::toProto() const {
-  return keyToProto<concreteprotocol::LweKeyswitchKey,
-                    concreteprotocol::LweKeyswitchKeyInfo, LweKeyswitchKey>(
-      *this);
-}
-
-const Message<concreteprotocol::LweKeyswitchKeyInfo> &
-LweKeyswitchKey::getInfo() const {
-  return this->info;
-}
-
-const std::vector<uint64_t> &LweKeyswitchKey::getBuffer() {
-  decompress();
-  return *buffer;
-}
-
-const std::vector<uint64_t> &LweKeyswitchKey::getTransportBuffer() const {
-  switch (info.asReader().getCompression()) {
-  case concreteprotocol::Compression::NONE:
-    return *buffer;
-  case concreteprotocol::Compression::SEED:
-    assert(!seededBuffer->empty());
-    return *seededBuffer;
-  default:
-    assert(false && "Unsupported compression type for bootstrap key");
-  }
-}
-
-void LweKeyswitchKey::decompress() {
+void LweKeyswitchKey::_decompress() {
   switch (info.asReader().getCompression()) {
   case concreteprotocol::Compression::NONE:
     return;
   case concreteprotocol::Compression::SEED: {
-    if (*decompressed)
-      return;
-    const std::lock_guard<std::mutex> guard(*decompress_mutext);
-    if (*decompressed)
-      return;
     auto params = info.asReader().getParams();
     buffer->resize(concrete_cpu_keyswitch_key_size_u64(
         params.getLevelCount(), params.getInputLweDimension(),
         params.getOutputLweDimension()));
     struct Uint128 seed;
-    readSeed(seed, *seededBuffer);
+    readSeed(seed, *compressedBuffer);
     concrete_cpu_decompress_seeded_lwe_keyswitch_key_u64(
-        buffer->data(), seededBuffer->data() + 2, params.getInputLweDimension(),
-        params.getOutputLweDimension(), params.getLevelCount(),
-        params.getBaseLog(), seed, Parallelism::Rayon);
-    *decompressed = true;
+        buffer->data(), compressedBuffer->data() + 2,
+        params.getInputLweDimension(), params.getOutputLweDimension(),
+        params.getLevelCount(), params.getBaseLog(), seed, Parallelism::Rayon);
     return;
   }
   default:
@@ -334,11 +271,11 @@ void LweKeyswitchKey::decompress() {
 
 PackingKeyswitchKey::PackingKeyswitchKey(
     Message<concreteprotocol::PackingKeyswitchKeyInfo> info,
-    const LweSecretKey &inputKey, const LweSecretKey &outputKey,
-    EncryptionCSPRNG &csprng) {
+    LweSecretKey &inputKey, LweSecretKey &outputKey, EncryptionCSPRNG &csprng)
+    : PackingKeyswitchKey(info) {
   assert(info.asReader().getParams().getGlweDimension() *
              info.asReader().getParams().getPolynomialSize() ==
-         outputKey.info.asReader().getParams().getLweDimension());
+         outputKey.getInfo().asReader().getParams().getLweDimension());
 
   // Allocate the buffer
   auto params = info.asReader().getParams();
@@ -354,41 +291,10 @@ PackingKeyswitchKey::PackingKeyswitchKey(
 
   // Initialize the keyswitch key buffer
   concrete_cpu_init_lwe_circuit_bootstrap_private_functional_packing_keyswitch_keys_u64(
-      buffer->data(), inputKey.buffer->data(), outputKey.buffer->data(),
+      buffer->data(), inputKey.getBuffer().data(), outputKey.getBuffer().data(),
       params.getInputLweDimension(), params.getPolynomialSize(),
       params.getGlweDimension(), params.getLevelCount(), params.getBaseLog(),
       params.getVariance(), Parallelism::Rayon, csprng.ptr);
-}
-
-PackingKeyswitchKey PackingKeyswitchKey::fromProto(
-    const Message<concreteprotocol::PackingKeyswitchKey> &proto) {
-  auto info = Message<concreteprotocol::PackingKeyswitchKeyInfo>(
-      proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
-  return PackingKeyswitchKey(vector, info);
-}
-
-Message<concreteprotocol::PackingKeyswitchKey>
-PackingKeyswitchKey::toProto() const {
-  return keyToProto<concreteprotocol::PackingKeyswitchKey,
-                    concreteprotocol::PackingKeyswitchKeyInfo,
-                    PackingKeyswitchKey>(*this);
-}
-
-const uint64_t *PackingKeyswitchKey::getRawPtr() const {
-  return this->buffer->data();
-}
-
-size_t PackingKeyswitchKey::getSize() const { return this->buffer->size(); }
-
-const Message<concreteprotocol::PackingKeyswitchKeyInfo> &
-PackingKeyswitchKey::getInfo() const {
-  return this->info;
-}
-
-const std::vector<uint64_t> &PackingKeyswitchKey::getBuffer() const {
-  return *this->buffer;
 }
 
 } // namespace keys

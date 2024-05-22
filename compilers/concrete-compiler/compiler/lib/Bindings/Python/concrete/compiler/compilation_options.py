@@ -10,6 +10,7 @@ from mlir._mlir_libs._concretelang._compiler import (
     CompilationOptions as _CompilationOptions,
     OptimizerStrategy as _OptimizerStrategy,
     OptimizerMultiParameterStrategy as _OptimizerMultiParameterStrategy,
+    PublicKeyKind,
     Encoding,
     Backend as _Backend,
 )
@@ -125,6 +126,19 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(compress_input_ciphertexts, bool):
             raise TypeError("can't set the option to a non-boolean value")
         self.cpp().set_compress_input_ciphertexts(compress_input_ciphertexts)
+
+    def set_public_keys(self, public_keys: PublicKeyKind):
+        """Set option for the use of public keys for the encryption.
+
+        Args:
+            public_keys (PublicKeyKind): kind of public keys to use.
+
+        Raises:
+            TypeError: if the value to set is not a PublicKeyKind
+        """
+        if not isinstance(public_keys, PublicKeyKind):
+            raise TypeError("public_keys must be of type PublicKeyKind")
+        self.cpp().set_public_keys(public_keys)
 
     def set_verify_diagnostics(self, verify_diagnostics: bool):
         """Set option for diagnostics verification.

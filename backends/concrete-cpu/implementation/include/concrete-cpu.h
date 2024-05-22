@@ -230,6 +230,21 @@ void concrete_cpu_encrypt_lwe_ciphertext_u64(const uint64_t *lwe_sk,
                                              double variance,
                                              struct EncCsprng *csprng);
 
+void concrete_cpu_encrypt_lwe_ciphertext_with_compact_lwe_public_key_u64(const uint64_t *lwe_compact_public_key_buffer,
+                                                                         uint64_t *lwe_ciphertext_buffer,
+                                                                         uint64_t input,
+                                                                         size_t lwe_dimension,
+                                                                         double variance,
+                                                                         struct SecCsprng *secret_csprng,
+                                                                         struct EncCsprng *encryption_csprng);
+
+void concrete_cpu_encrypt_lwe_ciphertext_with_lwe_public_key_u64(const uint64_t *lwe_public_key_buffer,
+                                                                 uint64_t *lwe_ciphertext_buffer,
+                                                                 uint64_t input,
+                                                                 size_t lwe_dimension,
+                                                                 size_t zero_encryption_count,
+                                                                 struct SecCsprng *csprng);
+
 void concrete_cpu_encrypt_seeded_lwe_ciphertext_u64(const uint64_t *lwe_sk,
                                                     uint64_t *seeded_lwe_out,
                                                     uint64_t input,
@@ -309,6 +324,12 @@ void concrete_cpu_init_lwe_circuit_bootstrap_private_functional_packing_keyswitc
                                                                                            Parallelism parallelism,
                                                                                            struct EncCsprng *csprng);
 
+void concrete_cpu_init_lwe_compact_public_key_u64(const uint64_t *lwe_secret_key_buffer,
+                                                  uint64_t *lwe_public_key_buffer,
+                                                  size_t lwe_dimension,
+                                                  double variance,
+                                                  struct EncCsprng *csprng);
+
 void concrete_cpu_init_lwe_keyswitch_key_u64(uint64_t *lwe_ksk,
                                              const uint64_t *input_lwe_sk,
                                              const uint64_t *output_lwe_sk,
@@ -318,6 +339,13 @@ void concrete_cpu_init_lwe_keyswitch_key_u64(uint64_t *lwe_ksk,
                                              size_t decomposition_base_log,
                                              double variance,
                                              struct EncCsprng *csprng);
+
+void concrete_cpu_init_lwe_public_key_u64(const uint64_t *lwe_secret_key_buffer,
+                                          uint64_t *lwe_public_key_buffer,
+                                          size_t lwe_dimension,
+                                          size_t zero_encryption_count,
+                                          double variance,
+                                          struct EncCsprng *csprng);
 
 void concrete_cpu_init_secret_key_u64(uint64_t *sk, size_t dimension, struct SecCsprng *csprng);
 
@@ -357,10 +385,14 @@ void concrete_cpu_keyswitch_lwe_ciphertext_u64(uint64_t *ct_out,
 
 size_t concrete_cpu_lwe_ciphertext_size_u64(size_t lwe_dimension);
 
+size_t concrete_cpu_lwe_compact_public_key_size_u64(size_t lwe_dimension);
+
 size_t concrete_cpu_lwe_packing_keyswitch_key_size(size_t output_glwe_dimension,
                                                    size_t polynomial_size,
                                                    size_t decomposition_level_count,
                                                    size_t input_lwe_dimension);
+
+size_t concrete_cpu_lwe_public_key_size_u64(size_t lwe_dimension, size_t zero_encryption_count);
 
 size_t concrete_cpu_lwe_secret_key_size_u64(size_t lwe_dimension);
 
@@ -372,6 +404,8 @@ void concrete_cpu_mul_cleartext_lwe_ciphertext_u64(uint64_t *ct_out,
 void concrete_cpu_negate_lwe_ciphertext_u64(uint64_t *ct_out,
                                             const uint64_t *ct_in,
                                             size_t lwe_dimension);
+
+size_t concrete_cpu_public_key_zero_encryption_count(size_t lwe_dimension);
 
 size_t concrete_cpu_seeded_bootstrap_key_size_u64(size_t decomposition_level_count,
                                                   size_t glwe_dimension,

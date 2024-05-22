@@ -9,6 +9,12 @@ from concrete.compiler import (
     LibrarySupport,
     PublicArguments,
     PublicResult,
+    ValueExporter,
+    CompilationOptions,
+)
+
+from mlir._mlir_libs._concretelang._compiler import (
+    PublicKeyKind,
 )
 
 
@@ -102,11 +108,13 @@ func.func @main(%a0: tensor<4x!FHE.eint<5>>, %a1: tensor<4x!FHE.eint<5>>) -> ten
 def test_client_server_end_to_end(mlir, args, expected_result, keyset_cache):
     with tempfile.TemporaryDirectory() as tmpdirname:
         support = LibrarySupport.new(str(tmpdirname))
-        compilation_result = support.compile(mlir)
+        options = CompilationOptions.new()
+        options.set_public_keys(PublicKeyKind.COMPACT)
+        compilation_result = support.compile(mlir, options)
         server_lambda = support.load_server_lambda(compilation_result, False)
 
         client_parameters = support.load_client_parameters(compilation_result)
-        keyset = ClientSupport.key_set(client_parameters, keyset_cache)
+        keyset = ClientSupport.key_set(client_parameters)
 
         evaluation_keys = keyset.get_evaluation_keys()
         evaluation_keys_serialized = evaluation_keys.serialize()
@@ -114,15 +122,31 @@ def test_client_server_end_to_end(mlir, args, expected_result, keyset_cache):
             evaluation_keys_serialized
         )
 
-        args = ClientSupport.encrypt_arguments(client_parameters, keyset, args)
-        args_serialized = args.serialize()
-        args_deserialized = PublicArguments.deserialize(
-            client_parameters, args_serialized
-        )
+        exporter = ValueExporter.new(keyset, client_parameters)
+        encrypted_args = [
+            exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
+            if isinstance(arg, np.ndarray) and arg.shape != ()
+            else exporter.export_scalar(position, int(arg))
+            for position, arg in enumerate(args)
+        ]
+
+        public_keyset = keyset.generate_public_key_set()
+        public_exporter = ValueExporter.new_public(public_keyset, client_parameters)
+        public_encrypted_args = [
+            exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
+            if isinstance(arg, np.ndarray) and arg.shape != ()
+            else exporter.export_scalar(position, int(arg))
+            for position, arg in enumerate(args)
+        ]
 
         result = support.server_call(
             server_lambda,
-            args_deserialized,
+            PublicArguments.new(client_parameters, encrypted_args),
+            evaluation_keys_deserialized,
+        )
+        public_result = support.server_call(
+            server_lambda,
+            PublicArguments.new(client_parameters, public_encrypted_args),
             evaluation_keys_deserialized,
         )
         result_serialized = result.serialize()
@@ -133,4 +157,8 @@ def test_client_server_end_to_end(mlir, args, expected_result, keyset_cache):
         output = ClientSupport.decrypt_result(
             client_parameters, keyset, result_deserialized
         )
+        public_output = ClientSupport.decrypt_result(
+            client_parameters, keyset, public_result
+        )
         assert np.array_equal(output, expected_result)
+        assert np.array_equal(public_output, expected_result)

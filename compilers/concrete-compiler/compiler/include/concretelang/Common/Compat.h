@@ -32,7 +32,6 @@
 #include <memory>
 #include <stdexcept>
 
-using concretelang::clientlib::ClientCircuit;
 using concretelang::clientlib::ClientProgram;
 using concretelang::keysets::Keyset;
 using concretelang::keysets::KeysetCache;
@@ -201,30 +200,6 @@ struct EncryptionGate {
 /// support.
 struct CircuitGate {
   Message<concreteprotocol::GateInfo> gateInfo;
-};
-
-/// A transition structure that preserver the current API of the library
-/// support.
-struct ValueExporter {
-  ClientCircuit circuit;
-};
-
-/// A transition structure that preserver the current API of the library
-/// support.
-struct SimulatedValueExporter {
-  ClientCircuit circuit;
-};
-
-/// A transition structure that preserver the current API of the library
-/// support.
-struct ValueDecrypter {
-  ClientCircuit circuit;
-};
-
-/// A transition structure that preserver the current API of the library
-/// support.
-struct SimulatedValueDecrypter {
-  ClientCircuit circuit;
 };
 
 /// A transition structure that preserver the current API of the library

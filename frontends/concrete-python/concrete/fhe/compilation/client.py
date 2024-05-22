@@ -10,12 +10,12 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import EvaluationKeys, ValueDecrypter, ValueExporter
+from concrete.compiler import EvaluationKeys, PublicKeySet, ValueDecrypter
 
 from .keys import Keys
 from .specs import ClientSpecs
-from .utils import validate_input_args
 from .value import Value
+from .value_exporter import ValueExporter
 
 # pylint: enable=import-error,no-member,no-name-in-module
 
@@ -136,24 +136,11 @@ class Client:
                 encrypted argument(s) for evaluation
         """
 
-        ordered_sanitized_args = validate_input_args(self.specs, *args, function_name=function_name)
-
         self.keygen(force=False)
         keyset = self.keys._keyset  # pylint: disable=protected-access
-
-        exporter = ValueExporter.new(keyset, self.specs.client_parameters, function_name)
-        exported = [
-            None
-            if arg is None
-            else Value(
-                exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
-                if isinstance(arg, np.ndarray) and arg.shape != ()
-                else exporter.export_scalar(position, int(arg))
-            )
-            for position, arg in enumerate(ordered_sanitized_args)
-        ]
-
-        return tuple(exported) if len(exported) != 1 else exported[0]
+        return ValueExporter.new_private(
+            keyset, self.specs.client_parameters, function_name
+        ).encrypt(*args)
 
     def decrypt(
         self,
@@ -195,6 +182,19 @@ class Client:
 
     @property
     def evaluation_keys(self) -> EvaluationKeys:
+        """
+        Get evaluation keys for encrypted computation.
+
+        Returns:
+            EvaluationKeys
+                evaluation keys for encrypted computation
+        """
+
+        self.keygen(force=False)
+        return self.keys.evaluation
+
+    @property
+    def public_key_set(self) -> PublicKeySet:
         """
         Get evaluation keys for encrypted computation.
 
