@@ -520,7 +520,8 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
 
   if (options.simulate) {
     if (mlir::concretelang::pipeline::simulateTFHE(
-            mlirContext, module, res.fheContext, this->enablePass)
+            mlirContext, module, res.fheContext,
+            options.enableOverflowDetectionInSimulation, this->enablePass)
             .failed()) {
       return StreamStringError("Simulating TFHE failed");
     }

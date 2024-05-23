@@ -124,6 +124,9 @@ class Server:
         options.set_compress_evaluation_keys(configuration.compress_evaluation_keys)
         options.set_compress_input_ciphertexts(configuration.compress_input_ciphertexts)
         options.set_composable(configuration.composable)
+        options.set_enable_overflow_detection_in_simulation(
+            configuration.detect_overflow_in_simulation
+        )
 
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member
@@ -319,7 +322,12 @@ class Server:
         server_program = ServerProgram.load(support, is_simulated)
 
         return Server(
-            client_specs, output_dir, support, compilation_result, server_program, is_simulated
+            client_specs,
+            output_dir,
+            support,
+            compilation_result,
+            server_program,
+            is_simulated,
         )
 
     def run(

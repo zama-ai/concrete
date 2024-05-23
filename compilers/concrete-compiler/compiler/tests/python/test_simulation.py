@@ -57,6 +57,7 @@ def compile_run_assert(
 ):
     # compile with simulation
     options.simulation(True)
+    options.set_enable_overflow_detection_in_simulation(True)
     compilation_result = engine.compile(mlir_input, options)
     result = run_simulated(engine, args_and_shape, compilation_result)
     assert_result(result, expected_result)

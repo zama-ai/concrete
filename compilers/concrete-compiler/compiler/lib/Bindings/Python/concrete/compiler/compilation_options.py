@@ -481,3 +481,20 @@ class CompilationOptions(WrapperCpp):
         if not isinstance(print_tlu_fusing, bool):
             raise TypeError("need to pass a boolean value")
         self.cpp().set_print_tlu_fusing(print_tlu_fusing)
+
+    def set_enable_overflow_detection_in_simulation(
+        self, enable_overflow_detection: bool
+    ):
+        """Enable or disable overflow detection during simulation.
+
+        Args:
+            enable_overflow_detection (bool): flag to enable or disable overflow detection
+
+        Raises:
+            TypeError: if the value to set is not bool
+        """
+        if not isinstance(enable_overflow_detection, bool):
+            raise TypeError("need to pass a boolean value")
+        self.cpp().set_enable_overflow_detection_in_simulation(
+            enable_overflow_detection
+        )

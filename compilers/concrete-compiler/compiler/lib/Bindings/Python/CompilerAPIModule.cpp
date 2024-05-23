@@ -803,6 +803,11 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def("set_print_tlu_fusing",
            [](CompilationOptions &options, bool printTluFusing) {
              options.printTluFusing = printTluFusing;
+           })
+      .def("set_enable_overflow_detection_in_simulation",
+           [](CompilationOptions &options, bool enableOverflowDetection) {
+             options.enableOverflowDetectionInSimulation =
+                 enableOverflowDetection;
            });
 
   pybind11::enum_<mlir::concretelang::PrimitiveOperation>(m,

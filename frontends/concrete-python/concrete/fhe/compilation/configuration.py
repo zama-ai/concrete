@@ -990,6 +990,7 @@ class Configuration:
     enable_tlu_fusing: bool
     print_tlu_fusing: bool
     optimize_tlu_based_on_original_bit_width: Union[bool, int]
+    detect_overflow_in_simulation: bool
 
     def __init__(
         self,
@@ -1055,6 +1056,7 @@ class Configuration:
         enable_tlu_fusing: bool = True,
         print_tlu_fusing: bool = False,
         optimize_tlu_based_on_original_bit_width: Union[bool, int] = 8,
+        detect_overflow_in_simulation: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1155,6 +1157,8 @@ class Configuration:
 
         self.optimize_tlu_based_on_original_bit_width = optimize_tlu_based_on_original_bit_width
 
+        self.detect_overflow_in_simulation = detect_overflow_in_simulation
+
         self._validate()
 
     class Keep:
@@ -1198,14 +1202,17 @@ class Configuration:
         compiler_debug_mode: Union[Keep, bool] = KEEP,
         compiler_verbose_mode: Union[Keep, bool] = KEEP,
         comparison_strategy_preference: Union[
-            Keep, Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]]
+            Keep,
+            Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]],
         ] = KEEP,
         bitwise_strategy_preference: Union[
-            Keep, Optional[Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]]
+            Keep,
+            Optional[Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]],
         ] = KEEP,
         shifts_with_promotion: Union[Keep, bool] = KEEP,
         multivariate_strategy_preference: Union[
-            Keep, Optional[Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]]
+            Keep,
+            Optional[Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]],
         ] = KEEP,
         min_max_strategy_preference: Union[
             Keep, Optional[Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]]
@@ -1223,6 +1230,7 @@ class Configuration:
         enable_tlu_fusing: Union[Keep, bool] = KEEP,
         print_tlu_fusing: Union[Keep, bool] = KEEP,
         optimize_tlu_based_on_original_bit_width: Union[Keep, bool, int] = KEEP,
+        detect_overflow_in_simulation: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
