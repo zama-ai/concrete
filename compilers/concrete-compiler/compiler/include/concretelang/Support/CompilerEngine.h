@@ -67,6 +67,9 @@ struct CompilationOptions {
   /// Simulate options
   bool simulate;
 
+  /// Enable overflow detection during simulation
+  bool enableOverflowDetectionInSimulation;
+
   /// Parallelization options
   bool autoParallelize;
   bool loopParallelize;
@@ -110,7 +113,7 @@ struct CompilationOptions {
   CompilationOptions()
       : v0FHEConstraints(std::nullopt), verifyDiagnostics(false),
         /// Simulate options
-        simulate(false),
+        simulate(false), enableOverflowDetectionInSimulation(false),
         // Parallelization options
         autoParallelize(false), loopParallelize(true),
         dataflowParallelize(false),

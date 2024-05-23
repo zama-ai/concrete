@@ -439,13 +439,13 @@ transformTFHEOperations(mlir::MLIRContext &context, mlir::ModuleOp &module,
 mlir::LogicalResult simulateTFHE(mlir::MLIRContext &context,
                                  mlir::ModuleOp &module,
                                  std::optional<V0FHEContext> &fheContext,
+                                 bool enableOverflowDetection,
                                  std::function<bool(mlir::Pass *)> enablePass) {
   mlir::PassManager pm(&context);
 
   // we want to disable overflow detection if CRT is used (overflow would be
   // expected)
-  bool enableOverflowDetection = true;
-  if (fheContext) {
+  if (fheContext && enableOverflowDetection) {
     auto solution = fheContext.value().solution;
     auto optCrt = getCrtDecompositionFromSolution(solution);
     if (optCrt) {
