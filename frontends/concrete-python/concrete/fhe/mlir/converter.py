@@ -894,6 +894,11 @@ class Converter:
         # we reshape so that we can concatenate later over the last dim (ciphertext dim)
         reshaped_native_int = ctx.reshape(native_int, native_int.shape + (1,))
 
+        # TODO: remove this when we want to optimize computation so that we don't compute
+        # on empty ciphertexts, based on the bit_width assignment. (e.g. if onlt two lsb
+        # ciphertexts are used, then we don't want to extract bits from the remaining ones)
+        reshaped_native_int.set_original_bit_width(input_bit_width)
+
         # we want to extract `msg_width` bits at a time, and store them
         # in a `msg_width + carry_width` bits eint
         bits_shape = ctx.tensor(ctx.eint(msg_width + carry_width), reshaped_native_int.shape)

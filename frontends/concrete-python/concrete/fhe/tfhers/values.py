@@ -29,7 +29,7 @@ class TFHERSInteger:
                 msg = f"got error while trying to convert list value into a numpy array: {e}"
                 raise ValueError(msg) from e
 
-        if isinstance(value, int):
+        if isinstance(value, (int, np.integer)):
             self._shape = ()
         elif isinstance(value, np.ndarray):
             if value.max() > dtype.max():
@@ -40,7 +40,7 @@ class TFHERSInteger:
                 raise ValueError(msg)
             self._shape = value.shape
         else:
-            msg = "value can either be an int or ndarray"
+            msg = f"value can either be an int or ndarray, not a {type(value)}"
             raise TypeError(msg)
 
         self._value = value

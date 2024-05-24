@@ -14,4 +14,10 @@ from .dtypes import (
     uint16_2_2,
 )
 from .tracing import from_native, to_native
-from .values import int8_2_2_value, int16_2_2_value, uint8_2_2_value, uint16_2_2_value
+from .values import (
+    TFHERSInteger,
+    int8_2_2_value,
+    int16_2_2_value,
+    uint8_2_2_value,
+    uint16_2_2_value,
+)
