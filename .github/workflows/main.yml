@@ -21,8 +21,6 @@ jobs:
   file-change:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
     outputs:
       compiler: ${{ steps.compiler.outputs.any_changed }}
       optimizer: ${{ steps.optimizer.outputs.any_changed }}
