@@ -17,7 +17,7 @@ and corresponding tests.
 
 SHA1 is a deprecated broken hash function defined by NIST in 1995: one can find information about it
 in its [Wikipedia page](https://en.wikipedia.org/wiki/SHA-1), or in its
-[official description](https://web.archive.org/web/20161126003357/http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
+[official description](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.180-4.pdf).
 
 Its [pseudo-code](https://en.wikipedia.org/wiki/SHA-1#SHA-1_pseudocode) is particularly interesting,
 since our implementation in Concrete Python will follow the structure.
