@@ -1,0 +1,45 @@
+### Adding an Encrypted Multiplication Function
+from concrete import fhe
+
+# Add function
+def add(x, y):
+    return x + y
+
+compiler_add = fhe.Compiler(add, {"x": "encrypted", "y": "encrypted"})
+
+inputset_add = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
+
+print(f"Compilation for add...")
+circuit_add = compiler_add.compile(inputset_add)
+
+print(f"Key generation for add...")
+circuit_add.keygen()
+
+print(f"Homomorphic evaluation for add...")
+encrypted_x_add, encrypted_y_add = circuit_add.encrypt(2, 6)
+encrypted_result_add = circuit_add.run(encrypted_x_add, encrypted_y_add)
+result_add = circuit_add.decrypt(encrypted_result_add)
+
+assert result_add == add(2, 6)
+print(f"Result of encrypted addition: {result_add}")
+
+# Multiply function
+def multiply(x, y):
+    return x * y
+
+compiler_multiply = fhe.Compiler(multiply, {"x": "encrypted", "y": "encrypted"})
+
+inputset_multiply = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 5), (5, 4)]
+print(f"Compilation for multiply...")
+circuit_multiply = compiler_multiply.compile(inputset_multiply)
+
+print(f"Key generation for multiply...")
+circuit_multiply.keygen()
+
+print(f"Homomorphic evaluation for multiply...")
+encrypted_x_mult, encrypted_y_mult = circuit_multiply.encrypt(3, 4)
+encrypted_result_mult = circuit_multiply.run(encrypted_x_mult, encrypted_y_mult)
+result_mult = circuit_multiply.decrypt(encrypted_result_mult)
+
+assert result_mult == multiply(3, 4)
+print(f"Result of encrypted multiplication: {result_mult}")
