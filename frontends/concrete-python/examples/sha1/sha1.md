@@ -128,18 +128,76 @@ the clear and operating with these small functions. In our case, it's done in
 ## Details of `_process_encrypted_chunk_server_side`
 
 `_process_encrypted_chunk_server_side` uses inputs which are encrypted, and returns encrypted
-values. Everything is a 32-bit word when done in the clear. Here, words will be represented as 32
-1-bit encrypted values, to simplify (and accelerate) the non-linear operations in SHA1.
+values. All variables here are 32-bit words when done in the clear. Here, words will be represented
+as 32 1-bit encrypted values, to simplify (and accelerate) the non-linear operations in SHA1.
 
-Then, we have the main loop of the compression function which is done in the clear with
-`for i in range(80):`. There, we also have the different conditions (`if 0 <= i <= 19:`,
-`elif 20 <= i <= 39` etc) which is done in the clear. Obviously, there is no security issue here,
-since the `i` index is not secret. Depending on `i`, we then select the right `fsplit_enc` and
-`ksplit`, which correspond to `f` and `k` in the clear implementation of the compression function.
-Here, we can see a first use of the different functions in the Module.
+Then, we have the main loop of the compression function:
 
-Then, we continue with other functions in the module, to compute `arot5 = _left_rotate(a, 5)` and
-`arot5 + f + e + k + w[i]`. Finally, we update the different `a, b, c, d, e` values as in the clear
+```
+    for i in range(80):
+        if 0 <= i <= 19:
+
+            # Do f = d ^ (b & (c ^ d))
+            fsplit_enc = my_module.iftern.run(bsplit_enc, csplit_enc, dsplit_enc)
+
+            ksplit = split(0x5A827999)
+        elif 20 <= i <= 39:
+
+            # Do f = b ^ c ^ d
+            fsplit_enc = my_module.xor3.run(bsplit_enc, csplit_enc, dsplit_enc)
+
+            ksplit = split(0x6ED9EBA1)
+        elif 40 <= i <= 59:
+
+            # Do f = (b & c) | (b & d) | (c & d)
+            fsplit_enc = my_module.maj.run(bsplit_enc, csplit_enc, dsplit_enc)
+
+            ksplit = split(0x8F1BBCDC)
+        elif 60 <= i <= 79:
+
+            # Do f = b ^ c ^ d
+            fsplit_enc = my_module.xor3.run(bsplit_enc, csplit_enc, dsplit_enc)
+
+            ksplit = split(0xCA62C1D6)
+```
+
+In this main loop, we take the right choice of `f` and `k`. Here, we can see a first use of
+the different functions in the Module.
+
+Then we continue with other functions in the module, to compute `arot5 = _left_rotate(a, 5)` and
+`arot5 + f + e + k + w[i]`:
+
+```
+        # Do arot5 = _left_rotate(a, 5)
+        arot5split_enc = my_module.rotate5.run(asplit_enc)
+
+        # Do arot5 + f + e + k + w[i]
+        ssplit_enc = my_module.add5.run(
+            arot5split_enc,
+            fsplit_enc,
+            esplit_enc,
+            wsplit_enc[i],
+            my_module.rotate5.encrypt(ksplit),  # BCM: later remove the encryption on k
+        )
+```
+
+Finally, in
+
+```
+        # Final update of the a, b, c, d and e registers
+        newasplit_enc = ssplit_enc
+
+        esplit_enc = dsplit_enc
+        dsplit_enc = csplit_enc
+
+        # Do c = _left_rotate(b, 30)
+        csplit_enc = my_module.rotate30.run(bsplit_enc)
+
+        bsplit_enc = asplit_enc
+        asplit_enc = newasplit_enc
+```
+
+we update the different `a, b, c, d, e` values as in the clear
 implementation but with the encrypted forms.
 
 One can remark that we have compiled the different functions of the Module on inputset made with
