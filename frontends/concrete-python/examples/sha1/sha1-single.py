@@ -189,7 +189,7 @@ def _process_encrypted_chunk_server_side(
     dsplit_enc = h3split_enc
     esplit_enc = h4split_enc
 
-    for i in range(80):
+    for i in range(1):
         if 0 <= i <= 19:
 
             # Do f = d ^ (b & (c ^ d))
