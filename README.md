@@ -58,6 +58,12 @@ Depending on your OS, Concrete may be installed with Docker or with pip:
 | macOS 11+ (Apple Silicon: M1, M2, etc.)     |      Coming soon    |       Yes        |
 
 
+#### Setup
+```shell
+git clone https://github.com/zama-ai/concrete.git
+cd concrete
+```
+
 #### Pip
 The preferred way to install Concrete is through PyPI:
 
