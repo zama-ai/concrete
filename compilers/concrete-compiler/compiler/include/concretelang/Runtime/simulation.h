@@ -72,6 +72,7 @@ uint64_t sim_keyswitch_lwe_u64(uint64_t plaintext, uint32_t level,
 /// \param level
 /// \param base_log
 /// \param glwe_dim
+/// \param overflow_detection enable overflow detection
 /// \param loc
 /// \return uint64_t
 uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
@@ -79,7 +80,8 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
                                uint64_t tlu_size, uint64_t tlu_stride,
                                uint32_t input_lwe_dim, uint32_t poly_size,
                                uint32_t level, uint32_t base_log,
-                               uint32_t glwe_dim, char *loc);
+                               uint32_t glwe_dim, bool overflow_detection,
+                               char *loc);
 
 /// simulate a WoP PBS
 void sim_wop_pbs_crt(
@@ -108,7 +110,7 @@ void sim_encode_expand_lut_for_boostrap(
     uint64_t in_size, uint64_t in_stride, uint64_t *out_allocated,
     uint64_t *out_aligned, uint64_t out_offset, uint64_t out_size,
     uint64_t out_stride, uint32_t poly_size, uint32_t output_bits,
-    bool is_signed);
+    bool is_signed, bool overflow_detection);
 
 void sim_encode_plaintext_with_crt(uint64_t *output_allocated,
                                    uint64_t *output_aligned,

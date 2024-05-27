@@ -63,7 +63,8 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
                                uint64_t tlu_size, uint64_t tlu_stride,
                                uint32_t input_lwe_dim, uint32_t poly_size,
                                uint32_t level, uint32_t base_log,
-                               uint32_t glwe_dim, char *loc) {
+                               uint32_t glwe_dim, bool overflow_detection,
+                               char *loc) {
   auto tlu = tlu_aligned + tlu_offset;
 
   // modulus switching
@@ -92,23 +93,25 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
   else
     out = -tlu[mod_switched % poly_size];
 
-  // get encoded info from lsb
-  bool is_signed = (out >> 1) & 1;
-  bool is_overflow = out & 1;
-  // discard info bits (2 lsb)
-  out = out & 18446744073709551612U;
+  if (overflow_detection) {
+    // get encoded info from lsb
+    bool is_signed = (out >> 1) & 1;
+    bool is_overflow = out & 1;
+    // discard info bits (2 lsb)
+    out = out & 18446744073709551612U;
 
-  if (!is_signed && out > UINT63_MAX) {
-    printf("WARNING at %s: overflow (padding bit) happened during LUT in "
-           "simulation\n",
-           loc);
-  }
-  if (is_overflow) {
-    printf("WARNING at %s: overflow (original value didn't fit, so a modulus "
-           "was applied) happened "
-           "during LUT in "
-           "simulation\n",
-           loc);
+    if (!is_signed && out > UINT63_MAX) {
+      printf("WARNING at %s: overflow (padding bit) happened during LUT in "
+             "simulation\n",
+             loc);
+    }
+    if (is_overflow) {
+      printf("WARNING at %s: overflow (original value didn't fit, so a modulus "
+             "was applied) happened "
+             "during LUT in "
+             "simulation\n",
+             loc);
+    }
   }
 
   double variance_bsk = security_curve()->getVariance(glwe_dim, poly_size, 64);
@@ -258,7 +261,7 @@ void sim_encode_expand_lut_for_boostrap(
     uint64_t output_lut_stride, uint64_t *input_lut_allocated,
     uint64_t *input_lut_aligned, uint64_t input_lut_offset,
     uint64_t input_lut_size, uint64_t input_lut_stride, uint32_t poly_size,
-    uint32_t out_MESSAGE_BITS, bool is_signed) {
+    uint32_t out_MESSAGE_BITS, bool is_signed, bool overflow_detection) {
 
   assert(input_lut_stride == 1 && "Runtime: stride not equal to 1, check "
                                   "memref_encode_expand_lut_bootstrap");
@@ -270,21 +273,26 @@ void sim_encode_expand_lut_for_boostrap(
 
   assert((mega_case_size % 2) == 0);
 
-  // compute overflow bit
-  std::vector<bool> overflow_info(output_lut_size, false);
-  uint64_t upper_bound = uint64_t(1)
-                         << (out_MESSAGE_BITS + (is_signed ? 1 : 0));
-  for (size_t i = 0; i < input_lut_size; i++) {
-    if (input_lut_aligned[input_lut_offset + i] >= upper_bound) {
-      overflow_info[i] = true;
-    } else {
-      overflow_info[i] = false;
-    }
-  }
-  // used to set the sign bit or not
+  // flag for every element of the LUT to signal overflow
+  std::vector<bool> overflow_info;
+  // used to set the sign bit or not (2 is signed / 0 is not)
   uint64_t sign_bit_setter = 0;
-  if (is_signed) {
-    sign_bit_setter = 2;
+  // compute overflow bit (if overflow detection is enabled)
+  if (overflow_detection) {
+    overflow_info = std::vector(output_lut_size, false);
+    uint64_t upper_bound = uint64_t(1)
+                           << (out_MESSAGE_BITS + (is_signed ? 1 : 0));
+    for (size_t i = 0; i < input_lut_size; i++) {
+      if (input_lut_aligned[input_lut_offset + i] >= upper_bound) {
+        overflow_info[i] = true;
+      } else {
+        overflow_info[i] = false;
+      }
+    }
+    // set the sign bit
+    if (is_signed) {
+      sign_bit_setter = 2;
+    }
   }
 
   // When the bootstrap is executed on encrypted signed integers, the lut must
@@ -311,31 +319,40 @@ void sim_encode_expand_lut_for_boostrap(
     output_lut_aligned[output_lut_offset + idx] =
         input_lut_aligned[input_lut_offset + indexMap(0)]
         << (64 - out_MESSAGE_BITS - 1);
-    // set the sign bit
-    output_lut_aligned[output_lut_offset + idx] |= sign_bit_setter;
-    // set the overflow bit
-    output_lut_aligned[output_lut_offset + idx] |= (uint64_t)overflow_info[0];
+
+    if (overflow_detection) {
+      // set the sign bit
+      output_lut_aligned[output_lut_offset + idx] |= sign_bit_setter;
+      // set the overflow bit
+      output_lut_aligned[output_lut_offset + idx] |= (uint64_t)overflow_info[0];
+    }
   }
   for (size_t idx = (input_lut_size - 1) * mega_case_size + mega_case_size / 2;
        idx < output_lut_size; ++idx) {
     output_lut_aligned[output_lut_offset + idx] =
         -(input_lut_aligned[input_lut_offset + indexMap(0)]
           << (64 - out_MESSAGE_BITS - 1));
-    // set the sign bit
-    output_lut_aligned[output_lut_offset + idx] |= sign_bit_setter;
-    // set the overflow bit
-    output_lut_aligned[output_lut_offset + idx] |=
-        (uint64_t)overflow_info[indexMap(0)];
+
+    if (overflow_detection) {
+      // set the sign bit
+      output_lut_aligned[output_lut_offset + idx] |= sign_bit_setter;
+      // set the overflow bit
+      output_lut_aligned[output_lut_offset + idx] |=
+          (uint64_t)overflow_info[indexMap(0)];
+    }
   }
 
   // Treats the other ut values.
   for (size_t lut_idx = 1; lut_idx < input_lut_size; ++lut_idx) {
     uint64_t lut_value = input_lut_aligned[input_lut_offset + indexMap(lut_idx)]
                          << (64 - out_MESSAGE_BITS - 1);
-    // set the sign bit
-    lut_value |= sign_bit_setter;
-    // set the overflow bit
-    lut_value |= (uint64_t)overflow_info[indexMap(lut_idx)];
+    if (overflow_detection) {
+      // set the sign bit
+      lut_value |= sign_bit_setter;
+      // set the overflow bit
+      lut_value |= (uint64_t)overflow_info[indexMap(lut_idx)];
+    }
+
     size_t start = mega_case_size * (lut_idx - 1) + mega_case_size / 2;
     for (size_t output_idx = start; output_idx < start + mega_case_size;
          ++output_idx) {

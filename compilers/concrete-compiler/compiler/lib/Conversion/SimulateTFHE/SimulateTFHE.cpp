@@ -221,11 +221,15 @@ struct SubIntGLWEOpPattern : public mlir::OpRewritePattern<TFHE::SubGLWEIntOp> {
 struct EncodeExpandLutForBootstrapOpPattern
     : public mlir::OpConversionPattern<TFHE::EncodeExpandLutForBootstrapOp> {
 
+  bool overflowDetection;
+
   EncodeExpandLutForBootstrapOpPattern(mlir::MLIRContext *context,
-                                       mlir::TypeConverter &typeConverter)
+                                       mlir::TypeConverter &typeConverter,
+                                       bool overflowDetection)
       : mlir::OpConversionPattern<TFHE::EncodeExpandLutForBootstrapOp>(
             typeConverter, context,
-            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT),
+        overflowDetection(overflowDetection) {}
 
   ::mlir::LogicalResult
   matchAndRewrite(TFHE::EncodeExpandLutForBootstrapOp eeOp,
@@ -240,6 +244,9 @@ struct EncodeExpandLutForBootstrapOpPattern
         eeOp.getLoc(), eeOp.getOutputBits(), 32);
     mlir::Value isSignedCst = rewriter.create<mlir::arith::ConstantIntOp>(
         eeOp.getLoc(), eeOp.getIsSigned(), 1);
+    mlir::Value overflowDetectionCst =
+        rewriter.create<mlir::arith::ConstantIntOp>(eeOp.getLoc(),
+                                                    overflowDetection, 1);
 
     mlir::Value outputBuffer =
         rewriter.create<mlir::bufferization::AllocTensorOp>(
@@ -263,12 +270,13 @@ struct EncodeExpandLutForBootstrapOpPattern
     // *out_aligned, uint64_t out_offset, uint64_t out_size, uint64_t
     // out_stride, uint64_t *in_allocated, uint64_t *in_aligned, uint64_t
     // in_offset, uint64_t in_size, uint64_t in_stride, uint32_t poly_size,
-    // uint32_t output_bits, bool is_signed)
+    // uint32_t output_bits, bool is_signed, bool overflow_detection)
     if (insertForwardDeclaration(
             eeOp, rewriter, funcName,
             rewriter.getFunctionType(
                 {dynamicResultType, dynamicLutType, rewriter.getIntegerType(32),
-                 rewriter.getIntegerType(32), rewriter.getIntegerType(1)},
+                 rewriter.getIntegerType(32), rewriter.getIntegerType(1),
+                 rewriter.getIntegerType(1)},
                 {}))
             .failed()) {
       return mlir::failure();
@@ -277,7 +285,7 @@ struct EncodeExpandLutForBootstrapOpPattern
     rewriter.create<mlir::func::CallOp>(
         eeOp.getLoc(), funcName, mlir::TypeRange{},
         mlir::ValueRange({castedOutputBuffer, castedLUT, polySizeCst,
-                          outputBitsCst, isSignedCst}));
+                          outputBitsCst, isSignedCst, overflowDetectionCst}));
 
     rewriter.replaceOp(eeOp, outputBuffer);
 
@@ -505,11 +513,15 @@ struct WopPBSGLWEOpPattern
 struct BootstrapGLWEOpPattern
     : public mlir::OpConversionPattern<TFHE::BootstrapGLWEOp> {
 
+  bool overflowDetection;
+
   BootstrapGLWEOpPattern(mlir::MLIRContext *context,
-                         mlir::TypeConverter &typeConverter)
+                         mlir::TypeConverter &typeConverter,
+                         bool overflowDetection)
       : mlir::OpConversionPattern<TFHE::BootstrapGLWEOp>(
             typeConverter, context,
-            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT),
+        overflowDetection(overflowDetection) {}
 
   ::mlir::LogicalResult
   matchAndRewrite(TFHE::BootstrapGLWEOp bsOp,
@@ -540,6 +552,8 @@ struct BootstrapGLWEOpPattern
         rewriter.create<mlir::arith::ConstantIntOp>(bsOp.getLoc(), baseLog, 32);
     auto inputLweDimensionCst = rewriter.create<mlir::arith::ConstantIntOp>(
         bsOp.getLoc(), inputLweDimension, 32);
+    auto overflowDetectionCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        bsOp.getLoc(), overflowDetection, 1);
 
     auto dynamicLutType = toDynamicTensorType(bsOp.getLookupTable().getType());
 
@@ -551,14 +565,15 @@ struct BootstrapGLWEOpPattern
     // uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t
     // *tlu_allocated, uint64_t *tlu_aligned, uint64_t tlu_offset, uint64_t
     // tlu_size, uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t
-    // poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim)
+    // poly_size, uint32_t level, uint32_t base_log, uint32_t glwe_dim, bool
+    // overflow_detection, char* loc)
     if (insertForwardDeclaration(
             bsOp, rewriter, funcName,
             rewriter.getFunctionType(
                 {rewriter.getIntegerType(64), dynamicLutType,
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
                  rewriter.getIntegerType(32), rewriter.getIntegerType(32),
-                 rewriter.getIntegerType(32),
+                 rewriter.getIntegerType(32), rewriter.getIntegerType(1),
                  mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type())},
                 {rewriter.getIntegerType(64)}))
             .failed()) {
@@ -569,7 +584,8 @@ struct BootstrapGLWEOpPattern
         bsOp, funcName, this->getTypeConverter()->convertType(resultType),
         mlir::ValueRange({adaptor.getCiphertext(), castedLUT,
                           inputLweDimensionCst, polySizeCst, levelsCst,
-                          baseLogCst, glweDimensionCst, locString}));
+                          baseLogCst, glweDimensionCst, overflowDetectionCst,
+                          locString}));
 
     return mlir::success();
   }
@@ -757,10 +773,11 @@ void SimulateTFHEPass::runOnOperation() {
         return converter.isLegal(forallOp.getResults().getTypes());
       });
 
+  patterns.insert<EncodeExpandLutForBootstrapOpPattern, BootstrapGLWEOpPattern>(
+      &getContext(), converter, enableOverflowDetection);
+
   patterns.insert<ZeroOpPattern, ZeroTensorOpPattern, KeySwitchGLWEOpPattern,
-                  BootstrapGLWEOpPattern, WopPBSGLWEOpPattern,
-                  EncodeExpandLutForBootstrapOpPattern,
-                  EncodeLutForCrtWopPBSOpPattern,
+                  WopPBSGLWEOpPattern, EncodeLutForCrtWopPBSOpPattern,
                   EncodePlaintextWithCrtOpPattern, NegOpPattern>(&getContext(),
                                                                  converter);
   patterns.insert<SubIntGLWEOpPattern>(&getContext());
