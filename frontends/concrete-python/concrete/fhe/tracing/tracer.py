@@ -785,9 +785,7 @@ class Tracer:
                     reject = True
                     break
 
-            if isinstance(indexing_element, np.ndarray) or (
-                isinstance(indexing_element, Tracer) and not indexing_element.output.is_scalar
-            ):
+            if isinstance(indexing_element, np.ndarray):
                 reject = not np.issubdtype(indexing_element.dtype, np.integer)
                 continue
 
@@ -896,27 +894,26 @@ class Tracer:
         if not isinstance(index, tuple):
             index = (index,)
 
-        is_fancy = False
-        has_slices = False
-
         reject = False
         for indexing_element in index:
+            if isinstance(indexing_element, Tracer):
+                reject = reject or indexing_element.output.is_encrypted
+                continue
+
             if isinstance(indexing_element, list):
                 try:
                     indexing_element = np.array(indexing_element)
-                except Exception:  # pragma: no cover  # pylint: disable=broad-except
+                except Exception:  # pylint: disable=broad-except
                     reject = True
                     break
 
             if isinstance(indexing_element, np.ndarray):
-                is_fancy = True
                 reject = not np.issubdtype(indexing_element.dtype, np.integer)
                 continue
 
             valid = isinstance(indexing_element, (int, np.integer, slice))
 
             if isinstance(indexing_element, slice):  # noqa: SIM102
-                has_slices = True
                 if (
                     not (
                         indexing_element.start is None
@@ -937,7 +934,7 @@ class Tracer:
                 reject = True
                 break
 
-        if reject or (is_fancy and has_slices):
+        if reject:
             indexing_elements = [
                 format_indexing_element(indexing_element) for indexing_element in index
             ]
@@ -949,21 +946,75 @@ class Tracer:
             message = f"{self}[{formatted_index}] cannot be assigned {value}"
             raise ValueError(message)
 
-        np.zeros(self.output.shape)[index] = 1
+        output_value = deepcopy(self.output)
 
-        def assign(x, value, index):
-            x[index] = value
-            return x
+        sample_index = []
+        for indexing_element in index:
+            sample_index.append(
+                np.zeros(indexing_element.shape, dtype=np.int64)
+                if isinstance(indexing_element, Tracer)
+                else indexing_element
+            )
 
-        sanitized_value = self.sanitize(value)
-        computation = Node.generic(
-            "assign_static",
-            [deepcopy(self.output), deepcopy(sanitized_value.output)],
-            deepcopy(self.output),
-            assign,
-            kwargs={"index": index},
-        )
-        new_version = Tracer(computation, [self, sanitized_value])
+        np.zeros(self.output.shape)[tuple(sample_index)] = 1
+
+        if any(isinstance(indexing_element, Tracer) for indexing_element in index):
+            dynamic_indices = []
+            static_indices: List[Any] = []
+
+            for indexing_element in index:
+                if isinstance(indexing_element, Tracer):
+                    static_indices.append(None)
+                    dynamic_indices.append(indexing_element)
+                else:
+                    static_indices.append(indexing_element)
+
+            def assign_dynamic(tensor, *dynamic_indices_and_value, static_indices):
+                dynamic_indices = dynamic_indices_and_value[:-1]
+                value = dynamic_indices_and_value[-1]
+
+                final_indices = []
+
+                cursor = 0
+                for index in static_indices:
+                    if index is None:
+                        final_indices.append(dynamic_indices[cursor])
+                        cursor += 1
+                    else:
+                        final_indices.append(index)
+
+                tensor[tuple(final_indices)] = value
+                return tensor
+
+            sanitized_value = self.sanitize(value)
+            computation = Node.generic(
+                "assign_dynamic",
+                [deepcopy(self.output)]
+                + [deepcopy(index.output) for index in dynamic_indices]
+                + [sanitized_value.output],
+                output_value,
+                assign_dynamic,
+                kwargs={"static_indices": static_indices},
+            )
+            new_version = Tracer(
+                computation, [self] + [index for index in dynamic_indices] + [sanitized_value]
+            )
+
+        else:
+
+            def assign(x, value, index):
+                x[index] = value
+                return x
+
+            sanitized_value = self.sanitize(value)
+            computation = Node.generic(
+                "assign_static",
+                [deepcopy(self.output), deepcopy(sanitized_value.output)],
+                deepcopy(self.output),
+                assign,
+                kwargs={"index": index},
+            )
+            new_version = Tracer(computation, [self, sanitized_value])
 
         self.last_version = new_version
 

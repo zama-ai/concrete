@@ -10,6 +10,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Pre-Commit Checks
         run: |
+          sudo apt install -y graphviz libgraphviz-dev
           cd frontends/concrete-python
           make venv
           source .venv/bin/activate
