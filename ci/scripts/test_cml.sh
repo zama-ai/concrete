@@ -140,7 +140,7 @@ then
     git clone https://github.com/zama-ai/concrete-ml.git --branch ${ML_BRANCH}
 
     cd concrete-ml
-    git lfs pull --include "tests/data" --exclude  ""
+    git lfs pull --include "tests/data/**, src/concrete/ml/**" --exclude  ""
     cd ..
 else
     echo "    -- skipped during debug"
