@@ -290,13 +290,34 @@ class Converter:
         assert len(preds) > 0
         return ctx.array(ctx.typeof(node), elements=preds)
 
+    def assign_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) >= 3
+
+        x = preds[0]
+        y = preds[-1]
+
+        dynamic_indices = preds[1:-1]
+        static_indices = node.properties["kwargs"]["static_indices"]
+
+        indices = []
+
+        cursor = 0
+        for index in static_indices:
+            if index is None:
+                indices.append(dynamic_indices[cursor])
+                cursor += 1
+            else:
+                indices.append(index)
+
+        return ctx.assign(ctx.typeof(node), x, y, indices)
+
     def assign_static(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
-        return ctx.assign_static(
+        return ctx.assign(
             ctx.typeof(node),
             preds[0],
             preds[1],
-            index=node.properties["kwargs"]["index"],
+            node.properties["kwargs"]["index"],
         )
 
     def bitwise_and(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:

@@ -15,7 +15,6 @@ from mlir.ir import Attribute as MlirAttribute
 from mlir.ir import BoolAttr as MlirBoolAttr
 from mlir.ir import Context as MlirContext
 from mlir.ir import DenseElementsAttr as MlirDenseElementsAttr
-from mlir.ir import DenseI64ArrayAttr as MlirDenseI64ArrayAttr
 from mlir.ir import IndexType
 from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import IntegerAttr as MlirIntegerAttr
@@ -1913,154 +1912,21 @@ class Context:
             original_bit_width=original_bit_width,
         )
 
-    def assign_static(
+    def assign(
         self,
         resulting_type: ConversionType,
         x: Conversion,
         y: Conversion,
-        index: Sequence[Union[int, np.integer, slice]],
+        index: Sequence[Union[int, np.integer, slice, np.ndarray, list, Conversion]],
     ):
-        if x.is_clear and y.is_encrypted:
-            highlights = {
-                x.origin: "tensor is clear",
-                y.origin: "assigned value is encrypted",
-                self.converting: "but encrypted values cannot be assigned to clear tensors",
-            }
-            self.error(highlights)
+        # This import needs to happen here to avoid circular imports.
+        # pylint: disable=import-outside-toplevel
 
-        assert self.is_bit_width_compatible(resulting_type, x, y)
+        from .operations.assignment import assignment
 
-        if any(isinstance(indexing_element, (list, np.ndarray)) for indexing_element in index):
-            return self.assign_static_fancy(resulting_type, x, y, index)
+        # pylint: enable=import-outside-toplevel
 
-        index = list(index)
-        while len(index) < len(x.shape):
-            index.append(slice(None, None, None))
-
-        offsets = []
-        sizes = []
-        strides = []
-
-        for indexing_element, dimension_size in zip(index, x.shape):
-            if isinstance(indexing_element, slice):
-                size = int(np.zeros(dimension_size)[indexing_element].shape[0])
-                stride = int(indexing_element.step if indexing_element.step is not None else 1)
-                offset = int(
-                    (
-                        indexing_element.start
-                        if indexing_element.start >= 0
-                        else indexing_element.start + dimension_size
-                    )
-                    if indexing_element.start is not None
-                    else (0 if stride > 0 else dimension_size - 1)
-                )
-
-            else:
-                size = 1
-                stride = 1
-                offset = int(
-                    indexing_element if indexing_element >= 0 else indexing_element + dimension_size
-                )
-
-            offsets.append(offset)
-            sizes.append(size)
-            strides.append(stride)
-
-        if x.is_encrypted and y.is_clear:
-            encrypted_type = self.typeof(
-                ValueDescription(
-                    dtype=Integer(is_signed=x.is_signed, bit_width=x.bit_width),
-                    shape=y.shape,
-                    is_encrypted=True,
-                )
-            )
-            y = self.encrypt(encrypted_type, y)
-
-        required_y_shape_list = []
-        for i, indexing_element in enumerate(index):
-            if isinstance(indexing_element, slice):
-                n = len(np.zeros(x.shape[i])[indexing_element])
-                required_y_shape_list.append(n)
-            else:
-                required_y_shape_list.append(1)
-
-        required_y_shape = tuple(required_y_shape_list)
-        try:
-            np.reshape(np.zeros(y.shape), required_y_shape)
-            y = self.reshape(y, required_y_shape)
-        except Exception:  # pylint: disable=broad-except
-            np.broadcast_to(np.zeros(y.shape), required_y_shape)
-            y = self.broadcast_to(y, required_y_shape)
-
-        x = self.to_signedness(x, of=resulting_type)
-        y = self.to_signedness(y, of=resulting_type)
-
-        return self.operation(
-            tensor.InsertSliceOp,
-            resulting_type,
-            y.result,
-            x.result,
-            (),
-            (),
-            (),
-            MlirDenseI64ArrayAttr.get(offsets),
-            MlirDenseI64ArrayAttr.get(sizes),
-            MlirDenseI64ArrayAttr.get(strides),
-            original_bit_width=x.original_bit_width,
-        )
-
-    def assign_static_fancy(
-        self,
-        resulting_type: ConversionType,
-        x: Conversion,
-        y: Conversion,
-        index: Sequence[Union[int, np.integer, slice, np.ndarray, list]],
-    ) -> Conversion:
-        resulting_element_type = (self.eint if resulting_type.is_unsigned else self.esint)(
-            resulting_type.bit_width
-        )
-
-        indices = []
-        indices_shape = ()
-        for indexing_element in index:
-            if isinstance(indexing_element, (int, np.integer, list, np.ndarray)):
-                indexing_element_array = np.array(indexing_element)
-                indices_shape = np.broadcast_shapes(
-                    indices_shape,
-                    indexing_element_array.shape,
-                )  # type:ignore
-                indices.append(indexing_element_array)
-
-            else:  # pragma: no cover
-                message = f"invalid indexing element of type {type(indexing_element)}"
-                raise AssertionError(message)
-        values_shape = indices_shape
-
-        indices = [np.broadcast_to(index, shape=indices_shape) for index in indices]
-
-        concrete_indices = []
-        for i in np.ndindex(*indices_shape):
-            concrete_index = [index[i] for index in indices]
-            concrete_indices.append(concrete_index)
-
-        if len(x.shape) > 1:
-            indices_shape = (*indices_shape, len(x.shape))  # type: ignore
-
-        if x.is_clear and y.is_encrypted:
-            raise NotImplementedError
-        if x.is_encrypted and y.is_clear:
-            y = self.encrypt(self.tensor(resulting_element_type, shape=y.shape), y)
-
-        return self.operation(
-            fhelinalg.FancyAssignOp,
-            resulting_type,
-            x.result,
-            self.constant(
-                self.tensor(self.index_type(), indices_shape),
-                np.array(concrete_indices).reshape(indices_shape),
-            ).result,
-            self.broadcast_to(y, shape=values_shape).result,
-        )
+        return assignment(self, resulting_type, x, y, index)
 
     def bitwise(
         self,
@@ -2713,6 +2579,7 @@ class Context:
     ) -> Conversion:
         # This import needs to happen here to avoid circular imports.
         # pylint: disable=import-outside-toplevel
+
         from .operations.indexing import indexing
 
         # pylint: enable=import-outside-toplevel

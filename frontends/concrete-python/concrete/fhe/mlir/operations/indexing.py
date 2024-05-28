@@ -130,6 +130,7 @@ def process_indexing_element(
     ctx: Context,
     indexing_element: Union[int, np.integer, slice, np.ndarray, list, Conversion],
     dimension_size: int,
+    check_out_of_bounds: bool,
 ) -> Union[int, np.integer, slice, np.ndarray, list, Conversion]:
     """
     Process indexing element.
@@ -147,6 +148,9 @@ def process_indexing_element(
 
         dimension_size (int):
             size of the indexed dimension
+
+        check_out_of_bounds (int):
+            whether to check for out of bounds access in runtime
 
     Returns:
         Union[int, np.integer, slice, np.ndarray, list, Conversion]:
@@ -220,7 +224,7 @@ def process_indexing_element(
                 assert new_indexing_element is not None
                 indexing_element = new_indexing_element
 
-                if ctx.configuration.dynamic_indexing_check_out_of_bounds:
+                if check_out_of_bounds:
                     check_out_of_bounds_in_runtime(ctx, indexing_element, dimension_size)
             else:
                 element_type = ctx.element_typeof(indexing_element)
@@ -263,7 +267,7 @@ def process_indexing_element(
                     )
                     assert sanitized_index is not None
 
-                    if ctx.configuration.dynamic_indexing_check_out_of_bounds:
+                    if check_out_of_bounds:
                         check_out_of_bounds_in_runtime(ctx, sanitized_index, dimension_size)
 
                     assert sanitized_index is not None
@@ -279,7 +283,7 @@ def process_indexing_element(
                     sanitized_indexing_element.result,
                 )
 
-        elif ctx.configuration.dynamic_indexing_check_out_of_bounds:
+        elif check_out_of_bounds:
             check_out_of_bounds_in_runtime(ctx, indexing_element, dimension_size)
 
         return ctx.operation(
@@ -292,21 +296,22 @@ def process_indexing_element(
     return 0  # pragma: no cover
 
 
-def fancy_indexing(
+def generate_fancy_indices(
     ctx: Context,
-    resulting_type: ConversionType,
+    indexing_element_shape: Tuple[int, ...],
     x: Conversion,
     index: Sequence[Union[int, np.integer, slice, np.ndarray, list, Conversion]],
+    check_out_of_bounds: bool,
 ) -> Conversion:
     """
-    Convert fancy indexing operation.
+    Generate indices to use for fancy indexing.
 
     Args:
         ctx (Context):
             conversion context
 
-        resulting_type (ConversionType):
-            resulting type of the operation
+        indexing_element_shape (Tuple[int, ...]):
+            individual shape of indexing elements
 
         x (Conversion):
             tensor to fancy index
@@ -314,9 +319,12 @@ def fancy_indexing(
         index (Sequence[Union[int, np.integer, slice, np.ndarray, list, Conversion]]):
             fancy index to use
 
+        check_out_of_bounds (int):
+            whether to check for out of bounds access in runtime
+
     Returns:
         Conversion:
-            result of fancy indexing operation
+            indices to use for fancy indexing operation
     """
 
     # refer to
@@ -343,6 +351,7 @@ def fancy_indexing(
             ctx,
             indexing_element,
             dimension_size,
+            check_out_of_bounds,
         )
 
         if isinstance(indexing_element, Conversion):
@@ -369,17 +378,17 @@ def fancy_indexing(
         assert len(x.shape) == 1
         indices = processed_index[0]
     else:
-        expected_indexing_element_shape = resulting_type.shape + (1,)
+        expanded_indexing_element_shape = indexing_element_shape + (1,)
 
         to_concat = []
         for dimension, indexing_element in enumerate(processed_index):
             if indexing_element.is_scalar:
                 to_concat.append(
-                    ctx.broadcast_to(indexing_element, expected_indexing_element_shape)
+                    ctx.broadcast_to(indexing_element, expanded_indexing_element_shape)
                 )
 
-            elif indexing_element.shape == expected_indexing_element_shape[:-1]:
-                to_concat.append(ctx.reshape(indexing_element, expected_indexing_element_shape))
+            elif indexing_element.shape == indexing_element_shape:
+                to_concat.append(ctx.reshape(indexing_element, expanded_indexing_element_shape))
 
             else:
                 if len(fancy_indices_start_positions) == 1:
@@ -392,7 +401,8 @@ def fancy_indexing(
                             if isinstance(original_indexing_element, list):
                                 original_indexing_element = np.array(original_indexing_element)
                             broadcast_shape = np.broadcast_shapes(
-                                broadcast_shape, original_indexing_element.shape
+                                broadcast_shape,
+                                original_indexing_element.shape,
                             )
 
                     extra_dimensions = 1
@@ -428,14 +438,52 @@ def fancy_indexing(
                     indexing_element.shape + (1,) * extra_dimensions,
                 )
                 to_concat.append(
-                    ctx.broadcast_to(indexing_element, expected_indexing_element_shape)
+                    ctx.broadcast_to(indexing_element, expanded_indexing_element_shape)
                 )
 
         indices = ctx.concatenate(
-            ctx.tensor(ctx.index_type(), resulting_type.shape + (len(to_concat),)),
+            ctx.tensor(ctx.index_type(), indexing_element_shape + (len(to_concat),)),
             to_concat,
             axis=-1,
         )
+
+    return indices
+
+
+def fancy_indexing(
+    ctx: Context,
+    resulting_type: ConversionType,
+    x: Conversion,
+    index: Sequence[Union[int, np.integer, slice, np.ndarray, list, Conversion]],
+) -> Conversion:
+    """
+    Convert fancy indexing operation.
+
+    Args:
+        ctx (Context):
+            conversion context
+
+        resulting_type (ConversionType):
+            resulting type of the operation
+
+        x (Conversion):
+            tensor to fancy index
+
+        index (Sequence[Union[int, np.integer, slice, np.ndarray, list, Conversion]]):
+            fancy index to use
+
+    Returns:
+        Conversion:
+            result of fancy indexing operation
+    """
+
+    indices = generate_fancy_indices(
+        ctx,
+        resulting_type.shape,
+        x,
+        index,
+        check_out_of_bounds=ctx.configuration.dynamic_indexing_check_out_of_bounds,
+    )
 
     return ctx.operation(
         fhelinalg.FancyIndexOp,
@@ -498,6 +546,7 @@ def indexing(
                 ctx,
                 indexing_element,
                 dimension_size,
+                check_out_of_bounds=ctx.configuration.dynamic_indexing_check_out_of_bounds,
             )
             if not isinstance(indexing_element, Conversion):
                 indexing_element = ctx.constant(
@@ -535,6 +584,7 @@ def indexing(
                     ctx,
                     indexing_element.start,  # type: ignore
                     dimension_size,
+                    check_out_of_bounds=ctx.configuration.dynamic_indexing_check_out_of_bounds,
                 )
                 if indexing_element.start is not None
                 else (0 if stride > 0 else dimension_size - 1)
@@ -547,7 +597,12 @@ def indexing(
 
             size = 1
             stride = 1
-            offset = process_indexing_element(ctx, indexing_element, dimension_size)
+            offset = process_indexing_element(
+                ctx,
+                indexing_element,
+                dimension_size,
+                check_out_of_bounds=ctx.configuration.dynamic_indexing_check_out_of_bounds,
+            )
 
             if isinstance(offset, Conversion):
                 dynamic_offsets.append(offset)

@@ -325,6 +325,23 @@ class Node:
             elements = [format_indexing_element(element) for element in index]
             return f"{predecessors[0]}[{', '.join(elements)}]"
 
+        if name == "assign_dynamic":
+            dynamic_indices = predecessors[1:-1]
+            static_indices = self.properties["kwargs"]["static_indices"]
+
+            indices = []
+
+            cursor = 0
+            for index in static_indices:
+                if index is None:
+                    indices.append(dynamic_indices[cursor])
+                    cursor += 1
+                else:
+                    indices.append(index)
+
+            elements = [format_indexing_element(element) for element in indices]
+            return f"({predecessors[0]}[{', '.join(elements)}] = {predecessors[-1]})"
+
         if name == "assign_static":
             index = self.properties["kwargs"]["index"]
             elements = [format_indexing_element(element) for element in index]
@@ -387,6 +404,9 @@ class Node:
         if name == "index_static":
             name = self.format(["□"])
 
+        if name == "assign_dynamic":
+            name = self.format(["□"] * len(self.inputs))[1:-1]
+
         if name == "assign_static":
             name = self.format(["□", "□"])[1:-1]
 
@@ -427,6 +447,7 @@ class Node:
         return self.operation == Operation.Generic and self.properties["name"] not in [
             "add",
             "array",
+            "assign_dynamic",
             "assign_static",
             "broadcast_to",
             "concatenate",

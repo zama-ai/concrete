@@ -404,6 +404,10 @@ class AdditionalConstraints:
         inputs_and_output_share_precision,
     }
 
+    assign_dynamic = {
+        inputs_and_output_share_precision,
+    }
+
     assign_static = {
         inputs_and_output_share_precision,
     }
