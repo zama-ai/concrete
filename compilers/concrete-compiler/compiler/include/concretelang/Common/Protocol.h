@@ -298,7 +298,7 @@ std::vector<T>
 protoPayloadToVector(const Message<concreteprotocol::Payload> &input) {
   auto payloadData = input.asReader().getData();
   auto elmsPerBlob = capnp::MAX_TEXT_SIZE / sizeof(T);
-  auto totalPayloadSize = 0;
+  size_t totalPayloadSize = 0;
   for (auto blob : payloadData) {
     totalPayloadSize += blob.size();
   }
