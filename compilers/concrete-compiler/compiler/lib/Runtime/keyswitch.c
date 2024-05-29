@@ -3,8 +3,58 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#define max(a, b) (((a) > (b)) ? (a) : (b))
+#define OPT_INPUT_DIMENSION 8192
+#define OPT_DECOMPOSITION_LEVEL_COUNT 6
+#define OPT_OUTPUT_SIZE 895
+
+void keyswitch_lwe_optimized(
+    uint64_t output_ct[OPT_OUTPUT_SIZE], uint64_t input_ct[OPT_INPUT_DIMENSION],
+    uint32_t decomposition_base_log, uint32_t input_dimension,
+    uint32_t output_dimension,
+    const uint64_t ksk3d[OPT_INPUT_DIMENSION][OPT_DECOMPOSITION_LEVEL_COUNT]
+                        [OPT_OUTPUT_SIZE]) {
+  puts("OPTIMIZED");
+
+  uint64_t input_size = OPT_INPUT_DIMENSION + 1;
+
+  uint64_t non_rep_bit_count =
+      64 - OPT_DECOMPOSITION_LEVEL_COUNT * decomposition_base_log;
+  uint64_t shift = non_rep_bit_count - 1;
+  uint64_t dec_mod_b_mask =
+      ((uint64_t)1 << decomposition_base_log) - (uint64_t)1;
+
+  // We begin by zeroing out the output ct
+  for (size_t i = 0; i < OPT_OUTPUT_SIZE; i++) {
+    output_ct[i] = 0;
+  }
+
+  // We copy the body of the input ct to the body of the output ct
+  output_ct[OPT_OUTPUT_SIZE - 1] = input_ct[input_size - 1];
+
+  uint64_t dec_state;
+  uint64_t decomposed;
+  uint64_t carry;
+
+#pragma scop
+  for (int i = 0; i < OPT_INPUT_DIMENSION; i++) {
+    dec_state = ((((input_ct[i] >> shift) + 1) & (uint64_t)-2) << shift) >>
+                non_rep_bit_count;
+
+    for (int j = 0; j < OPT_DECOMPOSITION_LEVEL_COUNT; j++) {
+      decomposed = dec_state & dec_mod_b_mask;
+      dec_state = dec_state >> decomposition_base_log;
+      carry = ((decomposed - 1) | dec_state) & decomposed;
+      carry = carry >> (decomposition_base_log - 1);
+      dec_state += carry;
+      decomposed -= carry << decomposition_base_log;
+
+      for (int k = 0; k < OPT_OUTPUT_SIZE; k++) {
+        output_ct[k] -= ksk3d[i][j][k] * decomposed;
+      }
+    }
+  }
+#pragma endscop
+}
 
 void keyswitch_lwe_generic(uint64_t *output_ct, uint64_t out_size,
                            uint64_t *input_ct, uint64_t ct0_size,
@@ -91,96 +141,43 @@ void keyswitch_lwe_generic(uint64_t *output_ct, uint64_t out_size,
   }
 }
 
-#define OPT_INPUT_DIMENSION 1536
-#define OPT_DECOMPOSITION_LEVEL_COUNT 3
-#define OPT_OUTPUT_SIZE 709
+/* static inline uint64_t dec_state_init(uint64_t input_ct_elem, */
+/*                                       uint64_t non_rep_bit_count) { */
+/*   uint64_t shift = non_rep_bit_count - 1; */
+/*   uint64_t closest = input_ct_elem >> shift; */
+/*   closest += (uint64_t)1; */
+/*   closest &= (uint64_t)-2; */
+/*   closest = closest << shift; */
 
-static inline uint64_t dec_state_init(uint64_t input_ct_elem,
-                                      uint64_t non_rep_bit_count) {
-  uint64_t shift = non_rep_bit_count - 1;
-  uint64_t closest = input_ct_elem >> shift;
-  closest += (uint64_t)1;
-  closest &= (uint64_t)-2;
-  closest = closest << shift;
+/*   return closest >> non_rep_bit_count; */
+/* } */
 
-  return closest >> non_rep_bit_count;
-}
+/* static inline uint64_t dec_state_shift(uint64_t dec_state, */
+/*                                        uint64_t decomposition_base_log) { */
+/*   return dec_state >> decomposition_base_log; */
+/* } */
 
-static inline uint64_t dec_state_shift(uint64_t dec_state,
-                                       uint64_t decomposition_base_log) {
-  return dec_state >> decomposition_base_log;
-}
+/* static inline uint64_t dec_state_update(uint64_t dec_state, uint64_t carry) { */
+/*   return dec_state + carry; */
+/* } */
 
-static inline uint64_t dec_state_update(uint64_t dec_state, uint64_t carry) {
-  return dec_state + carry;
-}
+/* static inline uint64_t decomposed_init(uint64_t dec_state, */
+/*                                        uint64_t dec_mod_b_mask) { */
+/*   return dec_state & dec_mod_b_mask; */
+/* } */
 
-static inline uint64_t decomposed_init(uint64_t dec_state,
-                                       uint64_t dec_mod_b_mask) {
-  return dec_state & dec_mod_b_mask;
-}
+/* static inline uint64_t decomposed_update(uint64_t decomposed, uint64_t carry, */
+/*                                          uint64_t decomposition_base_log) { */
+/*   return decomposed - (carry << decomposition_base_log); */
+/* } */
 
-static inline uint64_t decomposed_update(uint64_t decomposed, uint64_t carry,
-                                         uint64_t decomposition_base_log) {
-  return decomposed - (carry << decomposition_base_log);
-}
+/* static inline uint64_t carry_init(uint64_t decomposed, uint64_t dec_state, */
+/*                                   uint64_t decomposition_base_log) { */
+/*   uint64_t carry = ((decomposed - (uint64_t)1) | dec_state) & decomposed; */
+/*   carry = carry >> (decomposition_base_log - 1); */
 
-static inline uint64_t carry_init(uint64_t decomposed, uint64_t dec_state,
-                                  uint64_t decomposition_base_log) {
-  uint64_t carry = ((decomposed - (uint64_t)1) | dec_state) & decomposed;
-  carry = carry >> (decomposition_base_log - 1);
-
-  return carry;
-}
-
-void keyswitch_lwe_optimized(uint64_t *output_ct, uint64_t out_size,
-                             uint64_t *input_ct, uint64_t ct0_size,
-                             uint32_t decomposition_level_count,
-                             uint32_t decomposition_base_log,
-                             uint32_t input_dimension,
-                             uint32_t output_dimension,
-                             const uint64_t ksk3d[1536][3][709]) {
-  puts("keyswitch_lwe_optimized");
-
-  uint64_t input_size = OPT_INPUT_DIMENSION + 1;
-
-  uint64_t non_rep_bit_count =
-      64 - OPT_DECOMPOSITION_LEVEL_COUNT * decomposition_base_log;
-
-  uint64_t dec_mod_b_mask =
-      ((uint64_t)1 << decomposition_base_log) - (uint64_t)1;
-
-  // We begin by zeroing out the output ct
-  for (size_t i = 0; i < OPT_OUTPUT_SIZE; i++) {
-    output_ct[i] = 0;
-  }
-
-  // We copy the body of the input ct to the body of the output ct
-  output_ct[OPT_OUTPUT_SIZE - 1] = input_ct[input_size - 1];
-
-  uint64_t carry;
-  uint64_t decomposed;
-  uint64_t dec_state;
-
-  //#pragma scop
-  for (uint64_t i = 0; i < OPT_INPUT_DIMENSION; i++) {
-    dec_state = dec_state_init(input_ct[i], non_rep_bit_count);
-
-    for (uint64_t j = 0; j < OPT_DECOMPOSITION_LEVEL_COUNT; j++) {
-      decomposed = decomposed_init(dec_state, dec_mod_b_mask);
-      dec_state = dec_state_shift(dec_state, decomposition_base_log);
-      carry = carry_init(decomposed, dec_state, decomposition_base_log);
-
-      dec_state = dec_state_update(dec_state, carry);
-      decomposed = decomposed_update(decomposed, carry, decomposition_base_log);
-
-      for (uint64_t k = 0; k < OPT_OUTPUT_SIZE; k++) {
-        output_ct[k] -= ksk3d[i][j][k] * decomposed;
-      }
-    }
-  }
-  //#pragma endscop
-}
+/*   return carry; */
+/* } */
 
 void keyswitch_lwe_c(uint64_t *out_allocated, uint64_t *out_aligned,
                      uint64_t out_offset, uint64_t out_size,
@@ -196,10 +193,14 @@ void keyswitch_lwe_c(uint64_t *out_allocated, uint64_t *out_aligned,
 
   uint64_t output_size = output_dimension + 1;
 
-  if (input_dimension == 1536 && decomposition_level_count == 3 &&
-      output_size == 709) {
-    keyswitch_lwe_optimized(output_ct, out_size, input_ct, ct0_size,
-                            decomposition_level_count, decomposition_base_log,
+  printf("input_dimension = %u, decomposition_level_count = %u, output_size "
+         "= %zu\n",
+         input_dimension, decomposition_level_count, output_size);
+
+  if (input_dimension == OPT_INPUT_DIMENSION &&
+      decomposition_level_count == OPT_DECOMPOSITION_LEVEL_COUNT &&
+      output_size == OPT_OUTPUT_SIZE) {
+    keyswitch_lwe_optimized(output_ct, input_ct, decomposition_base_log,
                             input_dimension, output_dimension, (void *)ksk);
   } else {
     keyswitch_lwe_generic(output_ct, out_size, input_ct, ct0_size,

@@ -1,12 +1,24 @@
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fsized-deallocation>)
+add_compile_options(-Wno-unused-variable -Wno-unknown-pragmas)
 
 if(CONCRETELANG_CUDA_SUPPORT)
   add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
                                          GPUDFG.cpp)
   target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 else()
-  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp keyswitch.c DFRuntime.cpp key_manager.cpp
-                                         StreamEmulator.cpp)
+  # add_custom_command(
+  #     OUTPUT keyswitch.tiled.c
+  #     # COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/keyswitch.c keyswitch.tiled.c
+  #     COMMAND polycc --second-level-tile -o keyswitch.tiled.c ${CMAKE_CURRENT_SOURCE_DIR}/keyswitch.c && sed -i 's|\#pragma|//\#pragma|g' keyswitch.tiled.c
+  #     # COMMAND sed 's|\#include|//\#UNIQUEMARKERinclude|g' ${CMAKE_CURRENT_SOURCE_DIR}/keyswitch.c > keyswitch.prepared.c &&
+  #     #   gcc -P -CC -E keyswitch.prepared.c -o keyswitch.preprocessed.c &&
+  #     # 	polycc --tile -o keyswitch.pluto.c keyswitch.preprocessed.c &&
+  #     # 	sed 's|//\#UNIQUEMARKERinclude|\#include|g' keyswitch.pluto.c > keyswitch.tiled.c &&
+  #     # 	sed -i 's|\#pragma|//\#pragma|g' keyswitch.tiled.c
+  #  DEPENDS keyswitch.c
+  # )
+
+  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp keyswitch.c DFRuntime.cpp key_manager.cpp StreamEmulator.cpp)
 endif()
 
 add_dependencies(ConcretelangRuntime concrete_cpu concrete_cpu_noise_model concrete-protocol)
