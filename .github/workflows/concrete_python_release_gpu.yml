@@ -28,7 +28,6 @@ env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   CUDA_PATH: /usr/local/cuda-12.3
   GCC_VERSION: 11
-  GLIB_VER: 2_28
   RELEASE_TYPE: ${{ inputs.user_inputs }}
 
 jobs:
