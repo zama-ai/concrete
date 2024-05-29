@@ -28,7 +28,6 @@ env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   CUDA_PATH: /usr/local/cuda-12.3
   GCC_VERSION: 11
-  GLIB_VER: 2_28
   RELEASE_TYPE: ${{ inputs.user_inputs }}
 
 jobs:
@@ -87,7 +86,6 @@ jobs:
             -v ${{ github.workspace }}/build:/build
             -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
             -e SSH_AUTH_SOCK=/ssh.socket
-            --gpus all
           shell: bash
           run: |
             set -e
@@ -124,6 +122,38 @@ jobs:
           name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
           retention-days: 3
+
+  push:
+    needs: [build-linux-x86]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: wheels
+          merge-multiple: true
+
+      - name: Install aws-cli if not present
+        run: |
+          aws --version || (curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+            unzip awscliv2.zip && \
+            sudo ./aws/install)
+
+      - name: Upload wheels to S3
+        if: ${{ env.RELEASE_TYPE == 'public' || env.RELEASE_TYPE == 'nightly' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.AWS_CLOUDFRONT_PYPI_DISTRIBUTION_ID }}
+        run: |
+          pip install boto3 bigtree
+          # upload wheels
+          aws s3 sync ./wheels/ s3://${S3_BUCKET_NAME}/gpu/concrete-python
+          # update indexes and invalidate cloudfront cache
+          python .github/workflows/scripts/s3_update_html_indexes.py
 
 
   test-linux-x86:
