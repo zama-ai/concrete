@@ -29,14 +29,15 @@ from concrete.compiler import CompilationContext
 from ..extensions import AutoRounder, AutoTruncator
 from ..mlir import GraphConverter
 from ..representation import Graph
+from ..tfhers import TFHERSInteger
 from ..tracing import Tracer
 from ..values import ValueDescription
 from .artifacts import FunctionDebugArtifacts, ModuleDebugArtifacts
 from .compiler import EncryptionStatus
 from .composition import CompositionClause, CompositionPolicy, CompositionRule
-from .configuration import Configuration
+from .configuration import Configuration, ParameterSelectionStrategy
 from .module import ExecutionRt, FheModule
-from .utils import fuse, get_terminal_size
+from .utils import check_inputset_has_element_of_type, fuse, get_terminal_size
 
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
 
@@ -679,6 +680,23 @@ class ModuleCompiler:
             }
 
         dbg = DebugManager(configuration)
+
+        # if using tfhers integers, parameter selection strategy has to be multi-parameters.
+        # we try to catch this early, but the compiler will also fail and provide some info about
+        # it. So we don't need to scan all the inputset here.
+        if inputsets is not None:
+            for input_set in inputsets.values():
+                if (
+                    check_inputset_has_element_of_type(input_set, TFHERSInteger, search_all=False)
+                    and self.configuration.parameter_selection_strategy
+                    != ParameterSelectionStrategy.MULTI
+                ):
+                    msg = (
+                        "Can't use tfhers integers with "
+                        f"{self.configuration.parameter_selection_strategy} parameters. "
+                        "Please use multi-parameters instead."
+                    )
+                    raise RuntimeError(msg)
 
         try:
             # Trace and fuse the functions

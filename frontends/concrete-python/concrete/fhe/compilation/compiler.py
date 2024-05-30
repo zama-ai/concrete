@@ -18,13 +18,14 @@ from concrete.compiler import CompilationContext
 from ..extensions import AutoRounder, AutoTruncator
 from ..mlir import GraphConverter
 from ..representation import Graph
+from ..tfhers import TFHERSInteger
 from ..tracing import Tracer
 from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .circuit import Circuit
 from .composition import CompositionClause, CompositionRule
-from .configuration import Configuration
-from .utils import fuse, get_terminal_size
+from .configuration import Configuration, ParameterSelectionStrategy
+from .utils import check_inputset_has_element_of_type, fuse, get_terminal_size
 
 # pylint: enable=import-error,no-name-in-module
 
@@ -228,7 +229,7 @@ class Compiler:
             self.artifacts.add_graph("initial", self.graph)
         fuse(
             self.graph,
-            self.artifacts.module_artifacts.functions["main"] if self.artifacts else None,
+            (self.artifacts.module_artifacts.functions["main"] if self.artifacts else None),
         )
 
     def _evaluate(
@@ -256,7 +257,7 @@ class Compiler:
 
             fuse(
                 self.graph,
-                self.artifacts.module_artifacts.functions["main"] if self.artifacts else None,
+                (self.artifacts.module_artifacts.functions["main"] if self.artifacts else None),
             )
 
             if self.artifacts is not None:
@@ -463,6 +464,20 @@ class Compiler:
                 else None
             )
         )
+
+        # if using tfhers integers, parameter selection strategy has to be multi-parameters.
+        # we try to catch this early, but the compiler will also fail and provide some info about
+        # it. So we don't need to scan all the inputset here.
+        if (
+            check_inputset_has_element_of_type(inputset, TFHERSInteger, search_all=False)
+            and self.configuration.parameter_selection_strategy != ParameterSelectionStrategy.MULTI
+        ):
+            msg = (
+                "Can't use tfhers integers with "
+                f"{self.configuration.parameter_selection_strategy} parameters. "
+                "Please use multi-parameters instead."
+            )
+            raise RuntimeError(msg)
 
         try:
             self._evaluate("Compiling", inputset)
