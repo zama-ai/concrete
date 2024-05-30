@@ -3,19 +3,24 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#define NO_PROFILING
+//#define NO_PAPI_PROFILING
+#include "segment.h"
+
 #define OPT_INPUT_DIMENSION 8192
 #define OPT_DECOMPOSITION_LEVEL_COUNT 6
 #define OPT_OUTPUT_SIZE 895
+#define OPT_INPUT_SIZE (OPT_INPUT_DIMENSION + 1)
 
 void keyswitch_lwe_optimized(
-    uint64_t output_ct[OPT_OUTPUT_SIZE], uint64_t input_ct[OPT_INPUT_DIMENSION],
+    uint64_t output_ct[OPT_OUTPUT_SIZE], uint64_t input_ct[OPT_INPUT_SIZE],
     uint32_t decomposition_base_log, uint32_t input_dimension,
     uint32_t output_dimension,
     const uint64_t ksk3d[OPT_INPUT_DIMENSION][OPT_DECOMPOSITION_LEVEL_COUNT]
                         [OPT_OUTPUT_SIZE]) {
-  puts("OPTIMIZED");
-
-  uint64_t input_size = OPT_INPUT_DIMENSION + 1;
+  if (setup_papi() != 0) {
+    exit(1);
+  }
 
   uint64_t non_rep_bit_count =
       64 - OPT_DECOMPOSITION_LEVEL_COUNT * decomposition_base_log;
@@ -29,11 +34,14 @@ void keyswitch_lwe_optimized(
   }
 
   // We copy the body of the input ct to the body of the output ct
-  output_ct[OPT_OUTPUT_SIZE - 1] = input_ct[input_size - 1];
+  output_ct[OPT_OUTPUT_SIZE - 1] = input_ct[OPT_INPUT_SIZE - 1];
 
   uint64_t dec_state;
   uint64_t decomposed;
   uint64_t carry;
+
+  SEGMENT_DECLARE_ROOT(root);
+  SEGMENT_START_ROOT(root);
 
 #pragma scop
   for (int i = 0; i < OPT_INPUT_DIMENSION; i++) {
@@ -54,6 +62,9 @@ void keyswitch_lwe_optimized(
     }
   }
 #pragma endscop
+
+  SEGMENT_END_ROOT(root);
+  SEGMENT_STATS(&root);
 }
 
 void keyswitch_lwe_generic(uint64_t *output_ct, uint64_t out_size,
@@ -157,7 +168,8 @@ void keyswitch_lwe_generic(uint64_t *output_ct, uint64_t out_size,
 /*   return dec_state >> decomposition_base_log; */
 /* } */
 
-/* static inline uint64_t dec_state_update(uint64_t dec_state, uint64_t carry) { */
+/* static inline uint64_t dec_state_update(uint64_t dec_state, uint64_t carry) {
+ */
 /*   return dec_state + carry; */
 /* } */
 
@@ -166,8 +178,10 @@ void keyswitch_lwe_generic(uint64_t *output_ct, uint64_t out_size,
 /*   return dec_state & dec_mod_b_mask; */
 /* } */
 
-/* static inline uint64_t decomposed_update(uint64_t decomposed, uint64_t carry, */
-/*                                          uint64_t decomposition_base_log) { */
+/* static inline uint64_t decomposed_update(uint64_t decomposed, uint64_t carry,
+ */
+/*                                          uint64_t decomposition_base_log) {
+ */
 /*   return decomposed - (carry << decomposition_base_log); */
 /* } */
 

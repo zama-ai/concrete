@@ -18,7 +18,10 @@ else()
   #  DEPENDS keyswitch.c
   # )
 
-  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp keyswitch.c DFRuntime.cpp key_manager.cpp StreamEmulator.cpp)
+  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp keyswitch.c bootstrap_optimized.c bootstrap.c tsc.c profiling.c DFRuntime.cpp key_manager.cpp StreamEmulator.cpp)
+  target_link_libraries(ConcretelangRuntime PRIVATE papi fftw)
+
+  set_source_files_properties(bootstrap_optimized.c PROPERTIES COMPILE_FLAGS "-mtune=native -march=native -ffast-math -O3")
 endif()
 
 add_dependencies(ConcretelangRuntime concrete_cpu concrete_cpu_noise_model concrete-protocol)

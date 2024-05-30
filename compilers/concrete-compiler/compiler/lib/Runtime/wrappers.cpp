@@ -1,3 +1,6 @@
+#define NO_PROFILING
+#define NO_PAPI_PROFILING
+
 // Part of the Concrete Compiler Project, under the BSD3 License with Zama
 // Exceptions. See
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
@@ -19,7 +22,9 @@
 #include "concretelang/Common/CRT.h"
 #include "concretelang/Runtime/wrappers.h"
 
+#include "bootstrap.h"
 #include "keyswitch.h"
+#include "segment.h"
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
 
@@ -733,9 +738,14 @@ void memref_batched_keyswitch_lwe_u64(
 }
 
 // wiiiiiiiiiiiiiiiilllllllllllllllllllllmmmmmmmmmmmmmaaaaaaaaaaaaaaaaa
-uint32_t ilog2(uint32_t val){
-  return 31 - __builtin_clz(val);
-}
+uint32_t ilog2(uint32_t val) { return 31 - __builtin_clz(val); }
+
+//#define RUST_BOOTSTRAP
+//#define UNMODIFIED_LEGACY_BOOTSTRAP
+//#define UNMODIFIED_CPP_BOOTSTRAP
+#define C_BOOTSTRAP
+
+#ifdef RUST_BOOTSTRAP
 
 void memref_bootstrap_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
@@ -747,12 +757,159 @@ void memref_bootstrap_lwe_u64(
     uint32_t decomposition_level_count, uint32_t decomposition_base_log,
     uint32_t glwe_dimension, uint32_t bsk_index,
     mlir::concretelang::RuntimeContext *context) {
-  // The TLU is encoded and expanded, but it is not yet represented as a ciphertext. We perform the
-  // trivial encryption of the tlu.
-  uint32_t glwe_size = glwe_dimension+1;
+  SEGMENT_DECLARE_ROOT(root);
+  SEGMENT_START_ROOT(root);
+
+  uint64_t glwe_ct_size = polynomial_size * (glwe_dimension + 1);
+  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
+  auto tlu = tlu_aligned + tlu_offset;
+
+  // Glwe trivial encryption
+  for (size_t i = 0; i < polynomial_size * glwe_dimension; i++) {
+    glwe_ct[i] = 0;
+  }
+  for (size_t i = 0; i < polynomial_size; i++) {
+    glwe_ct[polynomial_size * glwe_dimension + i] = tlu[i];
+  }
+
+  // Get fourrier bootstrap key
+  const auto &fft = context->fft(bsk_index);
+  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bsk_index);
+  // Get stack parameter
+  size_t scratch_size;
+  size_t scratch_align;
+  concrete_cpu_bootstrap_lwe_ciphertext_u64_scratch(
+      &scratch_size, &scratch_align, glwe_dimension, polynomial_size, fft);
+  // Allocate scratch
+  auto scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
+
+  // Bootstrap
+  concrete_cpu_bootstrap_lwe_ciphertext_u64(
+      out_aligned + out_offset, ct0_aligned + ct0_offset, glwe_ct,
+      bootstrap_key, decomposition_level_count, decomposition_base_log,
+      glwe_dimension, polynomial_size, input_lwe_dimension, fft, scratch,
+      scratch_size);
+
+  free(glwe_ct);
+  free(scratch);
+
+  SEGMENT_END_ROOT(root);
+  SEGMENT_STATS(&root);
+}
+
+#elif defined(UNMODIFIED_LEGACY_BOOTSTRAP)
+
+void memref_bootstrap_lwe_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dimension, uint32_t polynomial_size,
+    uint32_t decomposition_level_count, uint32_t decomposition_base_log,
+    uint32_t glwe_dimension, uint32_t bsk_index,
+    mlir::concretelang::RuntimeContext *context) {
+  puts("LEGACY BOOTSTRAP");
+
+  if (setup_papi() != 0) {
+    std::exit(1);
+  }
+
+  SEGMENT_DECLARE_ROOT(root);
+  SEGMENT_DECLARE(intro, &root);
+  SEGMENT_DECLARE(concrete_cpu_call, &root);
+  SEGMENT_DECLARE(outro, &root);
+
+  SEGMENT_START_ROOT(root);
+  SEGMENT_START(intro);
+
+  uint64_t glwe_ct_size = polynomial_size * (glwe_dimension + 1);
+  uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
+  auto tlu = tlu_aligned + tlu_offset;
+
+  // Glwe trivial encryption
+  for (size_t i = 0; i < polynomial_size * glwe_dimension; i++) {
+    glwe_ct[i] = 0;
+  }
+  for (size_t i = 0; i < polynomial_size; i++) {
+    glwe_ct[polynomial_size * glwe_dimension + i] = tlu[i];
+  }
+
+  // Get fourrier bootstrap key
+  const auto &fft = context->fft(bsk_index);
+  auto bootstrap_key = context->fourier_bootstrap_key_buffer(bsk_index);
+  // Get stack parameter
+  size_t scratch_size;
+  size_t scratch_align;
+  concrete_cpu_bootstrap_lwe_ciphertext_u64_scratch(
+      &scratch_size, &scratch_align, glwe_dimension, polynomial_size, fft);
+  // Allocate scratch
+  auto scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
+
+  SEGMENT_END(intro);
+  SEGMENT_START(concrete_cpu_call);
+  // Bootstrap
+  concrete_cpu_bootstrap_lwe_ciphertext_u64(
+      out_aligned + out_offset, ct0_aligned + ct0_offset, glwe_ct,
+      bootstrap_key, decomposition_level_count, decomposition_base_log,
+      glwe_dimension, polynomial_size, input_lwe_dimension, fft, scratch,
+      scratch_size);
+  SEGMENT_END(concrete_cpu_call);
+  SEGMENT_START(outro);
+
+  free(glwe_ct);
+  free(scratch);
+
+  SEGMENT_END(outro);
+  SEGMENT_END_ROOT(root);
+  SEGMENT_STATS(&root);
+}
+
+#elif defined(UNMODIFIED_CPP_BOOTSTRAP)
+
+void memref_bootstrap_lwe_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dimension, uint32_t polynomial_size,
+    uint32_t decomposition_level_count, uint32_t decomposition_base_log,
+    uint32_t glwe_dimension, uint32_t bsk_index,
+    mlir::concretelang::RuntimeContext *context) {
+  puts("bootstrap");
+
+  if (setup_papi() != 0) {
+    std::exit(1);
+  }
+
+  SEGMENT_DECLARE_ROOT(root);
+  SEGMENT_DECLARE(intro, &root);
+  SEGMENT_DECLARE(blind_rotate, &root);
+  SEGMENT_DECLARE(cmux, &blind_rotate);
+  SEGMENT_DECLARE(cmux_assignment_start, &cmux);
+  SEGMENT_DECLARE(cmux_assignment_end, &cmux);
+  SEGMENT_DECLARE(cmux_external_product, &cmux_assignment_end);
+  SEGMENT_DECLARE(cmux_decomposition, &cmux_external_product);
+  SEGMENT_DECLARE(cmux_vector_matrix_product, &cmux_external_product);
+  SEGMENT_DECLARE(cmux_fft_malloc, &cmux_vector_matrix_product);
+  SEGMENT_DECLARE(cmux_fft_fft, &cmux_vector_matrix_product);
+  SEGMENT_DECLARE(cmux_add_poly, &cmux_vector_matrix_product);
+  SEGMENT_DECLARE(cmux_fourier_result, &cmux_external_product);
+  SEGMENT_DECLARE(sample_extract, &root);
+  SEGMENT_DECLARE(outro, &root);
+
+  SEGMENT_START_ROOT(root);
+  SEGMENT_START(intro);
+
+  // The TLU is encoded and expanded, but it is not yet represented as a
+  // ciphertext. We perform the trivial encryption of the tlu.
+  uint32_t glwe_size = glwe_dimension + 1;
   uint64_t accumulator_size = polynomial_size * glwe_size;
-  uint64_t *accumulator = (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
-  uint64_t *accumulator_buf = (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
+  uint64_t *accumulator =
+      (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
+  uint64_t *accumulator_buf =
+      (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
   auto tlu = tlu_aligned + tlu_offset;
   for (size_t i = 0; i < polynomial_size * glwe_dimension; i++) {
     accumulator[i] = 0;
@@ -785,217 +942,338 @@ void memref_bootstrap_lwe_u64(
   // Allocate scratch
   auto scratch = (uint8_t *)aligned_alloc(scratch_align, scratch_size);
 
-  // ---------------------------------------------------------------------------------- BLIND ROTATE
+  SEGMENT_END(intro);
+  SEGMENT_START(blind_rotate);
+
+  // ----------------------------------------------------------------------------------
+  // BLIND ROTATE
   {
-    // We begin by rotating the accumulator by multiplying the accumulator by X^{-b}
+    // We begin by rotating the accumulator by multiplying the accumulator by
+    // X^{-b}
     {
       // We get the body value
-      uint64_t input_body = input_ct[input_size-1];
+      uint64_t input_body = input_ct[input_size - 1];
       // We perform the modulus switch
       uint64_t monomial_degree = input_body;
       monomial_degree >>= 62 - ilog2(polynomial_size);
-      monomial_degree += (uint64_t) 1;
+      monomial_degree += (uint64_t)1;
       monomial_degree >>= 1;
       // We copy the accumulator
       uint64_t *accumulator_ = accumulator_buf;
-      std::memcpy(accumulator_, accumulator, accumulator_size * sizeof(uint64_t));
+      std::memcpy(accumulator_, accumulator,
+                  accumulator_size * sizeof(uint64_t));
       // We perform the rotation of the lut polynomials
       uint64_t remaining_degree = monomial_degree % polynomial_size;
       uint64_t full_cycles_count = monomial_degree / polynomial_size;
-      for (size_t i = 0; i < glwe_size; i++){
+      for (size_t i = 0; i < glwe_size; i++) {
         uint64_t *accumulator_poly = accumulator + i * polynomial_size;
         uint64_t *accumulator_poly_ = accumulator_ + i * polynomial_size;
-        if (full_cycles_count % 2 == 0){
-          for (size_t j=0; j < polynomial_size - remaining_degree; j++){
+        if (full_cycles_count % 2 == 0) {
+          for (size_t j = 0; j < polynomial_size - remaining_degree; j++) {
             accumulator_poly[j] = accumulator_poly_[remaining_degree + j];
           }
-          for (size_t j=0; j < remaining_degree; j++){
-            accumulator_poly[polynomial_size - remaining_degree + j] = - accumulator_poly_[j];
+          for (size_t j = 0; j < remaining_degree; j++) {
+            accumulator_poly[polynomial_size - remaining_degree + j] =
+                -accumulator_poly_[j];
           }
         } else {
-          for (size_t j=0; j < polynomial_size - remaining_degree; j++){
-            accumulator_poly[j] = - accumulator_poly_[remaining_degree + j];
+          for (size_t j = 0; j < polynomial_size - remaining_degree; j++) {
+            accumulator_poly[j] = -accumulator_poly_[remaining_degree + j];
           }
-          for (size_t j=0; j < remaining_degree; j++){
-            accumulator_poly[polynomial_size - remaining_degree + j] = accumulator_poly_[j];
+          for (size_t j = 0; j < remaining_degree; j++) {
+            accumulator_poly[polynomial_size - remaining_degree + j] =
+                accumulator_poly_[j];
           }
         }
       }
     }
 
-    // We now execute the successive rotations of the accumulator by multiplying by X^{a_i s_i}
+    // We now execute the successive rotations of the accumulator by multiplying
+    // by X^{a_i s_i}
     {
       uint64_t *ct0 = accumulator;
       uint64_t *ct1 = accumulator_buf;
 
-      // We iterate through the mask elements 
+      // We iterate through the mask elements
       {
-        for (size_t i=0; i < input_lwe_dimension; i++){
+        for (size_t i = 0; i < input_lwe_dimension; i++) {
           uint64_t lwe_mask_element = input_ct[i];
-          const c64 *bootstrap_key_ggsw = bootstrap_key + i * decomposition_level_count * fourier_polynomial_size * glwe_size * glwe_size;
+          const c64 *bootstrap_key_ggsw =
+              bootstrap_key + i * decomposition_level_count *
+                                  fourier_polynomial_size * glwe_size *
+                                  glwe_size;
 
-          if (lwe_mask_element != 0){
+          if (lwe_mask_element != 0) {
             // We perform the modulus switching of the mask element.
             uint64_t monomial_degree = lwe_mask_element;
             monomial_degree >>= 62 - ilog2(polynomial_size);
-            monomial_degree += (uint64_t) 1;
+            monomial_degree += (uint64_t)1;
             monomial_degree >>= 1;
-            // -------------------------------------------------------------------------------- CMUX
+            // --------------------------------------------------------------------------------
+            // CMUX
+            SEGMENT_START(cmux);
             {
-              // We assign ct_1 <- ct_0 * X^{a_i} - ct_0 (the first step of the cmux)
+              // We assign ct_1 <- ct_0 * X^{a_i} - ct_0 (the first step of the
+              // cmux)
+              SEGMENT_START(cmux_assignment_start);
               {
-                for (size_t j = 0; j < glwe_size; j++){
+                for (size_t j = 0; j < glwe_size; j++) {
                   uint64_t *ct1_poly = ct1 + j * polynomial_size;
                   uint64_t *ct0_poly = ct0 + j * polynomial_size;
 
                   uint64_t remaining_degree = monomial_degree % polynomial_size;
-                  uint64_t full_cycles_count = monomial_degree / polynomial_size;
-                  if (full_cycles_count % 2 == 0){
-                    for (size_t k = 0; k < remaining_degree; k++){
-                      ct1_poly[k] = ((uint64_t) - ct0_poly[polynomial_size - remaining_degree + k]) - (uint64_t) ct0_poly[k];
+                  uint64_t full_cycles_count =
+                      monomial_degree / polynomial_size;
+                  if (full_cycles_count % 2 == 0) {
+                    for (size_t k = 0; k < remaining_degree; k++) {
+                      ct1_poly[k] =
+                          ((uint64_t)-ct0_poly[polynomial_size -
+                                               remaining_degree + k]) -
+                          (uint64_t)ct0_poly[k];
                     }
-                    for (size_t k = 0; k < polynomial_size - remaining_degree; k++){
-                      ct1_poly[remaining_degree + k] = ct0_poly[k] - ct0_poly[remaining_degree + k];
+                    for (size_t k = 0; k < polynomial_size - remaining_degree;
+                         k++) {
+                      ct1_poly[remaining_degree + k] =
+                          ct0_poly[k] - ct0_poly[remaining_degree + k];
                     }
                   } else {
-                    for (size_t k = 0; k < remaining_degree; k++){
-                      ct1_poly[k] = ct0_poly[polynomial_size - remaining_degree + k] - ct0_poly[k];
+                    for (size_t k = 0; k < remaining_degree; k++) {
+                      ct1_poly[k] =
+                          ct0_poly[polynomial_size - remaining_degree + k] -
+                          ct0_poly[k];
                     }
-                    for (size_t k = 0; k < polynomial_size - remaining_degree; k++){
-                      ct1_poly[remaining_degree + k] = ((uint64_t) - ct0_poly[k]) - (uint64_t) ct0_poly[remaining_degree + k];
+                    for (size_t k = 0; k < polynomial_size - remaining_degree;
+                         k++) {
+                      ct1_poly[remaining_degree + k] =
+                          ((uint64_t)-ct0_poly[k]) -
+                          (uint64_t)ct0_poly[remaining_degree + k];
                     }
                   }
                 }
               }
-
+              SEGMENT_END(cmux_assignment_start);
+              SEGMENT_START(cmux_assignment_end);
               // We assign ct_0 <- ct_0 + s_i ct_1 (the end of the cmux)
               {
                 // We allocate a buffer to store the result
-                c64* output_fft_buffer = (c64*) malloc(fourier_polynomial_size * glwe_size * sizeof(c64));
+                c64 *output_fft_buffer = (c64 *)malloc(fourier_polynomial_size *
+                                                       glwe_size * sizeof(c64));
+
                 bool output_fft_buffer_initialized = false;
 
                 // We compute ct0 closest representable under the decomposition.
-                uint64_t *ct1_closest_representable = (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
-                for (size_t j = 0; j < accumulator_size; j ++){
-                  uint64_t non_rep_bit_count = 64 - decomposition_level_count * decomposition_base_log;
+                uint64_t *ct1_closest_representable =
+                    (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
+                for (size_t j = 0; j < accumulator_size; j++) {
+                  uint64_t non_rep_bit_count =
+                      64 - decomposition_level_count * decomposition_base_log;
                   uint64_t shift = non_rep_bit_count - 1;
                   uint64_t closest = ct1[j] >> shift;
-                  closest += (uint64_t) 1;
-                  closest &= (uint64_t) - 2;
+                  closest += (uint64_t)1;
+                  closest &= (uint64_t)-2;
                   closest <<= shift;
                   ct1_closest_representable[j] = closest;
                 }
 
-                //----------------------------------------------------------------- EXTERNAL PRODUCT
+                //-----------------------------------------------------------------
+                // EXTERNAL PRODUCT
+                SEGMENT_START(cmux_external_product);
                 {
                   // We prepare for the decomposition of the input glwe
                   uint64_t *glwe = ct1_closest_representable;
-                  uint64_t dec_mod_b_mask = ((uint64_t) 1 << decomposition_base_log) - (uint64_t) 1;
-                  uint64_t *dec_state = (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
-                  uint64_t *glwe_decomp = (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
-                  for (size_t j = 0; j < accumulator_size; j++){
-                    dec_state[j] = glwe[j] >> (64 - decomposition_level_count * decomposition_base_log);
+                  uint64_t dec_mod_b_mask =
+                      ((uint64_t)1 << decomposition_base_log) - (uint64_t)1;
+                  uint64_t *dec_state =
+                      (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
+                  uint64_t *glwe_decomp =
+                      (uint64_t *)malloc(accumulator_size * sizeof(uint64_t));
+                  for (size_t j = 0; j < accumulator_size; j++) {
+                    dec_state[j] = glwe[j] >> (64 - decomposition_level_count *
+                                                        decomposition_base_log);
                   }
-                
-                  // We iterate through the levels (in reverse order because that's how decomposition operates)
-                  for (int level = decomposition_level_count - 1; level >= 0; level--){
-                    const c64 *ggsw_decomp_matrix = bootstrap_key_ggsw + level * fourier_polynomial_size * glwe_size * glwe_size;
-                    for (size_t k = 0; k < accumulator_size; k++){
+
+                  // We iterate through the levels (in reverse order because
+                  // that's how decomposition operates)
+                  for (int level = decomposition_level_count - 1; level >= 0;
+                       level--) {
+                    SEGMENT_START(cmux_decomposition);
+                    const c64 *ggsw_decomp_matrix =
+                        bootstrap_key_ggsw +
+                        level * fourier_polynomial_size * glwe_size * glwe_size;
+                    for (size_t k = 0; k < accumulator_size; k++) {
                       uint64_t decomposed = dec_state[k] & dec_mod_b_mask;
                       dec_state[k] >>= decomposition_base_log;
-                      uint64_t carry = ((decomposed - (uint64_t) 1) | dec_state[k]) & decomposed;
+                      uint64_t carry =
+                          ((decomposed - (uint64_t)1) | dec_state[k]) &
+                          decomposed;
                       carry >>= decomposition_base_log - 1;
                       dec_state[k] += carry;
                       decomposed -= carry << decomposition_base_log;
                       glwe_decomp[k] = decomposed;
                     }
+                    SEGMENT_END(cmux_decomposition);
+
+                    SEGMENT_START(cmux_vector_matrix_product);
 
                     // We perform the vector matrix product
-                    for (size_t k = 0; k < glwe_size; k++){
-                      const c64 *ggsw_decomp_row = ggsw_decomp_matrix + k * fourier_polynomial_size * glwe_size;
-                      uint64_t *glwe_decomp_poly = glwe_decomp + k * polynomial_size;
+                    for (size_t k = 0; k < glwe_size; k++) {
+                      const c64 *ggsw_decomp_row =
+                          ggsw_decomp_matrix +
+                          k * fourier_polynomial_size * glwe_size;
+                      uint64_t *glwe_decomp_poly =
+                          glwe_decomp + k * polynomial_size;
 
+                      SEGMENT_START(cmux_fft_malloc);
                       // We perform the fft
-                      c64* fourier_glwe_decomp_poly = (c64*) malloc(fourier_polynomial_size * sizeof(c64));
-                      concrete_cpu_fft(fourier_glwe_decomp_poly, glwe_decomp_poly, polynomial_size, fft, scratch, scratch_size);
+                      c64 *fourier_glwe_decomp_poly =
+                          (c64 *)malloc(fourier_polynomial_size * sizeof(c64));
 
-                      // We loop through the polynomials of the output and add the corresponding 
-                      // product of polynomials.
-                      for (size_t m = 0; m < glwe_size; m++){
-                        const c64 *ggsw_decomp_poly = ggsw_decomp_row + m * fourier_polynomial_size;
-                        c64 *output_fft_buffer_poly = output_fft_buffer + m * fourier_polynomial_size;
+                      SEGMENT_END(cmux_fft_malloc);
+                      SEGMENT_START(cmux_fft_fft);
+                      concrete_cpu_fft(fourier_glwe_decomp_poly,
+                                       glwe_decomp_poly, polynomial_size, fft,
+                                       scratch, scratch_size);
+                      SEGMENT_END(cmux_fft_fft);
+
+                      SEGMENT_START(cmux_add_poly);
+
+                      // We loop through the polynomials of the output and add
+                      // the corresponding product of polynomials.
+                      for (size_t m = 0; m < glwe_size; m++) {
+                        const c64 *ggsw_decomp_poly =
+                            ggsw_decomp_row + m * fourier_polynomial_size;
+                        c64 *output_fft_buffer_poly =
+                            output_fft_buffer + m * fourier_polynomial_size;
 
                         // We accumulate the product inside the output buffer.
                         if (!output_fft_buffer_initialized) {
-                          for (size_t n = 0; n < fourier_polynomial_size; n++){
-                            output_fft_buffer_poly[n] = ggsw_decomp_poly[n] * fourier_glwe_decomp_poly[n];
+                          for (size_t n = 0; n < fourier_polynomial_size; n++) {
+                            output_fft_buffer_poly[n] =
+                                ggsw_decomp_poly[n] *
+                                fourier_glwe_decomp_poly[n];
                           }
                         } else {
-                          for (size_t n = 0; n < fourier_polynomial_size; n++){
-                            output_fft_buffer_poly[n] += ggsw_decomp_poly[n] * fourier_glwe_decomp_poly[n];
+                          for (size_t n = 0; n < fourier_polynomial_size; n++) {
+                            output_fft_buffer_poly[n] +=
+                                ggsw_decomp_poly[n] *
+                                fourier_glwe_decomp_poly[n];
                           }
                         }
                       }
+                      SEGMENT_END(cmux_add_poly);
 
                       output_fft_buffer_initialized = true;
                       free(fourier_glwe_decomp_poly);
                     }
+
+                    SEGMENT_END(cmux_vector_matrix_product);
                   }
 
+                  SEGMENT_START(cmux_fourier_result);
                   // We retrieve the result from the fourier domain
-                  for (size_t j = 0; j < glwe_size; j++){
-                    c64 *output_fft_buffer_poly = output_fft_buffer + j * fourier_polynomial_size;
-                    uint64_t * ct0_poly = ct0 + j * polynomial_size;
+                  for (size_t j = 0; j < glwe_size; j++) {
+                    c64 *output_fft_buffer_poly =
+                        output_fft_buffer + j * fourier_polynomial_size;
+                    uint64_t *ct0_poly = ct0 + j * polynomial_size;
                     // We directly add the inverse fft to ct0
-                    concrete_cpu_add_ifft(ct0_poly, output_fft_buffer_poly, polynomial_size, fft, scratch, scratch_size);
+                    concrete_cpu_add_ifft(ct0_poly, output_fft_buffer_poly,
+                                          polynomial_size, fft, scratch,
+                                          scratch_size);
                   }
+                  SEGMENT_END(cmux_fourier_result);
 
                   free(dec_state);
                   free(glwe_decomp);
-                } 
+                }
+                SEGMENT_END(cmux_external_product);
 
-              free(ct1_closest_representable);
-              free(output_fft_buffer);
+                free(ct1_closest_representable);
+                free(output_fft_buffer);
               }
+              SEGMENT_END(cmux_assignment_end);
             }
+            SEGMENT_END(cmux);
           }
         }
       }
     }
   }
 
-  // -------------------------------------------------------------------------------- SAMPLE EXTRACT
+  SEGMENT_END(blind_rotate);
+  SEGMENT_START(sample_extract);
+
+  // --------------------------------------------------------------------------------
+  // SAMPLE EXTRACT
   {
-    // We copy the mask and the first coefficient of the body of the accumulator glwe to the output lwe.
+    // We copy the mask and the first coefficient of the body of the accumulator
+    // glwe to the output lwe.
     std::memcpy(output_ct, accumulator, output_size * sizeof(uint64_t));
 
     // We compute the number of elements that must be turned into their opposite
     uint64_t opposite_count = polynomial_size - 1;
 
     // We loop through the polynomials
-    for (size_t i = 0; i < glwe_dimension; i++){
+    for (size_t i = 0; i < glwe_dimension; i++) {
       uint64_t *output_ct_mask_poly = output_ct + i * polynomial_size;
       // We reverse the polynomial
-      for (size_t j = 0; j < polynomial_size/2; j++){
-        std::swap(output_ct_mask_poly[j], output_ct_mask_poly[polynomial_size - 1 - j]);
+      for (size_t j = 0; j < polynomial_size / 2; j++) {
+        std::swap(output_ct_mask_poly[j],
+                  output_ct_mask_poly[polynomial_size - 1 - j]);
       }
       // We negate the proper coefficients
-      for (size_t j = 0; j < opposite_count; j++){
-        output_ct_mask_poly[j] = ((uint64_t) - output_ct_mask_poly[j]);
+      for (size_t j = 0; j < opposite_count; j++) {
+        output_ct_mask_poly[j] = ((uint64_t)-output_ct_mask_poly[j]);
       }
       // Last, we have to rotate the array one position to the right
       uint64_t temp = output_ct_mask_poly[opposite_count];
-      for (size_t j = opposite_count; j >= 1; j--){
-        output_ct_mask_poly[j] = output_ct_mask_poly[j-1];
+      for (size_t j = opposite_count; j >= 1; j--) {
+        output_ct_mask_poly[j] = output_ct_mask_poly[j - 1];
       }
       output_ct_mask_poly[0] = temp;
     }
   }
 
+  SEGMENT_END(sample_extract);
+  SEGMENT_START(outro);
+
   free(accumulator);
   free(accumulator_buf);
   free(scratch);
+
+  SEGMENT_END(outro);
+  SEGMENT_END_ROOT(root);
+  SEGMENT_STATS(&root);
 }
+
+#elif defined(C_BOOTSTRAP)
+
+void memref_bootstrap_lwe_u64(
+    uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
+    uint64_t out_size, uint64_t out_stride, uint64_t *ct0_allocated,
+    uint64_t *ct0_aligned, uint64_t ct0_offset, uint64_t ct0_size,
+    uint64_t ct0_stride, uint64_t *tlu_allocated, uint64_t *tlu_aligned,
+    uint64_t tlu_offset, uint64_t tlu_size, uint64_t tlu_stride,
+    uint32_t input_lwe_dimension, uint32_t polynomial_size,
+    uint32_t decomposition_level_count, uint32_t decomposition_base_log,
+    uint32_t glwe_dimension, uint32_t bsk_index,
+    mlir::concretelang::RuntimeContext *context) {
+  const c64 *bootstrap_key = context->fourier_bootstrap_key_buffer(bsk_index);
+  const auto &fft = context->fft(bsk_index);
+
+  SEGMENT_DECLARE_ROOT(root);
+  SEGMENT_START_ROOT(root);
+
+  memref_bootstrap_lwe_u64_c(
+      out_allocated, out_aligned, out_offset, out_size, out_stride,
+      ct0_allocated, ct0_aligned, ct0_offset, ct0_size, ct0_stride,
+      tlu_allocated, tlu_aligned, tlu_offset, tlu_size, tlu_stride,
+      input_lwe_dimension, polynomial_size, decomposition_level_count,
+      decomposition_base_log, glwe_dimension, bsk_index, bootstrap_key, fft);
+
+  SEGMENT_END_ROOT(root);
+  SEGMENT_STATS(&root);
+}
+#endif
 
 void memref_batched_bootstrap_lwe_u64(
     uint64_t *out_allocated, uint64_t *out_aligned, uint64_t out_offset,
