@@ -10,6 +10,12 @@ import numpy as np
 from ..dtypes import Integer
 
 
+class TFHERSParams:
+    """Crypto parameters used for a tfhers integer."""
+
+    pass
+
+
 class TFHERSIntegerType(Integer):
     """
     TFHERSIntegerType (Subclass of Integer) to represent tfhers integer types.
@@ -17,11 +23,20 @@ class TFHERSIntegerType(Integer):
 
     carry_width: int
     msg_width: int
+    params: TFHERSParams
 
-    def __init__(self, is_signed: bool, bit_width: int, carry_width: int, msg_width: int):
+    def __init__(
+        self,
+        is_signed: bool,
+        bit_width: int,
+        carry_width: int,
+        msg_width: int,
+        params: TFHERSParams,
+    ):
         super().__init__(is_signed, bit_width)
         self.carry_width = carry_width
         self.msg_width = msg_width
+        self.params = params
 
     def __eq__(self, other: Any) -> bool:
         return (
@@ -29,12 +44,13 @@ class TFHERSIntegerType(Integer):
             and super().__eq__(other)
             and self.carry_width == other.carry_width
             and self.msg_width == other.msg_width
+            and self.params == other.params
         )
 
     def __str__(self) -> str:
         return (
             f"tfhers<{('int' if self.is_signed else 'uint')}"
-            f"{self.bit_width}, {self.carry_width}, {self.msg_width}>"
+            f"{self.bit_width}, {self.carry_width}, {self.msg_width}, {self.params}>"
         )
 
     def encode(self, value: Union[int, np.integer, np.ndarray]) -> np.ndarray:
@@ -97,7 +113,8 @@ uint8 = partial(TFHERSIntegerType, False, 8)
 int16 = partial(TFHERSIntegerType, True, 16)
 uint16 = partial(TFHERSIntegerType, False, 16)
 
-int8_2_2 = int8(2, 2)
-uint8_2_2 = uint8(2, 2)
-int16_2_2 = int16(2, 2)
-uint16_2_2 = uint16(2, 2)
+# TODO: make these partials as well, so that params have to be specified
+int8_2_2 = int8(2, 2, TFHERSParams())
+uint8_2_2 = uint8(2, 2, TFHERSParams())
+int16_2_2 = int16(2, 2, TFHERSParams())
+uint16_2_2 = uint16(2, 2, TFHERSParams())
