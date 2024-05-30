@@ -184,9 +184,51 @@ Result<TransportValueVerifier> getObliviousTransportValueVerifier() {
   };
 }
 
-Result<TransportValueVerifier>
-getTransportValueVerifier(const Message<concreteprotocol::GateInfo> &gateInfo) {
+Message<concreteprotocol::GateInfo>
+updateGateInfoAccordingValue(Message<concreteprotocol::GateInfo> &gate,
+                             const TransportValue &value) {
+
+  auto gateReader = gate.asReader();
+  auto gateTypeInfo = gateReader.getTypeInfo();
+  if (!gateTypeInfo.hasLweCiphertext()) {
+    return gate;
+  }
+  auto gateCiphertext = gateTypeInfo.getLweCiphertext();
+  auto gateCompression = gateCiphertext.getCompression();
+  if (gateCompression == concreteprotocol::Compression::SEED) {
+    auto valueReader = value.asReader();
+    auto valueTypeInfo = valueReader.getTypeInfo();
+    if (!valueTypeInfo.hasLweCiphertext()) {
+      return gate;
+    }
+    auto valueCiphertext = valueTypeInfo.getLweCiphertext();
+    auto valueCompression = valueCiphertext.getCompression();
+    if (valueCompression == concreteprotocol::Compression::NONE) {
+      // If the compression of transportValue is none and the gateInfo have
+      // compression we update the gateInfo to allow uncompressed transportValue
+      auto gateBuilder = gate.asBuilder();
+      gateBuilder.getTypeInfo().getLweCiphertext().setCompression(
+          concreteprotocol::Compression::NONE);
+      auto gateDimensions = gateBuilder.getRawInfo().getShape().getDimensions();
+      auto lweSize = gateCiphertext.getEncryption().getLweDimension() + 1;
+      gateDimensions.set(gateDimensions.size() - 1, lweSize);
+      auto concreteShapeDimensions = gateBuilder.getTypeInfo()
+                                         .getLweCiphertext()
+                                         .getConcreteShape()
+                                         .getDimensions();
+      concreteShapeDimensions.set(concreteShapeDimensions.size() - 1, lweSize);
+      return gateBuilder.asReader();
+    }
+  }
+  return gate;
+}
+
+Result<TransportValueVerifier> getTransportValueVerifier(
+    Message<concreteprotocol::GateInfo> &originalGateInfo) {
   return [=](const TransportValue &transportVal) -> Result<void> {
+    auto copyGateInfo = originalGateInfo;
+    auto gateInfo = updateGateInfoAccordingValue(copyGateInfo, transportVal);
+
     if (!transportVal.asReader().hasPayload()) {
       return StringError(
           "Tried to transform a transport value without payload.");
@@ -893,7 +935,13 @@ Result<ArgTransformer> TransformerFactory::getLweCiphertextArgTransformer(
 
   return [=](TransportValue transportVal) -> Result<Value> {
     OUTCOME_TRYV(verify(transportVal));
-    return decompressionTransformer(Value::fromRawTransportValue(transportVal));
+    auto value = Value::fromRawTransportValue(transportVal);
+    if (transportVal.asReader()
+            .getTypeInfo()
+            .getLweCiphertext()
+            .getCompression() == concreteprotocol::Compression::NONE)
+      return value;
+    return decompressionTransformer(value);
   };
 }
 
