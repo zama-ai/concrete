@@ -896,6 +896,9 @@ class Converter:
             dtype.msg_width,
         )
 
+        # TODO: use parameters to change partition
+        tfhers_int = ctx.change_partition(tfhers_int)
+
         # number of ciphertexts representing a single integer
         num_cts = tfhers_int.shape[-1]
         # first table maps to the lsb, and last one maps to the msb
@@ -979,6 +982,8 @@ class Converter:
         ]
 
         # we are extracting lsb first so we reverse it so we have msb first
-        return ctx.concatenate(result_type, extracted_bits[::-1], axis=-1)
+        result = ctx.concatenate(result_type, extracted_bits[::-1], axis=-1)
+        # TODO: use specified parameters
+        return ctx.change_partition(result)
 
     # pylint: enable=missing-function-docstring,unused-argument

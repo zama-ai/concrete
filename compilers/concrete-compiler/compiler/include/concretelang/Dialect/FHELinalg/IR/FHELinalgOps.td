@@ -1415,6 +1415,24 @@ def FHELinalg_ReinterpretPrecisionEintOp: FHELinalg_Op<"reinterpret_precision", 
     let hasVerifier = 1;
 }
 
+def FHELinalg_ChangePartitionEintOp: FHELinalg_Op<"change_partition", [Pure, TensorUnaryEint, UnaryEint]> {
+
+    let summary = "Change partition if necessary.";
+
+    let description = [{
+      Changing the partition of a ciphertext.
+      If necessary, it keyswitch the ciphertext to a different key having a different set of parameters than the original one.
+
+      Example:
+      ```mlir
+        %new_eint = "FHE.change_partition"(%eint): (tensor<2x3x!FHE.eint<16>>) -> (tensor<2x3x!FHE.eint<16>>)
+    }];
+
+    let arguments = (ins Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input);
+    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$output);
+    let hasVerifier = 1;
+}
+
 def FHELinalg_FancyIndexOp : FHELinalg_Op<"fancy_index", [Pure]> {
     let summary = "Index into a tensor using a tensor of indices.";
 

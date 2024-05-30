@@ -1454,6 +1454,33 @@ mlir::LogicalResult ReinterpretPrecisionEintOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult ChangePartitionEintOp::verify() {
+  auto inputType =
+      this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+  auto outputType =
+      this->getOutput().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+
+  auto inputShape = inputType.getShape();
+  auto outputShape = outputType.getShape();
+
+  if (inputShape != outputShape) {
+    this->emitOpError()
+        << "input and output tensors should have the same shape";
+    return mlir::failure();
+  }
+
+  auto inputElementType =
+      inputType.getElementType().cast<FHE::FheIntegerInterface>();
+  auto outputElementType =
+      outputType.getElementType().cast<FHE::FheIntegerInterface>();
+  if (!FHE::verifyEncryptedIntegerInputAndResultConsistency(
+          *this->getOperation(), inputElementType, outputElementType)) {
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 mlir::LogicalResult FancyIndexOp::verify() {
   auto inputType =
       this->getInput().getType().dyn_cast_or_null<mlir::RankedTensorType>();

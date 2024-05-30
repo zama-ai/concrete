@@ -2420,6 +2420,24 @@ struct BroadcastToLinalgGeneric
   };
 };
 
+// This operation should be used by the optimizer in multi-parameters, then
+// removed. Its presence may indicate that mono-parameters might have been
+// used. This patterns just hint for a potential fix.
+struct ChangePartitionOpPattern
+    : public mlir::OpRewritePattern<FHELinalg::ChangePartitionEintOp> {
+  ChangePartitionOpPattern(mlir::MLIRContext *context)
+      : mlir::OpRewritePattern<FHELinalg::ChangePartitionEintOp>(
+            context, mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  mlir::LogicalResult
+  matchAndRewrite(FHELinalg::ChangePartitionEintOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    op.emitError(llvm::Twine("change_partition shouldn't be present at this "
+                             "level. Maybe you didn't use multi-parameters?"));
+    return mlir::failure();
+  };
+};
+
 namespace {
 struct FHETensorOpsToLinalg
     : public FHETensorOpsToLinalgBase<FHETensorOpsToLinalg> {
@@ -2618,6 +2636,7 @@ void FHETensorOpsToLinalg::runOnOperation() {
   patterns.insert<TensorPartitionFrontierOpToLinalgGeneric>(&getContext());
   patterns.insert<FancyIndexToTensorGenerate>(&getContext());
   patterns.insert<FancyAssignToSfcForall>(&getContext());
+  patterns.insert<ChangePartitionOpPattern>(&getContext());
 
   patterns.insert<TensorMapToLinalgGeneric<arith::IndexCastOp>>(&getContext());
   patterns.insert<TensorMapToLinalgGeneric<arith::ExtSIOp>>(&getContext());

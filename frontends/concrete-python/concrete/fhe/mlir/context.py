@@ -3976,4 +3976,11 @@ class Context:
             original_bit_width=1,
         )
 
+    def change_partition(self, x: Conversion) -> Conversion:
+        # TODO: get parameters and set them as attr
+        assert x.is_encrypted
+        dialect = fhe if x.is_scalar else fhelinalg
+        operation = dialect.ChangePartitionEintOp
+        return self.operation(operation, x.type, x.result)
+
     # pylint: enable=missing-function-docstring
