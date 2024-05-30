@@ -875,3 +875,42 @@ def get_terminal_size() -> int:
         columns = 80
 
     return columns
+
+
+def check_inputset_has_element_of_type(
+    input_set: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]],
+    search_type,
+    search_all=False,
+) -> bool:
+    """Check if the inputset contains a given type.
+
+    Args:
+        inputset (Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]): inputset to check.
+        search_type: type to search for.
+        search_all (bool, optional): whether to search for tfhers int in all the inputset, or in
+            the first element only. Defaults to False.
+
+    Returns:
+        bool: if the type was found.
+    """
+
+    if input_set is None:
+        return False
+    assert isinstance(input_set, Iterable), "inputset has to be iterable"
+    if len(input_set) == 0:  # type: ignore[arg-type]
+        return False
+
+    search_slice = (
+        input_set
+        if search_all
+        else [
+            input_set[0],  # type: ignore[index]
+        ]
+    )
+    for sample in search_slice:
+        if not isinstance(sample, tuple):
+            sample = (sample,)
+        for elem in sample:
+            if isinstance(elem, search_type):
+                return True
+    return False
