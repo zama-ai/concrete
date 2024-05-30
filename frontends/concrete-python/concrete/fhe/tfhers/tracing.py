@@ -8,7 +8,7 @@ from typing import Union
 import numpy as np
 
 from ..dtypes import Integer
-from ..extensions import hint
+from ..extensions.hint import hint
 from ..representation import Node
 from ..tracing import Tracer
 from ..values import EncryptedTensor
