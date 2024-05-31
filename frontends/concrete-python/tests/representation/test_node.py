@@ -5,9 +5,9 @@ Tests of `Node` class.
 import numpy as np
 import pytest
 
+from concrete.fhe import tfhers
 from concrete.fhe.dtypes import UnsignedInteger
 from concrete.fhe.representation import Node
-from concrete.fhe.tfhers import int8_2_2, int8_2_2_value
 from concrete.fhe.values import (
     ClearScalar,
     ClearTensor,
@@ -36,6 +36,32 @@ def test_node_bad_constant(constant, expected_error, expected_message):
         Node.constant(constant)
 
     assert str(excinfo.value) == expected_message
+
+
+def default_tfhers_dtype() -> tfhers.TFHERSIntegerType:
+    """Get default tfhers type used for testing.
+
+    Returns:
+        tfhers.TFHERSIntegerType: default type for testing
+    """
+    tfhers_params = tfhers.TFHERSParams(
+        761,
+        1,
+        2048,
+        6.36835566258815e-06,
+        3.1529322391500584e-16,
+        23,
+        1,
+        3,
+        5,
+        4,
+        4,
+        5,
+        -40.05,
+        None,
+        True,
+    )
+    return tfhers.int8_2_2(tfhers_params)
 
 
 @pytest.mark.parametrize(
@@ -146,8 +172,8 @@ def test_node_bad_constant(constant, expected_error, expected_message):
             Node.generic(
                 name="unknown",
                 inputs=[],
-                output=ValueDescription(int8_2_2, (3,), True),
-                operation=lambda: int8_2_2_value([1, 2, 3]),
+                output=ValueDescription(default_tfhers_dtype(), (3,), True),
+                operation=lambda: tfhers.TFHERSInteger(default_tfhers_dtype(), [1, 2, 3]),
             ),
             [],
             ValueError,
