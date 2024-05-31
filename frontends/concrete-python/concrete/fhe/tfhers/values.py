@@ -2,12 +2,11 @@
 Declaration of `TFHERSInteger` which wraps values as being of tfhers types.
 """
 
-from functools import partial
 from typing import List, Union
 
 import numpy as np
 
-from .dtypes import TFHERSIntegerType, int8_2_2, int16_2_2, uint8_2_2, uint16_2_2
+from .dtypes import TFHERSIntegerType
 
 
 class TFHERSInteger:
@@ -98,9 +97,3 @@ class TFHERSInteger:
 
     def __repr__(self):
         return self.__str__()
-
-
-int8_2_2_value = partial(TFHERSInteger, int8_2_2)
-int16_2_2_value = partial(TFHERSInteger, int16_2_2)
-uint8_2_2_value = partial(TFHERSInteger, uint8_2_2)
-uint16_2_2_value = partial(TFHERSInteger, uint16_2_2)

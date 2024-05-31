@@ -21,6 +21,35 @@ def one_tfhers_one_native(x, y, binary_op, tfhers_type):
     return tfhers.from_native(binary_op(x, y), tfhers_type)
 
 
+def parameterize_partial_dtype(partial_dtype) -> tfhers.TFHERSIntegerType:
+    """Create a tfhers type from a partial func missing tfhers params.
+
+    Args:
+        partial_dtype (callable): partial function to create dtype (missing params)
+
+    Returns:
+        tfhers.TFHERSIntegerType: tfhers type
+    """
+    tfhers_params = tfhers.TFHERSParams(
+        761,
+        1,
+        2048,
+        6.36835566258815e-06,
+        3.1529322391500584e-16,
+        23,
+        1,
+        3,
+        5,
+        4,
+        4,
+        5,
+        -40.05,
+        None,
+        True,
+    )
+    return partial_dtype(tfhers_params)
+
+
 @pytest.mark.parametrize(
     "function, parameters, dtype",
     [
@@ -74,6 +103,8 @@ def test_tfhers_conversion_binary_encrypted(
     configuration = helpers.configuration().fork(
         parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI
     )
+
+    dtype = parameterize_partial_dtype(dtype)
 
     compiler = fhe.Compiler(
         lambda x, y: binary_tfhers(x, y, function, dtype),
@@ -182,6 +213,8 @@ def test_tfhers_conversion_one_encrypted_one_native(
     configuration = helpers.configuration().fork(
         parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI
     )
+
+    dtype = parameterize_partial_dtype(dtype)
 
     compiler = fhe.Compiler(
         lambda x, y: one_tfhers_one_native(x, y, function, dtype),
