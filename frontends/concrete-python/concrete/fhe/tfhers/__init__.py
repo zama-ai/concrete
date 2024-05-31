@@ -4,6 +4,7 @@ tfhers module to represent, and compute on tfhers integer values.
 
 from .dtypes import (
     TFHERSIntegerType,
+    TFHERSParams,
     int8,
     int8_2_2,
     int16,
@@ -14,10 +15,4 @@ from .dtypes import (
     uint16_2_2,
 )
 from .tracing import from_native, to_native
-from .values import (
-    TFHERSInteger,
-    int8_2_2_value,
-    int16_2_2_value,
-    uint8_2_2_value,
-    uint16_2_2_value,
-)
+from .values import TFHERSInteger
