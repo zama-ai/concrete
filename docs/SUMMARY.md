@@ -28,11 +28,11 @@
 ## Compilation
 
 * [Composition](compilation/composition.md)
+* [Modules](compilation/modules.md)
 * [Compression](compilation/compression.md)
 * [Reuse arguments](compilation/reuse_arguments.md)
 * [Multi precision](compilation/multi_precision.md)
 * [Multi parameters](compilation/multi_parameters.md)
-* [Modules](compilation/modules.md)
 * [Decorator](compilation/decorator.md)
 * [Direct circuits](compilation/direct_circuits.md)
 
