@@ -12,6 +12,7 @@
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 
+include "concretelang/Dialect/FHE/IR/FHEAttrs.td"
 include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.td"
 
 include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.td"
@@ -1428,7 +1429,11 @@ def FHELinalg_ChangePartitionEintOp: FHELinalg_Op<"change_partition", [Pure, Ten
         %new_eint = "FHE.change_partition"(%eint): (tensor<2x3x!FHE.eint<16>>) -> (tensor<2x3x!FHE.eint<16>>)
     }];
 
-    let arguments = (ins Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input);
+    let arguments = (ins
+        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input,
+        OptionalAttr<FHE_PartitionAttr>:$src,
+        OptionalAttr<FHE_PartitionAttr>:$dest
+    );
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$output);
     let hasVerifier = 1;
 }

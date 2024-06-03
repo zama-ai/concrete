@@ -12,6 +12,7 @@
 #include <mlir/Interfaces/ControlFlowInterfaces.h>
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
+#include "concretelang/Dialect/FHE/IR/FHEAttrs.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 
 namespace mlir {
@@ -25,6 +26,21 @@ bool verifyEncryptedIntegerInputAndResultConsistency(
 bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
                                              FheIntegerInterface &a,
                                              FheIntegerInterface &b);
+
+template <typename Op> bool verifyPartitionConsistency(Op op) {
+  // one of the two attr has to be set, but not both
+  FHE::PartitionAttr partitionAttr;
+  int partitionCount = 0;
+  if (auto src = op->getSrc()) {
+    partitionCount++;
+    partitionAttr = src.value();
+  }
+  if (auto dest = op->getDest()) {
+    partitionCount++;
+    partitionAttr = dest.value();
+  }
+  return true;
+}
 
 /// Shared error message for all ApplyLookupTable variant Op (several Dialect)
 /// E.g. FHE.apply_lookup_table(input, lut)

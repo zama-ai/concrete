@@ -8,6 +8,9 @@
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.h"
 
+#define GET_ATTRDEF_CLASSES
+#include "concretelang/Dialect/FHE/IR/FHEAttrs.cpp.inc"
+
 #define GET_TYPEDEF_CLASSES
 #include "concretelang/Dialect/FHE/IR/FHEOpsTypes.cpp.inc"
 
@@ -26,6 +29,11 @@ void FHEDialect::initialize() {
   addTypes<
 #define GET_TYPEDEF_LIST
 #include "concretelang/Dialect/FHE/IR/FHEOpsTypes.cpp.inc"
+      >();
+
+  mlir::Dialect::addAttributes<
+#define GET_ATTRDEF_LIST
+#include "concretelang/Dialect/FHE/IR/FHEAttrs.cpp.inc"
       >();
 }
 

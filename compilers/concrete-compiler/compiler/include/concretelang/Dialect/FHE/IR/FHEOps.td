@@ -14,6 +14,7 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 
 include "concretelang/Dialect/FHE/IR/FHEDialect.td"
 include "concretelang/Dialect/FHE/IR/FHETypes.td"
+include "concretelang/Dialect/FHE/IR/FHEAttrs.td"
 include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.td"
 
 class FHE_Op<string mnemonic, list<Trait> traits = []> :
@@ -537,7 +538,7 @@ def FHE_ChangePartitionEintOp: FHE_Op<"change_partition", [Pure, UnaryEint]> {
     ```
     }];
 
-    let arguments = (ins FHE_AnyEncryptedInteger:$input);
+    let arguments = (ins FHE_AnyEncryptedInteger:$input, OptionalAttr<FHE_PartitionAttr>:$src, OptionalAttr<FHE_PartitionAttr>:$dest);
     let results = (outs FHE_AnyEncryptedInteger);
     let hasVerifier = 1;
 }

@@ -1478,6 +1478,10 @@ mlir::LogicalResult ChangePartitionEintOp::verify() {
     return mlir::failure();
   }
 
+  if (!FHE::verifyPartitionConsistency(this)) {
+    return mlir::failure();
+  }
+
   return mlir::success();
 }
 

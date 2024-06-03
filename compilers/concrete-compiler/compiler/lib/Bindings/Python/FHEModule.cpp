@@ -4,6 +4,7 @@
 // for license information.
 
 #include "concretelang/Bindings/Python/DialectModules.h"
+#include "concretelang/Dialect/FHE/IR/FHEAttrs.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 
 #include "mlir-c/BuiltinAttributes.h"
@@ -79,4 +80,39 @@ void mlir::concretelang::python::populateDialectFHESubmodule(
             }
             return cls(typeOrError.type);
           });
+
+  mlir_attribute_subclass(
+      m, "PartitionAttr",
+      [](MlirAttribute attr) { return unwrap(attr).isa<PartitionAttr>(); })
+      .def_classmethod("get", [](pybind11::object cls, MlirContext ctx,
+                                 int lweDim, int glweDim, int polySize,
+                                 MlirAttribute lweNoiseDistrStdDevAttr,
+                                 MlirAttribute glweNoiseDistrStdDevAttr,
+                                 int pbsBaseLog, int pbsLevel, int ksBaseLog,
+                                 int ksLevel, int msgModulus, int carryModulus,
+                                 int maxNoiseLevel, MlirAttribute log2PFailAttr,
+                                 bool bigEncryptionKey, int ciphertextModulus) {
+        // make sure attributes are of the correct type
+        auto lweNoiseDistrStdDev =
+            unwrap(lweNoiseDistrStdDevAttr).dyn_cast_or_null<mlir::FloatAttr>();
+        if (lweNoiseDistrStdDev == nullptr) {
+          throw std::invalid_argument("lweNoiseDistrStdDev isn't a FloatAttr");
+        }
+        auto glweNoiseDistrStdDev = unwrap(glweNoiseDistrStdDevAttr)
+                                        .dyn_cast_or_null<mlir::FloatAttr>();
+        if (glweNoiseDistrStdDev == nullptr) {
+          throw std::invalid_argument("glweNoiseDistrStdDev isn't a FloatAttr");
+        }
+        auto log2PFail =
+            unwrap(log2PFailAttr).dyn_cast_or_null<mlir::FloatAttr>();
+        if (log2PFail == nullptr) {
+          throw std::invalid_argument("log2PFail isn't a FloatAttr");
+        }
+
+        return cls(wrap(PartitionAttr::get(
+            unwrap(ctx), lweDim, glweDim, polySize, lweNoiseDistrStdDev,
+            glweNoiseDistrStdDev, pbsBaseLog, pbsLevel, ksBaseLog, ksLevel,
+            msgModulus, carryModulus, maxNoiseLevel, log2PFail,
+            bigEncryptionKey, ciphertextModulus)));
+      });
 }

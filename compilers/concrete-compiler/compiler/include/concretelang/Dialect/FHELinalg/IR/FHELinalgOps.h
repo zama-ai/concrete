@@ -6,6 +6,7 @@
 #ifndef CONCRETELANG_DIALECT_FHELinalg_IR_FHELinalgOPS_H
 #define CONCRETELANG_DIALECT_FHELinalg_IR_FHELinalgOPS_H
 
+#include "concretelang/Dialect/FHE/IR/FHEAttrs.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgTypes.h"
 #include "mlir/IR/Builders.h"

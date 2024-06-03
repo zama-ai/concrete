@@ -10,6 +10,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 
+#include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOpsDialect.h.inc"
 
 #endif
