@@ -9,13 +9,18 @@ from random import randint
 
 import numpy as np
 from concrete.lang.dialects import fhe, fhelinalg
-from concrete.lang.dialects.fhe import EncryptedIntegerType, EncryptedSignedIntegerType
+from concrete.lang.dialects.fhe import (
+    EncryptedIntegerType,
+    EncryptedSignedIntegerType,
+    PartitionAttr,
+)
 from mlir.dialects import arith, scf, tensor
 from mlir.ir import ArrayAttr as MlirArrayAttr
 from mlir.ir import Attribute as MlirAttribute
 from mlir.ir import BoolAttr as MlirBoolAttr
 from mlir.ir import Context as MlirContext
 from mlir.ir import DenseElementsAttr as MlirDenseElementsAttr
+from mlir.ir import FloatAttr as MlirFloatAttr
 from mlir.ir import IndexType
 from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import IntegerAttr as MlirIntegerAttr
@@ -25,6 +30,7 @@ from mlir.ir import NoneType
 from mlir.ir import OpResult as MlirOperation
 from mlir.ir import RankedTensorType
 
+from .. import tfhers
 from ..compilation.configuration import (
     BitwiseStrategy,
     ComparisonStrategy,
@@ -4063,6 +4069,6 @@ class Context:
 
         dialect = fhe if x.is_scalar else fhelinalg
         operation = dialect.ChangePartitionEintOp
-        return self.operation(operation, x.type, x.result)
+        return self.operation(operation, x.type, x.result, src=src, dest=dest)
 
     # pylint: enable=missing-function-docstring
