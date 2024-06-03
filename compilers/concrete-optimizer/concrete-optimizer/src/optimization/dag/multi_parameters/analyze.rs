@@ -20,7 +20,7 @@ use super::partitions::Partitions;
 use super::variance_constraint::VarianceConstraint;
 use crate::utils::square;
 
-const MAX_FORWARDING: u16 = 1000;
+const MAX_FORWARDING: u16 = 500;
 
 #[derive(Debug, Clone)]
 pub struct PartitionedDag {
@@ -194,7 +194,6 @@ impl VariancedDag {
             if operator.operator().is_input() {
                 continue;
             }
-            let max_var = |acc: SymbolicVariance, input: SymbolicVariance| acc.max(&input);
             // Operator variance will be used to override the noise
             let mut operator_variance = OperatorVariance::nan(nb_partitions);
             // We first compute the noise in the partition of the operator
@@ -207,14 +206,13 @@ impl VariancedDag {
                     nb_partitions,
                     operator.partition().instruction_partition,
                 ),
-                Operator::LevelledOp { manp, .. } => {
-                    let max_var = operator
-                        .get_inputs_iter()
-                        .map(|a| a.variance()[operator.partition().instruction_partition].clone())
-                        .reduce(max_var)
-                        .unwrap();
-                    max_var.after_levelled_op(*manp)
-                }
+                Operator::LevelledOp { weights, .. } => operator
+                    .get_inputs_iter()
+                    .zip(weights)
+                    .fold(SymbolicVariance::ZERO, |acc, (inp, &weight)| {
+                        acc + inp.variance()[operator.partition().instruction_partition].clone()
+                            * square(weight)
+                    }),
                 Operator::Dot {
                     kind: DotKind::CompatibleTensor { .. },
                     ..
@@ -759,13 +757,30 @@ pub mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Forwarding of noise did not reach a fixed point.")]
+    fn test_decreasing_panics() {
+        let mut dag = unparametrized::Dag::new();
+        let inp = dag.add_input(1, Shape::number());
+        let oup = dag.add_levelled_op(
+            [inp],
+            LevelledComplexity::ZERO,
+            [0.5],
+            Shape::number(),
+            "comment",
+        );
+        dag.add_composition(oup, inp);
+        let p_cut = PartitionCut::for_each_precision(&dag);
+        let _ = super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION).unwrap();
+    }
+
+    #[test]
     fn test_composition_with_nongrowing_inputs_only() {
         let mut dag = unparametrized::Dag::new();
         let inp = dag.add_input(1, Shape::number());
         let oup = dag.add_levelled_op(
             [inp],
             LevelledComplexity::ZERO,
-            1.0,
+            [1.0],
             Shape::number(),
             "comment",
         );
@@ -789,7 +804,7 @@ pub mod tests {
         let oup = dag.add_levelled_op(
             [inp],
             LevelledComplexity::ZERO,
-            1.1,
+            [1.1],
             Shape::number(),
             "comment",
         );
@@ -952,7 +967,7 @@ pub mod tests {
         let _levelled = dag.add_levelled_op(
             [lut1, input2],
             LevelledComplexity::ZERO,
-            manp,
+            [manp, manp],
             &out_shape,
             "comment",
         );

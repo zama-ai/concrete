@@ -385,16 +385,15 @@ pub fn optimize(
 
 pub fn add_v0_dag(dag: &mut Dag, sum_size: u64, precision: u64, noise_factor: f64) {
     use crate::dag::operator::{FunctionTable, Shape};
-    let same_scale_manp = 1.0;
     let manp = noise_factor;
     let out_shape = &Shape::number();
     let complexity = LevelledComplexity::ADDITION * sum_size;
     let comment = "dot";
     let precision = precision as Precision;
     let input1 = dag.add_input(precision, out_shape);
-    let dot1 = dag.add_levelled_op([input1], complexity, same_scale_manp, out_shape, comment);
+    let dot1 = dag.add_levelled_op([input1], complexity, [1.0], out_shape, comment);
     let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
-    let dot2 = dag.add_levelled_op([lut1], complexity, manp, out_shape, comment);
+    let dot2 = dag.add_levelled_op([lut1], complexity, [manp], out_shape, comment);
     let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
 }
 
@@ -432,7 +431,6 @@ pub(crate) mod tests {
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::noise_estimator::p_error::repeat_p_error;
     use crate::optimization::config::SearchSpace;
-    use crate::optimization::dag::solo_key::symbolic_variance::VarianceOrigin;
     use crate::optimization::{atomic_pattern, decomposition};
     use crate::utils::square;
 
@@ -607,10 +605,8 @@ pub(crate) mod tests {
             let constraint = dag2.constraint();
             assert_eq!(constraint.pareto_output.len(), 1);
             assert_eq!(constraint.pareto_in_lut.len(), 1);
-            assert_eq!(constraint.pareto_output[0].origin(), VarianceOrigin::Lut);
             assert_f64_eq(1.0, constraint.pareto_output[0].lut_coeff);
             assert!(constraint.pareto_in_lut.len() == 1);
-            assert_eq!(constraint.pareto_in_lut[0].origin(), VarianceOrigin::Lut);
             assert_f64_eq(square(weight) as f64, constraint.pareto_in_lut[0].lut_coeff);
         }
 

@@ -29,7 +29,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: AdditiveNoise, Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -67,7 +67,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: BinaryEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: AdditiveNoise, BinaryEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -543,7 +543,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
+Interfaces: AdditiveNoise, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
@@ -660,7 +660,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: AdditiveNoise, Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -698,7 +698,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: BinaryEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: AdditiveNoise, BinaryEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -736,7 +736,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: Binary, BinaryIntEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: AdditiveNoise, Binary, BinaryIntEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -870,7 +870,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), ZeroNoise
 
 Effects: MemoryEffects::Effect{}
 
@@ -894,7 +894,7 @@ Example:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), ZeroNoise
 
 Effects: MemoryEffects::Effect{}
 

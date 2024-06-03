@@ -194,17 +194,19 @@ impl<'dag> DagBuilder<'dag> {
         &mut self,
         inputs: impl Into<Vec<OperatorIndex>>,
         complexity: LevelledComplexity,
-        manp: f64,
+        weights: impl Into<Vec<f64>>,
         out_shape: impl Into<Shape>,
         comment: impl Into<String>,
     ) -> OperatorIndex {
         let inputs = inputs.into();
         let out_shape = out_shape.into();
         let comment = comment.into();
+        let weights = weights.into();
+        assert_eq!(weights.len(), inputs.len());
         let op = Operator::LevelledOp {
             inputs,
             complexity,
-            manp,
+            weights,
             out_shape,
             comment,
         };
@@ -532,12 +534,12 @@ impl Dag {
         &mut self,
         inputs: impl Into<Vec<OperatorIndex>>,
         complexity: LevelledComplexity,
-        manp: f64,
+        weights: impl Into<Vec<f64>>,
         out_shape: impl Into<Shape>,
         comment: impl Into<String>,
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
-            .add_levelled_op(inputs, complexity, manp, out_shape, comment)
+            .add_levelled_op(inputs, complexity, weights, out_shape, comment)
     }
 
     pub fn add_unsafe_cast(
@@ -797,12 +799,23 @@ mod tests {
         let input2 = builder.add_input(2, Shape::number());
 
         let cpx_add = LevelledComplexity::ADDITION;
-        let sum1 = builder.add_levelled_op([input1, input2], cpx_add, 1.0, Shape::number(), "sum");
+        let sum1 = builder.add_levelled_op(
+            [input1, input2],
+            cpx_add,
+            [1.0, 1.0],
+            Shape::number(),
+            "sum",
+        );
 
         let lut1 = builder.add_lut(sum1, FunctionTable::UNKWOWN, 1);
 
-        let concat =
-            builder.add_levelled_op([input1, lut1], cpx_add, 1.0, Shape::vector(2), "concat");
+        let concat = builder.add_levelled_op(
+            [input1, lut1],
+            cpx_add,
+            [1.0, 1.0],
+            Shape::vector(2),
+            "concat",
+        );
 
         let dot = builder.add_dot([concat], [1, 2]);
 
@@ -827,7 +840,7 @@ mod tests {
                 Operator::LevelledOp {
                     inputs: vec![input1, input2],
                     complexity: cpx_add,
-                    manp: 1.0,
+                    weights: vec![1.0, 1.0],
                     out_shape: Shape::number(),
                     comment: "sum".to_string(),
                 },
@@ -839,7 +852,7 @@ mod tests {
                 Operator::LevelledOp {
                     inputs: vec![input1, lut1],
                     complexity: cpx_add,
-                    manp: 1.0,
+                    weights: vec![1.0, 1.0],
                     out_shape: Shape::vector(2),
                     comment: "concat".to_string(),
                 },
