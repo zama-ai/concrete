@@ -19,7 +19,15 @@ from mlir.ir import Location as MlirLocation
 from mlir.ir import Module as MlirModule
 
 from ..compilation.composition import CompositionRule
+<<<<<<< HEAD
 from ..compilation.configuration import Configuration, Exactness
+=======
+from ..compilation.configuration import (
+    Configuration,
+    Exactness,
+    ParameterSelectionStrategy,
+)
+>>>>>>> 7375feb1 (draft f 2c4183902ab5c6c5709d2e39852b0be09f0477a6)
 from ..representation import Graph, GraphProcessor, MultiGraphProcessor, Node, Operation
 from .context import Context
 from .conversion import Conversion
@@ -896,8 +904,7 @@ class Converter:
             dtype.msg_width,
         )
 
-        # TODO: use parameters to change partition
-        tfhers_int = ctx.change_partition(tfhers_int)
+        tfhers_int = ctx.change_partition(tfhers_int, src_partition=dtype.params)
 
         # number of ciphertexts representing a single integer
         num_cts = tfhers_int.shape[-1]
@@ -983,7 +990,6 @@ class Converter:
 
         # we are extracting lsb first so we reverse it so we have msb first
         result = ctx.concatenate(result_type, extracted_bits[::-1], axis=-1)
-        # TODO: use specified parameters
-        return ctx.change_partition(result)
+        return ctx.change_partition(result, dest_partition=dtype.params)
 
     # pylint: enable=missing-function-docstring,unused-argument

@@ -270,11 +270,15 @@ mlir::LogicalResult ChangePartitionEintOp::verify() {
   auto input = this->getInput().getType().cast<FheIntegerInterface>();
   auto output = this->getResult().getType().cast<FheIntegerInterface>();
 
-  if (verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(),
-                                                      input, output)) {
-    return mlir::success();
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(),
+                                                       input, output)) {
+    return mlir::failure();
   }
-  return mlir::failure();
+  if (!verifyPartitionConsistency(this)) {
+    return mlir::failure();
+  }
+
+  return mlir::success();
 }
 
 OpFoldResult RoundEintOp::fold(FoldAdaptor operands) {
