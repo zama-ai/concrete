@@ -160,7 +160,7 @@ What this means is that if we are comparing `uint3` and `uint6`, we need to conv
   (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
   ```
 
-### 1. fhe.ComparisonStrategy.ONE_TLU_PROMOTED
+### 1. fhe.MinMaxStrategy.ONE_TLU_PROMOTED
 
 This strategy makes sure that during bit-width assignment, both operands are assigned the same bit-width, and that bit-width contains at least the amount of bits required to store `x - y`. The idea is:
 
@@ -226,7 +226,7 @@ module {
 }
 ```
 
-### 2. fhe.ComparisonStrategy.THREE_TLU_CASTED
+### 2. fhe.MinMaxStrategy.THREE_TLU_CASTED
 
 This strategy will not put any constraint on bit-widths during bit-width assignment. Instead, operands are cast to a bit-width that can store `x - y` during runtime using table lookups. The idea is:
 

@@ -13,14 +13,9 @@
 ## Core features
 
 * [Overview](core-features/fhe_basics.md)
-* [Table lookups](core-features/table_lookups.md)
+* [Table lookups (basics)](core-features/table_lookups.md)
 * [Bit extraction](core-features/bit_extraction.md)
-* [Rounding](core-features/rounding.md)
-* [Truncating](core-features/truncating.md)
-* [Floating points](core-features/floating_points.md)
-* [Comparisons](core-features/comparisons.md)
-* [Min/Max operations](core-features/minmax.md)
-* [Bitwise operations](core-features/bitwise.md)
+* [Non-linear operations](core-features/non_linear_operations.md)
 * [Common tips](core-features/workarounds.md)
 * [Extensions](core-features/extensions.md)
 * [Tagging](core-features/tagging.md)
@@ -64,6 +59,14 @@
 ## Explanations
 
 * [Compiler workflow](dev/compilation/compiler_workflow.md)
+* [Compiler internals](dev/compilation/compiler_internals.md)
+  * [Table lookups](core-features/table_lookups_advanced.md)
+  * [Rounding](core-features/rounding.md)
+  * [Truncating](core-features/truncating.md)
+  * [Floating points](core-features/floating_points.md)
+  * [Comparisons](core-features/comparisons.md)
+  * [Min/Max operations](core-features/minmax.md)
+  * [Bitwise operations](core-features/bitwise.md)
 * [Frontend fusing](explanations/fusing.md)
 * [Compiler backend](explanations/backends/README.md)
   * [Adding a new backend](explanations/backends/new_backend.md)
