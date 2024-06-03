@@ -92,6 +92,9 @@ class TFHERSParams:
             and self.big_encryption_key == other.big_encryption_key
         )
 
+    def __hash__(self) -> int:
+        return hash((self.lwe_dimension, self.glwe_dimension, self.polynomial_size))
+
 
 class TFHERSIntegerType(Integer):
     """

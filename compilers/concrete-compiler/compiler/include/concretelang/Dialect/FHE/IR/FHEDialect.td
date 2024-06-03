@@ -18,6 +18,7 @@ def FHE_Dialect : Dialect {
     A dialect for representation of high level operation on fully homomorphic ciphertext.
   }];
   let cppNamespace = "::mlir::concretelang::FHE";
+  let useDefaultAttributePrinterParser = 1;
   let useDefaultTypePrinterParser = 1;
 }
 

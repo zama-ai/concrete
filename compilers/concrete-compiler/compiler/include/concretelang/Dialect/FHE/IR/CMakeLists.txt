@@ -1,3 +1,7 @@
+set(LLVM_TARGET_DEFINITIONS FHEAttrs.td)
+mlir_tablegen(FHEAttrs.h.inc -gen-attrdef-decls -attrdefs-dialect=FHE)
+mlir_tablegen(FHEAttrs.cpp.inc -gen-attrdef-defs -attrdefs-dialect=FHE)
+
 set(LLVM_TARGET_DEFINITIONS FHEOps.td)
 mlir_tablegen(FHEOps.h.inc -gen-op-decls)
 mlir_tablegen(FHEOps.cpp.inc -gen-op-defs)
@@ -10,4 +14,5 @@ add_dependencies(mlir-headers MLIRFHEOpsIncGen)
 
 add_concretelang_doc(FHEOps FHEDialect concretelang/ -gen-dialect-doc -dialect=FHE)
 add_concretelang_doc(FHEOps FHEOps concretelang/ -gen-op-doc)
+add_concretelang_doc(FHEOps FHEAttrs concretelang/ -gen-attrdef-doc)
 add_concretelang_doc(FHETypes FHETypes concretelang/ -gen-typedef-doc)
