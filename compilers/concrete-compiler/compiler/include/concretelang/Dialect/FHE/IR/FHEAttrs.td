@@ -41,7 +41,7 @@ def FHE_PartitionAttr: FHE_Attr<"Partition", "partition"> {
         DefaultValuedParameter<"int", "-1">: $ciphertextModulus
     );
 
-    let assemblyFormat = "`<` `lwe_dim` $lweDim `,` `glwe_dim` $glweDim `,` `poly_size` $polySize `,` `lwe_noise_std` $lweNoiseDistrStdDev `,` `glwe_noise_std` $glweNoiseDistrStdDev `,` `pbs_base_log` $pbsBaseLog `,` `pbs_level` $pbsLevel `,` `ks_base_log` $ksBaseLog `,` `ks_level` $ksLevel `,` `msg_modulus` $msgModulus `,` `carry_modulus` $carryModulus `,` `max_noise_level` $maxNoiseLevel `,` `logZ_pfail` $log2PFail `,` `big_key` $bigEncryptionKey `,` `ct_modulus` $ciphertextModulus `>`";
+    let assemblyFormat = "`<` `lwe_dim` $lweDim `,` `glwe_dim` $glweDim `,` `poly_size` $polySize `,` `lwe_noise_std` $lweNoiseDistrStdDev `,` `glwe_noise_std` $glweNoiseDistrStdDev `,` `pbs_base_log` $pbsBaseLog `,` `pbs_level` $pbsLevel `,` `ks_base_log` $ksBaseLog `,` `ks_level` $ksLevel `,` `msg_modulus` $msgModulus `,` `carry_modulus` $carryModulus `,` `max_noise_level` $maxNoiseLevel `,` `log2_pfail` $log2PFail `,` `big_key` $bigEncryptionKey `,` `ct_modulus` $ciphertextModulus `>`";
 }
 
 #endif
