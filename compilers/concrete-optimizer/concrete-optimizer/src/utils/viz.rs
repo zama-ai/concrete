@@ -97,8 +97,8 @@ impl<'dag> Viz for crate::dag::unparametrized::DagOperator<'dag> {
             Operator::Dot { .. } => {
                 format!("{index} [label = \"{{%{index} = Dot({input_string})}}\" fillcolor={color}];")
             }
-            Operator::LevelledOp { manp, .. } => {
-                format!("{index} [label = \"{{%{index} = LevelledOp({input_string}) |{{manp:|{manp:?}}}}}\" fillcolor={color}];")
+            Operator::LevelledOp { weights, .. } => {
+                format!("{index} [label = \"{{%{index} = LevelledOp({input_string}) |{{weights:|{weights:?}}}}}\" fillcolor={color}];")
             }
             Operator::UnsafeCast { out_precision, .. } => format!(
                 "{index} [label = \"{{%{index} = UnsafeCast({input_string}) |{{out_precision:|{out_precision:?}}}}}\" fillcolor={color}];"

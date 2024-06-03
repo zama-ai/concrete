@@ -794,14 +794,12 @@ public:
   std::optional<llvm::APInt>
   norm2SqEquivFromOp(Operation *op, ArrayRef<const MANPLattice *> operands) {
     std::optional<llvm::APInt> norm2SqEquiv;
-    if (auto cstNoiseOp =
-            llvm::dyn_cast<mlir::concretelang::FHE::ConstantNoise>(op)) {
-      if (llvm::isa<mlir::concretelang::FHE::ZeroEintOp,
-                    mlir::concretelang::FHE::ZeroTensorOp>(op)) {
-        norm2SqEquiv = llvm::APInt{1, 0, false};
-      } else {
-        norm2SqEquiv = llvm::APInt{1, 1, false};
-      }
+    if (auto zeroNoiseOp =
+            llvm::dyn_cast<mlir::concretelang::FHE::ZeroNoise>(op)) {
+      norm2SqEquiv = llvm::APInt{1, 0, false};
+    } else if (auto cstNoiseOp =
+                   llvm::dyn_cast<mlir::concretelang::FHE::ConstantNoise>(op)) {
+      norm2SqEquiv = llvm::APInt{1, 1, false};
     } else if (llvm::isa<mlir::concretelang::FHE::ToBoolOp>(op) ||
                llvm::isa<mlir::concretelang::FHE::FromBoolOp>(op)) {
       norm2SqEquiv = getNoOpSqMANP(operands);

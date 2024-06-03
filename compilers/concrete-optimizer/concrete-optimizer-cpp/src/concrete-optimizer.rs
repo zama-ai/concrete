@@ -649,10 +649,11 @@ impl<'dag> DagBuilder<'dag> {
         inputs: &[ffi::OperatorIndex],
         lwe_dim_cost_factor: f64,
         fixed_cost: f64,
-        manp: f64,
+        weights: &[f64],
         out_shape: &[u64],
         comment: &str,
     ) -> ffi::OperatorIndex {
+        debug_assert!(weights.len() == inputs.len());
         let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
 
         let out_shape = Shape {
@@ -665,7 +666,7 @@ impl<'dag> DagBuilder<'dag> {
         };
 
         self.0
-            .add_levelled_op(inputs, complexity, manp, out_shape, comment)
+            .add_levelled_op(inputs, complexity, weights, out_shape, comment)
             .into()
     }
 
@@ -781,7 +782,7 @@ mod ffi {
             inputs: &[OperatorIndex],
             lwe_dim_cost_factor: f64,
             fixed_cost: f64,
-            manp: f64,
+            weights: &[f64],
             out_shape: &[u64],
             comment: &str,
         ) -> OperatorIndex;

@@ -37,6 +37,22 @@ def ConstantNoise : OpInterface<"ConstantNoise"> {
     let cppNamespace = "mlir::concretelang::FHE";
 }
 
+def ZeroNoise : OpInterface<"ZeroNoise"> {
+    let description = [{
+        An operation outputs a ciphertext with zero noise.
+    }];
+
+    let cppNamespace = "mlir::concretelang::FHE";
+}
+
+def AdditiveNoise : OpInterface<"AdditiveNoise"> {
+    let description = [{
+        An n-ary operation whose output noise is the unweighted sum of all input noises.
+    }];
+
+    let cppNamespace = "mlir::concretelang::FHE";
+}
+
 def UnaryEint : OpInterface<"UnaryEint"> {
     let description = [{
         A unary operation on scalars, with the operand encrypted.
@@ -63,7 +79,7 @@ def UnaryEint : OpInterface<"UnaryEint"> {
           if (auto operandTy = dyn_cast<mlir::RankedTensorType>($_op->getOpOperand(0).get().getType())) {
             return operandTy.getElementType();
           } else return $_op->getOpOperand(0).get().getType();
-        }]>        
+        }]>
     ];
 }
 
@@ -124,8 +140,8 @@ def Binary : OpInterface<"Binary"> {
           if (auto cstOp = llvm::dyn_cast_or_null<mlir::arith::ConstantOp>($_op->
                                                         getOpOperand(opNum).get().getDefiningOp()))
             return cstOp->template getAttrOfType<mlir::DenseIntElementsAttr>("value").template getValues<llvm::APInt>();
-          else return {};        
-        }]>,        
+          else return {};
+        }]>,
     ];
 }
 

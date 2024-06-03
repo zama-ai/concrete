@@ -144,38 +144,6 @@ impl SymbolicVariance {
         new
     }
 
-    #[allow(clippy::float_cmp)]
-    pub fn after_levelled_op(&self, manp: f64) -> Self {
-        let new_coeff = manp * manp;
-        // detect the previous base manp level
-        // this is the maximum value of fresh base noise and pbs base noise
-        let mut current_max: f64 = 0.0;
-        for partition in PartitionIndex::range(0, self.nb_partitions()) {
-            let fresh_coeff = self.coeff_input(partition);
-            let pbs_noise_coeff = self.coeff_pbs(partition);
-            current_max = current_max.max(fresh_coeff).max(pbs_noise_coeff);
-        }
-        // assert!(1.0 <= current_max);
-        // assert!(
-        //     current_max <= new_coeff,
-        //     "Non monotonious levelled op: {current_max} <= {new_coeff}"
-        // );
-        // replace all current_max by new_coeff
-        // multiply everything else by new_coeff / current_max
-        let mut new = self.clone();
-        if current_max == 0.0 {
-            return new;
-        }
-        for cell in &mut new.coeffs.values {
-            if *cell == current_max {
-                *cell = new_coeff;
-            } else {
-                *cell *= new_coeff / current_max;
-            }
-        }
-        new
-    }
-
     pub fn max(&self, other: &Self) -> Self {
         let mut coeffs = self.coeffs.clone();
         for (i, coeff) in coeffs.iter_mut().enumerate() {

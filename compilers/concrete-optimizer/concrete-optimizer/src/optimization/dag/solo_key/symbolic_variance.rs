@@ -25,13 +25,6 @@ pub struct SymbolicVariance {
     // see pareto sorting and dominate_or_equal
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum VarianceOrigin {
-    Input,
-    Lut,
-    Mixed,
-}
-
 impl std::ops::Add for SymbolicVariance {
     type Output = Self;
 
@@ -92,20 +85,6 @@ impl SymbolicVariance {
         input_coeff: 0.0,
         lut_coeff: 1.0,
     };
-
-    pub fn origin(&self) -> VarianceOrigin {
-        if self.lut_coeff == 0.0 {
-            VarianceOrigin::Input
-        } else if self.input_coeff == 0.0 {
-            VarianceOrigin::Lut
-        } else {
-            VarianceOrigin::Mixed
-        }
-    }
-
-    pub fn manp_to_variance_factor(manp: f64) -> f64 {
-        manp * manp
-    }
 
     pub fn dominate_or_equal(&self, other: &Self) -> bool {
         let extra_other_minimal_base_noise = 0.0_f64.max(other.input_coeff - self.input_coeff);

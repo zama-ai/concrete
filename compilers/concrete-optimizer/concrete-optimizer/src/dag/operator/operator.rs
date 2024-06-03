@@ -89,7 +89,7 @@ pub enum Operator {
     LevelledOp {
         inputs: Vec<OperatorIndex>,
         complexity: LevelledComplexity,
-        manp: f64,
+        weights: Vec<f64>,
         out_shape: Shape,
         comment: String,
     },
@@ -171,7 +171,7 @@ impl fmt::Display for Operator {
             }
             Self::LevelledOp {
                 inputs,
-                manp,
+                weights,
                 out_shape,
                 ..
             } => {
@@ -182,7 +182,7 @@ impl fmt::Display for Operator {
                     }
                     write!(f, "%{}", input.0)?;
                 }
-                write!(f, "] : manp={manp} x {out_shape:?}")?;
+                write!(f, "] : weights={weights:?}, out_shape={out_shape:?}")?;
             }
             Self::Round {
                 input,

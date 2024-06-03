@@ -1,4 +1,4 @@
-use super::symbolic_variance::{SymbolicVariance, VarianceOrigin};
+use super::symbolic_variance::SymbolicVariance;
 use crate::dag::operator::{
     DotKind, LevelledComplexity, Operator, OperatorIndex, Precision, Shape,
 };
@@ -100,17 +100,6 @@ fn assert_properties_correctness(dag: &SoloKeyDag) {
     assert_valid_variances(dag);
 }
 
-fn variance_origin(inputs: &[OperatorIndex], out_variances: &[SymbolicVariance]) -> VarianceOrigin {
-    let first_origin = first(inputs, out_variances).origin();
-    for input in inputs.iter().skip(1) {
-        let item = &out_variances[input.0];
-        if first_origin != item.origin() {
-            return VarianceOrigin::Mixed;
-        }
-    }
-    first_origin
-}
-
 #[derive(Clone, Debug)]
 pub struct SoloKeyDag {
     // Collect all operators output variances
@@ -146,15 +135,15 @@ fn out_variance(
     match op {
         Operator::Input { .. } => SymbolicVariance::INPUT,
         Operator::Lut { .. } => SymbolicVariance::LUT,
-        Operator::LevelledOp { inputs, manp, .. } => {
-            let variance_factor = SymbolicVariance::manp_to_variance_factor(*manp);
-            let origin = match variance_origin(inputs, out_variances) {
-                    VarianceOrigin::Input => SymbolicVariance::INPUT,
-                    VarianceOrigin::Lut | VarianceOrigin::Mixed /* Mixed: assume the worst */
-                    => SymbolicVariance::LUT
-            };
-            origin * variance_factor
-        }
+        Operator::LevelledOp {
+            inputs, weights, ..
+        } => inputs
+            .iter()
+            .map(|i| out_variances[i.0])
+            .zip(weights)
+            .fold(SymbolicVariance::ZERO, |acc, (var, &weight)| {
+                acc + var * square(weight)
+            }),
         Operator::Dot {
             kind: DotKind::CompatibleTensor { .. },
             ..
@@ -702,14 +691,13 @@ pub mod tests {
         let cpx_dot = LevelledComplexity::ADDITION;
         let weights = Weights::vector([1, 2]);
         #[allow(clippy::imprecise_flops)]
-        let manp = (1.0 * 1.0 + 2.0 * 2_f64).sqrt();
-        let dot = graph.add_levelled_op([input1, input1], cpx_dot, manp, Shape::number(), "dot");
+        let dot =
+            graph.add_levelled_op([input1, input1], cpx_dot, [1., 2.], Shape::number(), "dot");
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
         let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
-        assert!(analysis.out_variances[dot.0].origin() == VarianceOrigin::Input);
         assert_eq!(graph.out_precisions[dot.0], 3);
         let expected_square_norm2 = weights.square_norm2() as f64;
         let actual_square_norm2 = analysis.out_variances[dot.0].input_coeff;
@@ -720,7 +708,6 @@ pub mod tests {
         let constraint = analysis.constraint();
         assert!(constraint.pareto_in_lut.is_empty());
         assert!(constraint.pareto_output.len() == 1);
-        assert_eq!(constraint.pareto_output[0].origin(), VarianceOrigin::Input);
         assert_f64_eq(constraint.pareto_output[0].input_coeff, 5.0);
     }
 
@@ -763,10 +750,8 @@ pub mod tests {
         assert_f64_eq(expected_cost, complexity_cost);
         let constraint = analysis.constraint();
         assert_eq!(constraint.pareto_output.len(), 1);
-        assert_eq!(constraint.pareto_output[0].origin(), VarianceOrigin::Lut);
         assert_f64_eq(constraint.pareto_output[0].lut_coeff, 1.0);
         assert_eq!(constraint.pareto_in_lut.len(), 1);
-        assert_eq!(constraint.pareto_in_lut[0].origin(), VarianceOrigin::Lut);
         assert_f64_eq(
             constraint.pareto_in_lut[0].lut_coeff,
             weights.square_norm2() as f64,
@@ -796,7 +781,6 @@ pub mod tests {
         assert_eq!(constraint.pareto_output.len(), 1);
         assert_eq!(constraint.pareto_output[0], SymbolicVariance::LUT);
         assert_eq!(constraint.pareto_in_lut.len(), 1);
-        assert_eq!(constraint.pareto_in_lut[0].origin(), VarianceOrigin::Mixed);
         assert_eq!(constraint.pareto_in_lut[0], expected_mixed);
     }
 
