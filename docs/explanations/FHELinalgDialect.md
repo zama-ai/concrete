@@ -366,6 +366,42 @@ Effects: MemoryEffects::Effect{}
 | :----: | ----------- |
 | `output` | 
 
+### `FHELinalg.change_partition` (::mlir::concretelang::FHELinalg::ChangePartitionEintOp)
+
+Change partition if necessary.
+
+Changing the partition of a ciphertext.
+If necessary, it keyswitch the ciphertext to a different key having a different set of parameters than the original one.
+
+Example:
+```mlir
+  %new_eint = "FHE.change_partition"(%eint): (tensor<2x3x!FHE.eint<16>>) -> (tensor<2x3x!FHE.eint<16>>)
+
+Traits: AlwaysSpeculatableImplTrait, TensorUnaryEint
+
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
+
+Effects: MemoryEffects::Effect{}
+
+#### Attributes:
+
+| Attribute | MLIR Type | Description |
+| :-------: | :-------: | ----------- |
+| `src` | ::mlir::concretelang::FHE::PartitionAttr | An attribute representing a partition.
+| `dest` | ::mlir::concretelang::FHE::PartitionAttr | An attribute representing a partition.
+
+#### Operands:
+
+| Operand | Description |
+| :-----: | ----------- |
+| `input` | 
+
+#### Results:
+
+| Result | Description |
+| :----: | ----------- |
+| `output` | 
+
 ### `FHELinalg.concat` (::mlir::concretelang::FHELinalg::ConcatOp)
 
 Concatenates a sequence of tensors along an existing axis.
