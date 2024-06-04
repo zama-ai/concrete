@@ -21,10 +21,8 @@ namespace concretelang {
 namespace dfr {
 
 struct WorkFunctionRegistry;
-namespace {
-static void *dl_handle;
-static WorkFunctionRegistry *_dfr_node_level_work_function_registry;
-} // namespace
+extern WorkFunctionRegistry *_dfr_node_level_work_function_registry;
+extern void *dl_handle;
 
 struct WorkFunctionRegistry {
   WorkFunctionRegistry() { _dfr_node_level_work_function_registry = this; }
