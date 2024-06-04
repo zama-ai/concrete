@@ -266,6 +266,21 @@ mlir::LogicalResult RoundEintOp::verify() {
   return mlir::success();
 }
 
+mlir::LogicalResult ChangePartitionEintOp::verify() {
+  auto input = this->getInput().getType().cast<FheIntegerInterface>();
+  auto output = this->getResult().getType().cast<FheIntegerInterface>();
+
+  if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(),
+                                                       input, output)) {
+    return mlir::failure();
+  }
+  if (!verifyPartitionConsistency(this)) {
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 OpFoldResult RoundEintOp::fold(FoldAdaptor operands) {
   auto input = this->getInput();
   auto inputTy = input.getType().dyn_cast_or_null<FheIntegerInterface>();

@@ -56,6 +56,19 @@ struct OptimizerPartitionFrontierMaterializationPass
     mlir::func::FuncOp func = this->getOperation();
 
     func.walk([&](mlir::Operation *producer) {
+      mlir::IRRewriter rewriter(producer->getContext());
+
+      // Remove the change_partition op.
+      // TODO: The crypto parameters used in the op should be considered before
+      // removal
+      if (mlir::dyn_cast_or_null<FHELinalg::ChangePartitionEintOp>(producer) ||
+          mlir::dyn_cast_or_null<FHE::ChangePartitionEintOp>(producer)) {
+        rewriter.startRootUpdate(func);
+        rewriter.replaceOp(producer, producer->getOperand(0));
+        rewriter.finalizeRootUpdate(func);
+        return;
+      }
+
       std::optional<uint64_t> producerOid =
           getOid(producer, OperationKind::PRODUCER);
 
@@ -81,7 +94,6 @@ struct OptimizerPartitionFrontierMaterializationPass
           solverSolution.circuit_keys.conversion_keyswitch_keys[eck[0]]
               .output_key.identifier;
 
-      mlir::IRRewriter rewriter(producer->getContext());
       rewriter.setInsertionPointAfter(producer);
 
       for (mlir::Value res : producer->getResults()) {

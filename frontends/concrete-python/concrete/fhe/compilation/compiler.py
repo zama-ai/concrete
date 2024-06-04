@@ -222,7 +222,7 @@ class Compiler:
             self.artifacts.add_graph("initial", self.graph)
         fuse(
             self.graph,
-            self.artifacts.module_artifacts.functions["main"] if self.artifacts else None,
+            (self.artifacts.module_artifacts.functions["main"] if self.artifacts else None),
         )
 
     def _evaluate(
@@ -248,7 +248,7 @@ class Compiler:
 
             fuse(
                 self.graph,
-                self.artifacts.module_artifacts.functions["main"] if self.artifacts else None,
+                (self.artifacts.module_artifacts.functions["main"] if self.artifacts else None),
             )
 
             if self.artifacts is not None:
