@@ -29,18 +29,46 @@ def default_params() -> TFHERSParams:
 
 
 @pytest.mark.parametrize(
-    "msg_modulus, msg_width, carry_modulus, carry_width",
+    "msg_modulus, msg_width, carry_modulus, carry_width, error_msg",
     [
-        pytest.param(5, 2, 4, 2),
-        pytest.param(4, 2, 5, 2),
-        pytest.param(8, 4, 4, 2),
-        pytest.param(4, 2, 64, 10),
+        pytest.param(
+            5,
+            2,
+            4,
+            2,
+            r"inconsistency between msg_modulus\(5\), and msg_width\(2\). "
+            r"msg_modulus should be 2\*\*msg_width",
+        ),
+        pytest.param(
+            4,
+            2,
+            5,
+            2,
+            r"inconsistency between carry_modulus\(5\), and carry_width\(2\). "
+            r"carry_modulus should be 2\*\*carry_width",
+        ),
+        pytest.param(
+            8,
+            4,
+            4,
+            2,
+            r"inconsistency between msg_modulus\(8\), and msg_width\(4\). "
+            r"msg_modulus should be 2\*\*msg_width",
+        ),
+        pytest.param(
+            4,
+            2,
+            64,
+            10,
+            r"inconsistency between carry_modulus\(64\), and carry_width\(10\). "
+            r"carry_modulus should be 2\*\*carry_width",
+        ),
     ],
 )
-def test_bit_widths_inconsistency(msg_modulus, msg_width, carry_modulus, carry_width):
+def test_bit_widths_inconsistency(msg_modulus, msg_width, carry_modulus, carry_width, error_msg):
     """Test bit widths incosistency"""
     params = default_params()
     params.message_modulus = msg_modulus
     params.carry_modulus = carry_modulus
-    with pytest.raises(ValueError, match="inconsistency"):
+    with pytest.raises(ValueError, match=error_msg):
         TFHERSIntegerType(False, 16, carry_width, msg_width, params)
