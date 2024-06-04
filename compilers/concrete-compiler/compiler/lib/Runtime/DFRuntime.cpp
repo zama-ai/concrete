@@ -36,6 +36,10 @@ static size_t num_nodes = 0;
 static struct timespec init_timer, broadcast_timer, compute_timer, whole_timer;
 #endif
 } // namespace
+
+void *dl_handle = nullptr;
+WorkFunctionRegistry *_dfr_node_level_work_function_registry;
+
 } // namespace dfr
 } // namespace concretelang
 } // namespace mlir
@@ -99,7 +103,6 @@ void _dfr_create_async_task(wfnptr wfn, void *ctx, size_t num_params,
     param_types.push_back(va_arg(args, uint64_t));
   }
   va_end(args);
-
   dfr_create_async_task_impl(wfn, ctx, refcounted_futures, param_sizes,
                              param_types, outputs, output_sizes, output_types);
 }
@@ -179,6 +182,7 @@ bool _dfr_is_jit() { return is_jit_p; }
 bool _dfr_is_root_node() { return is_root_node_p; }
 bool _dfr_use_omp() { return use_omp_p; }
 bool _dfr_is_distributed() { return num_nodes > 1; }
+void _dfr_register_lib(void *dlh) { dl_handle = dlh; }
 } // namespace dfr
 } // namespace concretelang
 } // namespace mlir
@@ -211,7 +215,8 @@ static inline void _dfr_stop_impl() {
 
 static inline void _dfr_start_impl(int argc, char *argv[]) {
   BEGIN_TIME(&init_timer);
-  dl_handle = dlopen(nullptr, RTLD_NOW);
+  if (dl_handle == nullptr)
+    dl_handle = dlopen(nullptr, RTLD_NOW);
 
   // If OpenMP is to be used, we need to force its initialization
   // before thread binding occurs. Otherwise OMP threads will be bound
@@ -365,12 +370,10 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
     if (num_nodes > 1) {
       BEGIN_TIME(&broadcast_timer);
       _dfr_node_level_runtime_context_manager->setContext(ctx);
-    }
-    if (_dfr_is_root_node())
       _dfr_startup_barrier->wait();
-
-    if (num_nodes > 1 && ctx) {
-      END_TIME(&broadcast_timer, "Key broadcasting");
+      if (ctx) {
+        END_TIME(&broadcast_timer, "Key broadcasting");
+      }
     }
   }
   BEGIN_TIME(&compute_timer);
@@ -383,24 +386,29 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
 void _dfr_stop(int64_t use_dfr_p) {
   if (use_dfr_p) {
     if (num_nodes > 1) {
-      // Non-root nodes synchronize here with the root to mark the point
-      // where the root is free to send work out (only needed in JIT).
-      if (!_dfr_is_root_node())
-        _dfr_startup_barrier->wait();
-
       // The barrier is only needed to synchronize the different
       // computation phases when the compute nodes need to generate and
       // register new work functions in each phase.
       _dfr_jit_phase_barrier->wait();
-
       _dfr_node_level_runtime_context_manager->clearContext();
       _dfr_node_level_work_function_registry->clearRegistry();
+      _dfr_jit_phase_barrier->wait();
     }
   }
   END_TIME(&compute_timer, "Compute");
   END_TIME(&whole_timer, "Total execution");
 }
 
+namespace mlir {
+namespace concretelang {
+namespace dfr {
+void _dfr_run_remote_scheduler() {
+  _dfr_start(1, nullptr);
+  _dfr_stop(1);
+}
+} // namespace dfr
+} // namespace concretelang
+} // namespace mlir
 void _dfr_try_initialize() {
   // Initialize and immediately suspend the HPX runtime if not yet done.
   uint64_t expected = uninitialised;
@@ -484,6 +492,8 @@ bool _dfr_is_jit() { return is_jit_p; }
 bool _dfr_is_root_node() { return true; }
 bool _dfr_use_omp() { return use_omp_p; }
 bool _dfr_is_distributed() { return num_nodes > 1; }
+void _dfr_run_remote_scheduler() {}
+void _dfr_register_lib(void *dlh) {}
 
 } // namespace dfr
 } // namespace concretelang

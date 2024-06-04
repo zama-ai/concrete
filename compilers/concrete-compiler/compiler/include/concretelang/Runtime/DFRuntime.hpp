@@ -25,6 +25,8 @@ bool _dfr_is_jit();
 bool _dfr_is_root_node();
 bool _dfr_use_omp();
 bool _dfr_is_distributed();
+void _dfr_run_remote_scheduler();
+void _dfr_register_lib(void *dlh);
 
 typedef enum _dfr_task_arg_type {
   _DFR_TASK_ARG_BASE = 0,

@@ -306,19 +306,6 @@ static void lowerDataflowTaskOp(RT::DataflowTaskOp DFTOp,
   DFTOp.erase();
 }
 
-static void registerWorkFunction(mlir::func::FuncOp parentFunc,
-                                 mlir::func::FuncOp workFunction) {
-  OpBuilder builder(parentFunc.getBody());
-  builder.setInsertionPointToStart(&parentFunc.getBody().front());
-
-  auto fnptr = builder.create<mlir::func::ConstantOp>(
-      parentFunc.getLoc(), workFunction.getFunctionType(),
-      SymbolRefAttr::get(builder.getContext(), workFunction.getName()));
-
-  builder.create<RT::RegisterTaskWorkFunctionOp>(parentFunc.getLoc(),
-                                                 fnptr.getResult());
-}
-
 static func::FuncOp getCalledFunction(CallOpInterface callOp) {
   SymbolRefAttr sym = callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>();
   if (!sym)
@@ -333,8 +320,6 @@ struct LowerDataflowTasksPass
 
   void runOnOperation() override {
     auto module = getOperation();
-    SmallVector<func::FuncOp, 4> workFunctions;
-    SmallVector<func::FuncOp, 1> entryPoints;
 
     module.walk([&](mlir::func::FuncOp func) {
       static int wfn_id = 0;
@@ -357,58 +342,12 @@ struct LowerDataflowTasksPass
         outliningMap.push_back(
             std::pair<RT::DataflowTaskOp, func::FuncOp>(op, outlinedFunc));
         symbolTable.insert(outlinedFunc);
-        workFunctions.push_back(outlinedFunc);
         return WalkResult::advance();
       });
       // Lower the DF task ops to RT dialect ops.
       for (auto mapping : outliningMap)
         lowerDataflowTaskOp(mapping.first, mapping.second);
-
-      // Gather all entry points (assuming no recursive calls to entry points)
-      // Main is always an entry-point - otherwise check if this
-      // function is called within the module.  TODO: we assume no
-      // recursion.
-      if (func.getName() == "main")
-        entryPoints.push_back(func);
-      else {
-        bool found = false;
-        module.walk([&](mlir::func::CallOp op) {
-          if (getCalledFunction(op) == func)
-            found = true;
-        });
-        if (!found)
-          entryPoints.push_back(func);
-      }
     });
-
-    for (auto entryPoint : entryPoints) {
-      // If this is a JIT invocation and we're not on the root node,
-      // we do not need to do any computation, only register all work
-      // functions with the runtime system
-      if (!workFunctions.empty()) {
-        if (!dfr::_dfr_is_root_node()) {
-          entryPoint.eraseBody();
-          Block *b = new Block;
-          FunctionType funTy = entryPoint.getFunctionType();
-          SmallVector<Location> locations(funTy.getInputs().size(),
-                                          entryPoint.getLoc());
-          b->addArguments(funTy.getInputs(), locations);
-          entryPoint.getBody().push_front(b);
-          for (int i = funTy.getNumInputs() - 1; i >= 0; --i)
-            entryPoint.eraseArgument(i);
-          for (int i = funTy.getNumResults() - 1; i >= 0; --i)
-            entryPoint.eraseResult(i);
-          OpBuilder builder(entryPoint.getBody());
-          builder.setInsertionPointToEnd(&entryPoint.getBody().front());
-          builder.create<mlir::func::ReturnOp>(entryPoint.getLoc());
-        }
-      }
-
-      // Generate code to register all work-functions with the
-      // runtime.
-      for (auto wf : workFunctions)
-        registerWorkFunction(entryPoint, wf);
-    }
   }
   LowerDataflowTasksPass(bool debug) : debug(debug){};
 
@@ -428,29 +367,27 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
 
   void runOnOperation() override {
     auto module = getOperation();
-    int useDFR = 0;
     SmallVector<func::FuncOp, 1> entryPoints;
 
+    // Gather all entry points in the module.
     module.walk([&](mlir::func::FuncOp func) {
-      // Do not add start/stop to work functions - but if any are
-      // present, then we need to activate the runtime
-      if (func->getAttr("_dfr_work_function_attribute")) {
-        useDFR = 1;
-      } else {
-        // Main is always an entry-point - otherwise check if this
-        // function is called within the module.  TODO: we assume no
-        // recursion.
-        if (func.getName() == "main")
+      // Work functions are never allowed to be an entry point.
+      if (func->getAttr("_dfr_work_function_attribute"))
+        return;
+
+      // Main is always an entry-point - otherwise check if this
+      // function is called within the module.  TODO: we assume no
+      // recursion.
+      if (func.getName() == "main")
+        entryPoints.push_back(func);
+      else {
+        bool found = false;
+        module.walk([&](mlir::func::CallOp op) {
+          if (getCalledFunction(op) == func)
+            found = true;
+        });
+        if (!found)
           entryPoints.push_back(func);
-        else {
-          bool found = false;
-          module.walk([&](mlir::func::CallOp op) {
-            if (getCalledFunction(op) == func)
-              found = true;
-          });
-          if (!found)
-            entryPoints.push_back(func);
-        }
       }
     });
 
@@ -459,7 +396,7 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
       OpBuilder builder(entryPoint.getBody());
       builder.setInsertionPointToStart(&entryPoint.getBody().front());
       Value useDFRVal = builder.create<arith::ConstantOp>(
-          entryPoint.getLoc(), builder.getI64IntegerAttr(useDFR));
+          entryPoint.getLoc(), builder.getI64IntegerAttr(1));
 
       // Check if this entry point uses a context
       Value ctx = nullptr;
