@@ -20,16 +20,13 @@ from mlir.ir import Module as MlirModule
 
 from .. import tfhers
 from ..compilation.composition import CompositionRule
-<<<<<<< HEAD
-from ..compilation.configuration import Configuration, Exactness
-=======
 from ..compilation.configuration import (
     Configuration,
     Exactness,
     ParameterSelectionStrategy,
 )
->>>>>>> 7375feb1 (draft f 2c4183902ab5c6c5709d2e39852b0be09f0477a6)
 from ..representation import Graph, GraphProcessor, MultiGraphProcessor, Node, Operation
+from ..tfhers import TFHERSIntegerType
 from .context import Context
 from .conversion import Conversion
 from .processors import *  # pylint: disable=wildcard-import
@@ -84,6 +81,25 @@ class Converter:
                     # pylint: disable=cell-var-from-loop
                     # ruff: noqa: B023
                     ctx = Context(context, graph, self.configuration)
+
+                    # if using tfhers integers, parameter selection strategy has to be
+                    # multi-parameters. We try to catch this early, although the compiler
+                    # will also fail without it.
+                    if (
+                        any(
+                            isinstance(node.output.dtype, TFHERSIntegerType)
+                            for node in graph.ordered_inputs()
+                        )
+                        and self.configuration.parameter_selection_strategy
+                        != ParameterSelectionStrategy.MULTI
+                    ):
+                        msg = (
+                            "Can't use tfhers integers with "
+                            f"{self.configuration.parameter_selection_strategy} parameters. "
+                            "Please use `ParameterSelectionStrategy.MULTI` as the parameter "
+                            "selection strategy instead."
+                        )
+                        raise RuntimeError(msg)
 
                     input_types = [
                         ctx.typeof(node).mlir for node in graph.ordered_inputs()
