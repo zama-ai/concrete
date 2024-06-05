@@ -71,22 +71,22 @@ def get_random_string(length):
 # FHE functions
 @fhe.module()
 class MyModule:
-    # ruff: noqa:N805
+    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted", "z": "encrypted"})
     def xor3(x, y, z):
         return x ^ y ^ z
 
-    # ruff: noqa:N805
+    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted", "z": "encrypted"})
     def iftern(x, y, z):
         return z ^ (x & (y ^ z))
 
-    # ruff: noqa:N805
+    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted", "z": "encrypted"})
     def maj(x, y, z):
         return (x & y) | (z & (x | y))
 
-    # ruff: noqa:N805
+    @staticmethod
     @fhe.function({"x": "encrypted"})
     def rotate30(x):
         ans = fhe.zeros((32,))
@@ -94,7 +94,7 @@ class MyModule:
         ans[0:30] = x[2:32]
         return ans
 
-    # ruff: noqa:N805
+    @staticmethod
     @fhe.function({"x": "encrypted"})
     def rotate5(x):
         ans = fhe.zeros((32,))
@@ -102,7 +102,7 @@ class MyModule:
         ans[0:5] = x[27:32]
         return ans
 
-    # ruff: noqa:N805
+    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add2(x, y):
         ans = fhe.zeros((32,))
@@ -115,7 +115,7 @@ class MyModule:
 
         return ans
 
-    # ruff: noqa:N805
+    @staticmethod
     @fhe.function(
         {"x": "encrypted", "y": "encrypted", "u": "encrypted", "v": "encrypted", "w": "encrypted"}
     )
@@ -180,8 +180,9 @@ inputset5 = [
     )
     for _ in range(size_of_inputsets)
 ]
-# FIXME: remove the mypy exception once https://github.com/zama-ai/concrete-internal/issues/721
-# is fixed
+# FIXME: remove the mypy and ruff exceptions once
+# https://github.com/zama-ai/concrete-internal/issues/721 is fixed
+# pylint: disable-next=no-member
 my_module = MyModule.compile(  # type: ignore
     {
         "xor3": inputset3,
@@ -296,8 +297,7 @@ def _process_encrypted_chunk_server_side(
     return h0split_enc, h1split_enc, h2split_enc, h3split_enc, h4split_enc
 
 
-# ruff: noqa:UP004
-class Sha1Hash(object):
+class Sha1Hash:
     """A class that mimics that hashlib api and implements the SHA-1 algorithm."""
 
     name = "python-sha1"
@@ -361,8 +361,11 @@ class Sha1Hash(object):
 
     def hexdigest(self):
         """Produce the final hash value (big-endian) as a hex string"""
-        # ruff: noqa:UP031
-        return "%08x%08x%08x%08x%08x" % self._produce_digest()
+        local_digest = self._produce_digest()
+        return (
+            f"{local_digest[0]:08x}{local_digest[1]:08x}{local_digest[2]:08x}"
+            + f"{local_digest[3]:08x}{local_digest[4]:08x}"
+        )
 
     def _produce_digest(self):
         """Return finalized digest variables for the data processed so far."""
@@ -408,23 +411,23 @@ class Sha1Hash(object):
         return h0, h1, h2, h3, h4
 
 
-def sha1(data):
+def sha1(local_data):
     """SHA-1 Hashing Function
 
     A custom SHA-1 hashing function implemented entirely in Python.
 
     Arguments:
-        data: A bytes or BytesIO object containing the input message to hash.
+        local_data: A bytes or BytesIO object containing the input message to hash.
 
     Returns:
         A hex SHA-1 digest of the input message.
     """
-    return Sha1Hash().update(data).hexdigest()
+    return Sha1Hash().update(local_data).hexdigest()
 
 
-def print_timed_sha1(data):
+def print_timed_sha1(local_data):
     time_begin = time.time()
-    ans = sha1(data)
+    ans = sha1(local_data)
     print(f"sha1-digest: {ans}")
     print(f"computed in: {time.time() - time_begin:2f} seconds")
     return ans
@@ -463,17 +466,17 @@ if __name__ == "__main__":
             expected_ans = h.hexdigest()
 
             # Hash it in FHE
-            with open(filename, "w") as file:
+            with open(filename, "w", encoding="utf-8") as file:
                 file.write(f"{hash_input}")
 
             with open(filename, "rb") as data:
                 # Show the final digest
-                ans = print_timed_sha1(data)
+                actual_ans = print_timed_sha1(data)
 
             # And compare
             assert (
-                ans == expected_ans
-            ), f"Wrong computation: {ans} vs expected {expected_ans} for input {hash_input}"
+                actual_ans == expected_ans
+            ), f"Wrong computation: {actual_ans} vs expected {expected_ans} for input {hash_input}"
 
         # Checking a few patterns
         for hash_input, expected_ans in [
@@ -484,16 +487,18 @@ if __name__ == "__main__":
             ),
         ]:
 
-            with open(filename, "w") as file:
+            with open(filename, "w", encoding="utf-8") as file:
                 file.write(f"{hash_input}")
 
             print(f"Checking SHA1({hash_input})")
 
             with open(filename, "rb") as data:
                 # Show the final digest
-                ans = print_timed_sha1(data)
+                actual_ans = print_timed_sha1(data)
 
-            assert ans == expected_ans, f"Wrong computation: {ans} vs expected {expected_ans}"
+            assert (
+                actual_ans == expected_ans
+            ), f"Wrong computation: {actual_ans} vs expected {expected_ans}"
 
         sys.exit(0)
 
@@ -506,7 +511,7 @@ if __name__ == "__main__":
             data = sys.stdin.detach()  # type: ignore
 
         except AttributeError:
-            # Linux ans OSX both use \n line endings, so only windows is a
+            # Linux and OSX both use \n line endings, so only windows is a
             # problem.
             if sys.platform == "win32":
                 import msvcrt
