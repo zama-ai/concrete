@@ -74,7 +74,7 @@ jobs:
           cd compilers/concrete-compiler/compiler
           rm -rf /shared/build
           make HPX_DIR=/shared/hpx install-hpx-from-source
-          make HPX_DIR=/shared/hpx BUILD_DIR=/shared/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} build-end-to-end-dataflow-tests
+          make HPX_DIR=/shared/hpx BUILD_DIR=/shared/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} build-end-to-end-tests
 
       - name: Run end-to-end benchmarks
         run: |
