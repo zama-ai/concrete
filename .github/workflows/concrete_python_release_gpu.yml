@@ -50,6 +50,20 @@ jobs:
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
+      - name: fix node
+        shell: bash
+        run: |
+          cat /etc/issue
+          sudo apt-get remove -y nodejs
+          sudo apt-get remove -y npm
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+          chmod +x ~/.nvm/nvm.sh
+          export NVM_DIR="~/.nvm"
+          source $NVM_DIR/nvm.sh
+          source ~/.bashrc
+          nvm install 16
+          node -v
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -116,21 +130,6 @@ jobs:
             make whl
             
             deactivate
-
-      - name: fix node
-        run: |
-          cat /etc/issue
-          sudo apt-get remove -y nodejs
-          sudo apt-get remove -y npm
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-          chmod +x ~/.nvm/nvm.sh
-          export NVM_DIR="~/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          source ~/.bashrc
-          nvm install 16
-          node -v
-
-
 
       - name: Upload wheel
         uses: actions/upload-artifact@v4
