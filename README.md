@@ -16,12 +16,13 @@
   <a href="https://github.com/zama-ai/concrete/releases"><img src="https://img.shields.io/github/v/release/zama-ai/concrete?style=flat-square"></a>
   <a href="https://github.com/zama-ai/concrete/blob/main/LICENSE.txt"><img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-%23ffb243?style=flat-square"></a>
   <a href="https://github.com/zama-ai/bounty-program"><img src="https://img.shields.io/badge/Contribute-Zama%20Bounty%20Program-%23ffd208?style=flat-square"></a>
+  <a href="https://slsa.dev"><img alt="SLSA 3" src="https://slsa.dev/images/gh-badge-level3.svg" /></a>
 </p>
 
 ## About
 
 ### What is Concrete
-**Concrete** is an open-source FHE Compiler that simplifies the use of fully homomorphic encryption (FHE). Concrete framework contains a TFHE Compiler based on LLVM, making writing FHE programs an easy task for developers. 
+**Concrete** is an open-source FHE Compiler that simplifies the use of fully homomorphic encryption (FHE). Concrete framework contains a TFHE Compiler based on LLVM, making writing FHE programs an easy task for developers.
 
 Fully Homomorphic Encryption (FHE) enables performing computations on encrypted data directly without the need to decrypt it first. FHE allows developers to build services that ensure privacy for all users. FHE is also an excellent solution against data breaches as everything is performed on encrypted data. Even if the server is compromised, no sensitive data will be leaked.
 
@@ -78,7 +79,7 @@ docker pull zamafhe/concrete-python:v2.0.0
 *Find more detailed installation instructions in [this part of the documentation](https://docs.zama.ai/concrete/getting-started/installing)*
 
 <p align="right">
-  <a href="#about" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a>
 </p>
 
 ### A simple example
@@ -111,10 +112,10 @@ assert result == add(2, 6)
 *This example is explained in more detail [in this part of the documentation](https://docs.zama.ai/concrete/getting-started/quick_start).*
 
 <p align="right">
-  <a href="#about" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a>
 </p>
 
-## Resources 
+## Resources
 
 ### Concrete deep dive
 - [Part I: Concrete, Zama's Fully Homomorphic Compiler](https://www.zama.ai/post/zama-concrete-fully-homomorphic-encryption-compiler)
@@ -137,7 +138,7 @@ assert result == add(2, 6)
 Full, comprehensive documentation is available at [https://docs.zama.ai/concrete](https://docs.zama.ai/concrete).
 
 <p align="right">
-  <a href="#about" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a>
 </p>
 
 
@@ -155,7 +156,7 @@ To cite Concrete in academic papers, please use the following entry:
   note={\url{https://github.com/zama-ai/concrete}},
 }
 ```
-### Contributing 
+### Contributing
 
 There are two ways to contribute to Concrete. You can:
 - [Open issues](https://github.com/zama-ai/concrete/issues/new/choose) to report bugs and typos, or to suggest new ideas
@@ -163,15 +164,15 @@ There are two ways to contribute to Concrete. You can:
 
 Becoming an approved contributor involves signing our Contributor License Agreement (CLA). Only approved contributors can send pull requests (PRs), so get in touch before you do!
 
-Additionally, you can contribute to advancing the FHE space with Zama by participating in our [Bounty Program and Grant Programs](https://github.com/zama-ai/bounty-and-grant-program)! 
+Additionally, you can contribute to advancing the FHE space with Zama by participating in our [Bounty Program and Grant Programs](https://github.com/zama-ai/bounty-and-grant-program)!
 <br></br>
- 
+
 ### License
-This software is distributed under the **BSD-3-Clause-Clear**. [Check for more details]( https://github.com/zama-ai/concrete/blob/main/LICENSE.txt)  
+This software is distributed under the **BSD-3-Clause-Clear**. [Check for more details]( https://github.com/zama-ai/concrete/blob/main/LICENSE.txt)
 
 If you have any questions, please contact us at hello@zama.ai.
 <p align="right">
-  <a href="#about" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a>
 </p>
 
 ## Support
@@ -185,10 +186,10 @@ If you have any questions, please contact us at hello@zama.ai.
 </a>
 
 
-🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development. 
+🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development.
 
 
 <p align="right">
-  <a href="#about" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a>
 </p>
 
