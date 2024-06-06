@@ -42,7 +42,8 @@ from .utils import MAXIMUM_TLU_BIT_WIDTH, Comparison, _FromElementsOp
 
 # pylint: enable=import-error,no-name-in-module
 
-# See https://raw.githubusercontent.com/zama-ai/concrete/main/compilers/concrete-optimizer/v0-parameters/ref/v0_last_128
+# See
+# github.com/zama-ai/concrete/blob/main/compilers/concrete-optimizer/v0-parameters/ref/v0_last_128
 # Provide a very coarse way to compare 2 alternative code generation
 LUT_COSTS_V0_NORM2_0 = {
     1: 29,
