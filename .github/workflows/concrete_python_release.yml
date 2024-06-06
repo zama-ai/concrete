@@ -92,19 +92,19 @@ jobs:
 
             rustup toolchain install nightly-2024-01-31
             rm -rf /build/*
-            
+
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
             echo "Using $PYTHON"
 
             dnf -y install graphviz graphviz-devel
-            
+
             cd /concrete/frontends/concrete-python
             make PYTHON=$PYTHON venv
             source .venv/bin/activate
-            
+
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$(which python) python-bindings
-            
+
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -112,8 +112,9 @@ jobs:
 
             export COMPILER_BUILD_DIRECTORY="/build"
             make whl
-            
+
             deactivate
+
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
@@ -175,7 +176,7 @@ jobs:
           # Install requirements
           pip install -r $CONCRETE_PYTHON/requirements.txt
           pip install -r $CONCRETE_PYTHON/requirements.dev.txt
-          
+
           # Build python bindings of concrete compiler
           cd $CONCRETE_COMPILER
           echo "Debug: ccache statistics (prior to the build):" && ccache -s
@@ -198,8 +199,35 @@ jobs:
           path: frontends/concrete-python/dist/*macos*.whl
           retention-days: 3
 
-  push:
+  hash:
+    # Generate hashes for the wheels, used later for provenance.
     needs: [build-linux-x86, build-macos]
+    runs-on: ubuntu-latest
+    outputs:
+      hash: ${{ steps.hash.outputs.hash }}
+    steps:
+      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        with:
+          path: frontends/concrete-python/dist
+          pattern: wheel-*
+          merge-multiple: true
+      - name: generate hash
+        id: hash
+        run: cd frontends/concrete-python/dist && echo "hash=$(sha256sum *.whl | base64 -w0)" >> $GITHUB_OUTPUT
+
+  provenance:
+    needs: [hash]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    # Can't pin with hash due to how this workflow works.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: ${{ needs.hash.outputs.hash }}
+
+  push:
+    needs: [build-linux-x86, build-macos, provenance]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -208,7 +236,19 @@ jobs:
         with:
           path: wheels
           merge-multiple: true
-
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*.intoto.jsonl'
+      # When building a new tag, create a new draft release.
+      - name: create draft release
+        if: ${{ env.RELEASE_TYPE == 'public' || env.RELEASE_TYPE == 'nightly' }}
+        run: |
+          export TAG=$(git describe --tags --abbrev=0)
+          gh release create --draft --repo ${{ github.repository }}
+          --verify-tag  $TAG
+          *.intoto.jsonl/* wheels/*
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Upload wheels to S3
         if: ${{ env.RELEASE_TYPE == 'public' || env.RELEASE_TYPE == 'nightly' }}
         env:
