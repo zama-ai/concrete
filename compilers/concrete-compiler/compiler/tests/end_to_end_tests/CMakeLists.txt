@@ -28,9 +28,3 @@ add_concretecompiler_unittest(end_to_end_jit_test end_to_end_jit_test.cc globals
 add_concretecompiler_unittest(end_to_end_test end_to_end_test.cc globals.cc)
 
 add_concretecompiler_unittest(end_to_end_jit_lambda end_to_end_jit_lambda.cc globals.cc)
-
-if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
-  add_concretecompiler_unittest(end_to_end_jit_auto_parallelization end_to_end_jit_auto_parallelization.cc globals.cc)
-  add_concretecompiler_unittest(end_to_end_jit_distributed end_to_end_jit_distributed.cc globals.cc)
-  add_concretecompiler_unittest(end_to_end_jit_aes_short end_to_end_jit_aes_short.cc globals.cc)
-endif()

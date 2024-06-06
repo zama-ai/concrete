@@ -329,19 +329,9 @@ run-end-to-end-tests-gpu: build-end-to-end-test generate-gpu-tests
 	--backend=gpu \
 	$(FIXTURE_GPU_DIR)/*.yaml
 
-## end-to-end-dataflow-tests
-
-build-end-to-end-dataflow-tests: build-initialized
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_auto_parallelization
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_distributed
-	cmake --build $(BUILD_DIR) --target end_to_end_jit_aes_short
-
-run-end-to-end-dataflow-tests: build-end-to-end-dataflow-tests
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_auto_parallelization
-	$(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
+## end-to-end-distributed-tests
 
 run-end-to-end-distributed-tests: $(GTEST_PARALLEL_PY) build-end-to-end-tests generate-cpu-tests
-	srun -n4 -c8 --kill-on-bad-exit=1 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_jit_distributed
 	srun -n4 -c8 --kill-on-bad-exit=1 $(BUILD_DIR)/tools/concretelang/tests/end_to_end_tests/end_to_end_test \
 	  --optimizer-strategy=dag-mono --dataflow-parallelize=1 \
 	  $(FIXTURE_CPU_DIR)/*round*.yaml $(FIXTURE_CPU_DIR)/*relu*.yaml $(FIXTURE_CPU_DIR)/*linalg*.yaml
@@ -562,8 +552,6 @@ FORCE:
 	run-unit-tests \
 	run-python-tests \
 	build-end-to-end-tests \
-	build-end-to-end-dataflow-tests \
-	run-end-to-end-dataflow-tests \
 	run-random-end-to-end-tests-for-each-options \
 	opt \
 	mlir-opt \

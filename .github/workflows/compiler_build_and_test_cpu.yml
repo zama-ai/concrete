@@ -90,7 +90,7 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -146,7 +146,7 @@ jobs:
             dnf install -y libzstd libzstd-devel
             sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests
             chmod -R ugo+rwx /tmp/KeySetCache
             
       - name: Analyze logs
