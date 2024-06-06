@@ -39,6 +39,11 @@ template <typename Op> bool verifyPartitionConsistency(Op op) {
     partitionCount++;
     partitionAttr = dest.value();
   }
+  if (partitionCount == 2) {
+    op->emitOpError(
+        "only one partition need to be specified, not both src and dest");
+    return false;
+  }
   return true;
 }
 

@@ -31,7 +31,7 @@ void FHEDialect::initialize() {
 #include "concretelang/Dialect/FHE/IR/FHEOpsTypes.cpp.inc"
       >();
 
-  mlir::Dialect::addAttributes<
+  addAttributes<
 #define GET_ATTRDEF_LIST
 #include "concretelang/Dialect/FHE/IR/FHEAttrs.cpp.inc"
       >();
