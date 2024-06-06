@@ -8,7 +8,10 @@ from concrete.fhe.tfhers.dtypes import TFHERSIntegerType, TFHERSParams
 
 
 def default_params() -> TFHERSParams:
-    """Default tfhers params used for testing."""
+    """Default tfhers params used for testing.
+
+    https://github.com/zama-ai/tfhe-rs/blob/main/tfhe/src/shortint/parameters/classic/p_fail_2_minus_40/ks_pbs.rs#L232
+    """
     return TFHERSParams(
         761,
         1,
