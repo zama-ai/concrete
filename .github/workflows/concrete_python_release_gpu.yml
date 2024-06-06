@@ -57,10 +57,10 @@ jobs:
           sudo apt-get remove -y nodejs
           sudo apt-get remove -y npm
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-          chmod +x ~/.nvm/nvm.sh
           export NVM_DIR="~/.nvm"
+          ls -R $NVM_DIR/
+          chmod +x $NVM_DIR/nvm.sh
           source $NVM_DIR/nvm.sh
-          source ~/.bashrc
           nvm install 16
           node -v
 
