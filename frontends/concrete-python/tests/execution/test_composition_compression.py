@@ -2,8 +2,6 @@
 Tests composition + compression
 """
 
-import numpy as np
-
 from concrete import fhe
 
 
