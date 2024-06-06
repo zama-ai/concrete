@@ -71,22 +71,18 @@ def get_random_string(length):
 # FHE functions
 @fhe.module()
 class MyModule:
-    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted", "z": "encrypted"})
     def xor3(x, y, z):
         return x ^ y ^ z
 
-    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted", "z": "encrypted"})
     def iftern(x, y, z):
         return z ^ (x & (y ^ z))
 
-    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted", "z": "encrypted"})
     def maj(x, y, z):
         return (x & y) | (z & (x | y))
 
-    @staticmethod
     @fhe.function({"x": "encrypted"})
     def rotate30(x):
         ans = fhe.zeros((32,))
@@ -94,7 +90,6 @@ class MyModule:
         ans[0:30] = x[2:32]
         return ans
 
-    @staticmethod
     @fhe.function({"x": "encrypted"})
     def rotate5(x):
         ans = fhe.zeros((32,))
@@ -102,7 +97,6 @@ class MyModule:
         ans[0:5] = x[27:32]
         return ans
 
-    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add2(x, y):
         ans = fhe.zeros((32,))
@@ -115,7 +109,6 @@ class MyModule:
 
         return ans
 
-    @staticmethod
     @fhe.function(
         {"x": "encrypted", "y": "encrypted", "u": "encrypted", "v": "encrypted", "w": "encrypted"}
     )

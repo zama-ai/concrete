@@ -196,6 +196,6 @@ def function(parameters: Dict[str, Union[str, EncryptionStatus]]):
     """
 
     def decoration(function_: Callable):
-        return functools.wraps(function_)(FunctionDef(function_, parameters))
+        return functools.wraps(function_)(FunctionDef(staticmethod(function_), parameters))
 
     return decoration
