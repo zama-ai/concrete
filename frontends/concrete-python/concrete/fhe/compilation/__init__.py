@@ -16,6 +16,7 @@ from .configuration import (
     Exactness,
     MinMaxStrategy,
     MultiParameterStrategy,
+    MultiplicationStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
 )

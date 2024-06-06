@@ -226,6 +226,9 @@ class Converter:
                     shifts_with_promotion=configuration.shifts_with_promotion,
                     multivariate_strategy_preference=configuration.multivariate_strategy_preference,
                     min_max_strategy_preference=configuration.min_max_strategy_preference,
+                    multiplication_strategy_preference=(
+                        configuration.multiplication_strategy_preference
+                    ),
                 ),
                 ProcessRounding(
                     rounding_exactness=configuration.rounding_exactness,

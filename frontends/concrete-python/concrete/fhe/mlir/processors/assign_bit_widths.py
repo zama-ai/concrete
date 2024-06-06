@@ -11,6 +11,7 @@ from ...compilation.configuration import (
     BitwiseStrategy,
     ComparisonStrategy,
     MinMaxStrategy,
+    MultiplicationStrategy,
     MultivariateStrategy,
 )
 from ...dtypes import Integer
@@ -37,6 +38,7 @@ class AssignBitWidths(MultiGraphProcessor):
     shifts_with_promotion: bool
     multivariate_strategy_preference: List[MultivariateStrategy]
     min_max_strategy_preference: List[MinMaxStrategy]
+    multiplication_strategy_preference: List[MultiplicationStrategy]
 
     def __init__(
         self,
@@ -47,6 +49,7 @@ class AssignBitWidths(MultiGraphProcessor):
         shifts_with_promotion: bool,
         multivariate_strategy_preference: List[MultivariateStrategy],
         min_max_strategy_preference: List[MinMaxStrategy],
+        multiplication_strategy_preference: List[MultiplicationStrategy],
     ):
         self.single_precision = single_precision
         self.composable = composable
@@ -55,6 +58,7 @@ class AssignBitWidths(MultiGraphProcessor):
         self.shifts_with_promotion = shifts_with_promotion
         self.multivariate_strategy_preference = multivariate_strategy_preference
         self.min_max_strategy_preference = min_max_strategy_preference
+        self.multiplication_strategy_preference = multiplication_strategy_preference
 
     def apply_many(self, graphs: Dict[str, Graph]):
         optimizer = z3.Optimize()
@@ -73,6 +77,7 @@ class AssignBitWidths(MultiGraphProcessor):
                 self.shifts_with_promotion,
                 self.multivariate_strategy_preference,
                 self.min_max_strategy_preference,
+                self.multiplication_strategy_preference,
             )
 
             nodes = graph.query_nodes(ordered=True)
@@ -142,6 +147,7 @@ class AdditionalConstraints:
     shifts_with_promotion: bool
     multivariate_strategy_preference: List[MultivariateStrategy]
     min_max_strategy_preference: List[MinMaxStrategy]
+    multiplication_strategy_preference: List[MultiplicationStrategy]
 
     node: Node
     bit_width: z3.Int
@@ -158,6 +164,7 @@ class AdditionalConstraints:
         shifts_with_promotion: bool,
         multivariate_strategy_preference: List[MultivariateStrategy],
         min_max_strategy_preference: List[MinMaxStrategy],
+        multiplication_strategy_preference: List[MultiplicationStrategy],
     ):
         self.optimizer = optimizer
         self.graph = graph
@@ -168,6 +175,7 @@ class AdditionalConstraints:
         self.shifts_with_promotion = shifts_with_promotion
         self.multivariate_strategy_preference = multivariate_strategy_preference
         self.min_max_strategy_preference = min_max_strategy_preference
+        self.multiplication_strategy_preference = multiplication_strategy_preference
 
     def generate_for(self, node: Node, bit_width: z3.Int):
         """
@@ -392,6 +400,34 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
+    def multiplication(self, node: Node, preds: List[Node]):
+        assert len(preds) == 2
+
+        x = preds[0]
+        y = preds[1]
+
+        assert x.output.is_encrypted
+        assert y.output.is_encrypted
+
+        for strategy in self.multiplication_strategy_preference:
+            if strategy.can_be_used(x.output, y.output):
+                new_x_bit_width, new_y_bit_width = strategy.promotions(x.output, y.output)
+                self.constraint(node, self.bit_widths[x] >= new_x_bit_width)
+                self.constraint(node, self.bit_widths[y] >= new_y_bit_width)
+
+                if strategy == MultiplicationStrategy.TWO_TLU_PROMOTED:
+                    self.constraint(node, self.bit_widths[x] == self.bit_widths[y])
+
+                node.properties["strategy"] = strategy
+                return
+
+        fallback = MultiplicationStrategy.TWO_TLU_PROMOTED
+        new_x_bit_width, new_y_bit_width = fallback.promotions(x.output, y.output)
+        
+        self.constraint(node, self.bit_widths[x] >= new_x_bit_width)
+        self.constraint(node, self.bit_widths[y] >= new_y_bit_width)
+        self.constraint(node, self.bit_widths[x] == self.bit_widths[y])
+
     # ==========
     # Operations
     # ==========
@@ -547,8 +583,7 @@ class AdditionalConstraints:
 
     multiply = {
         all_inputs_are_encrypted: {
-            inputs_share_precision,
-            inputs_require_one_more_bit,
+            multiplication,
         },
         some_inputs_are_clear: {
             inputs_and_output_share_precision,

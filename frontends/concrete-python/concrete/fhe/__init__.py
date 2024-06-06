@@ -25,6 +25,7 @@ from .compilation import (
     MinMaxStrategy,
     ModuleDebugArtifacts,
     MultiParameterStrategy,
+    MultiplicationStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
     Server,

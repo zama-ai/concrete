@@ -936,6 +936,120 @@ class MinMaxStrategy(str, Enum):
         return x.dtype.bit_width, y.dtype.bit_width
 
 
+class MultiplicationStrategy(str, Enum):
+    """
+    MultiplicationStrategy, to specify implementation preference for encrypted multiplications.
+    """
+
+    TWO_TLU_PROMOTED = "two-tlu-promoted"
+    # -----------------------------------------------------------------------------
+    # conditions:
+    # - (x - y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    # - (x + y).bit_width <= MAXIMUM_TLU_BIT_WIDTH
+    #
+    # bit-width assignment:
+    # - x :: 8-bits -> 9-bits
+    # - y :: 3-bits -> 9-bits
+    #
+    # execution:
+    # - tlu(x - y) - tlu(x + y) :: (9-bits -> 11-bits) - (9-bits -> 11-bits)
+
+    @classmethod
+    def parse(cls, string: str) -> "MultiplicationStrategy":
+        """
+        Convert a string to a MinMaxStrategy.
+        """
+
+        if isinstance(string, cls):
+            return string
+
+        if not isinstance(string, str):
+            message = f"{string} cannot be parsed to a {cls.__name__}"
+            raise TypeError(message)
+
+        string = string.lower()
+        for value in MultiplicationStrategy:
+            if string == value.value:
+                return value  # pragma: no cover
+
+        message = (
+            f"'{string}' is not a valid '{friendly_type_format(cls)}' ("
+            f"{', '.join(v.value for v in MultiplicationStrategy)})"
+        )
+        raise ValueError(message)
+
+    def can_be_used(self, x: ValueDescription, y: ValueDescription) -> bool:
+        """
+        Get if the strategy can be used for the operation.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the operation
+
+            y (ValueDescription):
+                description of the rhs of the operation
+
+        Returns:
+            bool:
+                whether the strategy can be used for the operation
+        """
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        if self in {MultiplicationStrategy.TWO_TLU_PROMOTED}:
+            x_minus_y_min = x.dtype.min() - y.dtype.max()
+            x_minus_y_max = x.dtype.max() - y.dtype.min()
+
+            x_plus_y_min = x.dtype.min() + y.dtype.min()
+            x_plus_y_max = x.dtype.max() + y.dtype.max()
+
+            x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+            x_plus_y_range = [x_plus_y_min, x_plus_y_max]
+
+            appropriate_dtype = Integer.that_can_represent(x_minus_y_range + x_plus_y_range)
+
+            if appropriate_dtype.bit_width > MAXIMUM_TLU_BIT_WIDTH:  # pragma: no cover
+                return False
+
+        return True
+
+    def promotions(self, x: ValueDescription, y: ValueDescription) -> Tuple[int, int]:
+        """
+        Get bit-width promotions for the strategy.
+
+        Args:
+            x (ValueDescription):
+                description of the lhs of the operation
+
+            y (ValueDescription):
+                description of the rhs of the operation
+
+        Returns:
+            Tuple[int, int]:
+                required minimum bit-width for x and y to use the strategy
+        """
+
+        assert isinstance(x.dtype, Integer)
+        assert isinstance(y.dtype, Integer)
+
+        if self == MultiplicationStrategy.TWO_TLU_PROMOTED:
+            x_minus_y_min = x.dtype.min() - y.dtype.max()
+            x_minus_y_max = x.dtype.max() - y.dtype.min()
+
+            x_plus_y_min = x.dtype.min() + y.dtype.min()
+            x_plus_y_max = x.dtype.max() + y.dtype.max()
+
+            x_minus_y_range = [x_minus_y_min, x_minus_y_max]
+            x_plus_y_range = [x_plus_y_min, x_plus_y_max]
+
+            appropriate_dtype = Integer.that_can_represent(x_minus_y_range + x_plus_y_range)
+
+            return appropriate_dtype.bit_width, appropriate_dtype.bit_width
+
+        return x.dtype.bit_width, y.dtype.bit_width
+
+
 class Configuration:
     """
     Configuration class, to allow the compilation process to be customized.
@@ -993,6 +1107,7 @@ class Configuration:
     detect_overflow_in_simulation: bool
     dynamic_indexing_check_out_of_bounds: bool
     dynamic_assignment_check_out_of_bounds: bool
+    multiplication_strategy_preference: List[MultiplicationStrategy]
 
     def __init__(
         self,
@@ -1061,6 +1176,9 @@ class Configuration:
         detect_overflow_in_simulation: bool = False,
         dynamic_indexing_check_out_of_bounds: bool = True,
         dynamic_assignment_check_out_of_bounds: bool = True,
+        multiplication_strategy_preference: Optional[
+            Union[MultiplicationStrategy, str, List[Union[MultiplicationStrategy, str]]]
+        ] = None,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1166,6 +1284,19 @@ class Configuration:
         self.dynamic_indexing_check_out_of_bounds = dynamic_indexing_check_out_of_bounds
         self.dynamic_assignment_check_out_of_bounds = dynamic_assignment_check_out_of_bounds
 
+        self.multiplication_strategy_preference = (
+            []
+            if multiplication_strategy_preference is None
+            else (
+                [
+                    MultiplicationStrategy.parse(strategy)
+                    for strategy in multiplication_strategy_preference
+                ]
+                if isinstance(multiplication_strategy_preference, list)
+                else [MultiplicationStrategy.parse(multiplication_strategy_preference)]
+            )
+        )
+
         self._validate()
 
     class Keep:
@@ -1240,6 +1371,10 @@ class Configuration:
         detect_overflow_in_simulation: Union[Keep, bool] = KEEP,
         dynamic_indexing_check_out_of_bounds: Union[Keep, bool] = KEEP,
         dynamic_assignment_check_out_of_bounds: Union[Keep, bool] = KEEP,
+        multiplication_strategy_preference: Union[
+            Keep,
+            Optional[Union[MultiplicationStrategy, str, List[Union[MultiplicationStrategy, str]]]],
+        ] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
@@ -1269,6 +1404,7 @@ class Configuration:
                 "bitwise_strategy_preference",
                 "multivariate_strategy_preference",
                 "min_max_strategy_preference",
+                "multiplication_strategy_preference",
             ]
             if name in already_checked_by_parse_methods:
                 continue
