@@ -61,7 +61,7 @@ jobs:
           ls -R $NVM_DIR/
           chmod +x $NVM_DIR/nvm.sh
           source $NVM_DIR/nvm.sh
-          nvm install 16
+          nvm install 18
           node -v
 
       - name: Checkout
@@ -130,6 +130,20 @@ jobs:
             make whl
             
             deactivate
+
+      - name: Upload wheels to S3
+        if: ${{ env.RELEASE_TYPE == 'public' || env.RELEASE_TYPE == 'nightly' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.AWS_CLOUDFRONT_PYPI_DISTRIBUTION_ID }}
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws s3 sync frontends/concrete-python/dist/ s3://${S3_BUCKET_NAME}/concrete-python-gpu
 
       - name: Upload wheel
         uses: actions/upload-artifact@v4
