@@ -61,7 +61,7 @@ jobs:
           ls -R $NVM_DIR/
           chmod +x $NVM_DIR/nvm.sh
           source $NVM_DIR/nvm.sh
-          nvm install 8
+          nvm install 12.0
           node -v
 
       - name: Checkout
