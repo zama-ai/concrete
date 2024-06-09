@@ -73,7 +73,7 @@ jobs:
         # for artifacts restrictions see https://github.com/actions/download-artifact/issues/3
         # for cache restrictions see https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache
         # and  https://github.com/actions/cache/issues/692
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v5
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow_conclusion: ""
