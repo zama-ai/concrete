@@ -118,6 +118,15 @@ class Server:
 
         options.simulation(is_simulated)
 
+        if configuration.v0_parameter is not None:
+            options.set_v0_parameter(
+                configuration.v0_parameter.glwe_dim,
+                configuration.v0_parameter.log_poly_size,
+                configuration.v0_parameter.n_small,
+                configuration.v0_parameter.br_level,
+                configuration.v0_parameter.br_log_base,
+                configuration.v0_parameter.ks_level,
+                configuration.v0_parameter.ks_log_base)
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)
         options.set_auto_parallelize(configuration.auto_parallelize)

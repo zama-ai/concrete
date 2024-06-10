@@ -20,6 +20,14 @@ MAXIMUM_TLU_BIT_WIDTH = 16
 DEFAULT_P_ERROR = None
 DEFAULT_GLOBAL_P_ERROR = 1 / 100_000
 
+class V0Parameter():
+    glwe_dim: int
+    log_poly_size: int
+    n_small: int
+    br_level: int
+    br_log_base: int
+    ks_level: int
+    ks_log_base: int
 
 class ParameterSelectionStrategy(str, Enum):
     """
@@ -993,6 +1001,7 @@ class Configuration:
     detect_overflow_in_simulation: bool
     dynamic_indexing_check_out_of_bounds: bool
     dynamic_assignment_check_out_of_bounds: bool
+    v0_parameter: Optional[V0Parameter]
 
     def __init__(
         self,

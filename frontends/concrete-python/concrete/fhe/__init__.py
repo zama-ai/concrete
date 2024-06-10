@@ -27,6 +27,7 @@ from .compilation import (
     MultiParameterStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
+    V0Parameter,
     Server,
     Value,
     inputset,
