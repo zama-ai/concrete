@@ -1,8 +1,5 @@
 SecurityCurve curves[] = {
-	SecurityCurve(80,-0.04045822621883835, 1.7183812000404686, 450, KeyFormat::BINARY),
-	SecurityCurve(112,-0.029881371645803536, 2.6539316216894946, 450, KeyFormat::BINARY),
-	SecurityCurve(128,-0.026599462343105267, 2.981543184145991, 450, KeyFormat::BINARY),
-	SecurityCurve(192,-0.018894148763647572, 4.2700349965659115, 532, KeyFormat::BINARY),
+	SecurityCurve(128, -0.025696778711484593, 2.675931372549016, 450, KeyFormat::BINARY),
 };
 
-size_t curvesLen = 4;
+size_t curvesLen = 1;
