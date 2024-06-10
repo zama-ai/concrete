@@ -50,19 +50,19 @@ jobs:
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
-      - name: fix node
-        shell: bash
-        run: |
-          cat /etc/issue
-          sudo apt-get remove -y nodejs
-          sudo apt-get remove -y npm
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-          export NVM_DIR="/home/ubuntu/.nvm"
-          ls -R $NVM_DIR/
-          chmod +x $NVM_DIR/nvm.sh
-          source $NVM_DIR/nvm.sh
-          nvm install 12.0
-          node -v
+      # - name: fix node
+      #   shell: bash
+      #   run: |
+      #     cat /etc/issue
+      #     sudo apt-get remove -y nodejs
+      #     sudo apt-get remove -y npm
+      #     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+      #     export NVM_DIR="/home/ubuntu/.nvm"
+      #     ls -R $NVM_DIR/
+      #     chmod +x $NVM_DIR/nvm.sh
+      #     source $NVM_DIR/nvm.sh
+      #     nvm install 12.0
+      #     node -v
 
       - name: Checkout
         uses: actions/checkout@v3
