@@ -1,0 +1,69 @@
+name: Concrete Python Test GPU Wheel
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
+      user_inputs:
+        description: 'version of CP to test. It should be available in Zama PyPI'
+        required: true
+        type: string
+
+env:
+  CP_VERSION: ${{ inputs.user_inputs }}
+
+jobs:
+  test-linux-x86:
+    needs: [build-linux-x86]
+    continue-on-error: true
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    runs-on: ${{ github.event.inputs.runner_name }}
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # TODO: specify CP version
+      - name: Install CP
+        run: pip install --pre --extra-index-url https://pypi.zama.ai/gpu/ concrete-python
+
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: repo
+
+      - name: Test wheel
+        run: |
+          CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
+
+          # Initialize an empty test environment
+          cd $(mktemp -d)
+          python -m venv .testenv && source .testenv/bin/activate
+
+          # Install extra requirements for tests
+          sudo apt update -y
+          sudo apt install -y graphviz libgraphviz-dev
+          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
+          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
+
+          # Running tests
+          cd $CONCRETE_PYTHON
+          make pytest-gpu

@@ -110,3 +110,8 @@ check_run_name = "Concrete Python Release"
 workflow = "concrete_python_release_gpu.yml"
 profile = "m7i-cpu-test"
 check_run_name = "Concrete Python Release (GPU)"
+
+[command.concrete-python-test-gpu-wheel]
+workflow = "concrete_python_test_gpu_wheel.yml"
+profile = "gpu-test"
+check_run_name = "Concrete Python Test GPU Wheel"

@@ -155,47 +155,10 @@ jobs:
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
 
-
-  test-linux-x86:
-    needs: [build-linux-x86]
-    continue-on-error: true
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-    runs-on: ${{ github.event.inputs.runner_name }}
-    steps:
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Download wheels
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
-          path: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          path: repo
-      - name: Test wheel
-        run: |
-          WHEEL_DIR=$(pwd)/${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
-          CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
-
-          # Initialize an empty test environment
-          cd $(mktemp -d)
-          python -m venv .testenv && source .testenv/bin/activate
-
-          # Install the concrete-python wheel
-          pip install $WHEEL_DIR/*.whl
-
-          # Install extra requirements for tests
-          sudo apt update -y
-          sudo apt install -y graphviz libgraphviz-dev
-          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
-          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
-
-          # Running tests
-          cd $CONCRETE_PYTHON
-          make pytest-gpu
+  concrete-python-public-release:
+    needs: [push]
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-test-release-gpu
+      user_inputs: "TODO"
