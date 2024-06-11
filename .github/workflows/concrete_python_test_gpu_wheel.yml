@@ -28,7 +28,6 @@ env:
 
 jobs:
   test-linux-x86:
-    needs: [build-linux-x86]
     continue-on-error: true
     strategy:
       matrix:
