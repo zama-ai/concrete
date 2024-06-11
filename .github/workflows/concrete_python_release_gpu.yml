@@ -155,10 +155,10 @@ jobs:
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
 
-  concrete-python-public-release:
+  test-gpu-wheel:
     needs: [push]
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
-      command: concrete-python-test-release-gpu
+      command: concrete-python-test-gpu-wheel
       user_inputs: "TODO"
