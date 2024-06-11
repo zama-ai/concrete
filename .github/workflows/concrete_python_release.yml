@@ -245,9 +245,10 @@ jobs:
         if: ${{ env.RELEASE_TYPE == 'public' || env.RELEASE_TYPE == 'nightly' }}
         run: |
           export TAG=$(git describe --tags --abbrev=0)
-          gh release create --draft --repo ${{ github.repository }}
-          --verify-tag  $TAG
-          *.intoto.jsonl/* wheels/*
+          echo $TAG
+          gh release create --draft --repo ${{ github.repository }} \
+          --verify-tag $TAG \
+          wheels/*
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload wheels to S3
