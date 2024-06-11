@@ -53,6 +53,22 @@ from concrete import fhe
                 [4, 4],
             ],
         ),
+        pytest.param(
+            {
+                "kernel_shape": (2, 2),
+                "strides": (2, 2),
+            },
+            [
+                [4, 6, 7, 3],
+                [2, -3, 3, -7],
+                [0, 3, -4, 5],
+                [6, 6, -6, -1],
+            ],
+            [
+                [6, 7],
+                [6, 5],
+            ],
+        ),
     ],
 )
 def test_maxpool(
@@ -95,6 +111,15 @@ def test_maxpool(
             },
             {
                 "x": {"status": "encrypted", "range": [-10, 10], "shape": (1, 1, 6, 7)},
+            },
+        ),
+        pytest.param(
+            {
+                "kernel_shape": (2, 2),
+                "strides": (2, 2),
+            },
+            {
+                "x": {"status": "encrypted", "range": [-8, 8], "shape": (1, 1, 4, 4)},
             },
         ),
     ],
