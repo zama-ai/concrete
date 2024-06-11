@@ -28,10 +28,10 @@ env:
 
 jobs:
   test-linux-x86:
-    continue-on-error: true
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
+      fail-fast: false
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
       - name: Setup Python
