@@ -261,7 +261,7 @@ jobs:
         run: |
           pip install boto3 bigtree
           # upload wheels
-          aws s3 sync ./wheels/ s3://${S3_BUCKET_NAME}/concrete-python
+          aws s3 sync ./wheels/ s3://${S3_BUCKET_NAME}/cpu/concrete-python
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
 
