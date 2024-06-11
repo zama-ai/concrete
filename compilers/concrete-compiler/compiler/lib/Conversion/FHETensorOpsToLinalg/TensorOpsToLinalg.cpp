@@ -1842,7 +1842,7 @@ struct FHELinalgMaxpool2dToLinalgMaxpool2d
         rewriter.getI64VectorAttr({1, 1});
 
     const mlir::DenseIntElementsAttr stridesAttr =
-        maxpool2dOp.getDilations().value_or(defaultAttr);
+        maxpool2dOp.getStrides().value_or(defaultAttr);
     const mlir::DenseIntElementsAttr dilationsAttr =
         maxpool2dOp.getDilations().value_or(defaultAttr);
 
