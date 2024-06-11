@@ -7,7 +7,7 @@ In Concrete, there are basically two types of operations:
 TLU are essential to be able to compile all functions, by keeping the semantic of user's program, but
 they can be slower, depending on the bitwidth of the inputs of the TLU.
 
-In this document, we explain briefly, from a user point of view, how it works for non-linear operations as comparisons, min/max, bitwise operations, shifts. In [the poweruser documentation](../dev/compilation/compiler_internals.md), we enter a bit more into the details.
+In this document, we explain briefly, from a user point of view, how it works for non-linear operations as comparisons, min/max, bitwise operations, shifts. In [the poweruser documentation](table_lookups_advanced.md), we enter a bit more into the details.
 
 ## Changing bit width in the MLIR or dynamically with a TLU
 

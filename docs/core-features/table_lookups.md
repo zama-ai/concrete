@@ -1,6 +1,6 @@
 # Table lookup
 
-In TFHE, there exists mainly two operations: the linear operations (additions, subtractions, multiplications by integers) and the rest. And the rest is done with table lookups (TLUs), which means that a lot of things are done with TLU. In this document, we explain briefly, from a user point of view, how TLU can be used. In [the poweruser documentation](../dev/compilation/compiler_internals.md), we enter a bit more into the details.
+In TFHE, there exists mainly two operations: the linear operations (additions, subtractions, multiplications by integers) and the rest. And the rest is done with table lookups (TLUs), which means that a lot of things are done with TLU. In this document, we explain briefly, from a user point of view, how TLU can be used. In [the poweruser documentation](table_lookups_advanced.md), we enter a bit more into the details.
 
 ## Performance
 
@@ -133,7 +133,7 @@ As we said in the beginning of this document, bitsize of the inputs of TLU are c
 
 For lot of use-cases, like for example in Machine Learning, it is possible to replace the table lookup `y = T[i]` by some `y = T'[i']`, where `i'` only has the most significant bits of `i` and `T'` is a much shorter table, and still maintain a good accuracy of the function. The interest of such a method stands in the fact that, since the table `T'` is much smaller, the corresponding TLU will be done much more quickly.
 
-There are different flavors of doing this in Concrete. We describe them quickly here, and refer the user to the [poweruser documentation](../dev/compilation/compiler_internals.md) for more explanations.
+There are different flavors of doing this in Concrete. We describe them quickly here, and refer the user to the [poweruser documentation](table_lookups_advanced.md) for more explanations.
 
 The first possibility is to set `i'` as the truncation of `i`: here, we just take the most significant bits of `i`. This is done with `fhe.truncate_bit_pattern`.
 

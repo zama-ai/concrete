@@ -34,6 +34,27 @@ result = circuit.decrypt(encrypted_result)
 assert result == add(2, 6)
 ```
 
+## Decorator
+
+Another simple way to compile a function is to use a decorator.
+
+```python
+from concrete import fhe
+
+@fhe.compiler({"x": "encrypted"})
+def f(x):
+    return x + 42
+
+inputset = range(10)
+circuit = f.compile(inputset)
+
+assert circuit.encrypt_run_decrypt(10) == f(10)
+```
+
+{% hint style="info" %}
+This decorator is a way to add the `compile` method to the function object without changing its name elsewhere.
+{% endhint %}
+
 ## Importing the library
 
 Import the `fhe` module, which includes everything you need to perform homomorphic evaluation:

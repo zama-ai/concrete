@@ -1,6 +1,6 @@
 # Composing functions with modules
 
-In various cases, deploying a server that contains many compatible functions is important. `concrete-python` is now able to compile FHE _modules_, which can contain as many functions as needed. More importantly, modules support _composition_ of the different functions. This means the encrypted result of one function execution can be used as input of a different function, without needing to decrypt in between. A module is [deployed in a single artifact](../guides/deploy.md#deployment-of-modules), making as simple to use a single function project.
+In various cases, deploying a server that contains many compatible functions is important. `concrete-python` can compile FHE modules containing as many functions as needed. More importantly, modules support _composition_ of the different functions. This means the encrypted result of one function execution can be used as input of a different function, without needing to decrypt in between. A module is [deployed in a single artifact](../guides/deploy.md#deployment-of-modules), making as simple to use a single function project.
 
 Here is a first simple example:
 ```python
@@ -280,6 +280,3 @@ class Doubler:
        return noise_reset(counter * 2)
 ```
 
-## Single function composition without modules.
-
-It is also possible to compile a single function to be self-composable with the `fhe.AllComposable` policy without using modules. For this one simply has to set the [`composable`](../guides/configure.md#options) configuration setting to `True` when compiling.
