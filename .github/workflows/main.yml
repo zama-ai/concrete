@@ -268,6 +268,14 @@ jobs:
       command: concrete-python-release
       user_inputs: 'nightly'
 
+  concrete-python-nightly-release-gpu:
+    if: ${{ github.event_name == 'schedule' }}
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-release-gpu
+      user_inputs: 'nightly'
+
   concrete-python-public-release:
 #    needs: [compiler-cpu-build, compiler-macos-tests, compiler-publish-docker-images, concrete-python-tests-linux, concrete-python-tests-macos]
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
@@ -275,6 +283,14 @@ jobs:
     secrets: inherit
     with:
       command: concrete-python-release
+      user_inputs: 'public'
+
+  concrete-python-public-release-gpu:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    uses: ./.github/workflows/start_slab.yml
+    secrets: inherit
+    with:
+      command: concrete-python-release-gpu
       user_inputs: 'public'
 
   concrete-python-private-release:
