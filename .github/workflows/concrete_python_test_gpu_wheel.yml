@@ -46,7 +46,6 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v3
         with:
-          submodules: recursive
           path: repo
 
       - name: Test wheel
