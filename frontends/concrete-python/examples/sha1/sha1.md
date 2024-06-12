@@ -65,50 +65,18 @@ class MyModule:
 
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add2(x, y):
-        ans = fhe.zeros((32,))
-        cy = 0
-
-        for i in range(32):
-            t = x[i] + y[i] + cy
-            cy, tr = t >= 2, t % 2
-            ans[i] = tr
-
-        return ans
+        return fhe.bits(add_chunked_number(x, y))[0]
 
     @fhe.function(
         {"x": "encrypted", "y": "encrypted", "u": "encrypted", "v": "encrypted", "w": "encrypted"}
     )
     def add5(x, y, u, v, w):
-        ans = fhe.zeros((32,))
-        cy = 0
+        result = add_chunked_number(x, y)
+        result = add_chunked_number(result, u)
+        result = add_chunked_number(result, v)
+        result = add_chunked_number(result, w)
 
-        for i in range(32):
-            t = x[i] + y[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + u[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + v[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + w[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        return ans
+        return fhe.bits(result)[0]
 ```
 
 We then compile this Module, setting `p_error=10**-8` as a very small value to avoid computation
@@ -220,79 +188,79 @@ computed in: 320.265383 seconds
 
 ## Benchmarks
 
-We have executed our implementation on an HPC7a machine with Concrete 2.7.0rc1.
+We have executed our implementation on an HPC7a machine with Concrete 2.7.
 
 `python sha1.py --autotest` typically returns:
 
 ```
-Checking SHA1(fdASguUMBwhPcKuDpPqoRlQXLrLQbnxEvPJSQSIUDTBoaqrJlBualgoWEINmDZDYSuGuSOpGBWwWzjAfktWYZZUliv) for an input length 90
-sha1-digest: 5bb539fd423875ccc8a33148dae724f5b2cf9391
-computed in: 295.306287 seconds
-Checking SHA1(BYwXTbqE) for an input length 8
-sha1-digest: 90a8dcad6ddff7ca8fd487b80a37fcd250c56bed
-computed in: 145.341164 seconds
-Checking SHA1(rnPZh) for an input length 5
-sha1-digest: 47610d2c26ee8b45ab0f4c8f8e4d405b2cd37f1f
-computed in: 145.318081 seconds
-Checking SHA1(orRaJMGbUJtxITQvqiOCPjKJWYuHomuiexCQQgZyTeAAFJcgCftDCRAkcLKjRECelIMPQphGEUlSNthE) for an input length 80
-sha1-digest: bd74b4e64349d308f3b95b54cf61ee416bdd6b18
-computed in: 288.240576 seconds
-Checking SHA1(ROokDcdczajNPjlCPoWotaRJHBtOVyiyxMIIeCtxaDCjk) for an input length 45
-sha1-digest: 1ff546c3a64f27339781c095cbc097f392c2cccd
-computed in: 143.621941 seconds
-Checking SHA1(KbCXFt) for an input length 6
-sha1-digest: 7e5789f0c83fa5102004fbeeef3ac22244d1cdac
-computed in: 143.509567 seconds
-Checking SHA1(mpKnkHtrgokxgQSzcIjFtxKnhmMfZbIbkJavnkSxW) for an input length 41
-sha1-digest: 1308d9f7cba634ab2617edb5116b8bdf434f16f5
-computed in: 143.341450 seconds
-Checking SHA1(oauoWKJGyjjTcXqRIxFGuVuMwiwjKYfttQ) for an input length 34
-sha1-digest: 60367153b7049ca92eb979ad7b809c5a3f47a64e
-computed in: 143.693254 seconds
-Checking SHA1(ZMGiaIOmBJPncOsUCxj) for an input length 19
-sha1-digest: fafba9f2fe6b5a0fddad4ad765909c8fc32117c6
-computed in: 143.720215 seconds
-Checking SHA1(HwCXIHnFoGUgIBqaQrrpDnhEvPBX) for an input length 28
-sha1-digest: 5224cace20f8d20fa3ea8d9974b5ff3a0be7fd48
-computed in: 143.523006 seconds
-Checking SHA1(AfyzsimngrqeWoqZKOBRwVuvttfgJTpegMbiHjUNdWzTg) for an input length 45
-sha1-digest: 8ca27aca1c362ca63e50d58aa7065b4322f028a0
-computed in: 143.481069 seconds
-Checking SHA1(hNEUPakrqQpGGZvtHvht) for an input length 20
-sha1-digest: 36ae34ed85e62ac0f922e36fc98b23e725695be1
-computed in: 143.478666 seconds
-Checking SHA1(CjgfYYlNKqZdHeXFfqTwhycbGBeSpzpxKPwWItriiNKZCcEJRZlM) for an input length 52
-sha1-digest: 3c012f41c5fe4581f80e2901fc4bbbb70ff7a9ba
-computed in: 143.490262 seconds
-Checking SHA1(EXIGkYzWpcqpfRKCSbBJJqqmUBkFwWfPGooJvsVAshWjMr) for an input length 46
-sha1-digest: 2518c4d13ec7608f59632ac993b726e572c3aaae
-computed in: 143.840785 seconds
-Checking SHA1(sgzaAqZnhXmFJOJMyfGxweYFMmLeUHmMCWETfqzstzpFYKaGpnasiLHPTcJtukHztEQpXzquREcbtoJDaoqjfM) for an input length 86
-sha1-digest: 46f4b0653ed7ea0ce89cc18f6720e5e334d63a45
-computed in: 288.155301 seconds
-Checking SHA1(oRaisdHJovDxCnwyComEGejqMceBTOVhJucVnwgC) for an input length 40
-sha1-digest: 909f9c6275aa9f41d8ecaf52203bb0e24cf978d7
-computed in: 143.466817 seconds
-Checking SHA1(mtTWxtHerQgLdBGftWdiCwBKqtu) for an input length 27
-sha1-digest: 624a7dcec460061a2a6499dae978fe4afd674110
-computed in: 145.389956 seconds
-Checking SHA1(beYzkJLvZMmoXbQwqoVThpyaQ) for an input length 25
-sha1-digest: 25a9df47bd055384a9ee614c1dc7213c04f2087c
-computed in: 147.234881 seconds
-Checking SHA1(CpQWXXRNlXIoSZNxmXUwWHqmUAdlOrDyZPzzOhznlpGntrUgvktlZ) for an input length 53
-sha1-digest: f2bde6574d8f6aa360929f6a5f919700b16e093b
-computed in: 147.154393 seconds
-Checking SHA1(busWigrVdsXnkjTh) for an input length 16
-sha1-digest: fe47568d433278a38a4729f7891d03eaacdb0e40
-computed in: 147.465694 seconds
+Checking SHA1(yozulCBAPuFosqTBMwPTVmvQvmfhGFJjdtSSiemdytn) for an input length 43
+sha1-digest: aa1871c2d560221e14f18b43d559aafc4920d9bc
+computed in: 93.844131 seconds
+Checking SHA1(HwXFZxXUGckiuWysDtrpIijiRwRGPJZPGaNpJMlfbPptfNhzKOXZMiZnoLlaRCXqK) for an input length 65
+sha1-digest: 8555e05fc2396a3b291e983901bdfa02cb454a72
+computed in: 181.812173 seconds
+Checking SHA1(am) for an input length 2
+sha1-digest: 96e8155732e8324ae26f64d4516eb6fe696ac84f
+computed in: 91.206739 seconds
+Checking SHA1(OTzaWtYfzqKyTHIgBSlmI) for an input length 21
+sha1-digest: c76426dbecb3afd015b132e0e44a1b4d0fc664cb
+computed in: 91.182635 seconds
+Checking SHA1(MBwAxKkvLOUzXkHILdVchwjfcUTlofyQdSqaonqcXvRVVwEJpmaGKOsNDCUGkt) for an input length 62
+sha1-digest: 2231cecd803a9000c117a2f2d3ea35f70ecf6fce
+computed in: 179.300580 seconds
+Checking SHA1(iqObpuNHZXKztrUZYrpmAPjFflNLacYyUTBLZdbjbPcjbLOseIKqZNYCbsoaDuwvgbvfWE) for an input length 70
+sha1-digest: 87cdf7a7f984ef5843d0cfc95a69eaef3e82e31b
+computed in: 182.332336 seconds
+Checking SHA1(nPIZWXYUXOerncJAeBQrcPhuHsXbYcQkKMRoAGzxFZjBXWvproNcHlHIFNNGzQChEVjZvsEmSOpQuoihPgudlqizwAfXzgU) for an input length 95
+sha1-digest: 601db1e338e8b817f5309c7c3bf89450d70425a1
+computed in: 182.233933 seconds
+Checking SHA1(SfUDDjhLqcmifCpLlqnUZKFjwtPjfCrpdRChUWypdrhdDTjizF) for an input length 50
+sha1-digest: 8c57e70e92af96c6df5aecb4f3740e68b0686883
+computed in: 91.378782 seconds
+Checking SHA1(VePVJXHljlLpkThrANZaEkkbYoFZVdSFFsvVkQPDlrwyisOIZqAUhGwHYYhxnFjOrUgFV) for an input length 69
+sha1-digest: b54a98dc0f74b50669a5e0c81199a2819e26d3e9
+computed in: 182.419465 seconds
+Checking SHA1(hCOuPvLrBXYhaWLeSnyRxpJZmXyEeTCBdfkgvDwvFIgoVaXNPzHoHkitSvZLosTMEcDpuoLGqeCkuwLmQQLbSibizfPwxp) for an input length 94
+sha1-digest: 19432e37fe0bbc7c5a5c9379ed38c4298d796fe6
+computed in: 182.285430 seconds
+Checking SHA1(IRZuLcbBXJAfgYMuFwGWUXiKgfoWwSAOTOoQiLaZHKwuTbGGsTChMLEdlaRXkIOYUFJRxRyAVHhQbFKyKOFDNairicMm) for an input length 92
+sha1-digest: 4307a80365937a3ff6703763a8f1a759362c35e5
+computed in: 182.162872 seconds
+Checking SHA1(hsTWqDAwjdLiAhmLsnBJJozejydFLcksQmSQVcojeAhdZizXMzjKSAGjQUjRPGZlwGaKnE) for an input length 70
+sha1-digest: 3889e4448d11e9d801608ab3a94378ee8d41aaa0
+computed in: 182.288777 seconds
+Checking SHA1(GihWwpolRavMdWHiNGVlOVsziPqZcYkPEyTmgfbBtwMowfKMipRxADcqqzMBlpCrWEOJpnZQcqAwt) for an input length 77
+sha1-digest: 4b048588c8ec5d1602487124b5232889668f6b6a
+computed in: 182.184901 seconds
+Checking SHA1(GiSbjYHQyEozGliG) for an input length 16
+sha1-digest: dc7a31c2e17ae503c6c808a02c05f8d1ad4b346f
+computed in: 91.260812 seconds
+Checking SHA1(boVGLdzvbKOTYUSErbeSyoiJQMox) for an input length 28
+sha1-digest: 50a40fb6d0362087ed9b6dceda5378c14b96a743
+computed in: 91.119592 seconds
+Checking SHA1(kiaAjFJrzBaRFvSgIzIQdlJZokXGPBpjNRPqEcVDyCFGkxNzeiRNHuSmD) for an input length 57
+sha1-digest: 44e423eaa7616d2a93b235d99b61f76a6f58e236
+computed in: 179.129039 seconds
+Checking SHA1(IylnzdjqldIJGkolzRlJhFz) for an input length 23
+sha1-digest: 463137090865b283801d49d1546ce0dea45f2529
+computed in: 91.211171 seconds
+Checking SHA1(QEyszfMlKJjKIf) for an input length 14
+sha1-digest: 937bfdff3bb97e9037a23bca4055302f97a90eb3
+computed in: 91.124824 seconds
+Checking SHA1(IOTanBIVaq) for an input length 10
+sha1-digest: b8dca6ad5df447549f5a95d4c195b889f5be6069
+computed in: 91.110348 seconds
+Checking SHA1(FiWWroKJVGeMPfmaNKmXdalAyIRLpYJdFgCfBIEMXPDfWR) for an input length 46
+sha1-digest: 84775d2c31df2ab191a0417cf26028f989d2cd9c
+computed in: 91.031444 seconds
 Checking SHA1()
 sha1-digest: da39a3ee5e6b4b0d3255bfef95601890afd80709
-computed in: 147.256297 seconds
+computed in: 91.044046 seconds
 Checking SHA1(The quick brown fox jumps over the lazy dog)
 sha1-digest: 2fd4e1c67a2d28fced849ee1bb76e7391b93eb12
-computed in: 147.697102 seconds
+computed in: 90.971023 seconds
 ```
 
 These results mean that:
-- one block of compression takes about 147 seconds
-- two blocks of compression take about 290 seconds
+- one block of compression takes about 92 seconds
+- two blocks of compression take about 181 seconds
