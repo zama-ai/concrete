@@ -236,6 +236,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: wheels
+          pattern: 'wheel-*'
           merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
@@ -248,7 +249,8 @@ jobs:
           echo $TAG
           gh release create --draft --repo ${{ github.repository }} \
           --verify-tag $TAG \
-          wheels/*
+          --title $TAG \
+          wheels/* *.intoto.jsonl/*
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload wheels to S3
