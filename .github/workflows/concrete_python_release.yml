@@ -236,6 +236,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: wheels
+          pattern: wheel-*
           merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
