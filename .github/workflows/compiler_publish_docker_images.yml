@@ -116,7 +116,15 @@ jobs:
     runs-on: ${{ github.event.inputs.runner_name }}
     env:
       IMAGE: ghcr.io/zama-ai/cuda
-      TAG: "12-3"
+    strategy:
+      matrix:
+        include:
+          - name: cuda-12-3
+            tag: 12-3
+            dockerfile: docker/Dockerfile.cuda-123-env
+          - name: cuda-11-8
+            tag: 11-8
+            dockerfile: docker/Dockerfile.cuda-118-env
 
     steps:
       - uses: actions/checkout@v3
@@ -133,13 +141,16 @@ jobs:
 
       - name: Login
         id: login
-        if: contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.cuda-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
+        if: contains(steps.changed-files.outputs.modified_files, '${{ matrix.dockerfile }}') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
-          docker build -t "${IMAGE}" -f docker/Dockerfile.cuda-env .
-          docker image tag "${IMAGE}" "${IMAGE}:${TAG}"
-          docker push "${IMAGE}:latest"
-          docker push "${IMAGE}:${TAG}"
+          docker build -t "${IMAGE}" -f ${{ matrix.dockerfile }} .
+          docker image tag "${IMAGE}" "${IMAGE}:${{ matrix.tag }}"
+          docker push "${IMAGE}:${{ matrix.tag }}"
+
+      - name: Push Latest Image
+        if: ${{ steps.login.conclusion != 'skipped' && matrix.tag == "11-8" }}
+        run: docker push "${IMAGE}:latest"
