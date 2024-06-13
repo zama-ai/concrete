@@ -152,5 +152,5 @@ jobs:
           docker push "${IMAGE}:${{ matrix.tag }}"
 
       - name: Push Latest Image
-        if: ${{ steps.login.conclusion != 'skipped' && matrix.tag == "11-8" }}
+        if: ${{ steps.login.conclusion != 'skipped' && matrix.tag == '11-8' }}
         run: docker push "${IMAGE}:latest"
