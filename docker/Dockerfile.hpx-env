@@ -2,6 +2,10 @@ FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
 
 RUN dnf update -y
 RUN dnf install -y ninja-build hwloc-devel
+# Setup gcc 11 (to be compatible with concrete-compiler image)
+RUN dnf install -y gcc-toolset-11
+ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
+ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
 # Install boost
 ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
 RUN tar -xzvf /boost_1_71_0.tar.gz
@@ -15,10 +19,12 @@ RUN mkdir build
 # empty HPX_WITH_MAX_CPU_COUNT = dynamic
 # ref https://github.com/STEllAR-GROUP/hpx/blob/1.7.1/CMakeLists.txt#L759
 RUN cd build && cmake \
-		-DHPX_WITH_MAX_CPU_COUNT="" \
-		-DHPX_WITH_FETCH_ASIO=on \
-		-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
-		-DHPX_WITH_MALLOC=system ..
+	-DCMAKE_C_COMPILER=$(CC_COMPILER) \
+	-DCMAKE_CXX_COMPILER=$(CXX_COMPILER) \
+	-DHPX_WITH_MAX_CPU_COUNT="" \
+	-DHPX_WITH_FETCH_ASIO=on \
+	-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
+	-DHPX_WITH_MALLOC=system ..
 RUN cd build && make -j2
 
 FROM scratch
