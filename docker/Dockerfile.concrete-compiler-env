@@ -9,7 +9,7 @@ RUN dnf install -y openssh-clients graphviz graphviz-devel
 RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 # Setup gcc-11 (required for cuda11.8)
 RUN dnf install -y gcc-toolset-11
-ENV C_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
+ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
