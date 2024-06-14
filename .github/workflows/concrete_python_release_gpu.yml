@@ -51,7 +51,7 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           submodules: recursive
           fetch-depth: 0
@@ -74,7 +74,7 @@ jobs:
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
 
       - name: Build wheel
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler-bindings
         with:
           registry: ghcr.io
@@ -117,7 +117,7 @@ jobs:
             deactivate
 
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
@@ -129,9 +129,9 @@ jobs:
     outputs:
       wheel_version: ${{ steps.version.outputs.wheel_version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
           path: wheels
           merge-multiple: true

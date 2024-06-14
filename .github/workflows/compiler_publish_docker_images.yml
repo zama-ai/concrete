@@ -50,11 +50,11 @@ jobs:
           echo "Type: ${{ inputs.instance_type }}"
           echo "Request ID: ${{ inputs.request_id }}"
       # SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.7.0
+      - uses: webfactory/ssh-agent@836c84ec59a0e7bc0eabc79988384eb567561ee2 # v0.7.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
@@ -88,7 +88,7 @@ jobs:
       IMAGE: ghcr.io/zama-ai/hpx
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           fetch-depth: 0
 
@@ -98,7 +98,7 @@ jobs:
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@d6babd6899969df1a11d14c368283ea4436bca78 # v44.5.24
 
       - name: Login
         id: login
@@ -127,7 +127,7 @@ jobs:
             dockerfile: docker/Dockerfile.cuda-118-env
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           fetch-depth: 0
 
@@ -137,7 +137,7 @@ jobs:
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@d6babd6899969df1a11d14c368283ea4436bca78 # v44.5.24
 
       - name: Login
         id: login

@@ -8,7 +8,7 @@ jobs:
   FormattingAndLinting:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Format with clang-format (Cpp)
         run: |
           sudo apt install moreutils
@@ -34,6 +34,6 @@ jobs:
   CheckLicense:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
       - name: Check if sources include the license header
         run: .github/workflows/scripts/check_for_license.sh
