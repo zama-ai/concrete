@@ -28,6 +28,14 @@ instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
 security_group= ["sg-0f8b52622a2669491", ]
 
+# It has CUDA Driver (<=12.5) and Docker installed
+[profile.gpu-test-ubuntu22]
+region = "us-east-1"
+image_id = "ami-05385e0c3c574621f"
+instance_type = "p3.2xlarge"
+subnet_id = "subnet-8123c9e7"
+security_group= ["sg-0f8b52622a2669491", ]
+
 [profile.slurm-cluster]
 region = "eu-west-3"
 image_id = "ami-0bb5bb9cb747b5ddd"
@@ -113,5 +121,5 @@ check_run_name = "Concrete Python Release (GPU)"
 
 [command.concrete-python-test-gpu-wheel]
 workflow = "concrete_python_test_gpu_wheel.yml"
-profile = "gpu-test"
+profile = "gpu-test-ubuntu22"
 check_run_name = "Concrete Python Test GPU Wheel"
