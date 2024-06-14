@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -44,7 +44,7 @@ jobs:
         run: pip install --pre --extra-index-url https://pypi.zama.ai/gpu/ concrete-python
 
       - name: Checkout the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           path: repo
 

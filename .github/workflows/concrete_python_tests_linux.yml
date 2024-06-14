@@ -43,7 +43,7 @@ jobs:
           echo "Request ID: ${{ inputs.request_id }}"
 
       - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.7.0
+        uses: webfactory/ssh-agent@836c84ec59a0e7bc0eabc79988384eb567561ee2 # v0.7.0
         with:
           ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
 
@@ -54,7 +54,7 @@ jobs:
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
           
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
@@ -66,7 +66,7 @@ jobs:
         uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
 
       - name: Build bindings
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         if: ${{ !contains(inputs.instance_type, 'p3') }}
         id: build-compiler-bindings
         with:
@@ -98,7 +98,7 @@ jobs:
             ccache -s
 
       - name: Test
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         if: ${{ !contains(inputs.instance_type, 'p3') }}
         with:
           registry: ghcr.io
@@ -124,7 +124,7 @@ jobs:
             KEY_CACHE_DIRECTORY=./KeySetCache make pytest
             
       - name: Build bindings gpu
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         if: ${{ contains(inputs.instance_type, 'p3') }}
         id: build-compiler-bindings-gpu
         with:
@@ -155,7 +155,7 @@ jobs:
             ccache -s
 
       - name: Test gpu
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         if: ${{ contains(inputs.instance_type, 'p3') }}
         with:
           registry: ghcr.io

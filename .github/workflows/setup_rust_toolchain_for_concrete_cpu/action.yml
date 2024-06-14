@@ -2,7 +2,7 @@ runs:
   using: "composite"
   steps:
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
       with:
         toolchain: nightly-2024-01-31
         override: true

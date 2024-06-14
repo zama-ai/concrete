@@ -24,7 +24,7 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: "Setup"
         uses: ./.github/workflows/optimizer_setup
@@ -56,7 +56,7 @@ jobs:
   benchmarks:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: "Setup"
         uses: ./.github/workflows/optimizer_setup
@@ -73,7 +73,7 @@ jobs:
         # for artifacts restrictions see https://github.com/actions/download-artifact/issues/3
         # for cache restrictions see https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache
         # and  https://github.com/actions/cache/issues/692
-        uses: dawidd6/action-download-artifact@v6
+        uses: dawidd6/action-download-artifact@bf251b5aa9c2f7eeb574a96ee720e24f801b7c11
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow_conclusion: ""
@@ -83,7 +83,7 @@ jobs:
           path: ./benchmark
 
       - name: Save benchmark result to file
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@4de1bed97a47495fc4c5404952da0499e31f5c29 # v1.20.3
         with:
           tool: 'cargo'
           output-file-path: ./compilers/concrete-optimizer/bench_result.txt
@@ -96,7 +96,7 @@ jobs:
           summary-always: true
 
       - name: Upload benchmark data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           path: ./benchmark
           name: ${{ runner.os }}-benchmark

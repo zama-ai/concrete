@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check first line
-        uses: gsactions/commit-message-checker@v1
+        uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee # v2.0.0
         with:
           pattern: '^(feat|fix|test|bench|docs|chore|refactor|perf)\((compiler|backend|frontend|optimizer|tools|ci|common).*\): '
           flags: 'gs'
