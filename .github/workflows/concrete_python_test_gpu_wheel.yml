@@ -52,10 +52,6 @@ jobs:
         run: |
           CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
 
-          # Initialize an empty test environment
-          cd $(mktemp -d)
-          python -m venv .testenv && source .testenv/bin/activate
-
           # Install extra requirements for tests
           sudo apt update -y
           sudo apt install -y graphviz libgraphviz-dev
