@@ -1,0 +1,22 @@
+name: Refresh Zama PyPI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+
+      - name: Update index and invalidate cache
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.AWS_CLOUDFRONT_PYPI_DISTRIBUTION_ID }}
+        run: |
+          pip install boto3 bigtree
+          # update indexes and invalidate cloudfront cache
+          python .github/workflows/scripts/s3_update_html_indexes.py
