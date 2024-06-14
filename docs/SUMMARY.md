@@ -22,8 +22,7 @@
 
 ## Compilation
 
-* [Composition](compilation/composition.md)
-* [Modules](compilation/modules.md)
+* [Composing functions with modules](compilation/composing_functions_with_modules.md)
 * [Compression](compilation/compression.md)
 * [Reuse arguments](compilation/reuse_arguments.md)
 * [Multi precision](compilation/multi_precision.md)

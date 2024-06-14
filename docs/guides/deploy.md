@@ -134,7 +134,7 @@ assert decrypted_result == 49
 
 # Deployment of modules
 
-Deploying a [module](../compilation/modules.md#modules) follows the same logic as the deployment of circuits. Assuming a module compiled in the following way:
+Deploying a [module](../compilation/composing_functions_with_modules.md) follows the same logic as the deployment of circuits. Assuming a module compiled in the following way:
 
 <!--pytest-codeblocks:skip-->
 ```python
