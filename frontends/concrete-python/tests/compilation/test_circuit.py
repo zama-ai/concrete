@@ -740,3 +740,36 @@ def test_setting_keys(helpers):
     circuit.keys = fhe.Keys.deserialize(keys2)
     result = circuit.decrypt(output)
     assert np.array_equal(result, (sample_x + sample_y) ** 2)
+
+
+def test_simulate_encrypt_run_decrypt(helpers):
+    """
+    Test `simulate_encrypt_run_decrypt` configuration option.
+    """
+
+    def f(x, y):
+        return x + y
+
+    inputset = fhe.inputset(fhe.uint3, fhe.uint3)
+    configuration = helpers.configuration().fork(
+        fhe_execution=False,
+        fhe_simulation=True,
+        simulate_encrypt_run_decrypt=True,
+    )
+
+    compiler = fhe.Compiler(f, {"x": "encrypted", "y": "encrypted"})
+    circuit = compiler.compile(inputset, configuration)
+
+    sample_x, sample_y = 3, 4
+    encrypted_x, encrypted_y = circuit.encrypt(sample_x, sample_y)
+    encrypted_result = circuit.run(encrypted_x, encrypted_y)
+    result = circuit.decrypt(encrypted_result)
+
+    assert result == sample_x + sample_y
+
+    # Make sure computation happened in simulation.
+    assert isinstance(encrypted_x, int)
+    assert isinstance(encrypted_y, int)
+    assert hasattr(circuit, "simulator")
+    assert not hasattr(circuit, "server")
+    assert isinstance(encrypted_result, int)

@@ -54,11 +54,19 @@ class FheFunction:
     runtime: Union[ExecutionRt, SimulationRt]
     graph: Graph
     name: str
+    configuration: Configuration
 
-    def __init__(self, name: str, runtime: Union[ExecutionRt, SimulationRt], graph: Graph):
+    def __init__(
+        self,
+        name: str,
+        runtime: Union[ExecutionRt, SimulationRt],
+        graph: Graph,
+        configuration: Configuration,
+    ):
         self.name = name
         self.runtime = runtime
         self.graph = graph
+        self.configuration = configuration
 
     def __call__(
         self,
@@ -169,6 +177,10 @@ class FheFunction:
             Optional[Union[Value, Tuple[Optional[Value], ...]]]:
                 encrypted argument(s) for evaluation
         """
+
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return args if len(args) != 1 else args[0]  # type: ignore
+
         assert isinstance(self.runtime, ExecutionRt)
         return self.runtime.client.encrypt(*args, function_name=self.name)
 
@@ -187,6 +199,10 @@ class FheFunction:
             Union[Value, Tuple[Value, ...]]:
                 result(s) of evaluation
         """
+
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return self.simulate(*args)
+
         assert isinstance(self.runtime, ExecutionRt)
         return self.runtime.server.run(
             *args, evaluation_keys=self.runtime.client.evaluation_keys, function_name=self.name
@@ -207,6 +223,10 @@ class FheFunction:
             Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
                 decrypted result(s) of evaluation
         """
+
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return results if len(results) != 1 else results[0]  # type: ignore
+
         assert isinstance(self.runtime, ExecutionRt)
         return self.runtime.client.decrypt(*results, function_name=self.name)
 
@@ -682,7 +702,8 @@ class FheModule:
         Return a dictionnary containing all the functions of the module.
         """
         return {
-            name: FheFunction(name, self.runtime, self.graphs[name]) for name in self.graphs.keys()
+            name: FheFunction(name, self.runtime, self.graphs[name], self.configuration)
+            for name in self.graphs.keys()
         }
 
     @property
@@ -705,4 +726,4 @@ class FheModule:
         if item not in list(self.graphs.keys()):
             error = f"No attribute {item}"
             raise AttributeError(error)
-        return FheFunction(item, self.runtime, self.graphs[item])
+        return FheFunction(item, self.runtime, self.graphs[item], self.configuration)

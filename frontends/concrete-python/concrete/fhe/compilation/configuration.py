@@ -992,6 +992,7 @@ class Configuration:
     detect_overflow_in_simulation: bool
     dynamic_indexing_check_out_of_bounds: bool
     dynamic_assignment_check_out_of_bounds: bool
+    simulate_encrypt_run_decrypt: bool
 
     def __init__(
         self,
@@ -1060,6 +1061,7 @@ class Configuration:
         detect_overflow_in_simulation: bool = False,
         dynamic_indexing_check_out_of_bounds: bool = True,
         dynamic_assignment_check_out_of_bounds: bool = True,
+        simulate_encrypt_run_decrypt: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1165,6 +1167,8 @@ class Configuration:
         self.dynamic_indexing_check_out_of_bounds = dynamic_indexing_check_out_of_bounds
         self.dynamic_assignment_check_out_of_bounds = dynamic_assignment_check_out_of_bounds
 
+        self.simulate_encrypt_run_decrypt = simulate_encrypt_run_decrypt
+
         self._validate()
 
     class Keep:
@@ -1239,6 +1243,7 @@ class Configuration:
         detect_overflow_in_simulation: Union[Keep, bool] = KEEP,
         dynamic_indexing_check_out_of_bounds: Union[Keep, bool] = KEEP,
         dynamic_assignment_check_out_of_bounds: Union[Keep, bool] = KEEP,
+        simulate_encrypt_run_decrypt: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
@@ -1306,6 +1311,11 @@ class Configuration:
         if not self.enable_unsafe_features:  # noqa: SIM102
             if self.use_insecure_key_cache:
                 message = "Insecure key cache cannot be used without enabling unsafe features"
+                raise RuntimeError(message)
+            if self.simulate_encrypt_run_decrypt:
+                message = (
+                    "Simulating encrypt/run/decrypt cannot be used without enabling unsafe features"
+                )
                 raise RuntimeError(message)
 
         if self.use_insecure_key_cache and self.insecure_key_cache_location is None:

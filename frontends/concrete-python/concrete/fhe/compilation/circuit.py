@@ -249,6 +249,9 @@ class Circuit:
                 encrypted argument(s) for evaluation
         """
 
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return args if len(args) != 1 else args[0]  # type: ignore
+
         if not hasattr(self, "client"):  # pragma: no cover
             self.enable_fhe_execution()
 
@@ -269,6 +272,9 @@ class Circuit:
             Union[Value, Tuple[Value, ...]]:
                 result(s) of evaluation
         """
+
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return self.simulate(*args)
 
         if not hasattr(self, "server"):  # pragma: no cover
             self.enable_fhe_execution()
@@ -291,6 +297,9 @@ class Circuit:
             Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
                 decrypted result(s) of evaluation
         """
+
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return results if len(results) != 1 else results[0]  # type: ignore
 
         if not hasattr(self, "client"):  # pragma: no cover
             self.enable_fhe_execution()

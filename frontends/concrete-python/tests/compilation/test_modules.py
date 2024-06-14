@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from concrete import fhe
+from concrete.fhe.compilation.module import SimulationRt
 
 # pylint: disable=missing-class-docstring, missing-function-docstring, no-self-argument, unused-variable, no-member, unused-argument, function-redefined, expression-not-assigned
 # same disables for ruff:
@@ -555,3 +556,49 @@ def test_composition_wired_compilation():
     assert module.b.decrypt(b_enc) == 20
     c_enc = module.c.run(b_enc)
     assert module.c.decrypt(c_enc) == 40
+
+
+def test_simulate_encrypt_run_decrypt(helpers):
+    """
+    Test `simulate_encrypt_run_decrypt` configuration option.
+    """
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return x + 1 % 20
+
+        @fhe.function({"x": "encrypted"})
+        def dec(x):
+            return x - 1 % 20
+
+    inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
+    module = Module.compile(
+        {"inc": inputset, "dec": inputset},
+        helpers.configuration().fork(
+            fhe_execution=False,
+            fhe_simulation=True,
+            simulate_encrypt_run_decrypt=True,
+        ),
+    )
+
+    sample_x = 10
+    encrypted_x = module.inc.encrypt(sample_x)
+
+    encrypted_result = module.inc.run(encrypted_x)
+    result = module.inc.decrypt(encrypted_result)
+    assert result == 11
+
+    # Make sure computation happened in simulation.
+    assert isinstance(encrypted_x, int)
+    assert isinstance(module.inc.runtime, SimulationRt)
+    assert isinstance(encrypted_result, int)
+
+    encrypted_result = module.dec.run(encrypted_result)
+    result = module.dec.decrypt(encrypted_result)
+    assert result == 10
+
+    # Make sure computation happened in simulation.
+    assert isinstance(module.dec.runtime, SimulationRt)
+    assert isinstance(encrypted_result, int)
