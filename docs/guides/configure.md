@@ -146,3 +146,8 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
   * False disables it for all cases.
   * Integer value enables or disables it depending on the original bit width.
   * With the default value of 8, only the values with original bit width <= 8 will be converted to their original precision.
+* **simulate\_encrypt\_run\_decrypt**: bool = False
+  * Whether to use simulate encrypt/run/decrypt methods of the circuit/module instead of doing the actual encryption/evaluation/decryption.
+    * When this option is set to `True`, encrypt and decrypt are identity functions, and run is a wrapper around simulation. In other words, this option allows to switch off the encryption to quickly test if a function has expected semantic (without paying the price of FHE execution).
+  * This is extremely unsafe and should only be used during development.
+  * For this reason, it requires **enable\_unsafe\_features** to be set to `True`.
