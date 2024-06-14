@@ -30,6 +30,7 @@ from mlir._mlir_libs._concretelang._compiler import (
     KeyType,
     OptimizerMultiParameterStrategy,
     OptimizerStrategy,
+    Encoding,
     PrimitiveOperation,
 )
 from mlir.ir import Module as MlirModule
@@ -122,6 +123,7 @@ class Server:
         options = CompilationOptions.new(backend)
 
         options.simulation(is_simulated)
+        options.force_encoding(Encoding.CRT)
 
         options.set_loop_parallelize(configuration.loop_parallelize)
         options.set_dataflow_parallelize(configuration.dataflow_parallelize)

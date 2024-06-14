@@ -398,7 +398,8 @@ void simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(co
                                                                               uint64_t pp_level,
                                                                               uint64_t pp_log_base,
                                                                               uint32_t ciphertext_modulus_log,
-                                                                              uint64_t security_level);
+                                                                              uint64_t security_level,
+                                                                              struct Csprng *csprng);
 
 void simulation_extract_bit_lwe_ciphertext_u64(uint64_t *lwe_list_out,
                                                uint64_t lwe_in,
@@ -412,7 +413,8 @@ void simulation_extract_bit_lwe_ciphertext_u64(uint64_t *lwe_list_out,
                                                uint64_t br_log_base,
                                                uint64_t br_level,
                                                uint32_t ciphertext_modulus_log,
-                                               uint64_t security_level);
+                                               uint64_t security_level,
+                                               struct Csprng *csprng);
 
 #ifdef __cplusplus
 } // extern "C"
