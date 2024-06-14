@@ -11,6 +11,8 @@ RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 RUN dnf install -y gcc-toolset-11
 ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
+ENV PATH "/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"
+ENV LD_LIBRARY_PATH "/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst:$LD_LIBRARY_PATH"
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0
 RUN ccache -F 0
