@@ -4,6 +4,7 @@ Declaration of `Server` class.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -35,7 +36,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
-from .composition import CompositionRule
+from .composition import CompositionClause, CompositionRule
 from .configuration import (
     DEFAULT_GLOBAL_P_ERROR,
     DEFAULT_P_ERROR,
@@ -65,6 +66,7 @@ class Server:
 
     _mlir: Optional[str]
     _configuration: Optional[Configuration]
+    _composition_rules: Optional[List[CompositionRule]]
 
     def __init__(
         self,
@@ -74,6 +76,7 @@ class Server:
         compilation_result: LibraryCompilationResult,
         server_program: ServerProgram,
         is_simulated: bool,
+        composition_rules: Optional[List[CompositionRule]],
     ):
         self.client_specs = client_specs
         self.is_simulated = is_simulated
@@ -84,6 +87,7 @@ class Server:
         self._compilation_feedback = self._support.load_compilation_feedback(compilation_result)
         self._server_program = server_program
         self._mlir = None
+        self._composition_rules = composition_rules
 
         assert_that(
             support.load_client_parameters(compilation_result).serialize()
@@ -131,7 +135,9 @@ class Server:
         options.set_enable_overflow_detection_in_simulation(
             configuration.detect_overflow_in_simulation
         )
-        composition_rules = composition_rules if composition_rules else []
+
+        options.set_composable(configuration.composable)
+        composition_rules = list(composition_rules) if composition_rules else []
         for rule in composition_rules:
             options.add_composition(rule.from_.func, rule.from_.pos, rule.to.func, rule.to.pos)
 
@@ -219,6 +225,7 @@ class Server:
 
         client_parameters = support.load_client_parameters(compilation_result)
         client_specs = ClientSpecs(client_parameters)
+        composition_rules = composition_rules if composition_rules else None
 
         result = Server(
             client_specs,
@@ -227,6 +234,7 @@ class Server:
             compilation_result,
             server_program,
             is_simulated,
+            composition_rules,
         )
 
         # pylint: disable=protected-access
@@ -268,6 +276,9 @@ class Server:
                 with open(Path(tmp) / "configuration.json", "w", encoding="utf-8") as f:
                     f.write(jsonpickle.dumps(self._configuration.__dict__))
 
+                with open(Path(tmp) / "composition_rules.json", "w", encoding="utf-8") as f:
+                    f.write(json.dumps(self._composition_rules))
+
                 shutil.make_archive(path, "zip", tmp)
 
             return
@@ -281,6 +292,9 @@ class Server:
 
         with open(Path(self._output_dir) / "is_simulated", "w", encoding="utf-8") as f:
             f.write("1" if self.is_simulated else "0")
+
+        with open(Path(self._output_dir) / "composition_rules.json", "w", encoding="utf-8") as f:
+            f.write(json.dumps(self._composition_rules))
 
         shutil.make_archive(path, "zip", self._output_dir)
 
@@ -308,6 +322,22 @@ class Server:
         with open(output_dir_path / "is_simulated", "r", encoding="utf-8") as f:
             is_simulated = f.read() == "1"
 
+        composition_rules = None
+        if (output_dir_path / "composition_rules.json").exists():
+            with open(output_dir_path / "composition_rules.json", "r", encoding="utf-8") as f:
+                composition_rules = json.loads(f.read())
+                composition_rules = (
+                    [
+                        CompositionRule(
+                            CompositionClause(rule[0][0], rule[0][1]),
+                            CompositionClause(rule[1][0], rule[1][1]),
+                        )
+                        for rule in composition_rules
+                    ]
+                    if composition_rules
+                    else None
+                )
+
         if (output_dir_path / "circuit.mlir").exists():
             with open(output_dir_path / "circuit.mlir", "r", encoding="utf-8") as f:
                 mlir = f.read()
@@ -315,7 +345,9 @@ class Server:
             with open(output_dir_path / "configuration.json", "r", encoding="utf-8") as f:
                 configuration = Configuration().fork(**jsonpickle.loads(f.read()))
 
-            return Server.create(mlir, configuration, is_simulated)
+            return Server.create(
+                mlir, configuration, is_simulated, composition_rules=composition_rules
+            )
 
         with open(output_dir_path / "client.specs.json", "rb") as f:
             client_specs = ClientSpecs.deserialize(f.read())
@@ -335,6 +367,7 @@ class Server:
             compilation_result,
             server_program,
             is_simulated,
+            composition_rules,
         )
 
     def run(
