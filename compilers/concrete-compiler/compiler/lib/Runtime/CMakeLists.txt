@@ -1,12 +1,28 @@
 add_compile_options(-fsized-deallocation)
 
 if(CONCRETELANG_CUDA_SUPPORT)
-  add_library(ConcretelangRuntime SHARED context.cpp utils.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
-                                         GPUDFG.cpp)
+  add_library(
+    ConcretelangRuntime SHARED
+    context.cpp
+    utils.cpp
+    simulation.cpp
+    wrappers.cpp
+    DFRuntime.cpp
+    key_manager.cpp
+    GPUDFG.cpp
+    time_util.cpp)
   target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 else()
-  add_library(ConcretelangRuntime SHARED context.cpp utils.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
-                                         GPUDFG.cpp)
+  add_library(
+    ConcretelangRuntime SHARED
+    context.cpp
+    utils.cpp
+    simulation.cpp
+    wrappers.cpp
+    DFRuntime.cpp
+    key_manager.cpp
+    GPUDFG.cpp
+    time_util.cpp)
 endif()
 
 add_dependencies(ConcretelangRuntime concrete_cpu concrete_cpu_noise_model concrete-protocol)
