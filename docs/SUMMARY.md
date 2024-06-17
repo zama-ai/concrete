@@ -30,6 +30,7 @@
    * [Multi parameters](compilation/multi_parameters.md)
 * [Compression](compilation/compression.md)
 * [Reusing arguments](compilation/reuse_arguments.md)
+* [Common errors](compilation/common_errors.md)
 
 ## Execution / Analysis
 
