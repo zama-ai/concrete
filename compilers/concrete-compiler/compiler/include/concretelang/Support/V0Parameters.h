@@ -108,6 +108,7 @@ struct CompositionRule {
 };
 
 const std::vector<CompositionRule> DEFAULT_COMPOSITION_RULES = {};
+const bool DEFAULT_COMPOSABLE = false;
 
 struct Config {
   double p_error;
@@ -124,24 +125,24 @@ struct Config {
   uint32_t ciphertext_modulus_log;
   uint32_t fft_precision;
   std::vector<CompositionRule> composition_rules;
+  bool composable;
 };
 
-const Config DEFAULT_CONFIG = {
-    UNSPECIFIED_P_ERROR,
-    UNSPECIFIED_GLOBAL_P_ERROR,
-    DEFAULT_DISPLAY,
-    DEFAULT_STRATEGY,
-    DEFAULT_KEY_SHARING,
-    DEFAULT_MULTI_PARAM_STRATEGY,
-    DEFAULT_SECURITY,
-    DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
-    DEFAULT_USE_GPU_CONSTRAINTS,
-    DEFAULT_ENCODING,
-    DEFAULT_CACHE_ON_DISK,
-    DEFAULT_CIPHERTEXT_MODULUS_LOG,
-    DEFAULT_FFT_PRECISION,
-    DEFAULT_COMPOSITION_RULES,
-};
+const Config DEFAULT_CONFIG = {UNSPECIFIED_P_ERROR,
+                               UNSPECIFIED_GLOBAL_P_ERROR,
+                               DEFAULT_DISPLAY,
+                               DEFAULT_STRATEGY,
+                               DEFAULT_KEY_SHARING,
+                               DEFAULT_MULTI_PARAM_STRATEGY,
+                               DEFAULT_SECURITY,
+                               DEFAULT_FALLBACK_LOG_NORM_WOPPBS,
+                               DEFAULT_USE_GPU_CONSTRAINTS,
+                               DEFAULT_ENCODING,
+                               DEFAULT_CACHE_ON_DISK,
+                               DEFAULT_CIPHERTEXT_MODULUS_LOG,
+                               DEFAULT_FFT_PRECISION,
+                               DEFAULT_COMPOSITION_RULES,
+                               DEFAULT_COMPOSABLE};
 
 using Dag = rust::Box<concrete_optimizer::Dag>;
 using DagBuilder = rust::Box<concrete_optimizer::DagBuilder>;

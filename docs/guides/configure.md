@@ -113,7 +113,7 @@ Additional kwargs to `compile` functions take higher precedence. So if you set t
 * **shifts\_with\_promotion**: bool = True,
   * Enable promotions in encrypted shifts instead of casting in runtime. See [Bitwise#Shifts](../core-features/bitwise.md#Shifts) to learn more.
 * **composable**: bool = False,
-  * Specify that the function must be composable with itself.
+  * Specify that the function must be composable with itself. Only used when compiling a single circuit; when compiling modules use the [composition policy](../compilation/composing_functions_with_modules.md#optimizing_runtimes_with_composition_policies).
 * **relu\_on\_bits\_threshold**: int = 7,
   * Bit-width to start implementing the ReLU extension with [fhe.bits](../core-features/bit\_extraction.md).
 * **relu\_on\_bits\_chunk\_size**: int = 3,

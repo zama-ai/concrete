@@ -976,6 +976,11 @@ std::unique_ptr<mlir::Pass> createDagPass(optimizer::Config config,
 // Adds the composition rules to the
 void applyCompositionRules(optimizer::Config config,
                            concrete_optimizer::Dag &dag) {
+
+  if (config.composable) {
+    dag.add_all_compositions();
+    return;
+  }
   for (auto rule : config.composition_rules) {
     dag.add_composition(rule.from_func, rule.from_pos, rule.to_func,
                         rule.to_pos);

@@ -83,6 +83,19 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("expected `to_pos` to be (int)")
         self.cpp().add_composition(from_func, from_pos, to_func, to_pos)
 
+    def set_composable(self, composable: bool):
+        """Set composable flag.
+
+        Args:
+            composable(bool): the composable flag.
+
+        Raises:
+            TypeError: if the inputs do not have the proper type.
+        """
+        if not isinstance(composable, bool):
+            raise TypeError("expected `composable` to be (bool)")
+        self.cpp().set_composable(composable)
+
     def set_auto_parallelize(self, auto_parallelize: bool):
         """Set option for auto parallelization.
 

@@ -993,6 +993,7 @@ class Configuration:
     dynamic_indexing_check_out_of_bounds: bool
     dynamic_assignment_check_out_of_bounds: bool
     simulate_encrypt_run_decrypt: bool
+    composable: bool
 
     def __init__(
         self,

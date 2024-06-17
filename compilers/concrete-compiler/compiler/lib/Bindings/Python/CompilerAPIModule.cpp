@@ -751,6 +751,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              options.optimizerConfig.composition_rules.push_back(
                  {from_func, from_pos, to_func, to_pos});
            })
+      .def("set_composable",
+           [](CompilationOptions &options, bool composable) {
+             options.optimizerConfig.composable = composable;
+           })
       .def("set_security_level",
            [](CompilationOptions &options, int security_level) {
              options.optimizerConfig.security = security_level;
