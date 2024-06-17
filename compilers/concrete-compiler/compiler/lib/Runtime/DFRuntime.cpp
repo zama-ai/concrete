@@ -214,6 +214,7 @@ static inline void _dfr_stop_impl() {
 }
 
 static inline void _dfr_start_impl(int argc, char *argv[]) {
+  CONCRETELANG_ENABLE_TIMING();
   BEGIN_TIME(&init_timer);
   if (dl_handle == nullptr)
     dl_handle = dlopen(nullptr, RTLD_NOW);
@@ -351,6 +352,7 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
     JIT invocation).  These serve to pause/resume the runtime
     scheduler and to clean up used resources.  */
 void _dfr_start(int64_t use_dfr_p, void *ctx) {
+  CONCRETELANG_ENABLE_TIMING();
   BEGIN_TIME(&whole_timer);
   if (use_dfr_p) {
     // The first invocation will initialise the runtime. As each call to
@@ -501,8 +503,8 @@ void _dfr_register_lib(void *dlh) {}
 
 using namespace mlir::concretelang::dfr;
 
-void _dfr_start(int64_t use_dfr_p, void *ctx) { BEGIN_TIME(&compute_timer); }
-void _dfr_stop(int64_t use_dfr_p) { END_TIME(&compute_timer, "Compute"); }
+void _dfr_start(int64_t use_dfr_p, void *ctx) {}
+void _dfr_stop(int64_t use_dfr_p) {}
 
 void _dfr_terminate() {}
 #endif
