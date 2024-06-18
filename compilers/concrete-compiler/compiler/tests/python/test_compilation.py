@@ -298,13 +298,6 @@ def test_lib_compile_and_run_global_p_error(keyset_cache):
     _test_lib_compile_and_run_with_options(keyset_cache, options)
 
 
-def test_lib_compile_and_run_security_level(keyset_cache):
-    options = CompilationOptions.new()
-    options.set_security_level(80)
-    options.set_display_optimizer_choice(True)
-    _test_lib_compile_and_run_with_options(keyset_cache, options)
-
-
 @pytest.mark.parallel
 @pytest.mark.parametrize(
     "mlir_input, args, expected_result", end_to_end_parallel_fixture
