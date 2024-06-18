@@ -1,7 +1,7 @@
 importlib-resources>=6.1
 jsonpickle>=3.0.3
 networkx>=2.6
-numpy>=1.23
+numpy>=1.23,<2.0
 scipy>=1.10
 torch>=1.13
 z3-solver>=4.12
