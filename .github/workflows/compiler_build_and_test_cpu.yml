@@ -45,12 +45,6 @@ jobs:
           echo "Request ID: ${{ inputs.request_id }}"
           echo "Matrix item: ${{ inputs.matrix_item }}"
 
-      # A SSH private key is required as some dependencies are from private repos
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@836c84ec59a0e7bc0eabc79988384eb567561ee2 # v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
-
       - name: Set up env
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
