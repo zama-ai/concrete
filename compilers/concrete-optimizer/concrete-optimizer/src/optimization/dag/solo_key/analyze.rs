@@ -113,7 +113,6 @@ fn variance_origin(inputs: &[OperatorIndex], out_variances: &[SymbolicVariance])
 
 #[derive(Clone, Debug)]
 pub struct SoloKeyDag {
-    pub operators: Vec<Operator>,
     // Collect all operators output variances
     pub out_variances: Vec<SymbolicVariance>,
     pub nb_luts: u64,
@@ -125,9 +124,9 @@ pub struct SoloKeyDag {
 
 #[derive(Clone, Debug)]
 pub struct VariancesAndBound {
+    #[cfg(test)]
     pub precision: Precision,
     pub safe_variance_bound: f64,
-    pub nb_luts: u64,
     // All dominating final variance factor not entering a lut (usually final levelledOp)
     pub pareto_output: Vec<SymbolicVariance>,
     // All dominating variance factor entering a lut
@@ -349,7 +348,6 @@ fn constraint_for_one_precision(
 ) -> VariancesAndBound {
     let extra_finals_variance = select_precision(target_precision, extra_final_variances);
     let in_luts_variance = select_precision(target_precision, in_luts_variance);
-    let nb_luts = in_luts_variance.len() as u64;
     let all_output = counted_symbolic_variance(&extra_finals_variance);
     let all_in_lut = counted_symbolic_variance(&in_luts_variance);
     let remove_shape = |t: &(Shape, SymbolicVariance)| t.1;
@@ -358,9 +356,9 @@ fn constraint_for_one_precision(
     let pareto_vfs_final = SymbolicVariance::reduce_to_pareto_front(extra_finals_variance);
     let pareto_vfs_in_lut = SymbolicVariance::reduce_to_pareto_front(in_luts_variance);
     VariancesAndBound {
+        #[cfg(test)]
         precision: target_precision,
         safe_variance_bound: safe_noise_bound,
-        nb_luts,
         pareto_output: pareto_vfs_final,
         pareto_in_lut: pareto_vfs_in_lut,
         all_output,
@@ -399,7 +397,6 @@ pub fn analyze(dag: &Dag, noise_config: &NoiseBoundConfig) -> SoloKeyDag {
         noise_config,
     );
     let result = SoloKeyDag {
-        operators: dag.operators.clone(),
         out_variances,
         nb_luts,
         levelled_complexity,

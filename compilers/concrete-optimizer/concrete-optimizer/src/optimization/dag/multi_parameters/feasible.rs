@@ -34,7 +34,7 @@ impl Feasible {
         let pbs_index = operations_variance.index.pbs(partition);
         let actual_pbs_variance = operations_variance.values[pbs_index];
 
-        let mut smallest_pbs_max_variance = std::f64::MAX;
+        let mut smallest_pbs_max_variance = f64::MAX;
 
         for constraint in &self.undominated_constraints {
             let pbs_coeff = constraint.variance.coeff_pbs(partition);
@@ -60,7 +60,7 @@ impl Feasible {
             .keyswitch_to_small(src_partition, dst_partition);
         let actual_ks_variance = operations_variance.values[ks_index];
 
-        let mut smallest_ks_max_variance = std::f64::MAX;
+        let mut smallest_ks_max_variance = f64::MAX;
 
         for constraint in &self.undominated_constraints {
             let ks_coeff = constraint
@@ -89,7 +89,7 @@ impl Feasible {
             .keyswitch_to_big(src_partition, dst_partition);
         let actual_fks_variance = operations_variance.values[fks_index];
 
-        let mut smallest_fks_max_variance = std::f64::MAX;
+        let mut smallest_fks_max_variance = f64::MAX;
 
         for constraint in &self.undominated_constraints {
             let fks_coeff = constraint
