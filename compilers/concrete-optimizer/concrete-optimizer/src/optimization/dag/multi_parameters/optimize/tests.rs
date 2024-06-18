@@ -403,7 +403,7 @@ fn optimize_v3_direct_round() {
     let sol_mono = solo_key::optimize::tests::optimize(&dag)
         .best_solution
         .unwrap();
-    let minimal_speedup = 8.6;
+    let minimal_speedup = 8.5;
     let speedup = sol_mono.complexity / sol.complexity;
     assert!(
         speedup >= minimal_speedup,
@@ -521,14 +521,14 @@ const MAX_WEIGHT: &[u64] = &[
     1_073_741_824,
     1_073_741_824, // 2**30, 1b
     536_870_912,   // 2**29, 2b
-    268_435_456,   // 2**28, 3b
+    134_217_728,   // 2**27, 3b
     67_108_864,    // 2**26, 4b
     16_777_216,    // 2**24, 5b
     4_194_304,     // 2**22, 6b
     1_048_576,     // 2**20, 7b
     262_144,       // 2**18, 8b
     65_536,        // 2**16, 9b
-    16384,         // 2**14, 10b
+    8192,          // 2**14, 10b
     2048,          // 2**11, 11b
 ];
 

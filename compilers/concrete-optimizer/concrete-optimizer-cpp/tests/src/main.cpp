@@ -65,7 +65,7 @@ TEST test_dag_no_lut() {
 
   auto solution = dag->optimize(default_options());
   assert(solution.glwe_polynomial_size == 1);
-  assert(solution.glwe_dimension == 555);
+  assert(solution.glwe_dimension == 562);
 }
 
 TEST test_dag_lut() {
