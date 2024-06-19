@@ -26,8 +26,6 @@ using concretelang::protocol::Message;
 namespace mlir {
 namespace concretelang {
 
-bool getEmitGPUOption();
-
 /// Compilation context that acts as the root owner of LLVM and MLIR
 /// data structures directly and indirectly referenced by artefacts
 /// produced by the `CompilerEngine`.

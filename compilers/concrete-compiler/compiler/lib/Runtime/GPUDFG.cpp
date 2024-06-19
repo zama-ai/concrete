@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
+#ifdef CONCRETELANG_CUDA_SUPPORT
 #include <atomic>
 #include <cmath>
 #include <cstdarg>
@@ -18,14 +19,9 @@
 #include <utility>
 #include <vector>
 
+#include <concretelang/Runtime/GPUDFG.hpp>
 #include <concretelang/Runtime/stream_emulator_api.h>
 #include <concretelang/Runtime/wrappers.h>
-
-#ifdef CONCRETELANG_CUDA_SUPPORT
-#include "bootstrap.h"
-#include "device.h"
-#include "keyswitch.h"
-#include "linear_algebra.h"
 
 using RuntimeContext = mlir::concretelang::RuntimeContext;
 
@@ -1652,3 +1648,30 @@ void *stream_emulator_init() {
 void stream_emulator_run(void *dfg) {}
 void stream_emulator_delete(void *dfg) { delete (GPU_DFG *)dfg; }
 #endif
+
+namespace mlir {
+namespace concretelang {
+namespace gpu_dfg {
+
+bool check_cuda_device_available() {
+#ifdef CONCRETELANG_CUDA_SUPPORT
+  int num;
+  if (cudaGetDeviceCount(&num) != cudaSuccess)
+    return false;
+  return num > 0;
+#else
+  return false;
+#endif
+}
+
+bool check_cuda_runtime_enabled() {
+#ifdef CONCRETELANG_CUDA_SUPPORT
+  return true;
+#else
+  return false;
+#endif
+}
+
+} // namespace gpu_dfg
+} // namespace concretelang
+} // namespace mlir
