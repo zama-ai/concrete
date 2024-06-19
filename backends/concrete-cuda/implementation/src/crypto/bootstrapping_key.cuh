@@ -8,6 +8,7 @@
 #include "polynomial/polynomial.cuh"
 #include <atomic>
 #include <cstdint>
+#include <err.h>
 
 __device__ inline int get_start_ith_ggsw(int i, uint32_t polynomial_size,
                                          int glwe_dimension,
@@ -235,6 +236,8 @@ void cuda_convert_lwe_bootstrap_key(double2 *dest, ST *src, void *v_stream,
     }
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 
@@ -446,6 +449,8 @@ void cuda_fourier_polynomial_mul(void *_input1, void *_input2, void *_output,
     }
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
   cuda_drop_async(buffer, stream, gpu_index);

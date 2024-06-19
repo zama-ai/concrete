@@ -1,3 +1,4 @@
+#include <err.h>
 #include "bootstrap_amortized.cuh"
 
 /*
@@ -85,6 +86,8 @@ void scratch_cuda_bootstrap_amortized_32(void *v_stream, uint32_t gpu_index,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
@@ -141,6 +144,8 @@ void scratch_cuda_bootstrap_amortized_64(void *v_stream, uint32_t gpu_index,
         input_lwe_ciphertext_count, max_shared_memory, allocate_gpu_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
@@ -216,6 +221,8 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_32(
         lwe_idx, max_shared_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
@@ -353,6 +360,8 @@ void cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
         lwe_idx, max_shared_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
