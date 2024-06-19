@@ -14,6 +14,7 @@
 * [Game of Life](../../frontends/concrete-python/examples/game_of_life/game_of_life.md)
 * [XOR distance](../../frontends/concrete-python/examples/xor_distance/xor_distance.md)
 * [SHA1 with Modules](../../frontends/concrete-python/examples/sha1/sha1.md)
+* [Levenshtein distance with Modules](../../frontends/concrete-python/examples/levenshtein_distance/levenshtein_distance.md)
 
 #### Blog tutorials
 
