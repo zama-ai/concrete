@@ -626,8 +626,11 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     }
   }
 
+  // Restrict direct lowering when already generating GPU code through
+  // the SDFG dialect.
+  bool lowerDirectlyToGPUOps = (options.emitGPUOps && !options.emitSDFGOps);
   if (mlir::concretelang::pipeline::lowerToCAPI(mlirContext, module, enablePass,
-                                                options.emitGPUOps)
+                                                lowerDirectlyToGPUOps)
           .failed()) {
     return StreamStringError("Failed to lower to CAPI");
   }
