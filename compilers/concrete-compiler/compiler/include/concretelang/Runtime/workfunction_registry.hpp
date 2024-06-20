@@ -25,7 +25,7 @@ extern WorkFunctionRegistry *_dfr_node_level_work_function_registry;
 extern void *dl_handle;
 
 struct WorkFunctionRegistry {
-  WorkFunctionRegistry() { _dfr_node_level_work_function_registry = this; }
+  WorkFunctionRegistry() = default;
 
   wfnptr getWorkFunctionPointer(const std::string &name) {
     std::lock_guard<std::mutex> guard(registry_guard);
