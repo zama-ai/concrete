@@ -320,7 +320,7 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
   is_root_node_p = (hpx::find_here() == hpx::find_root_locality());
   num_nodes = hpx::get_num_localities().get();
 
-  new WorkFunctionRegistry();
+  _dfr_node_level_work_function_registry = new WorkFunctionRegistry();
 
   char *env = getenv("DFR_LAZY_KEY_TRANSFER");
   bool lazy = false;
@@ -329,7 +329,7 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
         !strncmp(env, "On", 2) || !strncmp(env, "on", 2) ||
         !strncmp(env, "1", 1))
       lazy = true;
-  new RuntimeContextManager(lazy);
+  _dfr_node_level_runtime_context_manager = new RuntimeContextManager(lazy);
 
   _dfr_jit_phase_barrier = new hpx::distributed::barrier(
       "phase_barrier", num_nodes, hpx::get_locality_id());
