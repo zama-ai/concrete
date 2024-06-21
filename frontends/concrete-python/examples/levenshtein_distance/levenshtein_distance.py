@@ -33,6 +33,24 @@ class MyModule:
 
         return is_equal * if_equal + (1 - is_equal) * (1 + min_123)
 
+    # There is a single output in mix: it can go to
+    #   - input 1 of mix
+    #   - input 2 of mix
+    #   - input 3 of mix
+    #   - input 4 of mix
+    # or just be the final output
+    #
+    # There is a single output of compare, it goes to input 0 of mix
+    composition = fhe.Wired(
+        [
+            fhe.Wire(fhe.AllOutputs(compare), fhe.Input(mix, 0)),
+            fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 1)),
+            fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 2)),
+            fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 3)),
+            fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 4)),
+        ]
+    )
+
 
 # For now, we pick only small letters
 def random_letter_as_int():
@@ -113,10 +131,10 @@ def levenshtein_simulate(x, y):
 def levenshtein_fhe(x, y):
     if len(x) == 0:
         # In clear, that's return len(y)
-        return my_module.compare.encrypt(len(y), None)[0]
+        return my_module.mix.encrypt(len(y), None, None, None, None)[0]
     if len(y) == 0:
         # In clear, that's return len(x)
-        return my_module.compare.encrypt(len(x), None)[0]
+        return my_module.mix.encrypt(len(x), None, None, None, None)[0]
 
     if_equal = levenshtein_fhe(x[1:], y[1:])
     case_1 = levenshtein_fhe(x[1:], y)
