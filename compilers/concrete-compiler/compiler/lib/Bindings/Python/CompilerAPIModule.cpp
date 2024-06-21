@@ -12,6 +12,7 @@
 #include "concretelang/Common/Keysets.h"
 #include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
 #include "concretelang/Runtime/DFRuntime.hpp"
+#include "concretelang/Runtime/GPUDFG.hpp"
 #include "concretelang/ServerLib/ServerLib.h"
 #include "concretelang/Support/logging.h"
 #include <llvm/Support/Debug.h>
@@ -462,6 +463,14 @@ void initDataflowParallelization() {
   mlir::concretelang::dfr::_dfr_set_required(true);
 }
 
+bool checkGPURuntimeEnabled() {
+  return mlir::concretelang::gpu_dfg::check_cuda_runtime_enabled();
+}
+
+bool checkCudaDeviceAvailable() {
+  return mlir::concretelang::gpu_dfg::check_cuda_device_available();
+}
+
 std::string roundTrip(const char *module) {
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
@@ -673,6 +682,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   m.def("terminate_df_parallelization", &terminateDataflowParallelization);
 
   m.def("init_df_parallelization", &initDataflowParallelization);
+  m.def("check_gpu_runtime_enabled", &checkGPURuntimeEnabled);
+  m.def("check_cuda_device_available", &checkCudaDeviceAvailable);
 
   pybind11::enum_<mlir::concretelang::Backend>(m, "Backend")
       .value("CPU", mlir::concretelang::Backend::CPU)
