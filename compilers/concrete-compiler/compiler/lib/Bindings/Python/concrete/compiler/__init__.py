@@ -8,6 +8,8 @@ import atexit
 from mlir._mlir_libs._concretelang._compiler import (
     terminate_df_parallelization as _terminate_df_parallelization,
     init_df_parallelization as _init_df_parallelization,
+    check_gpu_runtime_enabled as _check_gpu_runtime_enabled,
+    check_cuda_device_available as _check_cuda_device_available,
 )
 from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
 from mlir._mlir_libs._concretelang._compiler import (
@@ -47,6 +49,18 @@ def init_dfr():
     during compilation. However, it is required in case no compilation has previously been done
     and the runtime is needed"""
     _init_df_parallelization()
+
+
+def check_gpu_enabled() -> bool:
+    """Check whether the compiler and runtime support GPU offloading.
+
+    GPU offloading is not always available, in particular in non-GPU wheels."""
+    return _check_gpu_runtime_enabled()
+
+
+def check_gpu_available() -> bool:
+    """Check whether a CUDA device is available and online."""
+    return _check_cuda_device_available()
 
 
 # Cleanly terminate the dataflow runtime if it has been initialized
