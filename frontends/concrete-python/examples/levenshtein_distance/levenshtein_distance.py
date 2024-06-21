@@ -12,7 +12,7 @@ max_string_length = 6
 @fhe.module()
 class MyModule:
     @fhe.function({"x": "encrypted", "y": "encrypted"})
-    def compare(x, y):
+    def equal(x, y):
         return x == y
 
     @fhe.function(
@@ -28,10 +28,7 @@ class MyModule:
         min_12 = numpy.minimum(case_1, case_2)
         min_123 = numpy.minimum(min_12, case_3)
 
-        # FIXME: it should be faster with that, but semantic breaks more often
-        # return fhe.if_then_else(is_equal, if_equal, 1 + min_123)
-
-        return is_equal * if_equal + (1 - is_equal) * (1 + min_123)
+        return fhe.if_then_else(is_equal, if_equal, 1 + min_123)
 
     # There is a single output in mix: it can go to
     #   - input 1 of mix
@@ -40,10 +37,10 @@ class MyModule:
     #   - input 4 of mix
     # or just be the final output
     #
-    # There is a single output of compare, it goes to input 0 of mix
+    # There is a single output of equal, it goes to input 0 of mix
     composition = fhe.Wired(
         [
-            fhe.Wire(fhe.AllOutputs(compare), fhe.Input(mix, 0)),
+            fhe.Wire(fhe.AllOutputs(equal), fhe.Input(mix, 0)),
             fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 1)),
             fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 2)),
             fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 3)),
@@ -70,7 +67,7 @@ def map_string_to_int(s):
 
 
 # Compilation
-inputset_compare = [(random_letter_as_int(), random_letter_as_int()) for _ in range(1000)]
+inputset_equal = [(random_letter_as_int(), random_letter_as_int()) for _ in range(1000)]
 inputset_mix = [
     (
         numpy.random.randint(2),
@@ -83,7 +80,7 @@ inputset_mix = [
 ]
 
 my_module = MyModule.compile(
-    {"compare": inputset_compare, "mix": inputset_mix},
+    {"equal": inputset_equal, "mix": inputset_mix},
     show_mlir=True,
     p_error=10**-20,
     show_optimizer=True,
@@ -120,7 +117,7 @@ def levenshtein_simulate(x, y):
     case_2 = levenshtein_simulate(x, y[1:])
     case_3 = if_equal
 
-    is_equal = my_module.compare(x[0], y[0])
+    is_equal = my_module.equal(x[0], y[0])
     returned_value = my_module.mix(is_equal, if_equal, case_1, case_2, case_3)
 
     return returned_value
@@ -131,10 +128,10 @@ def levenshtein_simulate(x, y):
 def levenshtein_fhe(x, y):
     if len(x) == 0:
         # In clear, that's return len(y)
-        return my_module.mix.encrypt(len(y), None, None, None, None)[0]
+        return my_module.mix.encrypt(None, len(y), None, None, None)[1]
     if len(y) == 0:
         # In clear, that's return len(x)
-        return my_module.mix.encrypt(len(x), None, None, None, None)[0]
+        return my_module.mix.encrypt(None, len(x), None, None, None)[1]
 
     if_equal = levenshtein_fhe(x[1:], y[1:])
     case_1 = levenshtein_fhe(x[1:], y)
@@ -142,7 +139,7 @@ def levenshtein_fhe(x, y):
     case_3 = if_equal
 
     # In FHE
-    is_equal = my_module.compare.run(x[0], y[0])
+    is_equal = my_module.equal.run(x[0], y[0])
     returned_value = my_module.mix.run(is_equal, if_equal, case_1, case_2, case_3)
 
     return returned_value
@@ -186,8 +183,8 @@ for a, b in list_patterns:
     assert l1_simulate == l1_clear, f"    {l1_simulate=} and {l1_clear=} are different"
     print(" - OK")
 
-# Key generation: FIXME, to be done calling a keygen function, see https://github.com/zama-ai/concrete-internal/issues/751
-my_module.compare.encrypt(None, None)
+# Key generation
+my_module.keygen()
 
 # Checks in FHE
 print("\nComputations in FHE\n")
@@ -202,8 +199,8 @@ for a, b in list_patterns:
     a_as_int = map_string_to_int(a)
     b_as_int = map_string_to_int(b)
 
-    a_enc = tuple(my_module.compare.encrypt(ai, None)[0] for ai in a_as_int)
-    b_enc = tuple(my_module.compare.encrypt(None, bi)[1] for bi in b_as_int)
+    a_enc = tuple(my_module.equal.encrypt(ai, None)[0] for ai in a_as_int)
+    b_enc = tuple(my_module.equal.encrypt(None, bi)[1] for bi in b_as_int)
 
     time_begin = time.time()
     l1_fhe_enc = levenshtein_fhe(a_enc, b_enc)
