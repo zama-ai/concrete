@@ -1,11 +1,11 @@
 # Calling from other languages
 
-After doing a compilation, we endup with a couple of artifacts, including crypto parameters and a binary file containing the executable circuit. In order to be able to encrypt and run the circuit properly, we need to know how to interpret these artifacts, and there are a couple of utility functions to load them. These utility functions can be accessed through a variety of languages, including Python, Cpp, and Rust. [The Rust bindings](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/lib/Bindings/Rust) (built on top of the [CAPI](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang-c)) can be a good example for someone who wants to build bindings for another language.
+After doing a compilation, we endup with a couple of artifacts, including crypto parameters and a binary file containing the executable circuit. In order to be able to encrypt and run the circuit properly, we need to know how to interpret these artifacts, and there are a couple of utility functions to load them. These utility functions can be accessed through a variety of languages, including Python, Cpp, and Rust. [The Rust bindings](https://github.com/zama-ai/concrete/tree/release/2.1.x/compilers/concrete-compiler/compiler/lib/Bindings/Rust) (built on top of the [CAPI](https://github.com/zama-ai/concrete/tree/release/2.1.x/compilers/concrete-compiler/compiler/include/concretelang-c)) can be a good example for someone who wants to build bindings for another language.
 
 ## Calling from Rust
 
 `bindgen` is used to generate Rust FFI bindings to the CAPI
-[The Rust bindings](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/lib/Bindings/Rust) are built on top of the CAPI in order to provide a safer, and more Rusty API. Although you can use `bindgen` (as we did to build the Rust bindings) to generate the Rust FFI from the CAPI and use it as is, we will here show how to use the Rust API that is built on top of that, as it's easier to use.
+[The Rust bindings](https://github.com/zama-ai/concrete/tree/release/2.1.x/compilers/concrete-compiler/compiler/lib/Bindings/Rust) are built on top of the CAPI in order to provide a safer, and more Rusty API. Although you can use `bindgen` (as we did to build the Rust bindings) to generate the Rust FFI from the CAPI and use it as is, we will here show how to use the Rust API that is built on top of that, as it's easier to use.
 
 ![](../\_static/calling\_from\_other\_lang\_rust\_bindings.jpg)
 
@@ -89,4 +89,4 @@ println!("result tensor dims: {:?}", result_arg.dims().unwrap());
 println!("result tensor data: {:?}", result_arg.data().unwrap());
 ```
 
-There is also a couple of tests in [compiler.rs](https://github.com/zama-ai/concrete/blob/main/compilers/concrete-compiler/compiler/lib/Bindings/Rust/src/compiler.rs) that can show how to both compile and run a circuit between a client and server using serialization.
+There is also a couple of tests in [compiler.rs](https://github.com/zama-ai/concrete/blob/release/2.1.x/compilers/concrete-compiler/compiler/lib/Bindings/Rust/src/compiler.rs) that can show how to both compile and run a circuit between a client and server using serialization.
