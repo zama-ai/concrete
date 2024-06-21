@@ -3776,7 +3776,12 @@ class Context:
                 result = self.add(resulting_type, result, constant)
             return result
 
-        table += [0] * ((2**on.bit_width) - len(table))
+        padding = [0] * ((2**on.bit_width) - len(table))
+        if padding:
+            if on.is_unsigned:
+                table += padding
+            else:
+                table = table[: len(table) // 2] + padding + table[-len(table) // 2 :]
 
         dialect = fhe if on.is_scalar else fhelinalg
         operation = dialect.ApplyLookupTableEintOp
