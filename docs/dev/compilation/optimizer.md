@@ -40,7 +40,7 @@ In more complex cases, the optimizer iteratively performs an exhaustive search, 
 
 ## How can I determine, understand, and explore crypto-parameters
 
-One can have a look at [reference crypto-parameters](../../../compilers/concrete-optimizer/v0-parameters/ref/v0_last_128) for each security level (but for a given correctness). This provides insight between the calcululs content (i.e. maximum precision, maximum dot 2-norm, etc.,) and the cost.
+One can have a look at [reference crypto-parameters](https://raw.githubusercontent.com/zama-ai/concrete/release/2.5.x/compilers/concrete-optimizer/v0-parameters/ref/v0_last_128) for each security level (but for a given correctness). This provides insight between the calcululs content (i.e. maximum precision, maximum dot 2-norm, etc.,) and the cost.
 
 Then one can manually explore crypto-parameters space using a [CLI tool](../../../compilers/concrete-optimizer/v0-parameters/README.md).
 
