@@ -241,9 +241,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: '*.intoto.jsonl'
-      # When building a new tag, create a new draft release.
+      # When building a new public tag, create a new draft release.
       - name: create draft release
-        if: ${{ env.RELEASE_TYPE == 'public' || env.RELEASE_TYPE == 'nightly' }}
+        if: ${{ env.RELEASE_TYPE == 'public'}}
         run: |
           export TAG=$(git describe --tags --abbrev=0)
           echo $TAG
