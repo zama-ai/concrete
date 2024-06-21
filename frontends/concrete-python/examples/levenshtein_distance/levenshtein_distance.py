@@ -1,12 +1,15 @@
 # Computing Levenstein distance between strings, https://en.wikipedia.org/wiki/Levenshtein_distance
 
-from concrete import fhe
-from functools import lru_cache
-import numpy
 import time
+from functools import lru_cache
+
+import numpy
+
+from concrete import fhe
 
 # Parameters to be set by the user
 max_string_length = 6
+
 
 # Module FHE
 @fhe.module()
@@ -85,6 +88,7 @@ my_module = MyModule.compile(
     p_error=10**-20,
     show_optimizer=True,
 )
+
 
 # Function in clear, for reference and comparison
 @lru_cache
