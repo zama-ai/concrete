@@ -128,7 +128,7 @@ Some of these operations are not supported between two encrypted values. A detai
 * [np.reshape](https://numpy.org/doc/stable/reference/generated/numpy.reshape.html)
 * [np.right\_shift](https://numpy.org/doc/stable/reference/generated/numpy.right\_shift.html)
 * [np.rint](https://numpy.org/doc/stable/reference/generated/numpy.rint.html)
-* [np.round\_](https://numpy.org/doc/stable/reference/generated/numpy.round\_.html)
+* [np.round\_](https://numpy.org/doc/stable/reference/generated/numpy.around.html)
 * [np.sign](https://numpy.org/doc/stable/reference/generated/numpy.sign.html)
 * [np.signbit](https://numpy.org/doc/stable/reference/generated/numpy.signbit.html)
 * [np.sin](https://numpy.org/doc/stable/reference/generated/numpy.sin.html)
