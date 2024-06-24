@@ -211,7 +211,7 @@ class ValueOrigin:
     bit_index: int = 0
 
 
-@dataclass
+@dataclass(frozen=True, order=True)
 class ValueNode:
     """An intermediate named value."""
 
@@ -260,6 +260,15 @@ class TluNode:
         """Number of single bit parameters of the TLU."""
         return len(self.arguments)
 
+    @property
+    def name(self):
+        assert len(self.results) == 1
+        return self.results[0].name
+
+    def __str__(self):
+        name = ', '.join(r.name for r in self.results)
+        args = ', '.join(a.name for a in self.arguments)
+        return f"{name} = tlu ({args}) ({self.content})"
 
 @dataclass
 class Circuit:
