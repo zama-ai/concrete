@@ -80,7 +80,8 @@ jobs:
         run: |
           set -e
           cd compilers/concrete-compiler/compiler
-          make BUILD_DIR=/shared/build run-end-to-end-distributed-tests
+          rm -rf /shared/KeyCache
+          make BUILD_DIR=/shared/build KEY_CACHE_DIRECTORY=/shared/KeyCache run-end-to-end-distributed-tests
 
       - name: Instance cleanup
         run: |
