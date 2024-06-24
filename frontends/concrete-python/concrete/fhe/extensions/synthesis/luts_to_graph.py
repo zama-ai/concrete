@@ -17,7 +17,7 @@ def detect_std_lut_label(node):
         if content == [[0, 1], [1, 1]]:
             return "l2-or"
         if content == [[1, 0], [0, 0]]:
-            return "l2-2-nor"
+            return "l2-nor"
         if content == [[0, 1], [1, 0]]:
             return "l2-add"
         if content == [[1, 0], [0, 1]]:
@@ -106,7 +106,7 @@ def to_graph(name, nodes):
     def node_name_label(node, i):
         label = detect_std_lut_label(node) or f"l-{len(node.arguments)}"
         name = f"{label}-{i}"
-        return name, label
+        return name, node.name+ " = " + label
 
     with graph.subgraph(name="cluster_inner") as cluster:
         for i, tlu in enumerate(nodes):
