@@ -5,4 +5,4 @@ ARG version
 # provide the `ld` binary required by the compiler
 RUN apt update && apt install -y binutils graphviz
 
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.zama.ai concrete-python==${version}
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.zama.ai/cpu/ concrete-python==${version}
