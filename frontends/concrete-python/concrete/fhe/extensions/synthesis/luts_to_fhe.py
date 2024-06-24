@@ -11,6 +11,7 @@ import numpy as np
 from concrete import fhe
 from concrete.fhe.extensions.synthesis.verilog_to_luts import TluNode
 from concrete.fhe.tracing.tracer import Tracer
+from concrete.fhe.extensions.synthesis.sum.detect_single_bit_sum import detect as detect_sums
 
 WEIGHT_TO_TLU = True
 ENFORCE_BITWDTH = True
@@ -57,6 +58,7 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
     layers = layered_nodes(circuit.nodes)
     scheduled_nodes = [circuit.nodes[index_node] for layer in layers for index_node in layer]
 
+    _ = detect_sums(scheduled_nodes, params)
     max_weight = 0
     if verbose:
         print("Layers")
