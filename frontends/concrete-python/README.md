@@ -8,7 +8,7 @@ End-users should install `concrete-python` using `pip`:
 pip install concrete-python
 ```
 
-**Note:** Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding `--extra-index-url https://pypi.zama.ai`.
+**Note:** Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding `--extra-index-url https://pypi.zama.ai/cpu/`. GPU wheels are also available under `https://pypi.zama.ai/gpu/` (check `https://pypi.zama.ai/` for all available platforms).
 
 ## Setup for development
 
