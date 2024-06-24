@@ -111,10 +111,12 @@ def _query_impl(state, key):
 
     selection = (number_of_matching_chunks == NUMBER_OF_KEY_CHUNKS).reshape((-1, 1))
     found = np.sum(selection)
+    fhe.hint(found, can_store=NUMBER_OF_ENTRIES)
 
     packed_selection_and_values = selection * (2**CHUNK_SIZE) + values
     value_selection = keep_selected_lut[packed_selection_and_values]
     value = np.sum(value_selection, axis=0)
+    fhe.hint(value, bit_width=CHUNK_SIZE)
 
     return fhe.array([found, *value])
 
@@ -129,23 +131,32 @@ class KeyValueDatabase:
     def __init__(self):
         self._state = np.zeros(STATE_SHAPE, dtype=np.int64)
 
-        inputset_binary = [
+        sample_state = np.array(
+            [
+                [i % 2] + encode_key(i).tolist() + encode_value(i).tolist()
+                for i in range(STATE_SHAPE[0])
+            ]
+        )
+
+        insert_replace_inputset = [
             (
                 # state
-                np.zeros(STATE_SHAPE, dtype=np.int64),
+                sample_state,
                 # key
-                np.ones(NUMBER_OF_KEY_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-            )
-        ]
-        inputset_ternary = [
-            (
-                # state
-                np.zeros(STATE_SHAPE, dtype=np.int64),
-                # key
-                np.ones(NUMBER_OF_KEY_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
+                encode_key(i),
                 # value
-                np.ones(NUMBER_OF_VALUE_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
+                encode_key(i),
             )
+            for i in range(20)
+        ]
+        query_inputset = [
+            (
+                # state
+                sample_state,
+                # key
+                encode_key(i),
+            )
+            for i in range(20)
         ]
 
         configuration = fhe.Configuration(
@@ -155,18 +166,23 @@ class KeyValueDatabase:
         )
 
         insert_compiler = fhe.Compiler(
-            _insert_impl, {"state": "encrypted", "key": "encrypted", "value": "encrypted"}
+            _insert_impl,
+            {"state": "encrypted", "key": "encrypted", "value": "encrypted"},
         )
         replace_compiler = fhe.Compiler(
-            _replace_impl, {"state": "encrypted", "key": "encrypted", "value": "encrypted"}
+            _replace_impl,
+            {"state": "encrypted", "key": "encrypted", "value": "encrypted"},
         )
-        query_compiler = fhe.Compiler(_query_impl, {"state": "encrypted", "key": "encrypted"})
+        query_compiler = fhe.Compiler(
+            _query_impl,
+            {"state": "encrypted", "key": "encrypted"},
+        )
 
         print()
 
         print("Compiling insertion circuit...")
         start = time.time()
-        self._insert_circuit = insert_compiler.compile(inputset_ternary, configuration)
+        self._insert_circuit = insert_compiler.compile(insert_replace_inputset, configuration)
         end = time.time()
         print(f"(took {end - start:.3f} seconds)")
 
@@ -174,7 +190,7 @@ class KeyValueDatabase:
 
         print("Compiling replacement circuit...")
         start = time.time()
-        self._replace_circuit = replace_compiler.compile(inputset_ternary, configuration)
+        self._replace_circuit = replace_compiler.compile(insert_replace_inputset, configuration)
         end = time.time()
         print(f"(took {end - start:.3f} seconds)")
 
@@ -182,7 +198,7 @@ class KeyValueDatabase:
 
         print("Compiling query circuit...")
         start = time.time()
-        self._query_circuit = query_compiler.compile(inputset_binary, configuration)
+        self._query_circuit = query_compiler.compile(query_inputset, configuration)
         end = time.time()
         print(f"(took {end - start:.3f} seconds)")
 
@@ -264,14 +280,12 @@ assert db.query(4) is None
 db.replace(3, 5)
 assert db.query(3) == 5
 
-
 # Define lower/upper bounds for the key
 minimum_key = 1
 maximum_key = 2**KEY_SIZE - 1
 # Define lower/upper bounds for the value
 minimum_value = 1
 maximum_value = 2**VALUE_SIZE - 1
-
 
 # Test: Insert/Replace/Query Bounds
 # Insert (key: minimum_key , value: minimum_value) into the database
