@@ -16,7 +16,9 @@ RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 venv:
 	$(PYTHON) -m venv .venv
 	. .venv/bin/activate
-
+ifeq (,$(wildcard ${RUNTIME_LIBRARY}))
+	$(PIP) install concrete-python
+endif
 	$(PIP) install -r requirements.dev.txt
 	$(PIP) install -r requirements.extra-full.txt
 	$(PIP) install -r requirements.txt
@@ -29,8 +31,12 @@ venv:
 cp_activate:
 	@echo "echo 'Activating virtual env and local concrete-python and local compiler bindings' ;"
 	@echo "export PATH=$(PWD)/.venv/bin:$$PATH;"
-	@echo "export LD_PRELOAD=$(RUNTIME_LIBRARY);"
-	@echo "export PYTHONPATH=$(BINDINGS_DIRECTORY);"
+ifeq (,$(wildcard ${RUNTIME_LIBRARY}))
+	@echo "export PYTHONPATH=$(PWD);"
+else
+	@echo "export LD_PRELOAD=$(LD_PRELOAD);"
+	@echo "export PYTHONPATH=${BINDINGS_DIRECTORY}:$(PWD);"
+endif
 
 licenses:
 	bash scripts/versioning/summary.sh
@@ -42,8 +48,7 @@ licenses:
 pytest: pytest-default
 
 pytest-default:
-	export LD_PRELOAD=$(RUNTIME_LIBRARY)
-	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+	eval $(make cp_activate)
 	pytest tests -svv -n auto \
 		--cov=concrete.fhe \
 		--cov-fail-under=95 \

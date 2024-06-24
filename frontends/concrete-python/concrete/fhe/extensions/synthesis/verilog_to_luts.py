@@ -98,7 +98,7 @@ strash
 dch -f
 if
 mfs2
-#lutpack
+lutpack
 """
 
 
@@ -160,7 +160,10 @@ def raise_verilog_warnings_and_error(output, verilog_path, verilog_content):
         if line.startswith(location):
             msgs.append(line)
             line_nb = int(line.split(location)[1].split(":")[0])
-            fatal = f"{line}\nError at line {line_nb}:\n{verilog_content.splitlines()[line_nb-1]}"
+            lines = verilog_content.splitlines()
+            context_lines = "\n".join(verilog_content.splitlines()[line_nb-2:line_nb])
+            underline = "^" * len(lines[line_nb-1])
+            fatal = f"{line}\nError at line {line_nb}:\n{context_lines}\n{underline}"
         elif "Warning" in line:
             msgs.append(line)
     if msgs and (len(msgs) != 1 and fatal):
@@ -182,9 +185,10 @@ def yosys_run_script(verilog, yosys_dot_file):
     tmpdir_prefix = Path.home() / ".cache" / "concrete-python" / "synthesis"
     os.makedirs(tmpdir_prefix, exist_ok=True)
 
-    def tmpfile(mode, suffix, **kwargs):
+    def tmpfile(mode, suffix):
         return tempfile.NamedTemporaryFile(
-            mode=mode, dir=tmpdir_prefix, suffix=f"-{suffix}", **kwargs
+            mode=mode, dir=tmpdir_prefix, suffix=f"-{suffix}",
+            delete=False,
         )
 
     # fmt: off
@@ -193,7 +197,7 @@ def yosys_run_script(verilog, yosys_dot_file):
             tmpfile("w+", "lut-costs.txt") as lut_costs_file, \
             tmpfile("w+", "source.verilog") as verilog_file, \
             tmpfile("w+", "yosys.script") as yosys_file, \
-            tmpfile("r", "luts.json", delete=False) as json_file:
+            tmpfile("r", "luts.json") as json_file:
         return _yosys_run_script(
             abc_file, lut_costs_file, yosys_file,
             verilog_file, verilog,

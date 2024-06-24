@@ -18,6 +18,7 @@ from .configuration import (
     MultiParameterStrategy,
     MultivariateStrategy,
     ParameterSelectionStrategy,
+    SynthesisConfig,
 )
 from .keys import Keys
 from .module import FheFunction, FheModule

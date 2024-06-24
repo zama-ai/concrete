@@ -10,6 +10,10 @@ from dataclasses import dataclass
 from copy import deepcopy
 from typing import Dict, List
 
+from concrete.fhe.compilation.circuit import Circuit
+from concrete.fhe.extensions.synthesis.verilog_source import Ty
+from concrete.fhe.mlir.context import Context
+from concrete.fhe.mlir.conversion import Conversion, ConversionType
 import numpy as np
 
 from concrete import fhe
@@ -55,8 +59,7 @@ def layered_nodes(nodes: List[TluNode]):
         ready_nodes = new_ready_nodes
     return layers
 
-
-def tlu_circuit_to_fhe(circuit, params, verbose):
+def tlu_circuit_to_tracer(circuit, params, verbose):
     """Convert the simple TLU dag to a Tracer function."""
     layers = layered_nodes(circuit.nodes)
     scheduled_nodes = [circuit.nodes[index_node] for layer in layers for index_node in layer]
@@ -399,3 +402,331 @@ def tlu_circuit_to_fhe(circuit, params, verbose):
             return tuple(results)
 
     return tracer
+
+
+def tlu_circuit_to_mlir(circuit: Circuit, params: Dict[str, Ty], verbose):
+    """Convert the simple TLU dag to a Tracer function."""
+    layers = layered_nodes(circuit.nodes)
+    scheduled_nodes = [circuit.nodes[index_node] for layer in layers for index_node in layer]
+
+    max_weight = 0
+    if verbose:
+        print("Layers")
+        for i, layer in enumerate(layers):
+            arities = [len(circuit.nodes[node_index].arguments) for node_index in layer]
+            print(f"Layer {i}")
+            print(f" {arities}")
+            print(f" nb luts: {len(layer)}")
+
+    used_count = {}
+    for tlu in scheduled_nodes:
+        for value in tlu.arguments:
+            try:
+                used_count[value.name] += 1
+            except KeyError:
+                used_count[value.name] = 1
+    for result in circuit.results:
+        for res_bit in result:
+            try:
+                used_count[res_bit.name] += 1
+            except KeyError:
+                used_count[res_bit.name] = 1
+
+    bit_location = {}
+    for name in circuit.parameters:
+        ty_l = params[name]
+        if not isinstance(ty_l, list):
+            ty_l = [ty_l]
+        bit_location[name] = {}
+        g_index = 0
+        for i_word, ty in enumerate(ty_l):
+            for bit_index in range(ty.dtype.bit_width):
+                bit = circuit.parameters[name][g_index]
+                assert bit.origin.bit_index == g_index
+                bit_location[name][bit.name] = BitLocation(
+                    word=i_word,
+                    local_bit_index=bit_index,
+                    global_bit_index=g_index,
+                )
+                g_index += 1
+
+    for result in circuit.results:
+        name = result[0].base_name
+        ty_l = params[name]
+        if not isinstance(ty_l, list):
+            ty_l = [ty_l]
+        bit_location[name] = {}
+        g_index = 0
+        for i_word, ty in enumerate(ty_l):
+            for bit_index in range(ty.dtype.bit_width):
+                bit = result[g_index]
+                assert bit.origin.bit_index == g_index
+                bit_location[name][bit.name] = BitLocation(
+                    word=i_word,
+                    local_bit_index=bit_index,
+                    global_bit_index=g_index,
+                )
+                g_index += 1
+
+    # collect max arity use for all values
+    max_arity_use = {}
+    for bits in circuit.parameters.values():
+        for value in bits:
+            max_arity_use[value.name] = 1
+    for tlu in scheduled_nodes:
+        for value in tlu.arguments:
+            max_arity_use[value.name] = max(max_arity_use[value.name], tlu.arity)
+        for value in tlu.results:
+            assert value.name not in max_arity_use
+            max_arity_use[value.name] = 1
+
+    # Result can be either precision correct on single use or < 7 or converted
+    for result in circuit.results:
+        for res_bit in result:
+            if isinstance(params[res_bit.base_name], list):
+                word_i = bit_location[res_bit.base_name][res_bit.name].word
+                bit_width = params[res_bit.base_name][word_i].dtype.bit_width
+            else:
+                bit_width = params[res_bit.base_name].dtype.bit_width
+            if used_count.get(res_bit.name, 1) == 1:
+                # print("solo use", res_bit.name, bitwidth)
+                max_arity_use[res_bit.name] = bit_width
+            elif bit_width < 7 and bit_width > max_arity_use[res_bit.name]:
+                # print("dominated use", res_bit.name, bitwidth)
+                max_arity_use[res_bit.name] = bit_width
+            else:
+                # print("Warning: force conversion on", res_bit.name)
+                pass
+
+    bit_width_unify = set()
+    unified = []
+    for tlu in scheduled_nodes:
+        no_tlu = len(tlu.arguments) == 1 and tlu.content in ([0, 1], [1, 0])
+        constant = len(tlu.arguments) == 0
+        if no_tlu:
+            input_name = tlu.arguments[0].name
+            output_name = tlu.results[0].name
+            unified.append((input_name, output_name))
+            bit_width_unify.add(tuple(sorted((input_name, output_name))))
+        elif constant:
+            pass
+        else:
+            bit_width_unify.add(tuple(sorted([bit.name for bit in tlu.arguments])))
+
+    changed = True
+    while changed:
+        changed = False
+        for bits in bit_width_unify:
+            max_arity_uses = [max_arity_use[bit] for bit in bits]
+            bit_width_max = max(max_arity_uses)
+            for bit, v in zip(bits, max_arity_uses):
+                if v != bit_width_max:
+                    max_arity_use[bit] = bit_width_max
+                    changed = True
+    for input_name, output_name in unified:
+        max_max = max(max_arity_use[input_name], max_arity_use[output_name])
+        max_arity_use[input_name] = max_max
+        max_arity_use[output_name] = max_max
+
+    # collect min scale use for all values
+    min_scale = {}
+    for result in circuit.results:
+        for i, res_bit in enumerate(result):
+            local_bit_index = bit_location[res_bit.base_name][res_bit.name].local_bit_index
+            min_scale[res_bit.name] = 2 ** local_bit_index
+    for tlu in scheduled_nodes:
+        for i, value in enumerate(tlu.arguments):
+            if all(value.name != name for name, _ in unified) or len(tlu.arguments) > 1:
+                min_scale[value.name] = min(min_scale.get(value.name, 2**i), 2**i)
+        for value in tlu.results:
+            assert value.name not in min_scale or value.origin.is_result
+            if not value.origin.is_result:
+                min_scale[value.name] = 2 ** (max_arity_use[value.name] - 1)
+    if not WEIGHT_TO_TLU:
+        for n in min_scale:
+            min_scale[n] = 1
+
+    for input_name, output_name in unified:
+        min1 = min_scale.get(input_name)
+        min2 = min_scale.get(output_name)
+        if min1 is None:
+            min1 = min2
+        min_min = min(min1, min2)
+        min_scale[input_name] = min_min
+        min_scale[output_name] = min_min
+
+    def rescaled(v, rescale):
+        if rescale == 1:
+            return v
+        else:
+            raise NotImplementedError()
+
+    def power_of_2_scale(v):
+        assert v > 0
+        if v % 2 == 0:
+            return 1 + power_of_2_scale(v // 2)
+        else:
+            return 0
+
+    def mlir(context: Context, resulting_type: ConversionType, args: List[Conversion]):
+        if len(circuit.parameters) != len(args):
+            raise ValueError("Invalid number of args")
+
+        kwargs = {
+            name: arg
+            for name, arg in zip(circuit.parameters, args)
+        }
+
+        for name, value in kwargs.items():
+            if name in params:
+                if isinstance(params[name], list):
+                    if not value.type.is_tensor:
+                        msg = f"`{name}` should be a tensor"
+                        raise TypeError(msg)
+                # else:
+                #     kwargs[name] = [value]
+
+        def repack_scaled_bits(scaled_bit_values, before_tlu=True):
+            nonlocal max_weight
+            scaled_bit_values = list(scaled_bit_values)
+            assert scaled_bit_values
+            bit_width = len(scaled_bit_values)
+            assert bit_width > 0
+            repacked_bits = None
+            arg_max_bit_width = 0
+            for i, (scale, value) in enumerate(scaled_bit_values):
+                if i == 0:
+                    assert scale == 1
+                if value is None:
+                    assert scale == 0
+                    continue
+                assert scale >= 1
+                assert scale <= 2**i
+                assert scale & (scale - 1) == 0  # is power of 2
+                weight = 2**i // scale
+                max_weight = max(max_weight, weight)
+                if weight == 1:
+                    add = value
+                else:
+                    weight = context.constant(context.i(value.type.bit_width + 1), weight) # TODO 16
+                    add = context.mul(value.type, value, weight)
+                if repacked_bits is None:
+                    repacked_bits = add
+                else:
+                    assert repacked_bits.type.bit_width == add.type.bit_width, (
+                        repacked_bits.type.bit_width, add.type.bit_width
+                    )
+                    repacked_bits = context.add(add.type, repacked_bits, add)
+
+            extra_bits = arg_max_bit_width - bit_width
+            if extra_bits > 0 and before_tlu and RESCALE_BEFORE_TLU:
+                repacked_bits = context.reduce_precision(repacked_bits, bit_width)
+            return repacked_bits
+
+        # decompose parameters into bits
+        # with fhe.tag("bit_extractions"):
+        parameters = {}
+        for name, value in kwargs.items():
+            unsigned = context.to_unsigned(value)
+            for bit, bit_loc in zip(circuit.parameters[name], bit_location[name].values()):
+                word_i = bit_loc.word
+                word_bit_i = bit_loc.local_bit_index
+                assert bit_loc.global_bit_index == bit.origin.bit_index
+                if isinstance(params[name], list):
+                    word_value_type = context.fork_type(value.type, shape=tuple(value.type.shape)[:-1])
+                    word_value = context.index_static(word_value_type, value, [word_i])
+                else:
+                    assert word_i == 0
+                    word_value = unsigned
+                shift_by = power_of_2_scale(min_scale[bit.name])
+                # Take into account word_bit_i
+                bit_width = max_arity_use[bit.name] - shift_by
+                # shift_by
+                bit_value_type = context.fork_type(word_value.type, bit_width=bit_width)
+                # TODO: could take the rescale/max_arity_use into account here to minimize lsbs
+                bit_value = context.extract_bits(bit_value_type, word_value, word_bit_i, assume_many_extract=True, refresh_all_bits=True)
+                if shift_by > 0:
+                    bit_value_type = context.fork_type(bit_value_type, bit_width=max_arity_use[bit.name])
+                    bit_value = context.reinterpret(bit_value, bit_width=max_arity_use[bit.name])
+                parameters[bit.name] = bit_value
+        # contains all intermediate tracer
+        intermediate_values = dict(parameters)
+
+        # handle special case first
+        # constant tlu and identity
+        for tlu_node in scheduled_nodes:
+            output_name = tlu_node.results[0].name
+            assert len(tlu_node.results) == 1
+            rescale = min_scale[output_name]
+            if len(tlu_node.results) == 1 and tlu_node.content == [0, 1]:
+                assert len(tlu_node.arguments) == 1
+                assert any(tlu_node.arguments[0].name == name for name, _ in unified)
+                assert any(tlu_node.results[0].name == name for _, name in unified)
+                # if rescale == 1:
+                intermediate_values[output_name] = intermediate_values[tlu_node.arguments[0].name]
+                assert intermediate_values[tlu_node.arguments[0].name].type.bit_width == max_arity_use[output_name]
+            elif len(tlu_node.results) == 1 and tlu_node.content == [1, 0]:
+                arg = intermediate_values[tlu_node.arguments[0].name]
+                c_1_type = context.i(arg.type.bit_width)
+                c_1 = context.constant(c_1_type, 1)
+                intermediate_values[output_name] = context.sub(arg.type, c_1, arg)
+            elif len(tlu_node.arguments) == 0:
+                bit_type = context.i(max_arity_use[output_name]) # TODO: tensor input
+                if tlu_node.content == ["0"]:
+                    intermediate_values[output_name] = context.constant(bit_type, 0)
+                elif tlu_node.content == ["1"]:
+                    intermediate_values[output_name] = context.constant(bit_type, rescale)
+                else:
+                    msg = "Unknown Constant TLU content"
+                    raise ValueError(msg)
+            else:
+                continue
+
+        # with fhe.tag("synthesis"):
+        # apply all tlus
+        for tlu_node in scheduled_nodes:
+            output_name = tlu_node.results[0].name
+            if output_name in intermediate_values:
+                continue
+            assert len(tlu_node.arguments) > 1
+            repacked_bits = repack_scaled_bits(
+                (min_scale[arg.name], intermediate_values[arg.name])
+                for arg in tlu_node.arguments
+            )
+            for arg in tlu_node.arguments:
+                assert max_arity_use[arg.name] < 7, (arg.name, max_arity_use[arg.name])
+            rescale = min_scale[output_name]
+            flat_content = np.array(tlu_node.content).reshape(-1)
+            rescaled_content = [v * rescale for v in flat_content]
+            max_precision = max_arity_use[output_name]
+            assert max_precision
+            result_type = context.fork_type(repacked_bits.type, bit_width=max_precision)
+            result = context.tlu(result_type, repacked_bits, rescaled_content, no_synth=True)
+            intermediate_values[output_name] = result
+
+        # with fhe.tag("bit_assemble"):
+        # recompose bits into result
+        results = []
+        for result in circuit.results:
+            bits = [
+                (min_scale[res_bit.name], intermediate_values[res_bit.name])
+                for res_bit in result
+            ] # TODO: rely on order, add check
+            ty_result = params.get("result")
+            if ty_result and isinstance(ty_result, list):
+                words = []
+                for word_ty in ty_result:
+                    word_bits = bits[:word_ty.dtype.bit_width]
+                    bits = bits[word_ty.dtype.bit_width:]
+                    word_result = repack_scaled_bits(word_bits, before_tlu=False)
+                    words += [word_result]
+                results += [words]
+            else:
+                result = repack_scaled_bits(bits, before_tlu=False)
+                results += [result]
+        if len(results) == 1:
+            return results[0]
+        # TODO: return multiple results ?
+        return tuple(results)
+
+    return mlir

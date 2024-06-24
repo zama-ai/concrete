@@ -4,6 +4,7 @@ Declaration of `Context` class.
 
 # pylint: disable=import-error,no-name-in-module
 
+from copy import deepcopy
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
@@ -33,6 +34,8 @@ from ..compilation.configuration import (
 )
 from ..dtypes import Integer
 from ..extensions.bits import MAX_EXTRACTABLE_BIT, MIN_EXTRACTABLE_BIT
+from ..extensions.synthesis import api as synth_api
+
 from ..representation import Graph, GraphProcessor, Node
 from ..values import ValueDescription
 from .conversion import Conversion, ConversionType
@@ -2236,6 +2239,8 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         bits: Union[int, np.integer, slice],
+        assume_many_extract = False,
+        refresh_all_bits = True,
     ) -> Conversion:
         if x.is_clear:
             highlights: Dict[Node, Union[str, List[str]]] = {
@@ -2272,7 +2277,7 @@ class Context:
         max_real_bit = max((bit for bit in bits if bit <= max_bit and x.is_unsigned), default=0)
         cost_one_tlu = LUT_COSTS_V0_NORM2_0.get(x.bit_width, float("inf"))
         cost_many_lsbs = LUT_COSTS_V0_NORM2_0[1] * (max_real_bit + 1)
-        if cost_one_tlu < cost_many_lsbs:
+        if cost_one_tlu < cost_many_lsbs and not assume_many_extract:
 
             def tlu_cell_with_positive_value(i):
                 return x.type.is_unsigned or i < 2 ** (x.bit_width - 1)
@@ -2306,6 +2311,7 @@ class Context:
                     bit == (max_bit - 1)
                     and x.bit_width == resulting_type.bit_width == 1
                     and x.is_unsigned
+                    and not refresh_all_bits
                 ):
                     lsb_bit_witdh = 1
                     lsb = x
@@ -3712,7 +3718,7 @@ class Context:
             _FromElementsOp, resulting_type, x.result, original_bit_width=x.original_bit_width
         )
 
-    def tlu(self, resulting_type: ConversionType, on: Conversion, table: Sequence[int]):
+    def tlu(self, resulting_type: ConversionType, on: Conversion, table: Sequence[int], no_synth=True):
         if on.is_clear:
             highlights = {
                 on.origin: "this clear value is used as an input to a table lookup",
@@ -3769,6 +3775,16 @@ class Context:
             return result
 
         table += [0] * ((2**on.bit_width) - len(table))
+
+        synth_config = self.configuration.synthesis_config
+        synth_try = synth_config.start_tlu_at_precision <= on.bit_width and not no_synth
+        synth_force = synth_config.force_tlu_at_precision <= on.bit_width
+        if synth_try:
+            out_type = deepcopy(on.origin.output)
+            out_type.dtype.bit_width = resulting_type.bit_width
+            fhe_function = synth_api.lut(table, out_type=out_type)
+            if synth_force or fhe_function.is_faster(LUT_COSTS_V0_NORM2_0):
+                return fhe_function.mlir(self, resulting_type, [on])
 
         dialect = fhe if on.is_scalar else fhelinalg
         operation = dialect.ApplyLookupTableEintOp

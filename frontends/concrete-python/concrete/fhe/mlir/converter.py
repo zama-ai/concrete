@@ -784,7 +784,7 @@ class Converter:
                         )
 
         if len(tables) == 1:
-            return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist())
+            return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist(), no_synth=False)
 
         assert map_values is not None
         return ctx.multi_tlu(

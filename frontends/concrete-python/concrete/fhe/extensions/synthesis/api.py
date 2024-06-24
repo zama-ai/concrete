@@ -19,7 +19,6 @@ from collections import Counter
 
 import concrete.fhe.dtypes as fhe_dtypes
 import concrete.fhe.tracing.typing as fhe_typing
-from concrete.fhe.extensions.synthesis.luts_to_fhe import tlu_circuit_to_fhe
 from concrete.fhe.extensions.synthesis.luts_to_graph import to_graph
 from concrete.fhe.extensions.synthesis.verilog_source import (
     Ty,
@@ -59,7 +58,10 @@ class FheFunction:
             print(f"TLUs counts, {self.tlu_counts()}:")
             print()
         self.params = params
-        self.tracer = tlu_circuit_to_fhe(self.circuit, self.params, verbose)
+        from concrete.fhe.extensions.synthesis.luts_to_fhe import tlu_circuit_to_tracer
+        self.tracer = tlu_circuit_to_tracer(self.circuit, self.params, verbose)
+        from concrete.fhe.extensions.synthesis.luts_to_fhe import tlu_circuit_to_mlir
+        self.mlir = tlu_circuit_to_mlir(self.circuit, self.params, verbose)
 
     def __call__(self, **kwargs):
         """Call the tracer function."""
@@ -73,6 +75,20 @@ class FheFunction:
                 print(node)
             counter.update({len(node.arguments): 1})
         return dict(sorted(counter.items()))
+
+    def mlir(self, context, resulting_type, on):
+        return self.mlir(context, resulting_type, on)
+
+    def is_faster(self, reference_costs):
+        costs = 0
+        for node in self.circuit.nodes:
+            if len(node.arguments) == 0:
+                continue
+            elif len(node.arguments) == 1:
+                continue # converted to substraction
+            else:
+                costs += reference_costs[len(node.arguments)]
+        return costs <= reference_costs[self.params["a"].dtype.bit_width]
 
     def graph(self, *, filename=None, view=True, **kwargs):
         """Render the synthesized tracer as a graph."""
@@ -92,6 +108,7 @@ def lut(table, out_type=None, **kwargs):
             is_signed=out_type.dtype.is_signed,
         )
     verilog, v_out_type = verilog_from_tlu(table, signed_input=False, out_type=v_out_type)
+    print(verilog)
     if "name" not in kwargs:
         kwargs.setdefault("name", "lut")
     if "params" not in kwargs:
