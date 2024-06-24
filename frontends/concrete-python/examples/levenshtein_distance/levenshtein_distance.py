@@ -16,7 +16,7 @@ max_string_length = 6
 class MyModule:
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def equal(x, y):
-        return fhe.univariate(lambda x: x == 0)(x - y)
+        return x == y
 
     @fhe.function(
         {
@@ -87,6 +87,8 @@ my_module = MyModule.compile(
     show_mlir=True,
     p_error=10**-20,
     show_optimizer=True,
+    comparison_strategy_preference=fhe.ComparisonStrategy.ONE_TLU_PROMOTED,
+    min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED,
 )
 
 
