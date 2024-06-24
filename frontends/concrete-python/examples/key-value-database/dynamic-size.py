@@ -45,6 +45,7 @@ keep_if_no_match_lut = fhe.LookupTable([i for i in range(16)] + [0 for _ in rang
 def _replace_impl(key, value, candidate_key, candidate_value):
     number_of_matching_chunks = np.sum((candidate_key - key) == 0)
     fhe.hint(number_of_matching_chunks, can_store=NUMBER_OF_KEY_CHUNKS)
+
     match = number_of_matching_chunks == NUMBER_OF_KEY_CHUNKS
 
     packed_match_and_value = (2**CHUNK_SIZE) * match + value
@@ -59,6 +60,7 @@ def _replace_impl(key, value, candidate_key, candidate_value):
 def _query_impl(key, candidate_key, candidate_value):
     number_of_matching_chunks = np.sum((candidate_key - key) == 0)
     fhe.hint(number_of_matching_chunks, can_store=NUMBER_OF_KEY_CHUNKS)
+
     match = number_of_matching_chunks == NUMBER_OF_KEY_CHUNKS
 
     packed_match_and_candidate_value = (2**CHUNK_SIZE) * match + candidate_value
@@ -75,6 +77,34 @@ class KeyValueDatabase:
 
     def __init__(self):
         self._state = []
+
+        sample_state = [[encode_key(i), encode_value(i * 2)] for i in range(10)]
+        replace_inputset = [
+            (
+                # key
+                encode_key(i),
+                # value
+                encode_value(i),
+                # candidate_key
+                entry[0],
+                # candidate_value
+                entry[1],
+            )
+            for i in range(10)
+            for entry in sample_state
+        ]
+        query_inputset = [
+            (
+                # key
+                encode_key(i),
+                # candidate_key
+                entry[0],
+                # candidate_value
+                entry[1],
+            )
+            for i in range(10)
+            for entry in sample_state
+        ]
 
         configuration = fhe.Configuration(
             enable_unsafe_features=True,
@@ -99,29 +129,6 @@ class KeyValueDatabase:
                 "candidate_value": "encrypted",
             },
         )
-
-        replace_inputset = [
-            (
-                # key
-                np.ones(NUMBER_OF_KEY_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-                # value
-                np.ones(NUMBER_OF_VALUE_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-                # candidate_key
-                np.ones(NUMBER_OF_KEY_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-                # candidate_value
-                np.ones(NUMBER_OF_VALUE_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-            )
-        ]
-        query_inputset = [
-            (
-                # key
-                np.ones(NUMBER_OF_KEY_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-                # candidate_key
-                np.ones(NUMBER_OF_KEY_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-                # candidate_value
-                np.ones(NUMBER_OF_VALUE_CHUNKS, dtype=np.int64) * (2**CHUNK_SIZE - 1),
-            )
-        ]
 
         print()
 
@@ -224,14 +231,12 @@ assert db.query(4) is None
 db.replace(3, 5)
 assert db.query(3) == 5
 
-
 # Define lower/upper bounds for the key
 minimum_key = 0
 maximum_key = 2**KEY_SIZE - 1
 # Define lower/upper bounds for the value
 minimum_value = 0
 maximum_value = 2**VALUE_SIZE - 1
-
 
 # Test: Insert/Replace/Query Bounds
 # Insert (key: minimum_key , value: minimum_value) into the database
