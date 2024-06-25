@@ -104,6 +104,9 @@ pub enum Operator {
         input: OperatorIndex,
         out_precision: Precision,
     },
+    ChangePartition {
+        input: OperatorIndex,
+    },
 }
 
 impl Operator {
@@ -114,7 +117,8 @@ impl Operator {
             Self::LevelledOp { inputs, .. } | Self::Dot { inputs, .. } => Box::new(inputs.iter()),
             Self::UnsafeCast { input, .. }
             | Self::Lut { input, .. }
-            | Self::Round { input, .. } => Box::new(once(input)),
+            | Self::Round { input, .. }
+            | Self::ChangePartition { input } => Box::new(once(input)),
         }
     }
 }
@@ -189,6 +193,9 @@ impl fmt::Display for Operator {
                 out_precision,
             } => {
                 write!(f, "ROUND[%{}] : u{out_precision}", input.0)?;
+            }
+            Self::ChangePartition { input } => {
+                write!(f, "ChangePartition[%{}]", input.0)?;
             }
         }
         Ok(())

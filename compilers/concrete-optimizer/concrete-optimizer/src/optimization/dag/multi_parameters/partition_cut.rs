@@ -130,6 +130,8 @@ impl PartitionCut {
                 }
                 // unreachable
                 Operator::Round { .. } => panic!("expand_round failed"),
+                // TODO
+                Operator::ChangePartition { .. } => todo!("TODO"),
             }
         }
         let out_norm2 = |i: usize| out_variances[i].lut_coeff + out_variances[i].input_coeff;
