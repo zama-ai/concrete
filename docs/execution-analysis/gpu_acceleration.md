@@ -15,7 +15,7 @@ To use GPU acceleration, install the GPU/CUDA wheel from our [Zama public PyPI r
 After installing the GPU/CUDA wheel, you must [configure] ((../guides/configure.md)) the FHE program compilation to enable GPU offloading using the `use_gpu` option.
 
 {% hint style="info" %}
-Our GPU wheels are built with CUDA 11.8 and are compatible with higher versions of CUDA.
+Our GPU wheels are built with CUDA 11.8 and should be compatible with higher versions of CUDA.
 {% endhint %}
 
 ## GPU execution configuration
