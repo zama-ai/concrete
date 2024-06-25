@@ -24,36 +24,33 @@ By default the compiler and runtime will use all available system resources, inc
 
 ### SDFG_NUM_THREADS
 - **Type**: Integer
-- **Description:** The number of hardware threads on the system (including hyperthreading) minus the number of GPUs in use.
-
-This variable determines the number of CPU threads that execute in paralelle with the GPU for offloadable workloads. GPU scheduler threads (including CUDA threads and those used within Concrete) are necessary but can block or interfere with worker thread execution. Therefore, it is recommended to undersubscribe the CPU hardware threads by the number of GPU devices used.
+- **Default value**: The number of hardware threads on the system (including hyperthreading) minus the number of GPUs in use.
+- **Description:** This variable determines the number of CPU threads that execute in paralelle with the GPU for offloadable workloads. GPU scheduler threads (including CUDA threads and those used within Concrete) are necessary but can block or interfere with worker thread execution. Therefore, it is recommended to undersubscribe the CPU hardware threads by the number of GPU devices used.
+- **Required**: No
 
 ### SDFG_NUM_GPUS
 - **Type**: Integer
-- **Description**: The number of GPUs available.
-
-
-This value determines the number of GPUs to use for offloading. This can be set to any value between 1 and the total number of GPUs on the system.
+- **Default value**: The number of GPUs available.
+- **Description**: This value determines the number of GPUs to use for offloading. This can be set to any value between 1 and the total number of GPUs on the system.
+- **Required**: No
 
 ### SDFG_MAX_BATCH_SIZE**
 
 - **Type**: Integer (default: LLONG_MAX)
-- **Description**: LLONG_MAX (no batch size limit)
-
-This value limits the maximum batch size for offloading in cases where the GPU memory is insufficient.
-
+- **Default value**: LLONG_MAX (no batch size limit)
+- **Description**: This value limits the maximum batch size for offloading in cases where the GPU memory is insufficient.
+- **Required**: No
 
 ### SDFG_DEVICE_TO_CORE_RATIO
 
 - **Type**: Integer
-- **Description**: The ratio between the compute capability of the GPU (at index 0) and a CPU core.
-
-This ratio is used to balance the load between the CPU and GPU. If the GPU is underutilized, set this value higher to increase the amount of work offloaded to the GPU.
-
+- **Default value**: The ratio between the compute capability of the GPU (at index 0) and a CPU core.
+- **Description**: This ratio is used to balance the load between the CPU and GPU. If the GPU is underutilized, set this value higher to increase the amount of work offloaded to the GPU.
+- **Required**: No
 
 ### OMP_NUM_THREADS
 
 - **Type**: Integer
-- **Description**: The number of hardware threads on the system, including hyperthreading.
-
-This value specifies the portions of program execution that are not yet supported for GPU offload, which will be parallelized using OpenMP on the CPU.
+- **Default value**: The number of hardware threads on the system, including hyperthreading.
+- **Description**: This value specifies the portions of program execution that are not yet supported for GPU offload, which will be parallelized using OpenMP on the CPU.
+- **Required**: No
