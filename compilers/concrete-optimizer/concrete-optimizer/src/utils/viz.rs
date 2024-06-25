@@ -107,6 +107,9 @@ impl<'dag> Viz for crate::dag::unparametrized::DagOperator<'dag> {
             Operator::Round { out_precision, .. } => {
                 format!("{index} [label = \"{{%{index} = Round({input_string}) |{{out_precision:|{out_precision:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];",)
             }
+            Operator::ChangePartition { .. } => {
+                format!("{index} [label = \"{{%{index} = ChangePartition({input_string})}}\" fillcolor={color}];",)
+            }
         }
     }
 

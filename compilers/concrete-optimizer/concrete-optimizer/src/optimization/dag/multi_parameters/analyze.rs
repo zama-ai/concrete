@@ -260,6 +260,10 @@ impl VariancedDag {
                 Operator::Round { .. } => {
                     unreachable!("Round should have been either expanded or integrated to a lut")
                 }
+                Operator::ChangePartition { .. } => {
+                    // TODO
+                    todo!("TODO")
+                }
             };
             // We add the noise for the transitions to alternative representations
             operator

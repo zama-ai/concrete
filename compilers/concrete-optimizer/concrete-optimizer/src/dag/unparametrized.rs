@@ -259,6 +259,14 @@ impl<'dag> DagBuilder<'dag> {
         )
     }
 
+    pub fn add_change_partition(
+        &mut self,
+        input: OperatorIndex,
+        location: Location,
+    ) -> OperatorIndex {
+        self.add_operator(Operator::ChangePartition { input }, location)
+    }
+
     pub fn add_round_op(
         &mut self,
         input: OperatorIndex,
@@ -416,7 +424,8 @@ impl<'dag> DagBuilder<'dag> {
             }
             Operator::Lut { input, .. }
             | Operator::UnsafeCast { input, .. }
-            | Operator::Round { input, .. } => self.dag.out_shapes[input.0].clone(),
+            | Operator::Round { input, .. }
+            | Operator::ChangePartition { input } => self.dag.out_shapes[input.0].clone(),
             Operator::Dot {
                 kind: DotKind::Simple | DotKind::Tensor | DotKind::CompatibleTensor,
                 ..
@@ -451,6 +460,7 @@ impl<'dag> DagBuilder<'dag> {
             Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
                 self.dag.out_precisions[inputs[0].0]
             }
+            Operator::ChangePartition { input } => self.dag.out_precisions[input.0],
         }
     }
 }
@@ -856,12 +866,14 @@ mod tests {
         let a = builder.add_input(1, Shape::number(), Location::Unknown);
         let b = builder.add_input(1, Shape::number(), Location::Unknown);
         let c = builder.add_dot([a, b], [1, 1], Location::Unknown);
-        let _d = builder.add_lut(c, FunctionTable::UNKWOWN, 1, Location::Unknown);
+        let d = builder.add_lut(c, FunctionTable::UNKWOWN, 1, Location::Unknown);
+        let _d = builder.add_change_partition(d, Location::Unknown);
         let mut builder = graph.builder("main2");
         let e = builder.add_input(2, Shape::number(), Location::Unknown);
         let f = builder.add_input(2, Shape::number(), Location::Unknown);
         let g = builder.add_dot([e, f], [2, 2], Location::Unknown);
-        let _h = builder.add_lut(g, FunctionTable::UNKWOWN, 2, Location::Unknown);
+        let h = builder.add_lut(g, FunctionTable::UNKWOWN, 2, Location::Unknown);
+        let _h = builder.add_change_partition(h, Location::Unknown);
         graph.tag_operator_as_output(c);
     }
 
@@ -897,7 +909,9 @@ mod tests {
 
         let lut2 = builder.add_lut(dot, FunctionTable::UNKWOWN, 2, Location::Unknown);
 
-        let ops_index = [input1, input2, sum1, lut1, concat, dot, lut2];
+        let change_part = builder.add_change_partition(lut2, Location::Unknown);
+
+        let ops_index = [input1, input2, sum1, lut1, concat, dot, lut2, change_part];
         for (expected_i, op_index) in ops_index.iter().enumerate() {
             assert_eq!(expected_i, op_index.0);
         }
@@ -944,7 +958,8 @@ mod tests {
                     input: dot,
                     table: FunctionTable::UNKWOWN,
                     out_precision: 2,
-                }
+                },
+                Operator::ChangePartition { input: lut2 }
             ]
         );
     }

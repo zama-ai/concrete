@@ -47,7 +47,8 @@ fn assert_inputs_index(op: &Operator, first_bad_index: usize) {
         Operator::Input { .. } => true,
         Operator::Lut { input, .. }
         | Operator::UnsafeCast { input, .. }
-        | Operator::Round { input, .. } => input.0 < first_bad_index,
+        | Operator::Round { input, .. }
+        | Operator::ChangePartition { input } => input.0 < first_bad_index,
         Operator::LevelledOp { inputs, .. } | Operator::Dot { inputs, .. } => {
             inputs.iter().all(|input| input.0 < first_bad_index)
         }
@@ -73,6 +74,15 @@ pub fn has_round(dag: &Dag) -> bool {
     false
 }
 
+pub fn has_change_partition(dag: &Dag) -> bool {
+    for op in &dag.operators {
+        if matches!(op, Operator::ChangePartition { .. }) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn has_unsafe_cast(dag: &Dag) -> bool {
     for op in &dag.operators {
         if matches!(op, Operator::UnsafeCast { .. }) {
@@ -84,6 +94,10 @@ pub fn has_unsafe_cast(dag: &Dag) -> bool {
 
 pub fn assert_no_round(dag: &Dag) {
     assert!(!has_round(dag));
+}
+
+pub fn assert_no_change_partition(dag: &Dag) {
+    assert!(!has_change_partition(dag));
 }
 
 fn assert_valid_variances(dag: &SoloKeyDag) {
@@ -180,6 +194,10 @@ fn out_variance(
         Operator::Round { .. } => {
             unreachable!("Round should have been either expanded or integrated to a lut")
         }
+        // TODO
+        Operator::ChangePartition { .. } => {
+            todo!("TODO")
+        }
     }
 }
 
@@ -241,6 +259,9 @@ fn op_levelled_complexity(op: &Operator, out_shapes: &[Shape]) -> LevelledComple
         }
         Operator::Round { .. } => {
             unreachable!("Round should have been either expanded or integrated to a lut")
+        }
+        Operator::ChangePartition { .. } => {
+            todo!("TODO")
         }
     }
 }
@@ -374,6 +395,7 @@ pub fn analyze(dag: &Dag, noise_config: &NoiseBoundConfig) -> SoloKeyDag {
     assert_dag_correctness(dag);
     let dag = &expand_round(dag);
     assert_no_round(dag);
+    assert_no_change_partition(dag);
     let out_variances = out_variances(dag);
     let in_luts_variance = in_luts_variance(dag, &out_variances);
     let nb_luts = lut_count_from_dag(dag);
