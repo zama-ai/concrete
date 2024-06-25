@@ -1,8 +1,14 @@
 # Composing functions with modules
 
-In various cases, deploying a server that contains many compatible functions is important. `concrete-python` can compile FHE modules containing as many functions as needed. More importantly, modules support _composition_ of the different functions. This means the encrypted result of one function execution can be used as input of a different function, without needing to decrypt in between. A module is [deployed in a single artifact](../guides/deploy.md#deployment-of-modules), making as simple to use a single function project.
+This document explains how to compile Fully Homomorphic Encryption (FHE) modules containing multiple functions using Concrete.
 
-Here is a first simple example:
+Deploying a server that contains many compatible functions is important for some use cases. With Concrete, you can compile FHE modules containing as many functions as needed.
+
+These modules support the composition of different functions, meaning that the encrypted result of one function can be used as the input for another function without needing to decrypt it first. Additionally, a module is [deployed in a single artifact](../guides/deploy.md#deployment-of-modules), making it as simple to use as a single-function project.
+
+## Single inputs/outputs
+
+The following example demonstrates how to create an FHE module:
 ```python
 from concrete import fhe
 
@@ -17,14 +23,14 @@ class Counter:
         return x - 1 % 20
 ```
 
-You can compile the FHE module `Counter` using the `compile` method. To do that, you need to provide a dictionnary of input sets for every function:
+Then, you can compile the FHE module `Counter` using the `compile` method. To do that, you need to provide a dictionary of input-sets for every function:
 
 ```python
 inputset = list(range(20))
 CounterFhe = CounterFhe.compile({"inc": inputset, "dec": inputset})
 ```
 
-After the module has been compiled, we can encrypt and call the different functions in the following way:
+After the module is compiled, you can encrypt and call the different functions as follows:
 
 ```python
 x = 5
@@ -43,7 +49,7 @@ x_dec = CounterFhe.inc.decrypt(x_enc)
 assert x_dec == 15
 ```
 
-## Multi inputs, multi outputs
+## Multi inputs/ outputs
 
 Composition is not limited to single input / single output. Here is an example that computes the 10 first elements of the Fibonacci sequence in FHE:
 
@@ -103,9 +109,9 @@ Encrypting initial values
 |     9     || 144       | 144       | 233       | 233       |
 ```
 
-## Iteration support
+## Iterations
 
-With the previous example we see that to some extent, modules allows to support iteration with cleartext iterands. That is, loops with the following shape :
+With the previous example, we see that modules allow iteration with cleartext iterands to some extent. Specifically, loops with the following structure are supported:
 
 ```python
 for i in some_cleartext_constant_range:
@@ -158,7 +164,7 @@ while is_one_enc is None or not CollatzFhe.collatz.decrypt(is_one_enc):
     print(f"| {x_dec:<9} | {x:<9} |")
 ```
 
-Which prints:
+This script prints the following output:
 
 ```shell
 Compiling `Collatz` module ...
@@ -186,14 +192,14 @@ Encrypting initial value
 | 2         | 2         |
 | 1         | 1         |
 ```
+In this example, a while loop iterates until the decrypted value equals 1. The loop body is implemented in FHE, but the iteration control must be in cleartext.
 
-Here we use a while loop that keeps iterating as long as the decryption of the running value is different from `1`. Again, the loop body is implemented in FHE, but the iteration control has to be in the clear.
+## Runtime optimization
 
-## Optimizing runtimes with composition policies
+By default, when using modules, all inputs and outputs of every function are compatible, sharing the same precision and crypto-parameters. This approach applies the crypto-parameters of the most costly code path to all code paths. This simplicity may be costly and unnecessary for some use cases.
 
-By default when using modules, every inputs and outputs of every functions are compatible: they share the same precision and the same crypto-parameters. This means that the most costly crypto-parameters of all code-paths is used for every code paths. This simplicity comes at a cost, and depending on the use case, it may not be necessary.
+To optimize runtime, we provide finer-grained control over the composition policy via the `composition` module attribute. Here is an example:
 
-To optimize the runtimes, we provide a finer grained control over the composition policy via the `composition` module attribute. Here is an example:
 ```python
 from concrete import fhe
 
@@ -212,11 +218,15 @@ class Collatz:
     composition = fhe.AllComposable()
 ```
 
-By default the attribute is set to `fhe.AllComposable`. This policy ensures that every ciphertexts used in the module are compatible. This is the less restrictive, but most costly policy.
+You have 3 options for the `composition` attribute:
 
-If one does not need composition at all, but just want to pack multiple functions in a single artifact, it is possible to do so by setting the `composition` attribute to `fhe.NotComposable`. This is the most restrictive, but less costly policy.
+1. **`fhe.AllComposable` (default)**:  This policy ensures that all ciphertexts used in the module are compatible. It is the least restrictive policy but the most costly in terms of performance.
 
-Hopefully there is no need to choose between one of those two extremes. It is also possible to detail custom policies by using `fhe.Wired`. For instance:
+2. **`fhe.NotComposable`**: This policy is the most restrictive but the least costly. It is suitable when you do not need any composition and only want to pack multiple functions in a single artifact.
+
+3. **`fhe.Wired`**: This policy allows you to define custom composition rules. You can specify which outputs of a function can be forwarded to which inputs of another function.
+
+    Here is an example:
 ```python
 from concrete import fhe
 from fhe import Wired, Wire, Output, Input
@@ -242,7 +252,7 @@ class Collatz:
 
 In this case, the policy states that the first output of the `collatz` function can be forwarded to the first input of `collatz`, but not the second output (which is decrypted every time, and used for control flow).
 
-It is possible to use an `fhe.Wire` between any two functions, it is also possible to define wires  with `fhe.AllInputs` and `fhe.AllOutputs` ends. For instance in the previous example:
+You can use the `fhe.Wire` between any two functions. It is also possible to define wires  with `fhe.AllInputs` and `fhe.AllOutputs` ends. For instance, in the previous example:
 ```python
     composition = Wired(
         [
@@ -253,11 +263,13 @@ It is possible to use an `fhe.Wire` between any two functions, it is also possib
 
 This policy would be equivalent to using the `fhe.AllComposable` policy.
 
-## Limitations
+## Current limitations
 
-Depending on the functions, supporting composition may add a non-negligible overhead when compared to a non-composable version. Indeed, to be composable a function must verify the following condition: Every output which can be forwarded as input (as per the composition policy) must contain a noise refreshing operation.
+Depending on the functions, composition may add a significant overhead compared to a non-composable version. 
 
-Since adding a noise refresh has a non negligeable impact on performance, `concrete-python` does not do it in behalf of the user. For instance, to implement a function that doubles an encrypted value, we would write something like:
+To be composable, a function must meet the following condition: every output that can be forwarded as input (according to the composition policy) must contain a noise-refreshing operation. Since adding a noise refresh has a noticeable impact on performance, Concrete does not automatically include it. 
+
+For instance, to implement a function that doubles an encrypted value, you might write:
 
 ```python
 @fhe.module()
@@ -266,8 +278,9 @@ class Doubler:
     def double(counter):
        return counter * 2
 ```
+This function is valid with the `fhe.NotComposable` policy. However, if compiled with the `fhe.AllComposable` policy, it will raise a `RuntimeError: Program cannot be composed: ...`, indicating that an extra Programmable Bootstrapping (PBS) step must be added. 
 
-This is a valid function with the `fhe.NotComposable` policy, but if compiled with `fhe.AllComposable` policy, a `RuntimeError: Program can not be composed: ...` error is reported, signalling that an extra PBS must be added. To solve this situation, and turn this circuit into a valid one, one can use the following snippet to add a PBS at the end of the circuit:
+To resolve this and make the circuit valid, add a PBS at the end of the circuit:
 
 ```python
 def noise_reset(x):
