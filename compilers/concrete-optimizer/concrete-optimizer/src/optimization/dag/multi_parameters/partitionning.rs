@@ -54,6 +54,7 @@ fn extract_levelled_block(dag: &unparametrized::Dag) -> Blocks {
             Operator::Input { .. } => (),
             // Block entry point and pre-exit point
             Op::Lut { .. } => (),
+            Op::ChangePartition { .. } => (),
             // Connectors
             Op::UnsafeCast { input, .. } => uf.union(input.0, op_i),
             Op::LevelledOp { inputs, .. } | Op::Dot { inputs, .. } => {
@@ -125,6 +126,7 @@ fn only_1_partition(dag: &unparametrized::Dag) -> Partitions {
             }
             Op::Input { .. } => (),
             Op::Round { .. } => unreachable!(),
+            Op::ChangePartition { .. } => todo!("TODO"),
         }
     }
     Partitions {
@@ -230,6 +232,7 @@ fn resolve_by_levelled_block(
             }
             Operator::Input { .. } => instrs_p[op_i].instruction_partition = group_partition,
             Op::Round { .. } => unreachable!("Round should have been expanded"),
+            Op::ChangePartition { .. } => todo!("TODO"),
         }
     }
     Partitions {
