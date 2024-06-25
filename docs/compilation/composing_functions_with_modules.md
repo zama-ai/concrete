@@ -6,7 +6,7 @@ Deploying a server that contains many compatible functions is important for some
 
 These modules support the composition of different functions, meaning that the encrypted result of one function can be used as the input for another function without needing to decrypt it first. Additionally, a module is [deployed in a single artifact](../guides/deploy.md#deployment-of-modules), making it as simple to use as a single-function project.
 
-## Single inputs/outputs
+## Single inputs / outputs
 
 The following example demonstrates how to create an FHE module:
 ```python
@@ -49,7 +49,7 @@ x_dec = CounterFhe.inc.decrypt(x_enc)
 assert x_dec == 15
 ```
 
-## Multi inputs/ outputs
+## Multi inputs / outputs
 
 Composition is not limited to single input / single output. Here is an example that computes the 10 first elements of the Fibonacci sequence in FHE:
 
