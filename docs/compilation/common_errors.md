@@ -43,7 +43,8 @@ This document explains the most common errors and provides solutions to fix them
 **Possible solutions**:
 - Try to simplify your circuit.
 - Use smaller weights.
-- Look to the MLIR to understand where this oversized input comes from and ensure that the input size for Table Lookup operations does not exceed 16 bits.
+- Look to the graph to understand where this oversized input comes from and ensure that the input size for Table Lookup operations does not exceed 16 bits.
+- Use `show_bit_width_constraints=True` to understand bit widths are assigned the way they are.
 
 ## 5. Impossible to fuse multiple-nodes
 
