@@ -126,6 +126,8 @@ jobs:
   push:
     needs: [build-linux-x86]
     runs-on: ubuntu-latest
+    outputs:
+      wheel_version: ${{ steps.version.outputs.wheel_version }}
     steps:
       - uses: actions/checkout@v3
 
@@ -155,10 +157,17 @@ jobs:
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
 
+      - name: Output Wheel Version
+        id: version
+        run: |
+          export VERSION=`ls ./wheels/*manylinux* | head -n1 |  cut -d "-" -f2`
+          echo "VERSION=$VERSION"
+          echo "wheel_version=$VERSION" >> "$GITHUB_OUTPUT"
+
   test-gpu-wheel:
     needs: [push]
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
       command: concrete-python-test-gpu-wheel
-      user_inputs: "TODO"
+      user_inputs: "${{ needs.push.outputs.wheel_version }}"

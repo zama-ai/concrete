@@ -39,9 +39,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # TODO: specify CP version
       - name: Install CP
-        run: pip install --pre --extra-index-url https://pypi.zama.ai/gpu/ concrete-python
+        run: pip install --pre --extra-index-url https://pypi.zama.ai/gpu/ "concrete-python==${{ env.CP_VERSION }}"
 
       - name: Checkout the repository
         uses: actions/checkout@v3
