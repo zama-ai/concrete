@@ -21,6 +21,7 @@
 
 #include <concretelang/Runtime/GPUDFG.hpp>
 #include <concretelang/Runtime/stream_emulator_api.h>
+#include <concretelang/Runtime/time_util.h>
 #include <concretelang/Runtime/wrappers.h>
 
 using RuntimeContext = mlir::concretelang::RuntimeContext;
@@ -29,6 +30,10 @@ namespace mlir {
 namespace concretelang {
 namespace gpu_dfg {
 namespace {
+
+#if CONCRETELANG_TIMING_ENABLED
+static struct timespec init_timer, blocking_get_timer, acc1, acc2;
+#endif
 
 using MemRef2 = MemRefDescriptor<2>;
 
@@ -1647,6 +1652,9 @@ void stream_emulator_get_memref_batch(void *stream, uint64_t *out_allocated,
                                       uint64_t out_size1, uint64_t out_stride0,
                                       uint64_t out_stride1) {
   static size_t count = 0;
+  END_TIME_C_ACC(&blocking_get_timer, "Non-GPU section execution", count,
+                 &acc1);
+  BEGIN_TIME(&blocking_get_timer);
   assert(out_stride1 == 1 && "Strided memrefs not supported");
   MemRef2 mref = {out_allocated,
                   out_aligned,
@@ -1655,9 +1663,13 @@ void stream_emulator_get_memref_batch(void *stream, uint64_t *out_allocated,
                   {out_stride0, out_stride1}};
   auto s = (Stream *)stream;
   s->get_on_host(mref);
+  END_TIME_C_ACC(&blocking_get_timer, "GPU section execution", count++, &acc2);
+  BEGIN_TIME(&blocking_get_timer);
 }
 
 void *stream_emulator_init() {
+  CONCRETELANG_ENABLE_TIMING();
+  BEGIN_TIME(&init_timer);
   int num;
   assert(cudaGetDeviceCount(&num) == cudaSuccess);
   num_devices = num;
@@ -1706,10 +1718,16 @@ void *stream_emulator_init() {
   if (num_cores < 1)
     num_cores = 1;
 
+  END_TIME(&init_timer, "Initialization of the SDFG runtime");
+  BEGIN_TIME(&init_timer);
+
   int device = next_device.fetch_add(1) % num_devices;
   return new GPU_DFG(device);
 }
-void stream_emulator_run(void *dfg) {}
+void stream_emulator_run(void *dfg) {
+  END_TIME(&init_timer, "Building the SDFG graph");
+  BEGIN_TIME(&blocking_get_timer);
+}
 void stream_emulator_delete(void *dfg) { delete (GPU_DFG *)dfg; }
 #endif
 
