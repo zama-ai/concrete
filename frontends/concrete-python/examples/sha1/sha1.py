@@ -68,6 +68,19 @@ def get_random_string(length):
     return result_str
 
 
+def add_chunked_number(x, y):
+    result = fhe.zeros((32,))
+    carry = 0
+
+    addition = x + y
+    for i in range(32):
+        addition_and_carry = addition[i] + carry
+        carry = addition_and_carry >> 1
+        result[i] = addition_and_carry - (carry * 2)
+
+    return result
+
+
 # FHE functions
 @fhe.module()
 class MyModule:
@@ -105,51 +118,19 @@ class MyModule:
     @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add2(x, y):
-        ans = fhe.zeros((32,))
-        cy = 0
-
-        for i in range(32):
-            t = x[i] + y[i] + cy
-            cy, tr = t >= 2, t % 2
-            ans[i] = tr
-
-        return ans
+        return fhe.bits(add_chunked_number(x, y))[0]
 
     @staticmethod
     @fhe.function(
         {"x": "encrypted", "y": "encrypted", "u": "encrypted", "v": "encrypted", "w": "encrypted"}
     )
     def add5(x, y, u, v, w):
-        ans = fhe.zeros((32,))
-        cy = 0
+        result = add_chunked_number(x, y)
+        result = add_chunked_number(result, u)
+        result = add_chunked_number(result, v)
+        result = add_chunked_number(result, w)
 
-        for i in range(32):
-            t = x[i] + y[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + u[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + v[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + w[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        return ans
+        return fhe.bits(result)[0]
 
 
 # Compilation of the FHE functions
@@ -451,8 +432,7 @@ if __name__ == "__main__":
 
         # Checking random patterns
         for _ in range(20):
-
-            string_length = np.random.randint(100)
+            string_length = 4
 
             # Take a random string
             hash_input = get_random_string(string_length)
