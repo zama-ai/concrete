@@ -2,7 +2,7 @@ PYTHON=python
 PIP=$(PYTHON) -m pip
 
 COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
-BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
+NEW_PYTHON_PATH="${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/:$(PWD)"
 RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 
 .ONESHELL:
@@ -30,7 +30,7 @@ cp_activate:
 	@echo "echo 'Activating virtual env and local concrete-python and local compiler bindings' ;"
 	@echo "export PATH=$(PWD)/.venv/bin:$$PATH;"
 	@echo "export LD_PRELOAD=$(RUNTIME_LIBRARY);"
-	@echo "export PYTHONPATH=$(BINDINGS_DIRECTORY);"
+	@echo "export PYTHONPATH=$(NEW_PYTHON_PATH);"
 
 licenses:
 	bash scripts/versioning/summary.sh
@@ -43,7 +43,7 @@ pytest: pytest-default
 
 pytest-default:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
-	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+	export PYTHONPATH=$(NEW_PYTHON_PATH)
 	pytest tests -svv -n auto \
 		--cov=concrete.fhe \
 		--cov-fail-under=95 \
@@ -53,7 +53,7 @@ pytest-default:
 
 pytest-single:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
-	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+	export PYTHONPATH=$(NEW_PYTHON_PATH)
 
 	# test single precision, mono params
 	pytest tests -svv -n auto \
@@ -64,7 +64,7 @@ pytest-single:
 
 pytest-multi:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
-	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+	export PYTHONPATH=$(NEW_PYTHON_PATH)
 
 	# test multi precision, multi params
 	pytest tests -svv -n auto \
@@ -78,7 +78,7 @@ pytest-multi:
 
 pytest-gpu:
 	export LD_PRELOAD=$(RUNTIME_LIBRARY)
-	export PYTHONPATH=$(BINDINGS_DIRECTORY)
+	export PYTHONPATH=$(NEW_PYTHON_PATH)
 
 	# test single precision
 	pytest tests -svv -n0 --use_gpu \
