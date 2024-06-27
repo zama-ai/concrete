@@ -31,6 +31,7 @@
 * [Compression](compilation/compression.md)
 * [Reusing arguments](compilation/reuse_arguments.md)
 * [Common errors](compilation/common_errors.md)
+* [Performance tips](compilation/performance_tips.md)
 
 ## Execution / Analysis
 
