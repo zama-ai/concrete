@@ -35,6 +35,7 @@
 
 * [Simulation](execution-analysis/simulation.md)
 * [Debugging and artifact](execution-analysis/debug.md)
+* [Performance](optimization/summary.md)
 * [GPU acceleration](execution-analysis/gpu_acceleration.md)
 * Other
   * [Statistics](compilation/statistics.md)
@@ -46,6 +47,19 @@
 * [Configure](guides/configure.md)
 * [Manage keys](guides/manage_keys.md)
 * [Deploy](guides/deploy.md)
+* [Optimization](optimization/self.md)
+  * [Improve parallelism](optimization/improve-parallelism/self.md)
+    * [Dataflow parallelism](optimization/improve-parallelism/dataflow.md)
+    * [Tensorizing operations](optimization/improve-parallelism/tensorization.md)
+  * [Optimize table lookups](optimization/optimize-table-lookups/self.md)
+    * [Reducing TLU](optimization/optimize-table-lookups/reducing-amount.md)
+    * [Implementation strategies](optimization/optimize-table-lookups/strategies.md)
+    * [Round/truncating](optimization/optimize-table-lookups/round-truncate.md)
+    * [Approximate mode](optimization/optimize-table-lookups/approximate.md)
+    * [Bit extraction](optimization/optimize-table-lookups/bit-extraction.md)
+  * [Optimize cryptographic parameters](optimization/optimize-cryptographic-parameters/self.md)
+    * [Error probability](optimization/optimize-cryptographic-parameters/p-error.md)
+    * [Composition](optimization/optimize-cryptographic-parameters/composition.md)
 
 ## Tutorials
 
