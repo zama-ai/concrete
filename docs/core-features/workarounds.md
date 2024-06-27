@@ -27,6 +27,10 @@ x, y = np.random.randint(0, 16, size=2)
 assert circuit.encrypt_run_decrypt(x, y) == min(x, y)
 ```
 
+{% hint style="info" %}
+This workaround is no longer necessary since v2.5.0 as `np.minimum` is supported natively. By default, it will use a different implementation strategy, which might be slower. To make it behave exactly the same as this trick, use [`fhe.MinMaxStrategy.ONE_TLU_PROMOTED`](../core-features/minmax.md#1-fheminmaxstrategyone_tlu_promoted) strategy.
+{% endhint %}
+
 ## Maximum for Two values
 
 The companion example of above with the maximum value of two integers instead of the minimum:
@@ -48,6 +52,10 @@ x, y = np.random.randint(0, 16, size=2)
 assert circuit.encrypt_run_decrypt(x, y) == max(x, y)
 ```
 
+{% hint style="info" %}
+This workaround is no longer necessary since v2.5.0 as `np.maximum` is supported natively. By default, it will use a different implementation strategy, which might be slower. To make it behave exactly the same as this trick, use [`fhe.MinMaxStrategy.ONE_TLU_PROMOTED`](../core-features/minmax.md#1-fheminmaxstrategyone_tlu_promoted) strategy.
+{% endhint %}
+
 ## Minimum for several values
 
 And an extension for more than two values:
@@ -62,16 +70,19 @@ def fhe_min(args):
     while len(remaining) > 1:
         a = remaining.pop()
         b = remaining.pop()
-        min_a_b = b - np.maximum(b - a, 0)
-        remaining.insert(0, min_a_b)
+        remaining.insert(0, np.minimum(a, b))
     return remaining[0]
 
 inputset = [np.random.randint(0, 16, size=5) for _ in range(50)]
-circuit = fhe_min.compile(inputset)
+circuit = fhe_min.compile(inputset, min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED)
 
 x1, x2, x3, x4, x5 = np.random.randint(0, 16, size=5)
 assert circuit.encrypt_run_decrypt([x1, x2, x3, x4, x5]) == min(x1, x2, x3, x4, x5)
 ```
+
+{% hint style="info" %}
+This workaround is still necessary as `np.min` is not supported natively for the time being.
+{% endhint %}
 
 ## Retrieving a value within an encrypted array with an encrypted index
 
