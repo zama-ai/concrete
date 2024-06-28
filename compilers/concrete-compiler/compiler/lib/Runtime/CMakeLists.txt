@@ -1,11 +1,11 @@
 add_compile_options(-fsized-deallocation)
 
 if(CONCRETELANG_CUDA_SUPPORT)
-  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
+  add_library(ConcretelangRuntime SHARED context.cpp utils.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
                                          GPUDFG.cpp)
   target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 else()
-  add_library(ConcretelangRuntime SHARED context.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
+  add_library(ConcretelangRuntime SHARED context.cpp utils.cpp simulation.cpp wrappers.cpp DFRuntime.cpp key_manager.cpp
                                          GPUDFG.cpp)
 endif()
 
