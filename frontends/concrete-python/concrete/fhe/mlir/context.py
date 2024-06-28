@@ -2507,9 +2507,6 @@ class Context:
 
             assert lsb is not None
             bit_value = self.to_signedness(lsb, of=resulting_type)
-            bit_value = self.reinterpret(
-                bit_value, bit_width=max(resulting_type.bit_width, max_bit)
-            )
 
             delta_precision = position - actual_position
             assert actual_position < 0 or 0 <= delta_precision < resulting_type.bit_width, (
@@ -2518,6 +2515,9 @@ class Context:
                 resulting_type.bit_width,
             )
             if delta_precision:
+                bit_value = self.reinterpret(
+                    bit_value, bit_width=max(resulting_type.bit_width, max_bit)
+                )
                 bit_value = self.shift_left_at_constant_precision(bit_value, delta_precision)
 
             bit_value = self.reinterpret(bit_value, bit_width=resulting_type.bit_width)
