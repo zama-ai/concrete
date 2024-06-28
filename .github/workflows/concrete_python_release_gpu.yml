@@ -104,7 +104,7 @@ jobs:
             
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=OFF Python3_EXECUTABLE=$(which python) \
-              CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} python-bindings
+              CUDA_SUPPORT=ON TIMING_ENABLED=ON CUDA_PATH=${{ env.CUDA_PATH }} python-bindings
             
             echo "Debug: ccache statistics (after the build):"
             ccache -s
