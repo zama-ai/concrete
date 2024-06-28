@@ -489,7 +489,7 @@ fn test_partition_chain(decreasing: bool) {
         let sol = optimize(&dag, &Some(p_cut.clone()), PartitionIndex(0)).unwrap();
         let nb_partitions = sol.macro_params.len();
         assert!(
-            nb_partitions == (p_cut.p_cut.len() + 1),
+            nb_partitions == p_cut.n_partitions(),
             "bad nb partitions {} {p_cut}",
             sol.macro_params.len()
         );

@@ -252,17 +252,13 @@ impl VariancedDag {
                         acc + var[operator.partition().instruction_partition].clone()
                             * square(*weight as f64)
                     }),
-                Operator::UnsafeCast { .. } => {
+                Operator::UnsafeCast { .. } | Operator::ChangePartition { .. } => {
                     operator.get_inputs_iter().next().unwrap().variance()
                         [operator.partition().instruction_partition]
                         .clone()
                 }
                 Operator::Round { .. } => {
                     unreachable!("Round should have been either expanded or integrated to a lut")
-                }
-                Operator::ChangePartition { .. } => {
-                    // TODO
-                    todo!("TODO")
                 }
             };
             // We add the noise for the transitions to alternative representations
@@ -1326,6 +1322,6 @@ pub mod tests {
         let p_cut = PartitionCut::from_precisions(&precisions);
         let dag =
             super::analyze(&dag, &CONFIG, &Some(p_cut.clone()), LOW_PRECISION_PARTITION).unwrap();
-        assert!(dag.nb_partitions == p_cut.p_cut.len() + 1);
+        assert!(dag.nb_partitions == p_cut.n_partitions());
     }
 }
