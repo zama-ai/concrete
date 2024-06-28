@@ -78,6 +78,12 @@ sample = [np.array([[3, -1], [2, 4]]), 1]
 assert np.array_equal(circuit.encrypt_run_decrypt(*sample), function(*sample))
 ```
 
+[{% hint style="info" %}
+Multivariate functions can be converted in two ways:
+- **fhe.MultivariateStrategy.PROMOTED**: Inputs (e.g., x, y, ...) of multivariate would be promoted to sum of their bit widths (i.e., `x.bit_width + y.bit_width + ...`) during compilation, so the operation would be a single table lookup but input bit widths would be increased.
+- **fhe.MultivariateStrategy.CASTED**: Inputs (e.g., x, y, ...) of multivariate would be casted to sum of their bit widths (i.e., `x.bit_width + y.bit_width + ...`) during runtime, so the operation would be 3 table lookups but input bit widths would not be affected.
+{% endhint %}]()
+
 {% hint style="danger" %}
 The wrapped function:
 
