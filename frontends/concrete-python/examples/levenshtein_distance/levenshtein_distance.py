@@ -138,6 +138,18 @@ def manage_args():
         action="store_true",
         help="Show the MLIR",
     )
+    parser.add_argument(
+        "--show_optimizer",
+        dest="show_optimizer",
+        action="store_true",
+        help="Show the optimizer outputs",
+    )
+    parser.add_argument(
+        "--autotest",
+        dest="autotest",
+        action="store_true",
+        help="Run random tests",
+    )
     args = parser.parse_args()
     return args
 
@@ -160,7 +172,7 @@ def compile_module(args):
         {"equal": inputset_equal, "mix": inputset_mix},
         show_mlir=args.show_mlir,
         p_error=10**-20,
-        show_optimizer=True,
+        show_optimizer=args.show_optimizer,
         comparison_strategy_preference=fhe.ComparisonStrategy.ONE_TLU_PROMOTED,
         min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED,
     )
@@ -170,14 +182,7 @@ def compile_module(args):
 
 def prepare_random_patterns():
     # Random patterns of different lengths
-    list_patterns = [
-        ("", ""),
-        ("", "a"),
-        ("b", ""),
-        ("a", "a"),
-        ("a", "b"),
-    ]
-
+    list_patterns = []
     for length_1 in range(max_string_length + 1):
         for length_2 in range(max_string_length + 1):
             list_patterns += [
@@ -251,11 +256,13 @@ def main():
     # Options by the user
     args = manage_args()
 
-    #
+    # Do what the user requested
     my_module = compile_module(args)
-    list_patterns = prepare_random_patterns()
-    compute_in_simulation(my_module, list_patterns)
-    compute_in_fhe(my_module, list_patterns)
+
+    if args.autotest:
+        list_patterns = prepare_random_patterns()
+        compute_in_simulation(my_module, list_patterns)
+        compute_in_fhe(my_module, list_patterns)
 
 
 if __name__ == "__main__":
