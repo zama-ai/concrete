@@ -12,18 +12,38 @@ use crate::optimization::dag::solo_key::symbolic_variance::SymbolicVariance;
 const ROUND_INNER_MULTI_PARAMETER: bool = false;
 const ROUND_EXTERNAL_MULTI_PARAMETER: bool = !ROUND_INNER_MULTI_PARAMETER && true;
 
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+pub struct ExternalPartition {
+    pub name: String,
+    // TODO add params (maybe just macros)
+}
+
+impl std::fmt::Display for ExternalPartition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{ name: {} }}", self.name)?;
+        Ok(())
+    }
+}
+
 // TODO: keep both precisions
 // TODO: rounding lut should have its own partition based on max norm2 and precisions
 #[derive(Clone, Debug)]
 pub struct PartitionCut {
+    // TODO: add name to partitions
+
     // partition0 precision <= p_cut[0] < partition 1 precision <= p_cut[1] ...
     // precision are in the sens of Lut input precision and are sorted
     pub p_cut: Vec<(Precision, f64)>,
+
+    // Whether it has internal partitions or not
+    pub has_internal_partitions: bool,
 
     // # TODO RELATIVE NORM2
     // # HIGHER NORM2 MEANS HIGHER VARIANCE IN CONSTRAINT
     // norm2 * 2 ** (out precision - in precision)
     pub rnorm2: Vec<f64>,
+
+    pub external_partitions: Vec<ExternalPartition>,
 }
 
 impl PartitionCut {
@@ -31,17 +51,59 @@ impl PartitionCut {
         Self {
             p_cut: vec![],
             rnorm2: vec![],
+            external_partitions: vec![],
+            has_internal_partitions: true,
         }
+    }
+
+    pub fn n_partition(&self) -> usize {
+        self.n_internal_partitions() + self.n_external_partitions()
+    }
+
+    pub fn n_internal_partitions(&self) -> usize {
+        self.p_cut.len() + self.has_internal_partitions as usize
+    }
+
+    pub fn n_external_partitions(&self) -> usize {
+        self.external_partitions.len()
+    }
+
+    pub fn is_external_partition(&self, partition: &PartitionIndex) -> bool {
+        partition.0 >= self.n_internal_partitions()
+    }
+
+    pub fn is_internal_partition(&self, partition: &PartitionIndex) -> bool {
+        partition.0 < self.n_internal_partitions()
     }
 
     pub fn from_precisions(precisions: &[Precision]) -> Self {
         let mut precisions: Vec<_> = precisions.to_vec();
+        let has_internal_partitions = precisions.len() != 0;
         precisions.sort_by(|a, b| a.partial_cmp(b).unwrap());
         _ = precisions.pop();
 
         Self {
             p_cut: precisions.iter().map(|p| (*p, f64::MAX)).collect(),
             rnorm2: vec![],
+            external_partitions: vec![],
+            has_internal_partitions,
+        }
+    }
+
+    pub fn from_precisions_and_external_partitions(
+        precisions: &[Precision],
+        external_partitions: &[ExternalPartition],
+    ) -> Self {
+        let mut precisions: Vec<_> = precisions.to_vec();
+        let has_internal_partitions = precisions.len() != 0;
+        precisions.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        _ = precisions.pop();
+
+        Self {
+            p_cut: precisions.iter().map(|p| (*p, f64::MAX)).collect(),
+            rnorm2: vec![],
+            external_partitions: external_partitions.to_vec(),
+            has_internal_partitions,
         }
     }
 
@@ -61,7 +123,7 @@ impl PartitionCut {
         let op = &dag.operators[op_i.0];
         match op {
             Operator::Lut { input, .. } => {
-                assert!(!self.p_cut.is_empty());
+                assert!(self.has_internal_partitions);
                 for (partition, &(precision_cut, norm2_cut)) in self.p_cut.iter().enumerate() {
                     if dag.out_precisions[input.0] <= precision_cut
                         && self.rnorm2(op_i) <= norm2_cut
@@ -71,6 +133,25 @@ impl PartitionCut {
                 }
                 Some(PartitionIndex(self.p_cut.len()))
             }
+            Operator::ChangePartition {
+                src_partition,
+                dst_partition,
+                ..
+            } => {
+                for (partition, external_partition) in self.external_partitions.iter().enumerate() {
+                    if let Some(name) = src_partition {
+                        if name == external_partition {
+                            return Some(PartitionIndex(self.n_internal_partitions() + partition));
+                        }
+                    }
+                    if let Some(name) = dst_partition {
+                        if name == external_partition {
+                            return Some(PartitionIndex(self.n_internal_partitions() + partition));
+                        }
+                    }
+                }
+                None
+            }
             _ => None,
         }
     }
@@ -78,13 +159,30 @@ impl PartitionCut {
     pub fn for_each_precision(dag: &unparametrized::Dag) -> Self {
         let (dag, _) = expand_round_and_index_map(dag);
         let mut lut_in_precisions: HashSet<_> = HashSet::default();
+        let mut partitions: HashSet<ExternalPartition> = HashSet::default();
         for op in &dag.operators {
             if let Operator::Lut { input, .. } = op {
                 _ = lut_in_precisions.insert(dag.out_precisions[input.0]);
             }
         }
+        for op in &dag.operators {
+            if let Operator::ChangePartition {
+                src_partition,
+                dst_partition,
+                ..
+            } = op
+            {
+                if let Some(partition) = src_partition {
+                    _ = partitions.insert(partition.clone());
+                }
+                if let Some(partition) = dst_partition {
+                    _ = partitions.insert(partition.clone());
+                }
+            }
+        }
         let precisions: Vec<_> = lut_in_precisions.iter().copied().collect();
-        Self::from_precisions(&precisions)
+        let external_partitions = Vec::from_iter(partitions);
+        Self::from_precisions_and_external_partitions(&precisions, &external_partitions)
     }
 
     pub fn maximal_partitionning(original_dag: &unparametrized::Dag) -> Self {
@@ -103,6 +201,7 @@ impl PartitionCut {
         let out_variances: Vec<SymbolicVariance> = out_variances(&dag);
         let mut noise_origins: Vec<HashSet<usize>> = vec![HashSet::default(); out_variances.len()];
         let mut max_output_norm2 = vec![f64::NAN; out_variances.len()];
+        let mut external_partitions: Vec<ExternalPartition> = vec![];
 
         assert!(out_variances.len() == dag.operators.len());
         // Find input lut log norm2 and lut as origins
@@ -127,6 +226,18 @@ impl PartitionCut {
                 Operator::Input { .. } => {
                     max_output_norm2[op_i] = 1.0; // initial value that can be maxed
                     noise_origins[op_i] = std::iter::once(op_i).collect();
+                }
+                Operator::ChangePartition {
+                    src_partition,
+                    dst_partition,
+                    ..
+                } => {
+                    if let Some(partition) = src_partition {
+                        external_partitions.push(partition.clone())
+                    }
+                    if let Some(partition) = dst_partition {
+                        external_partitions.push(partition.clone())
+                    }
                 }
                 // unreachable
                 Operator::Round { .. } => panic!("expand_round failed"),
@@ -181,12 +292,16 @@ impl PartitionCut {
             }
         }
         let mut p_cut: Vec<_> = lut_partition.iter().copied().collect();
+        let has_internal_partitions = lut_partition.len() != 0;
         p_cut.sort_by(|a, b| a.partial_cmp(b).unwrap());
         _ = p_cut.pop();
         let p_cut = p_cut.iter().map(|(p, n)| (*p, n.into_inner())).collect();
+
         Self {
             p_cut,
             rnorm2: max_output_norm2,
+            external_partitions,
+            has_internal_partitions,
         }
     }
 
@@ -197,9 +312,15 @@ impl PartitionCut {
                 p_cut.push(cut);
             }
         }
+        let has_internal_partitions = self.has_internal_partitions
+            && self.is_internal_partition(&PartitionIndex(
+                used.iter().map(|u| u.0).min().unwrap_or(usize::MAX),
+            ));
         Self {
             p_cut,
             rnorm2: self.rnorm2.clone(),
+            external_partitions: self.external_partitions.clone(),
+            has_internal_partitions,
         }
     }
 }
@@ -229,6 +350,13 @@ impl std::fmt::Display for PartitionCut {
             "partition {}: {prev_precision_cut} bits and higher",
             self.p_cut.len()
         )?;
+        for (i, e_partition) in self.external_partitions.iter().enumerate() {
+            writeln!(
+                f,
+                "partition {} (external): {e_partition}",
+                i + self.n_internal_partitions()
+            )?;
+        }
         Ok(())
     }
 }
