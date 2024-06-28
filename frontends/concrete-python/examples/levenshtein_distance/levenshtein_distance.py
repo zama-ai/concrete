@@ -143,6 +143,12 @@ def manage_args():
         help="Run random tests",
     )
     parser.add_argument(
+        "--autoperf",
+        dest="autoperf",
+        action="store_true",
+        help="Run benchmarks",
+    )
+    parser.add_argument(
         "--alphabet",
         dest="alphabet",
         choices=["string", "STRING", "StRiNg", "ACTG"],
@@ -189,7 +195,7 @@ def compile_module(mapping_to_int, args):
     return my_module
 
 
-def prepare_alphabet_mapping(alphabet):
+def prepare_alphabet_mapping(alphabet, verbose=True):
     if alphabet == "string":
         letters = "".join([chr(97 + i) for i in range(26)])
     elif alphabet == "STRING":
@@ -201,8 +207,9 @@ def prepare_alphabet_mapping(alphabet):
     else:
         raise ValueError(f"Unknown alphabet {alphabet}")
 
-    print(f"Making random tests with alphabet {alphabet}")
-    print(f"Letters are {letters}\n")
+    if verbose:
+        print(f"Making random tests with alphabet {alphabet}")
+        print(f"Letters are {letters}\n")
 
     mapping_to_int = {}
 
@@ -212,18 +219,19 @@ def prepare_alphabet_mapping(alphabet):
     return mapping_to_int
 
 
-def prepare_random_patterns(mapping_to_int, args):
+def prepare_random_patterns(mapping_to_int, len_min, len_max, nb_strings):
     # Random patterns of different lengths
     list_patterns = []
-    for length_1 in range(args.max_string_length + 1):
-        for length_2 in range(args.max_string_length + 1):
-            list_patterns += [
-                (
-                    random_string(mapping_to_int, length_1),
-                    random_string(mapping_to_int, length_2),
-                )
-                for _ in range(1)
-            ]
+    for _ in range(nb_strings):
+        for length_1 in range(len_min, len_max + 1):
+            for length_2 in range(len_min, len_max + 1):
+                list_patterns += [
+                    (
+                        random_string(mapping_to_int, length_1),
+                        random_string(mapping_to_int, length_2),
+                    )
+                    for _ in range(1)
+                ]
 
     return list_patterns
 
@@ -247,12 +255,13 @@ def compute_in_simulation(my_module, list_patterns, mapping_to_int):
         print(" - OK")
 
 
-def compute_in_fhe(my_module, list_patterns, mapping_to_int):
+def compute_in_fhe(my_module, list_patterns, mapping_to_int, verbose=False):
     # Key generation
     my_module.keygen()
 
     # Checks in FHE
-    print("\nComputations in FHE\n")
+    if verbose:
+        print("\nComputations in FHE\n")
 
     for a, b in list_patterns:
 
@@ -286,11 +295,23 @@ def main():
     if args.autotest:
         mapping_to_int = prepare_alphabet_mapping(args.alphabet)
         my_module = compile_module(mapping_to_int, args)
-        list_patterns = prepare_random_patterns(mapping_to_int, args)
+        list_patterns = prepare_random_patterns(mapping_to_int, 0, args.max_string_length, 1)
         compute_in_simulation(my_module, list_patterns, mapping_to_int)
         compute_in_fhe(my_module, list_patterns, mapping_to_int)
+        print("")
 
-    print("\nSuccessful end\n")
+    if args.autoperf:
+        for alphabet in ["ACTG", "string", "STRING", "StRiNg"]:
+            print(f"Typical performances for alphabet {alphabet}, with string of maximal length:\n")
+            mapping_to_int = prepare_alphabet_mapping(alphabet, verbose=False)
+            my_module = compile_module(mapping_to_int, args)
+            list_patterns = prepare_random_patterns(
+                mapping_to_int, args.max_string_length, args.max_string_length, 3
+            )
+            compute_in_fhe(my_module, list_patterns, mapping_to_int, verbose=False)
+            print("")
+
+    print("Successful end\n")
 
 
 if __name__ == "__main__":
