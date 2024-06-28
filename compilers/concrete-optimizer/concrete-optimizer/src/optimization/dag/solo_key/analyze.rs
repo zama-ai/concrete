@@ -48,7 +48,7 @@ fn assert_inputs_index(op: &Operator, first_bad_index: usize) {
         Operator::Lut { input, .. }
         | Operator::UnsafeCast { input, .. }
         | Operator::Round { input, .. }
-        | Operator::ChangePartition { input } => input.0 < first_bad_index,
+        | Operator::ChangePartition { input, .. } => input.0 < first_bad_index,
         Operator::LevelledOp { inputs, .. } | Operator::Dot { inputs, .. } => {
             inputs.iter().all(|input| input.0 < first_bad_index)
         }
@@ -190,13 +190,11 @@ fn out_variance(
             .fold(SymbolicVariance::ZERO, |acc, (weight, var)| {
                 acc + var * square(*weight as f64)
             }),
-        Operator::UnsafeCast { input, .. } => out_variances[input.0],
+        Operator::UnsafeCast { input, .. } | Operator::ChangePartition { input, .. } => {
+            out_variances[input.0]
+        }
         Operator::Round { .. } => {
             unreachable!("Round should have been either expanded or integrated to a lut")
-        }
-        // TODO
-        Operator::ChangePartition { .. } => {
-            todo!("TODO")
         }
     }
 }
@@ -254,14 +252,12 @@ fn op_levelled_complexity(op: &Operator, out_shapes: &[Shape]) -> LevelledComple
         }
 
         Operator::LevelledOp { complexity, .. } => *complexity,
-        Operator::Input { .. } | Operator::Lut { .. } | Operator::UnsafeCast { .. } => {
-            LevelledComplexity::ZERO
-        }
+        Operator::Input { .. }
+        | Operator::Lut { .. }
+        | Operator::UnsafeCast { .. }
+        | Operator::ChangePartition { .. } => LevelledComplexity::ZERO,
         Operator::Round { .. } => {
             unreachable!("Round should have been either expanded or integrated to a lut")
-        }
-        Operator::ChangePartition { .. } => {
-            todo!("TODO")
         }
     }
 }
