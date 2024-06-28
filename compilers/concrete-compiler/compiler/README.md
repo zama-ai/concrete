@@ -47,9 +47,9 @@ Install MLIR python requirements in your dev python environment:
 
 ```bash
 # From repo root
-pip install -r ./llvm-project/mlir/python/requirements.txt
+pip install -r ./third_party/llvm-project/mlir/python/requirements.txt
 # From compiler dir
-pip install -r ../llvm-project/mlir/python/requirements.txt
+pip install -r ../third_party/llvm-project/mlir/python/requirements.txt
 ```
 
 You should also have the python development package installed.
@@ -65,7 +65,7 @@ error: toolchain 'nightly-x86_64-unknown-linux-gnu' is not installed
 it means you need to install the nightly rust toolchain
 
 ```bash
-rustup toolchain install nightly
+rustup toolchain install nightly-2024-01-31
 ```
 
 ### Build from source
