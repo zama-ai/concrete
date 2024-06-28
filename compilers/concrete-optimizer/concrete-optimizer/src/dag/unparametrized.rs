@@ -1,5 +1,8 @@
-use crate::dag::operator::{
-    FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision, Shape, Weights,
+use crate::{
+    dag::operator::{
+        FunctionTable, LevelledComplexity, Operator, OperatorIndex, Precision, Shape, Weights,
+    },
+    optimization::dag::multi_parameters::partition_cut::ExternalPartition,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -226,8 +229,17 @@ impl<'dag> DagBuilder<'dag> {
         })
     }
 
-    pub fn add_change_partition(&mut self, input: OperatorIndex) -> OperatorIndex {
-        self.add_operator(Operator::ChangePartition { input })
+    pub fn add_change_partition(
+        &mut self,
+        input: OperatorIndex,
+        src_partition: Option<&ExternalPartition>,
+        dst_partition: Option<&ExternalPartition>,
+    ) -> OperatorIndex {
+        self.add_operator(Operator::ChangePartition {
+            input,
+            src_partition: src_partition.cloned(),
+            dst_partition: dst_partition.cloned(),
+        })
     }
 
     pub fn add_round_op(
@@ -367,7 +379,7 @@ impl<'dag> DagBuilder<'dag> {
             Operator::Lut { input, .. }
             | Operator::UnsafeCast { input, .. }
             | Operator::Round { input, .. }
-            | Operator::ChangePartition { input } => self.dag.out_shapes[input.0].clone(),
+            | Operator::ChangePartition { input, .. } => self.dag.out_shapes[input.0].clone(),
             Operator::Dot {
                 kind: DotKind::Simple | DotKind::Tensor | DotKind::CompatibleTensor,
                 ..
@@ -402,7 +414,7 @@ impl<'dag> DagBuilder<'dag> {
             Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
                 self.dag.out_precisions[inputs[0].0]
             }
-            Operator::ChangePartition { input } => self.dag.out_precisions[input.0],
+            Operator::ChangePartition { input, .. } => self.dag.out_precisions[input.0],
         }
     }
 }
@@ -524,6 +536,16 @@ impl Dag {
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
             .add_lut(input, table, out_precision)
+    }
+
+    pub fn add_change_partition(
+        &mut self,
+        input: OperatorIndex,
+        src_partition: Option<&ExternalPartition>,
+        dst_partition: Option<&ExternalPartition>,
+    ) -> OperatorIndex {
+        self.builder(DEFAULT_CIRCUIT)
+            .add_change_partition(input, src_partition, dst_partition)
     }
 
     pub fn add_dot(
@@ -787,13 +809,16 @@ mod tests {
         let b = builder.add_input(1, Shape::number());
         let c = builder.add_dot([a, b], [1, 1]);
         let d = builder.add_lut(c, FunctionTable::UNKWOWN, 1);
-        let _e = builder.add_change_partition(d);
+        let _e = builder.add_change_partition(d, None, None);
         let mut builder = graph.builder("main2");
         let e = builder.add_input(2, Shape::number());
         let f = builder.add_input(2, Shape::number());
         let g = builder.add_dot([e, f], [2, 2]);
         let h = builder.add_lut(g, FunctionTable::UNKWOWN, 2);
-        let _h = builder.add_change_partition(h);
+        let tfhers_part = ExternalPartition {
+            name: String::from("tfhers"),
+        };
+        let _h = builder.add_change_partition(h, Some(&tfhers_part), Some(&tfhers_part));
         graph.tag_operator_as_output(c);
     }
 
@@ -816,7 +841,10 @@ mod tests {
 
         let lut2 = builder.add_lut(dot, FunctionTable::UNKWOWN, 2);
 
-        let change_part = builder.add_change_partition(lut2);
+        let tfhers_part = ExternalPartition {
+            name: String::from("tfhers"),
+        };
+        let change_part = builder.add_change_partition(lut2, Some(&tfhers_part), None);
 
         let ops_index = [input1, input2, sum1, lut1, concat, dot, lut2, change_part];
         for (expected_i, op_index) in ops_index.iter().enumerate() {
@@ -866,7 +894,11 @@ mod tests {
                     table: FunctionTable::UNKWOWN,
                     out_precision: 2,
                 },
-                Operator::ChangePartition { input: lut2 }
+                Operator::ChangePartition {
+                    input: lut2,
+                    src_partition: Some(tfhers_part.clone()),
+                    dst_partition: None
+                }
             ]
         );
     }
