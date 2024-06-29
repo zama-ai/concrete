@@ -47,6 +47,7 @@
 #include "concretelang/Dialect/FHELinalg/Transforms/Tiling.h"
 #include "concretelang/Dialect/RT/Analysis/Autopar.h"
 #include "concretelang/Dialect/RT/Transforms/Passes.h"
+#include "concretelang/Dialect/SDFG/Transforms/Passes.h"
 #include "concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h"
 #include "concretelang/Dialect/TFHE/Transforms/Transforms.h"
 #include "concretelang/Support/CompilerEngine.h"
@@ -570,6 +571,8 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
                            enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFixupBufferDeallocationPass(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createSDFGBufferOwnershipPass(), enablePass);
 
   return pm.run(module);
 }

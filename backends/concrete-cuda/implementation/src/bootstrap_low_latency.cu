@@ -1,3 +1,4 @@
+#include <err.h>
 #include "bootstrap_fast_low_latency.cuh"
 #include "bootstrap_low_latency.cuh"
 /*
@@ -100,6 +101,8 @@ uint64_t get_buffer_size_bootstrap_low_latency_64(
           input_lwe_ciphertext_count, max_shared_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     return 0;
     break;
   }
@@ -244,6 +247,8 @@ void scratch_cuda_bootstrap_low_latency_32(
           allocate_gpu_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
@@ -377,6 +382,8 @@ void scratch_cuda_bootstrap_low_latency_64(
           allocate_gpu_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
@@ -527,6 +534,8 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_32(
           num_samples, num_lut_vectors, max_shared_memory);
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
@@ -744,7 +753,10 @@ void cuda_bootstrap_low_latency_lwe_ciphertext_vector_64(
           (uint64_t *)lwe_array_in, (double2 *)bootstrapping_key, pbs_buffer,
           glwe_dimension, lwe_dimension, polynomial_size, base_log, level_count,
           num_samples, num_lut_vectors, max_shared_memory);
+    break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }

@@ -112,7 +112,6 @@ void memref_batched_keyswitch_lwe_cuda_u64(
     uint64_t ct0_stride0, uint64_t ct0_stride1, uint32_t level,
     uint32_t base_log, uint32_t input_lwe_dim, uint32_t output_lwe_dim,
     uint32_t ksk_index, mlir::concretelang::RuntimeContext *context) {
-  assert(ksk_index == 0 && "multiple ksk is not yet implemented on GPU");
   assert(out_size0 == ct0_size0);
   assert(out_size1 == output_lwe_dim + 1);
   assert(ct0_size1 == input_lwe_dim + 1);
@@ -159,7 +158,6 @@ void memref_batched_bootstrap_lwe_cuda_u64(
     uint64_t tlu_stride, uint32_t input_lwe_dim, uint32_t poly_size,
     uint32_t level, uint32_t base_log, uint32_t glwe_dim, uint32_t bsk_index,
     mlir::concretelang::RuntimeContext *context) {
-  assert(bsk_index == 0 && "multiple bsk is not yet implemented on GPU");
   assert(out_size0 == ct0_size0);
   assert(out_size1 == glwe_dim * poly_size + 1);
   // TODO: Multi GPU
@@ -247,7 +245,6 @@ void memref_batched_mapped_bootstrap_lwe_cuda_u64(
     uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
     uint32_t base_log, uint32_t glwe_dim, uint32_t bsk_index,
     mlir::concretelang::RuntimeContext *context) {
-  assert(bsk_index == 0 && "multiple bsk is not yet implemented on GPU");
   assert(out_size0 == ct0_size0);
   assert(out_size1 == glwe_dim * poly_size + 1);
   assert((out_size0 == tlu_size0 || tlu_size0 == 1) &&
