@@ -49,6 +49,7 @@
 #include "concretelang/Dialect/RT/Transforms/Passes.h"
 #include "concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h"
 #include "concretelang/Dialect/TFHE/Transforms/Transforms.h"
+#include "concretelang/Runtime/utils.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/Pipeline.h"
@@ -611,8 +612,7 @@ std::unique_ptr<llvm::Module>
 lowerLLVMDialectToLLVMIR(mlir::MLIRContext &context,
                          llvm::LLVMContext &llvmContext,
                          mlir::ModuleOp &module) {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
+  mlir::concretelang::LLVMInitializeNativeTarget();
   mlir::registerLLVMDialectTranslation(*module->getContext());
   mlir::registerOpenMPDialectTranslation(*module->getContext());
 
