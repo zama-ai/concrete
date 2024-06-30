@@ -50,7 +50,7 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -131,7 +131,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -230,7 +230,7 @@ jobs:
     needs: [build-linux-x86, build-macos, provenance]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
@@ -298,7 +298,7 @@ jobs:
           name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
           path: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
       - name: Checkout the repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
           path: repo
@@ -344,7 +344,7 @@ jobs:
           name: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
           path: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
       - name: Checkout the repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
           path: repo
