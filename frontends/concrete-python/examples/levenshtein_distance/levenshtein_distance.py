@@ -9,6 +9,31 @@ import numpy
 
 from concrete import fhe
 
+
+def random_pick_in_values(mapping_to_int):
+    """Pick the integer-encoding of a random char in an alphabet."""
+    return numpy.random.randint(len(mapping_to_int))
+
+
+def random_pick_in_keys(mapping_to_int):
+    """Pick a random char in an alphabet."""
+    return random.choice(list(mapping_to_int))
+
+
+def random_string(mapping_to_int, l):
+    """Pick a random string in the alphabet."""
+    return "".join([random_pick_in_keys(mapping_to_int) for _ in range(l)])
+
+
+def check_string_is_in_alphabet(string, mapping_to_int):
+    """Check a string is a valid string of an alphabet."""
+    for c in string:
+        if c not in mapping_to_int:
+            raise ValueError(
+                f"Char {c} of {string} is not in alphabet {list(mapping_to_int.keys())}, please choose the right --alphabet"
+            )
+
+
 # Module FHE
 @fhe.module()
 class MyModule:
@@ -50,21 +75,9 @@ class MyModule:
     )
 
 
-def random_pick_in_values(mapping_to_int):
-    return numpy.random.randint(len(mapping_to_int))
-
-
-def random_pick_in_keys(mapping_to_int):
-    return random.choice(list(mapping_to_int))
-
-
-def random_string(mapping_to_int, l):
-    return "".join([random_pick_in_keys(mapping_to_int) for _ in range(l)])
-
-
-# Function in clear, for reference and comparison
 @lru_cache
 def levenshtein_clear(x, y):
+    """Compute the distance in clear, for reference and comparison."""
     if len(x) == 0:
         return len(y)
     if len(y) == 0:
@@ -80,9 +93,9 @@ def levenshtein_clear(x, y):
     return 1 + min(case_1, case_2, case_3)
 
 
-# Function in FHE-simulate, to debug
 @lru_cache
 def levenshtein_simulate(my_module, x, y):
+    """Compute the distance in simulation."""
     if len(x) == 0:
         return len(y)
     if len(y) == 0:
@@ -99,14 +112,12 @@ def levenshtein_simulate(my_module, x, y):
     return returned_value
 
 
-# Function in FHE
 @lru_cache
 def levenshtein_fhe(my_module, x, y):
+    """Compute the distance in FHE."""
     if len(x) == 0:
-        # In clear, that's return len(y)
         return my_module.mix.encrypt(None, len(y), None, None, None)[1]
     if len(y) == 0:
-        # In clear, that's return len(x)
         return my_module.mix.encrypt(None, len(x), None, None, None)[1]
 
     if_equal = levenshtein_fhe(my_module, x[1:], y[1:])
@@ -114,15 +125,14 @@ def levenshtein_fhe(my_module, x, y):
     case_2 = levenshtein_fhe(my_module, x, y[1:])
     case_3 = if_equal
 
-    # In FHE
     is_equal = my_module.equal.run(x[0], y[0])
     returned_value = my_module.mix.run(is_equal, if_equal, case_1, case_2, case_3)
 
     return returned_value
 
 
-# Manage user args
 def manage_args():
+    """Manage user arguments."""
     parser = argparse.ArgumentParser(description="Levenshtein distance in Concrete.")
     parser.add_argument(
         "--show_mlir",
@@ -149,6 +159,14 @@ def manage_args():
         help="Run benchmarks",
     )
     parser.add_argument(
+        "--distance",
+        dest="distance",
+        nargs=2,
+        type=str,
+        action="store",
+        help="Compute a distance",
+    )
+    parser.add_argument(
         "--alphabet",
         dest="alphabet",
         choices=["string", "STRING", "StRiNg", "ACTG"],
@@ -163,11 +181,17 @@ def manage_args():
         help="Setting the maximal size of strings",
     )
     args = parser.parse_args()
+
+    # At least one option
+    assert (
+        args.autoperf + args.autotest + (args.distance != None) > 0
+    ), "must activate one option --autoperf or --autotest or --distance"
+
     return args
 
 
 def compile_module(mapping_to_int, args):
-    # Compilation
+    """Compile the FHE module."""
     inputset_equal = [
         (random_pick_in_values(mapping_to_int), random_pick_in_values(mapping_to_int))
         for _ in range(1000)
@@ -196,6 +220,7 @@ def compile_module(mapping_to_int, args):
 
 
 def prepare_alphabet_mapping(alphabet, verbose=True):
+    """Check the alphabet option and compute corresponding char-to-int mapping."""
     if alphabet == "string":
         letters = "".join([chr(97 + i) for i in range(26)])
     elif alphabet == "STRING":
@@ -220,7 +245,7 @@ def prepare_alphabet_mapping(alphabet, verbose=True):
 
 
 def prepare_random_patterns(mapping_to_int, len_min, len_max, nb_strings):
-    # Random patterns of different lengths
+    """Prepare random patterns of different lengths."""
     list_patterns = []
     for _ in range(nb_strings):
         for length_1 in range(len_min, len_max + 1):
@@ -237,8 +262,7 @@ def prepare_random_patterns(mapping_to_int, len_min, len_max, nb_strings):
 
 
 def compute_in_simulation(my_module, list_patterns, mapping_to_int):
-
-    # Checks in simulation
+    """Check equality between distance in simulation and clear distance."""
     print("Computations in simulation\n")
 
     for a, b in list_patterns:
@@ -255,8 +279,8 @@ def compute_in_simulation(my_module, list_patterns, mapping_to_int):
         print(" - OK")
 
 
-def compute_in_fhe(my_module, list_patterns, mapping_to_int, verbose=False):
-    # Key generation
+def compute_in_fhe(my_module, list_patterns, mapping_to_int, verbose=True, show_distance=False):
+    """Check equality between distance in FHE and clear distance."""
     my_module.keygen()
 
     # Checks in FHE
@@ -282,10 +306,15 @@ def compute_in_fhe(my_module, list_patterns, mapping_to_int, verbose=False):
         l1_clear = levenshtein_clear(a, b)
 
         assert l1_fhe == l1_clear, f"    {l1_fhe=} and {l1_clear=} are different"
-        print(f" - OK in {time_end - time_begin:.2f} seconds")
+
+        if not show_distance:
+            print(f" - OK in {time_end - time_begin:.2f} seconds")
+        else:
+            print(f" - distance is {l1_fhe}, computed in {time_end - time_begin:.2f} seconds")
 
 
 def main():
+    """Main function."""
     print()
 
     # Options by the user
@@ -310,6 +339,18 @@ def main():
             )
             compute_in_fhe(my_module, list_patterns, mapping_to_int, verbose=False)
             print("")
+
+    if args.distance != None:
+        print(
+            f"Running distance between strings {args.distance[0]} and {args.distance[1]} for alphabet {args.alphabet}:\n"
+        )
+        mapping_to_int = prepare_alphabet_mapping(args.alphabet, verbose=False)
+        my_module = compile_module(mapping_to_int, args)
+        check_string_is_in_alphabet(args.distance[0], mapping_to_int)
+        check_string_is_in_alphabet(args.distance[1], mapping_to_int)
+        list_patterns = [args.distance]
+        compute_in_fhe(my_module, list_patterns, mapping_to_int, verbose=False, show_distance=True)
+        print("")
 
     print("Successful end\n")
 
