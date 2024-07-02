@@ -80,7 +80,7 @@ jobs:
             --gpus all
           shell: bash
           run: |
-            rustup toolchain install nightly-2024-01-31
+            rustup toolchain install nightly-2024-07-01
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*

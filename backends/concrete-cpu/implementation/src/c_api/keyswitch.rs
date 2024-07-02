@@ -53,7 +53,7 @@ pub unsafe extern "C" fn concrete_cpu_init_lwe_keyswitch_key_u64(
             &input_key,
             &output_key,
             &mut ksk,
-            Variance::from_variance(variance),
+            Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
             &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
         )
     });
@@ -110,7 +110,7 @@ pub unsafe extern "C" fn concrete_cpu_init_seeded_lwe_keyswitch_key_u64(
             &input_key,
             &output_key,
             &mut seeded_ksk,
-            Variance::from_variance(variance),
+            Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
             seeder,
         )
     });
