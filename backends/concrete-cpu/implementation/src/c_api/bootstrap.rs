@@ -73,14 +73,14 @@ pub unsafe extern "C" fn concrete_cpu_init_lwe_bootstrap_key_u64(
                 &lwe_sk,
                 &glwe_sk,
                 &mut bsk,
-                Variance::from_variance(variance),
+                Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
                 &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
             ),
             Parallelism::Rayon => par_generate_lwe_bootstrap_key(
                 &lwe_sk,
                 &glwe_sk,
                 &mut bsk,
-                Variance::from_variance(variance),
+                Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
                 &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
             ),
         }
@@ -151,14 +151,14 @@ pub unsafe extern "C" fn concrete_cpu_init_seeded_lwe_bootstrap_key_u64(
                 &lwe_sk,
                 &glwe_sk,
                 &mut bsk,
-                Variance::from_variance(variance),
+                Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
                 seeder,
             ),
             Parallelism::Rayon => par_generate_seeded_lwe_bootstrap_key(
                 &lwe_sk,
                 &glwe_sk,
                 &mut bsk,
-                Variance::from_variance(variance),
+                Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
                 seeder,
             ),
         }

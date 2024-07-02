@@ -53,7 +53,7 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_lwe_ciphertext_u64(
             &lwe_sk,
             &mut lwe_out,
             Plaintext(input),
-            Variance::from_variance(variance),
+            Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
             &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
         );
     });
@@ -95,7 +95,7 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_seeded_lwe_ciphertext_u64(
             &lwe_sk,
             &mut seeded_lwe_ciphertext,
             Plaintext(input),
-            Variance::from_variance(variance),
+            Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
             seeder,
         );
         *seeded_lwe_out = seeded_lwe_ciphertext.into_scalar();
@@ -145,7 +145,7 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_ggsw_ciphertext_u64(
             &glwe_sk,
             &mut ggsw_out,
             Plaintext(input),
-            Variance::from_variance(variance),
+            Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
             &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
         );
     });

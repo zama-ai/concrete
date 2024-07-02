@@ -1,5 +1,4 @@
 #![allow(clippy::missing_safety_doc, dead_code)]
-#![cfg_attr(feature = "nightly", feature(stdsimd))]
 #![cfg_attr(feature = "nightly", feature(avx512_target_feature))]
 
 extern crate alloc;

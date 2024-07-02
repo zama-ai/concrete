@@ -10,18 +10,18 @@ crate-type = ["lib", "staticlib"]
 
 
 [dependencies]
-concrete-csprng = { version = "0.4", optional = true, features = [
+concrete-csprng = { version = "0.4.1", optional = true, features = [
   "generator_fallback",
 ] }
 concrete-cpu-noise-model = { path = "../noise-model/" }
 concrete-security-curves = { path = "../../../tools/parameter-curves/concrete-security-curves-rust" }
 libc = { version = "0.2", default-features = false }
-pulp = { version = "0.10", default-features = false }
+pulp = { version = "0.18.8", default-features = false }
 dyn-stack = { version = "0.9", default-features = false }
 readonly = "0.2"
 aligned-vec = { version = "0.5", default-features = false }
-concrete-fft = { version = "0.2.1", default-features = false }
-bytemuck = "1.12"
+concrete-fft = { version = "0.4.1", default-features = false }
+bytemuck = "1.14.3"
 num-complex = { version = "0.4", default-features = false, features = [
   "bytemuck",
 ] }
@@ -29,16 +29,16 @@ num-complex = { version = "0.4", default-features = false, features = [
 rayon = { version = "1.6", optional = true }
 once_cell = { version = "1.16", optional = true }
 
-tfhe = { version = "0.4", features = [] }
+tfhe = { version = "0.7", features = [] }
 
 [target.x86_64-unknown-unix-gnu.dependencies]
-tfhe = { version = "0.4", features = ["x86_64-unix"] }
+tfhe = { version = "0.7", features = ["x86_64-unix"] }
 
 [target.aarch64-unknown-unix-gnu.dependencies]
-tfhe = { version = "0.4", features = ["aarch64-unix"] }
+tfhe = { version = "0.7", features = ["aarch64-unix"] }
 
 [target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { version = "0.4", features = ["x86_64"] }
+tfhe = { version = "0.7", features = ["x86_64"] }
 
 [features]
 default = ["parallel", "std", "csprng"]
