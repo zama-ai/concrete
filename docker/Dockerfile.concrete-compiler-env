@@ -19,7 +19,7 @@ RUN ccache -F 0
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
-RUN rustup install nightly-2024-01-31
+RUN rustup install nightly-2024-07-01
 SHELL ["/bin/bash", "-c"]
 # Install boost
 ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
