@@ -4,8 +4,11 @@ We describe how to compute a XOR distance (as known as an Hamming weight distanc
 can be useful in particular for biometry use-cases, where obviously, private is a very interesting
 feature.
 
-The full code can be done [here](hamming_distance.py). Execution times of the different functions are given in the
-final section.
+We present the XOR distance in two contexts, with corresponding codes:
+- the XOR distance between [two encrypted tensors](hamming_distance.py)
+- the XOR distance between [one encrypted tensor and one clear tensor](hamming_distance_to_clear.py)
+
+Execution times of the different functions are given in the different sections.
 
 ## The Goal
 
@@ -34,7 +37,9 @@ This is a distance function, which can be used for various purpose, including me
 vectors are close to each other. In the context of biometry (or others), it may be very interesting
 to compute this function over encrypted `x` and `y` vectors.
 
-## First Implementation
+## Distance Between Two Encrypted Tensors
+
+### First Implementation
 
 In the [full code](hamming_distance.py), we use a first implementation, which is
 
@@ -45,7 +50,7 @@ def dist_in_fhe_directly_from_cp(x, y):
 
 Here, it's a pure copy of the code in Concrete, and it compiles directly into FHE code!
 
-## Second Implementation with `fhe.bits`
+### Second Implementation with `fhe.bits`
 
 In the [full code](hamming_distance.py), we use a second implementation, which is
 
@@ -60,7 +65,7 @@ This function only works for bit-vectors `x` and `y` (as opposed to other functi
 `fhe.bits` operator to extract the least-significant bit of the addition `x+y`: indeed, this least
 signification bit is exactly `x ^ y`.
 
-## Third Implementation with Concatenation
+### Third Implementation with Concatenation
 
 In the [full code](hamming_distance.py), we use a third implementation, which is
 
@@ -78,7 +83,7 @@ def dist_in_fhe_with_xor_internal(x, y, bitsize_w):
 Here, we concatenate the elements of `x` and `y` (which are of bitsize `bitsize_w`) into a
 `2 * bitsize_w` input, and use a `2 * bitsize_w`-bit programmable bootstrapping.
 
-## Fourth Implementation with `fhe.multivariate`
+### Fourth Implementation with `fhe.multivariate`
 
 In the [full code](hamming_distance.py), we use a fourth implementation, which is
 
@@ -90,7 +95,7 @@ def dist_in_fhe_with_multivariate_internal(x, y):
 
 Here, we use `fhe.multivariate`, which is a function which takes the two inputs `x` and `y`. Under the hood, it's going to be replaced by a `2 * bitsize_w`-bit programmable bootstrapping.
 
-## Execution Time
+### Execution Time Between Two Encrypted Tensors
 
 _All of the following timings were measured on an `hpc7a` machine, with Concrete 2.5.1._
 
@@ -151,3 +156,30 @@ And finally, for 12804-bit vectors, execution times should be:
     dist_in_fhe_with_multivariate_tables on 4 bits: 40.89 seconds
 ```
 
+## Distance Between One Encrypted Tensor and One Clear Tensor
+
+In [this code](hamming_distance_to_clear.py), we propose a simple implementation for the special case
+where one of the vectors (here, `y`) is not encrypted. The function `dist_in_fhe` is based on the
+following idea: `x` is seen as a line-vector of bits, while `y` is seen as a column-vector of bits.
+`x` and `y` follow a simple transform (before the encryption): bits 0 are mapped to -1, while bits 1
+are mapped to 1. Then we just compute the scalar product `u` between mapped `x` and `y`.
+
+Bits which are equal between mapped `x` and `y` will be either (1, 1) or (-1, -1) so corresponding
+impact on the sum of the scalar multiplication is a 1. On the opposite, for bits which are different,
+so (1, -1) or (-1, 1), the impact on the sum of the scalar multiplication is a -1. All in all,
+`u = n - 2 HW(x^y)`, where `n` is the number of bits of `x` (which is the number of bits of `y` too).
+
+In the code, we compute `n - u`, and we divide by 2 after the decryption, which doesn't reduce the
+privacy of the computation.
+
+### Execution Time Between One Encrypted Tensor and One Clear Tensor
+
+This case is really fast, since there is no programmable bootstrapping (PBS) in the code. It's a
+purely levelled FHE circuit.
+
+For 12804-bit vectors, on an `hpc7a` machine, with Concrete 2.7.0, we have:
+
+```
+Computing XOR distance on 12804 bits using algorithm dist_in_fhe, using vectors of 1b cells
+Distance between encrypted vectors done in 0.43 seconds in average
+```
