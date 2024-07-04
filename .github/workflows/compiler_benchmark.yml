@@ -48,7 +48,7 @@ jobs:
           echo "BENCH_DATE=$(date --iso-8601=seconds)" >> "${GITHUB_ENV}"
 
       - name: Fetch submodules
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
           submodules: recursive
@@ -121,7 +121,7 @@ jobs:
           path: ${{ env.RESULTS_FILENAME }}
 
       - name: Checkout Slab repo
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           repository: zama-ai/slab
           path: slab
