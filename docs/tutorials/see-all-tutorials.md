@@ -17,12 +17,13 @@
 
 #### Blog tutorials
 
-* [The Encrypted Game of Life in Python Using Concrete](https://www.zama.ai/post/the-encrypted-game-of-life-using-concrete-python) - November 7, 2023
-* [Encrypted Key-value Database Using Homomorphic Encryption](https://www.zama.ai/post/encrypted-key-value-database-using-homomorphic-encryption) - March 16, 2023
+* [The Encrypted Game of Life in Python Using Concrete](https://www.zama.ai/post/the-encrypted-game-of-life-using-concrete-python) - November 2023
+* [Encrypted Key-value Database Using Homomorphic Encryption](https://www.zama.ai/post/encrypted-key-value-database-using-homomorphic-encryption) - March 2023
 
 #### Video tutorials
-
-* [Compile composable functions with Concrete](https://www.youtube.com/watch?v=TBXDxu2SMr0) - February 22, 2024
-* [How to use dynamic table look-ups using Concrete](https://www.youtube.com/watch?v=1sboqhSeKfs) - October 27, 2023
-* [Dive into Concrete - Zama's Fully Homomorphic Encryption Compiler](https://www.zama.ai/post/video-tutorial-dive-into-concrete-zamas-fully-homomorphic-encryption-compiler) - October 4, 2023
-* [How To Get Started With Concrete - Zama's Fully Homomorphic Encryption Compiler](https://www.zama.ai/post/how-to-started-with-concrete-zama-fully-homomorphic-encryption-compiler)  - July 28, 2023
+* [Compute an XOR distance in FHE using Concrete](https://www.zama.ai/post/video-tutorial-compute-an-xor-distance-in-fhe-using-concrete) - May 2024
+* [Speed up neural networks with approximate rounding using Concrete](https://www.zama.ai/post/video-tutorial-speed-up-neural-networks-with-approximate-rounding-using-concrete) - May 2024
+* [Compile composable functions with Concrete](https://www.youtube.com/watch?v=TBXDxu2SMr0) - February 2024
+* [How to use dynamic table look-ups using Concrete](https://www.youtube.com/watch?v=1sboqhSeKfs) - October 2023
+* [Dive into Concrete - Zama's Fully Homomorphic Encryption Compiler](https://www.zama.ai/post/video-tutorial-dive-into-concrete-zamas-fully-homomorphic-encryption-compiler) - October 2023
+* [How To Get Started With Concrete - Zama's Fully Homomorphic Encryption Compiler](https://www.zama.ai/post/how-to-started-with-concrete-zama-fully-homomorphic-encryption-compiler)  - July 2023
