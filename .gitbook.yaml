@@ -1,11 +1,13 @@
 root: ./docs
 
 redirects:
-  getting-started/fhe_basics: core-features/fhe_basics.md
+  getting-started/fhe_basics: "core-features/fhe_basics.md"
+  getting-started/quick_start: "get-started/quick_start.md"
+  tutorial/floating_points: "core-features/floating_points.md"
+  tutorial/bit_extraction: "core-features/bit_extraction.md"
   getting-started/installing: get-started/installing.md
-  getting-started/quick_start: get-started/quick_start.md
   getting-started/compatibility: get-started/compatibility.md
-  getting-started/terminology_and_structure: get-started/terminology.md
+  getting-started/terminology\_and\_structure: get-started/terminology.md
   tutorial/decorator: compilation/decorator.md
   tutorial/progressbar: execution-analysis/progressbar.md
   tutorial/formatting: execution-analysis/formatting_and_drawing.md
@@ -15,10 +17,8 @@ redirects:
   tutorial/minmax: core-features/minmax.md
   tutorial/bitwise: core-features/bitwise.md
   tutorial/table_lookups: core-features/table_lookups.md
-  tutorial/bit_extraction: core-features/bit_extraction.md
   tutorial/truncating: core-features/truncating.md
   tutorial/rounding: core-features/rounding.md
-  tutorial/floating_points: core-features/floating_points.md
   tutorial/multi_precision: compilation/multi_precision.md
   tutorial/multi_parameters: compilation/multi_parameters.md
   tutorial/simulation: execution-analysis/simulation.md
