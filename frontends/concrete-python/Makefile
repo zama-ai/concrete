@@ -94,6 +94,22 @@ pytest-gpu:
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
+benchmark:
+	export LD_PRELOAD=$(RUNTIME_LIBRARY)
+	export PYTHONPATH=$(NEW_PYTHON_PATH)
+
+	export PROGRESS_SAMPLES=3
+	export PROGRESS_OUTPUT_INDENT=2
+
+	rm -rf progress.json
+	find ./benchmarks/ -name "*.py" | xargs python
+
+process-benchmark-results-for-grafana:
+	python scripts/benchmark/postprocessor.py \
+		--source progress.json \
+		--target progress.processed.json \
+		--path_to_repository ../..
+
 # ==========
 # Formatting
 # ==========

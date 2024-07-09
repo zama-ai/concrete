@@ -1,0 +1,410 @@
+{
+    "database": "concrete_python",
+    "hardware": "lapstation",
+    "project_version": "0.0.0",
+    "branch": "feat/frontend-benchmarks",
+    "insert_date": "2024-07-11T12:03:03+03:00",
+    "commit_date": "2024-07-09T11:21:17+03:00",
+    "points": [
+        {
+            "type": "Compilation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__compilation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 87.74463335673015
+        },
+        {
+            "type": "Complexity",
+            "backend": "cpu",
+            "test": "table-lookup__2b__complexity",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 29944416.0
+        },
+        {
+            "type": "Key Generation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__key-generation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 700.8644739786783
+        },
+        {
+            "type": "Evaluation Key Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__evaluation-key-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 66.96710205078125
+        },
+        {
+            "type": "Input Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__input-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.01000213623046875
+        },
+        {
+            "type": "Output Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__output-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.01000213623046875
+        },
+        {
+            "type": "Encryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__encryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.4201641082763672
+        },
+        {
+            "type": "Evaluation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__evaluation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 23.18238417307536
+        },
+        {
+            "type": "Decryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__2b__decryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.5051215489705404
+        },
+        {
+            "type": "Accuracy",
+            "backend": "cpu",
+            "test": "table-lookup__2b__accuracy",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.0
+        },
+        {
+            "type": "Compilation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__compilation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 85.4336420694987
+        },
+        {
+            "type": "Complexity",
+            "backend": "cpu",
+            "test": "table-lookup__3b__complexity",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 42154798.0
+        },
+        {
+            "type": "Key Generation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__key-generation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 843.8926537831625
+        },
+        {
+            "type": "Evaluation Key Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__evaluation-key-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 70.54327392578125
+        },
+        {
+            "type": "Input Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__input-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.01195526123046875
+        },
+        {
+            "type": "Output Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__output-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.01195526123046875
+        },
+        {
+            "type": "Encryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__encryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.6774574915568035
+        },
+        {
+            "type": "Evaluation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__evaluation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 24.225083986918133
+        },
+        {
+            "type": "Decryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__3b__decryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.5543708801269531
+        },
+        {
+            "type": "Accuracy",
+            "backend": "cpu",
+            "test": "table-lookup__3b__accuracy",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.0
+        },
+        {
+            "type": "Compilation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__compilation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 129.6999454498291
+        },
+        {
+            "type": "Complexity",
+            "backend": "cpu",
+            "test": "table-lookup__4b__complexity",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 61979934.0
+        },
+        {
+            "type": "Key Generation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__key-generation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 918.738603591919
+        },
+        {
+            "type": "Evaluation Key Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__evaluation-key-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 69.21905517578125
+        },
+        {
+            "type": "Input Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__input-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.00804901123046875
+        },
+        {
+            "type": "Output Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__output-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.00804901123046875
+        },
+        {
+            "type": "Encryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__encryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.5019575754801433
+        },
+        {
+            "type": "Evaluation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__evaluation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 26.72608693440755
+        },
+        {
+            "type": "Decryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__4b__decryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.5455970764160156
+        },
+        {
+            "type": "Accuracy",
+            "backend": "cpu",
+            "test": "table-lookup__4b__accuracy",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.0
+        },
+        {
+            "type": "Compilation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__compilation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 87.41084734598796
+        },
+        {
+            "type": "Complexity",
+            "backend": "cpu",
+            "test": "table-lookup__5b__complexity",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 99198195.0
+        },
+        {
+            "type": "Key Generation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__key-generation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1431.9294293721516
+        },
+        {
+            "type": "Evaluation Key Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__evaluation-key-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 109.90655517578125
+        },
+        {
+            "type": "Input Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__input-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.01586151123046875
+        },
+        {
+            "type": "Output Ciphertext Size (MB)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__output-ciphertext-size-mb",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.01586151123046875
+        },
+        {
+            "type": "Encryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__encryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.4292160669962566
+        },
+        {
+            "type": "Evaluation Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__evaluation-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 36.0070546468099
+        },
+        {
+            "type": "Decryption Time (ms)",
+            "backend": "cpu",
+            "test": "table-lookup__5b__decryption-time-ms",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 0.5062898000081381
+        },
+        {
+            "type": "Accuracy",
+            "backend": "cpu",
+            "test": "table-lookup__5b__accuracy",
+            "name": "table-lookup",
+            "class": "",
+            "operator": "",
+            "params": null,
+            "value": 1.0
+        }
+    ]
+}

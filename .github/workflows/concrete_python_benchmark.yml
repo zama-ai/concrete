@@ -1,0 +1,101 @@
+name: Concrete Python Benchmark
+on:
+  workflow_dispatch:
+    inputs:
+      instance_id:
+        description: 'Instance ID'
+        type: string
+      instance_image_id:
+        description: 'Instance AMI ID'
+        type: string
+      instance_type:
+        description: 'Instance product type'
+        type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+      request_id:
+        description: 'Slab request ID'
+        type: string
+
+
+env:
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  GLIB_VER: 2_28
+
+jobs:
+  benchmark-linux-x86:
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    runs-on: ${{ github.event.inputs.runner_name }}
+    steps:
+      - name: Log instance configuration
+        run: |
+          echo "IDs: ${{ inputs.instance_id }}"
+          echo "AMI: ${{ inputs.instance_image_id }}"
+          echo "Type: ${{ inputs.instance_type }}"
+          echo "Request ID: ${{ inputs.request_id }}"
+          echo "User Inputs: ${{ inputs.user_inputs }}"
+
+      - name: Set up GitHub environment
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Benchmark
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        id: build-compiler-bindings
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
+            -e SSH_AUTH_SOCK=/ssh.socket
+            ${{ env.DOCKER_GPU_OPTION }}
+          shell: bash
+          run: |
+            set -e
+
+            rustup toolchain install nightly-2024-07-01
+            rm -rf /build/*
+
+            export PYTHON=${{ format('python{0}', matrix.python-version) }}
+            echo "Using $PYTHON"
+
+            dnf -y install graphviz graphviz-devel
+
+            cd /concrete/frontends/concrete-python
+            make PYTHON=$PYTHON venv
+            source .venv/bin/activate
+
+            cd /concrete/compilers/concrete-compiler/compiler
+            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$(which python) python-bindings
+
+            echo "Debug: ccache statistics (after the build):"
+            ccache -s
+
+            cd /concrete/frontends/concrete-python
+
+            export COMPILER_BUILD_DIRECTORY="/build"
+            make benchmark
+            make process-benchmark-results-for-grafana
+
+            deactivate
+
+      - name: Upload Report
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: progress.json
+          path: frontends/concrete-python/progress.json
+          retention-days: 10
