@@ -111,7 +111,7 @@ result = circuit.decrypt(encrypted_result)
 
 assert result == add(2, 6)
 ```
-*This example is explained in more detail [in this part of the documentation](https://docs.zama.ai/concrete/getting-started/quick_start).*
+*This example is explained in more detail [in this part of the documentation](https://docs.zama.ai/concrete/get-started/quick_start).*
 
 <p align="right">
   <a href="#about" > ↑ Back to top </a>

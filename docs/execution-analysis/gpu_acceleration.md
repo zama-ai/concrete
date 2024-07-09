@@ -5,14 +5,14 @@ This document explains how to use GPU accelerations with Concrete.
 Concrete supports acceleration using one or more GPUs.
 
 {% hint style="info" %}
-This version is not available on [pypi.org](pypi.org/project/concrete-python), which only hosts wheels with CPU support. 
+This version is not available on [pypi.org](https://pypi.org/project/concrete-python), which only hosts wheels with CPU support. 
 {% endhint %}
 
-To use GPU acceleration, install the GPU/CUDA wheel from our [Zama public PyPI repository] (https://pypi.zama.ai) using the following command:
+To use GPU acceleration, install the GPU/CUDA wheel from our [Zama public PyPI repository](https://pypi.zama.ai) using the following command:
 
 `pip install concrete-python  --index-url https://pypi.zama.ai/gpu`.
 
-After installing the GPU/CUDA wheel, you must [configure] ((../guides/configure.md)) the FHE program compilation to enable GPU offloading using the `use_gpu` option.
+After installing the GPU/CUDA wheel, you must [configure](../guides/configure.md) the FHE program compilation to enable GPU offloading using the `use_gpu` option.
 
 {% hint style="info" %}
 Our GPU wheels are built with CUDA 11.8 and should be compatible with higher versions of CUDA.
