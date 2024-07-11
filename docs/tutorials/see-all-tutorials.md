@@ -14,6 +14,7 @@
 * [Game of Life](../../frontends/concrete-python/examples/game_of_life/game_of_life.md)
 * [XOR distance](../../frontends/concrete-python/examples/xor_distance/xor_distance.md)
 * [SHA1 with Modules](../../frontends/concrete-python/examples/sha1/sha1.md)
+* [Privacy-Preserving Inventory Matching System](../../frontends/concrete-python/examples/prime-match/prime-match.md)
 
 #### Blog tutorials
 
