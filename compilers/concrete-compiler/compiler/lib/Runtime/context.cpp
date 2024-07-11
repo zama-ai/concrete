@@ -50,6 +50,8 @@ RuntimeContext::RuntimeContext(ServerKeyset serverKeyset)
       bsk_gpu_mutex.push_back(std::make_unique<std::mutex>());
       ksk_gpu_mutex.push_back(std::make_unique<std::mutex>());
     }
+  } else {
+    num_devices = 0;
   }
 #endif
 }
