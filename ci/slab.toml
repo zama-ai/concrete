@@ -1,5 +1,5 @@
 # This is the new version of Slab that handles multi backend providers.
-[aws.backend.m7i-cpu-bench]
+[backend.aws.m7i-cpu-bench]
 region = "eu-west-1"
 image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
 instance_type = "m7i.48xlarge"
