@@ -31,7 +31,6 @@ COPY --from=ghcr.io/zama-ai/hpx:latest /hpx /hpx
 ENV HPX_INSTALL_DIR=/hpx/build
 # Setup CUDA
 COPY --from=ghcr.io/zama-ai/cuda:11-8 /usr/local/cuda-11.8/ /usr/local/cuda-11.8/
-COPY --from=ghcr.io/zama-ai/cuda:11-8 /usr/lib64/libcuda.so* /usr/lib64/
 ENV PATH "$PATH:/usr/local/cuda-11.8/bin"
 # Set the python path. Options: [cp37-cp37m, cp38-cp38, cp39-cp39, cp310-cp310]
 # Links and env would be available to use the appropriate python version
