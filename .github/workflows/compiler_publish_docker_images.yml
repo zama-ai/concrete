@@ -62,7 +62,6 @@ jobs:
       - name: Build Image
         run: |
           DOCKER_BUILDKIT=1 docker build --no-cache \
-            --ssh default=${{ env.SSH_AUTH_SOCK }} \
             --label "commit-sha=${{ github.sha }}" -t ${{ matrix.image }} -f ${{ matrix.dockerfile }} .
 
       - name: Tag and Publish Image

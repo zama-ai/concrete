@@ -44,7 +44,7 @@ RUN pip install numpy pybind11==2.8 PyYAML pytest wheel auditwheel
 COPY / /workdir
 WORKDIR /workdir/compilers/concrete-compiler/compiler
 RUN mkdir -p /build
-RUN --mount=type=ssh make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
+RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
     Python3_EXECUTABLE=${PYTHON_EXEC} \
     concretecompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"
