@@ -141,3 +141,7 @@ dmypy.json
 
 # fhe keys
 .keys
+
+# progress tracker
+progress.json
+progress.processed.json

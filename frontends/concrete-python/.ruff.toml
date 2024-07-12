@@ -20,3 +20,5 @@ ignore = [
 "concrete/fhe/mlir/converter.py" = ["ARG002", "B011", "F403", "F405"]
 "examples/**" = ["PLR2004"]
 "tests/**" = ["PLR2004", "PLW0603", "SIM300", "S311"]
+"benchmarks/**" = ["S311", "B023"]
+"scripts/**" = ["DTZ005"]
