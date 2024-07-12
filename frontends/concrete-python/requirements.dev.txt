@@ -16,3 +16,5 @@ ruff==0.0.259
 auditwheel==5.3.0; sys_platform == 'linux'
 delocate==0.10.4; sys_platform == 'darwin'
 wheel==0.40.0
+
+py-progress-tracker==0.7.0

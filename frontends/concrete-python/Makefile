@@ -94,6 +94,25 @@ pytest-gpu:
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
+benchmark:
+	export LD_PRELOAD=$(RUNTIME_LIBRARY)
+	export PYTHONPATH=$(NEW_PYTHON_PATH)
+
+	export PROGRESS_SAMPLES=3
+	export PROGRESS_OUTPUT_INDENT=2
+
+	rm -rf progress.json
+	find ./benchmarks/ -name "*.py" | xargs python
+
+process-benchmark-results-for-grafana:
+	export LD_PRELOAD=$(RUNTIME_LIBRARY)
+	export PYTHONPATH=$(NEW_PYTHON_PATH)
+
+	python scripts/benchmark/postprocessor.py \
+		--source progress.json \
+		--target progress.processed.json \
+		--path_to_repository ../..
+
 # ==========
 # Formatting
 # ==========
@@ -103,7 +122,8 @@ format:
 		--dir concrete \
 		--dir examples \
 		--dir scripts \
-		--dir tests
+		--dir tests \
+		--dir benchmarks
 
 sanitize-notebooks:
 	$(PYTHON) scripts/notebook/sanitizer.py docs
@@ -119,13 +139,14 @@ check-format:
 		--dir concrete \
 		--dir examples \
 		--dir scripts \
-		--dir tests
+		--dir tests \
+        --dir benchmarks
 
 check-sanitize-notebooks:
 	$(PYTHON) scripts/notebook/sanitizer.py docs --check
 
 mypy:
-	mypy concrete examples scripts tests --ignore-missing-imports
+	mypy concrete examples scripts tests benchmarks --ignore-missing-imports
 
 pydocstyle:
 	pydocstyle concrete --convention google --add-ignore=D1,D200,D202,D212,D402 --add-select=D401
@@ -135,9 +156,10 @@ pylint:
 	pylint --rcfile=.pylintrc examples --disable=C0103,C0114,C0115,C0116,E0401,R1721
 	pylint --rcfile=.pylintrc scripts
 	pylint --rcfile=.pylintrc tests --disable=C0301,W0108
+	pylint --rcfile=.pylintrc benchmarks
 
 ruff:
-	ruff concrete/ examples/ scripts/ tests/
+	ruff concrete/ examples/ scripts/ tests/ benchmarks/
 
 pcc: check-format check-sanitize-notebooks mypy pydocstyle pylint ruff
 
