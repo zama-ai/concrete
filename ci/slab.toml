@@ -33,7 +33,7 @@ security_group= ["sg-017afab1f328af917", ]
 # Docker is well configured for test inside docker in this AMI
 [profile.gpu-test]
 region = "us-east-1"
-image_id = "ami-0c4773f5626d919b6"
+image_id = "ami-0257c6ad39f902b5e"
 instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
 security_group= ["sg-017afab1f328af917", ]
