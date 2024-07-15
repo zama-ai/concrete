@@ -43,6 +43,12 @@ x_dec = CounterFhe.inc.decrypt(x_enc)
 assert x_dec == 15
 ```
 
+The keyset can be generated beforehand by calling `keygen()` method on the compiled module:
+
+```python
+CounterFhe.keygen()
+```
+
 ## Multi inputs, multi outputs
 
 Composition is not limited to single input / single output. Here is an example that computes the 10 first elements of the Fibonacci sequence in FHE:
