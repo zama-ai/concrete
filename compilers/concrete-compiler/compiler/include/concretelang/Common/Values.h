@@ -47,10 +47,7 @@ template <typename T> struct Tensor {
     for (auto dim : dimensions) {
       length *= dim;
     }
-    auto values = std::vector<T>(length);
-    for (auto &val : values) {
-      *val = 0;
-    }
+    auto values = std::vector<T>(length, 0);
     return Tensor{values, dimensions};
   }
 
