@@ -10,3 +10,6 @@ This document provides clear definitions of key concepts used in **Concrete** fr
 
 * **Circuit:** The result of compilation. A circuit includes both client and server components. It has methods for various operations, such as printing and evaluation.
 
+* **Table Lookup (TLU):** TLU stands for instructions in the form of y = T[i]. In FHE, this operation is performed with Programmable Bootstrapping, which is the equivalent operation on encrypted values."
+
+* **Programmable Bootstrapping (PBS):** PBS is equivalent to table lookup `y = T[i]` on encrypted values, which means that the inputs `i` and the outputs `y` are encrypted, but the table `T` is not encrypted.
