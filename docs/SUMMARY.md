@@ -7,15 +7,15 @@
 * [What is Concrete?](get-started/readme.md)
 * [Installation](get-started/installing.md)
 * [Quick start](get-started/quick_start.md)
-* [Compatibility](get-started/compatibility.md)
+* [Limitations](get-started/limitations.md)
 * [Terminology](get-started/terminology.md)
 
-## Core features
+## Operations
 
 * [Overview](core-features/fhe_basics.md)
-* [Table lookups (basics)](core-features/table_lookups.md)
+* [Table Lookups basics](core-features/table_lookups.md)
 * [Non-linear operations](core-features/non_linear_operations.md)
-* Advanced features
+* Other operations
   * [Bit extraction](core-features/bit_extraction.md)
   * [Common tips](core-features/workarounds.md)
   * [Extensions](core-features/extensions.md)
@@ -57,12 +57,13 @@
 ## References
 
 * [API](dev/api/README.md)
+* [Supported operations](dev/compatibility.md)
 
 ## Explanations
 
 * [Compiler workflow](dev/compilation/compiler_workflow.md)
-* Compiler internals
-  * [Table lookups](core-features/table_lookups_advanced.md)
+* Advanced features
+  * [Table Lookups advanced](core-features/table_lookups_advanced.md)
   * [Rounding](core-features/rounding.md)
   * [Truncating](core-features/truncating.md)
   * [Floating points](core-features/floating_points.md)
