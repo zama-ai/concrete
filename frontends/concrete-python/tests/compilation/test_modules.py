@@ -602,3 +602,74 @@ def test_simulate_encrypt_run_decrypt(helpers):
     # Make sure computation happened in simulation.
     assert isinstance(module.dec.runtime, SimulationRt)
     assert isinstance(encrypted_result, int)
+
+
+def test_trace_wire_single_input_output(helpers):
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def a(x):
+            return (x * 2) % 20
+
+        @fhe.function({"x": "encrypted"})
+        def b(x):
+            return (x * 2) % 50
+
+        @fhe.function({"x": "encrypted"})
+        def c(x):
+            return (x * 2) % 100
+
+        composition = fhe.Wired([])
+
+    with Module.trace_wires():
+        Module.c(Module.b(Module.a(66)))
+
+    module = Module.compile(
+        {
+            "a": [np.random.randint(1, 20, size=()) for _ in range(100)],
+            "b": [np.random.randint(1, 50, size=()) for _ in range(100)],
+            "c": [np.random.randint(1, 100, size=()) for _ in range(100)],
+        },
+        p_error=0.01,
+    )
+
+    inp_enc = module.a.encrypt(5)
+    a_enc = module.a.run(inp_enc)
+    assert module.a.decrypt(a_enc) == 10
+    b_enc = module.b.run(a_enc)
+    assert module.b.decrypt(b_enc) == 20
+    c_enc = module.c.run(b_enc)
+    assert module.c.decrypt(c_enc) == 40
+
+
+def test_trace_wires_multi_inputs_outputs(helpers):
+    @fhe.module()
+    class Module:
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def a(x, y):
+            return ((x+y) * 2) % 20, ((x-y) * 2) % 20
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def b(x, y):
+            return ((x+y) * 2) % 20, ((x-y) * 2) % 20
+
+        composition = fhe.Wired([])
+
+    with Module.trace_wires():
+        output = Module.a(66, 77)
+        Module.b(*output)
+
+    module = Module.compile(
+        {
+            "a": [(np.random.randint(1, 20, size=()), np.random.randint(1, 20, size=())) for _ in range(100)],
+            "b": [(np.random.randint(1, 50, size=()), np.random.randint(1, 50, size=())) for _ in range(100)],
+        },
+        p_error=0.01,
+    )
+
+    inp_enc = module.a.encrypt(5, 1)
+    a_enc = module.a.run(*inp_enc)
+    assert module.a.decrypt(a_enc) == (12, 8)
+    b_enc = module.b.run(*a_enc)
+    assert module.b.decrypt(b_enc) == (0, 8)
