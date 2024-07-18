@@ -50,6 +50,18 @@ typedef struct Uint128 {
   uint8_t little_endian_bytes[16];
 } Uint128;
 
+typedef struct TfhersFheIntDescription {
+  size_t width;
+  bool is_signed;
+  size_t lwe_size;
+  size_t n_cts;
+  size_t degree;
+  size_t noise_level;
+  size_t message_modulus;
+  size_t carry_modulus;
+  bool ks_first;
+} TfhersFheIntDescription;
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -355,6 +367,11 @@ void concrete_cpu_keyswitch_lwe_ciphertext_u64(uint64_t *ct_out,
                                                size_t input_dimension,
                                                size_t output_dimension);
 
+size_t concrete_cpu_lwe_array_to_tfhers_uint8(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *fheuint_buffer,
+                                              size_t fheuint_buffer_size,
+                                              struct TfhersFheIntDescription fheuint_desc);
+
 size_t concrete_cpu_lwe_ciphertext_size_u64(size_t lwe_dimension);
 
 size_t concrete_cpu_lwe_packing_keyswitch_key_size(size_t output_glwe_dimension,
@@ -380,6 +397,13 @@ size_t concrete_cpu_seeded_bootstrap_key_size_u64(size_t decomposition_level_cou
 
 size_t concrete_cpu_seeded_keyswitch_key_size_u64(size_t decomposition_level_count,
                                                   size_t input_dimension);
+
+struct TfhersFheIntDescription concrete_cpu_tfhers_uint8_description(const uint8_t *serialized_data_ptr,
+                                                                     size_t serialized_data_len);
+
+int64_t concrete_cpu_tfhers_uint8_to_lwe_array(const uint8_t *serialized_data_ptr,
+                                               size_t serialized_data_len,
+                                               uint64_t *lwe_vec_buffer);
 
 void simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(const uint64_t *lwe_list_in,
                                                                               uint64_t *lwe_list_out,
