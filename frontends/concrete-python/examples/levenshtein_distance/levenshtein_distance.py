@@ -294,7 +294,7 @@ class LevenshsteinModule:
     #
     # There is a single output of equal, it goes to input 0 of mix
     composition = fhe.Wired(
-        [
+        {
             fhe.Wire(fhe.AllOutputs(equal), fhe.Input(mix, 0)),
             fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 1)),
             fhe.Wire(fhe.AllOutputs(mix), fhe.Input(mix, 2)),
@@ -304,7 +304,7 @@ class LevenshsteinModule:
             fhe.Wire(fhe.AllOutputs(constant), fhe.Input(mix, 2)),
             fhe.Wire(fhe.AllOutputs(constant), fhe.Input(mix, 3)),
             fhe.Wire(fhe.AllOutputs(constant), fhe.Input(mix, 4)),
-        ]
+        }
     )
 
 

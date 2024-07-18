@@ -18,6 +18,7 @@ from typing import (
     NamedTuple,
     Optional,
     Protocol,
+    Set,
     Tuple,
     Union,
     runtime_checkable,
@@ -55,6 +56,7 @@ class FunctionDef:
     graph: Optional[Graph]
     _parameter_values: Dict[str, ValueDescription]
     location: str
+    _trace_wires: Optional[Set["Wire"]]
 
     def __init__(
         self,
@@ -115,6 +117,7 @@ class FunctionDef:
         self.location = (
             f"{self.function.__code__.co_filename}:{self.function.__code__.co_firstlineno}"
         )
+        self._trace_wires = None
 
     def trace(
         self,
@@ -237,20 +240,84 @@ class FunctionDef:
         np.integer,
         np.floating,
         np.ndarray,
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+        "TracedOutput",
+        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, "TracedOutput"], ...],
     ]:
         if len(kwargs) != 0:
             message = f"Calling function '{self.function.__name__}' with kwargs is not supported"
             raise RuntimeError(message)
 
-        sample = args[0] if len(args) == 1 else args
+        # The actual call to the function graph object gets wrapped between two calls to methods
+        # that allows to trace the wiring.
+        #
+        # When activated:
+        #    + `_trace_wire_outputs` method wraps ciphered outputs into a `TracedOutput` object,
+        #      along with its origin information.
+        #    + `_trace_wire_inputs` method unwraps the `TracedOutput`, records the wiring, and
+        #      returns unwrapped values for execution.
+        traced_inputs = self._trace_wires_inputs(*args)
 
         if self.graph is None:
-            self.trace(sample)
+            # Note that the tracing must be executed on the `traced_inputs` which are unwrapped
+            # from the potential `TracedOutput` added by wire tracing.
+            self.trace(traced_inputs)
             assert self.graph is not None
 
-        self.inputset.append(sample)
-        return self.graph(*args)
+        self.inputset.append(traced_inputs)
+
+        if isinstance(traced_inputs, tuple):
+            raw_outputs = self.graph(*traced_inputs)
+        else:
+            raw_outputs = self.graph(traced_inputs)
+
+        if isinstance(raw_outputs, tuple):
+            traced_output = self._trace_wires_outputs(*raw_outputs)
+        else:
+            traced_output = self._trace_wires_outputs(raw_outputs)
+
+        return traced_output
+
+    def _trace_wires_inputs(
+        self,
+        *args: Any,
+    ) -> Union[
+        np.bool_,
+        np.integer,
+        np.floating,
+        np.ndarray,
+        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+    ]:
+        # If the _trace_wires property points to a wire list, we use wire tracing.
+        if self._trace_wires is None:
+            return args[0] if len(args) == 1 else args
+
+        for i, arg in enumerate(args):
+            if isinstance(arg, TracedOutput):
+                # Wire gets added to the wire list
+                self._trace_wires.add(Wire(arg.output_info, Input(self, i)))
+
+        output = tuple(arg.returned_value if isinstance(arg, TracedOutput) else arg for arg in args)
+
+        return output[0] if len(output) == 1 else output
+
+    def _trace_wires_outputs(
+        self,
+        *args: Any,
+    ) -> Union[
+        np.bool_,
+        np.integer,
+        np.floating,
+        np.ndarray,
+        "TracedOutput",
+        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, "TracedOutput"], ...],
+    ]:
+        # If the _trace_wires property points to a wire list, we use wire tracing.
+        if self._trace_wires is None:
+            return args[0] if len(args) == 1 else args
+
+        output = tuple(TracedOutput(Output(self, i), arg) for (i, arg) in enumerate(args))
+
+        return output[0] if len(output) == 1 else output
 
 
 class NotComposable:
@@ -402,7 +469,7 @@ class Wired(NamedTuple):
     Composition policy which allows the forwarding of certain outputs to certain inputs.
     """
 
-    wires: List[Wire]
+    wires: Set[Wire] = set()
 
     def get_rules_iter(self, _) -> Iterable[CompositionRule]:
         """
@@ -618,6 +685,39 @@ class DebugManager:
                 pretty(module.statistics)
 
 
+class TracedOutput(NamedTuple):
+    """
+    A wrapper type used to trace wiring.
+
+    Allows to tag an output value coming from an other module function, and binds it with
+    information about its origin.
+    """
+
+    output_info: Output
+    returned_value: Any
+
+
+class WireTracingContextManager:
+    """
+    A context manager returned by the `wire_pipeline` method.
+
+    Activates wire tracing and yields an inputset that can be iterated on for tracing.
+    """
+
+    def __init__(self, module, inputset):
+        self.module = module
+        self.inputset = inputset
+
+    def __enter__(self):
+        for func in self.module.functions.values():
+            func._trace_wires = self.module.composition.wires
+        return self.inputset
+
+    def __exit__(self, _exc_type, _exc_value, _exc_tb):
+        for func in self.module.functions.values():
+            func._trace_wires = None
+
+
 class ModuleCompiler:
     """
     Compiler class for multiple functions, to glue the compilation pipeline.
@@ -636,6 +736,13 @@ class ModuleCompiler:
         self.functions = {function.name: function for function in functions}
         self.compilation_context = CompilationContext.new()
         self.composition = composition
+
+    def wire_pipeline(self, inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]]):
+        """
+        Return a context manager that traces wires automatically.
+        """
+        self.composition = Wired(set())
+        return WireTracingContextManager(self, inputset)
 
     def compile(
         self,

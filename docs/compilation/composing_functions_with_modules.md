@@ -1,6 +1,6 @@
 # Composing functions with modules
 
-This document explains how to compile Fully Homomorphic Encryption (FHE) modules containing multiple functions using **Concrete**. 
+This document explains how to compile Fully Homomorphic Encryption (FHE) modules containing multiple functions using **Concrete**.
 
 Deploying a server that contains many compatible functions is important for some use cases. With **Concrete**, you can compile FHE modules containing as many functions as needed.
 
@@ -115,7 +115,7 @@ Encrypting initial values
 |     9     || 144       | 144       | 233       | 233       |
 ```
 
-## Iterations 
+## Iterations
 
 Modules support iteration with cleartext iterands to some extent, particularly for loops structured like this:
 
@@ -231,6 +231,8 @@ You have 3 options for the `composition` attribute:
 
 3. **`fhe.Wired`**: This policy allows you to define custom composition rules. You can specify which outputs of a function can be forwarded to which inputs of another function.
 
+Note that, in case of complex composition logic another option is to rely on [[composing_functions_with_modules#Automatic module tracing]] to automatically derive the composition from examples.
+
     Here is an example:
 ```python
 from concrete import fhe
@@ -249,9 +251,9 @@ class Collatz:
         return ans, is_one
 
     composition = Wired(
-        [
+        {
             Wire(Output(collatz, 0), Input(collatz, 0)
-        ]
+        }
     )
 ```
 
@@ -260,19 +262,69 @@ In this case, the policy states that the first output of the `collatz` function 
 You can use the `fhe.Wire` between any two functions. It is also possible to define wires  with `fhe.AllInputs` and `fhe.AllOutputs` ends. For instance, in the previous example:
 ```python
     composition = Wired(
-        [
+        {
             Wire(AllOutputs(collatz), AllInputs(collatz))
-        ]
+        }
     )
 ```
 
 This policy would be equivalent to using the `fhe.AllComposable` policy.
 
-## Current limitations
+## Automatic module tracing
 
-Depending on the functions, composition may add a significant overhead compared to a non-composable version. 
+When a module's composition logic is static and straightforward, declaratively defining a `Wired` policy is usually the simplest approach. However, in cases where modules have more complex or dynamic composition logic, deriving an accurate list of `Wire` components to be used in the policy can become challenging.
 
-To be composable, a function must meet the following condition: every output that can be forwarded as input (according to the composition policy) must contain a noise-refreshing operation. Since adding a noise refresh has a noticeable impact on performance, Concrete does not automatically include it. 
+Another related problem is defining different function input-sets. When the composition logic is simple, these can be provided manually. But as the composition gets more convoluted, computing a consistent ensemble of inputsets for a module may become intractable.
+
+For those advanced cases, you can derive the composition rules and the input-sets automatically from user-provided examples. Consider the following module:
+```python
+from concrete import fhe
+from fhe import Wired
+
+@fhe.module()
+class MyModule:
+    @fhe.function({"x": "encrypted"})
+    def increment(x):
+        return (x + 1) % 100
+
+    @fhe.function({"x": "encrypted"})
+    def decrement(x):
+        return (x - 1) % 100
+
+    @fhe.function({"x": "encrypted"})
+    def decimate(x):
+        return (x / 10) % 100
+
+    composition = fhe.Wired()
+```
+
+You can use the `wire_pipeline` context manager to activate the module tracing functionality:
+```python
+# A single inputset used during tracing is defined
+inputset = [np.random.randint(1, 100, size=()) for _ in range(100)]
+
+# The inputset is passed to the `wire_pipeline` method, which itself returns an iterator over the inputset samples.
+with MyModule.wire_pipeline(inputset) as samples_iter:
+
+    # The inputset is iterated over
+    for s in samples_iter:
+
+        # Here we provide an example of how we expect the module functions to be used at runtime in fhe.
+        Module.increment(Module.decimate(Module.decrement(s)))
+
+# It is not needed to provide any inputsets to the `compile` method after tracing the wires, since those were already computed automatically during the module tracing.
+module = MyModule.compile(
+    p_error=0.01,
+)
+```
+
+Note that any dynamic branching is possible during module tracing. However, for complex runtime logic, ensure that the input set provides sufficient examples to cover all potential code paths.
+
+## Current Limitations
+
+Depending on the functions, composition may add a significant overhead compared to a non-composable version.
+
+To be composable, a function must meet the following condition: every output that can be forwarded as input (according to the composition policy) must contain a noise-refreshing operation. Since adding a noise refresh has a noticeable impact on performance, Concrete does not automatically include it.
 
 For instance, to implement a function that doubles an encrypted value, you might write:
 
@@ -283,18 +335,14 @@ class Doubler:
     def double(counter):
        return counter * 2
 ```
-This function is valid with the `fhe.NotComposable` policy. However, if compiled with the `fhe.AllComposable` policy, it will raise a `RuntimeError: Program cannot be composed: ...`, indicating that an extra Programmable Bootstrapping (PBS) step must be added. 
+This function is valid with the `fhe.NotComposable` policy. However, if compiled with the `fhe.AllComposable` policy, it will raise a `RuntimeError: Program cannot be composed: ...`, indicating that an extra Programmable Bootstrapping (PBS) step must be added.
 
 To resolve this and make the circuit valid, add a PBS at the end of the circuit:
 
 ```python
-def noise_reset(x):
-   return fhe.univariate(lambda x: x)(x)
-
 @fhe.module()
 class Doubler:
     @fhe.compiler({"counter": "encrypted"})
     def double(counter):
-       return noise_reset(counter * 2)
+       return fhe.refresh(counter * 2)
 ```
-
