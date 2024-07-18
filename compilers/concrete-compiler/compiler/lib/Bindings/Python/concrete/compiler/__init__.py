@@ -33,6 +33,10 @@ from .library_lambda import LibraryLambda
 from .client_support import ClientSupport
 from .library_support import LibrarySupport
 from .evaluation_keys import EvaluationKeys
+from .tfhers_int import (
+    TfhersExporter,
+    TfhersFheIntDescription,
+)
 from .value import Value
 from .value_decrypter import ValueDecrypter
 from .value_exporter import ValueExporter

@@ -21,6 +21,7 @@
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Common/Transformers.h"
 #include "concretelang/Common/Values.h"
+#include "llvm/ADT/ArrayRef.h"
 
 using concretelang::error::Result;
 using concretelang::keysets::ClientKeyset;
@@ -32,6 +33,13 @@ using concretelang::values::Value;
 
 namespace concretelang {
 namespace clientlib {
+
+Result<TransportValue>
+importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8);
+Result<std::vector<uint8_t>> exportTfhersFheUint8(TransportValue value,
+                                                  TfhersFheIntDescription info);
+Result<TfhersFheIntDescription>
+getTfhersFheUint8Description(llvm::ArrayRef<uint8_t> serializedFheUint8);
 
 class ClientCircuit {
 
