@@ -486,10 +486,10 @@ def test_composition_policy_wires():
             return (x + y), (x - y)
 
         composition = fhe.Wired(
-            [
+            {
                 fhe.Wire(fhe.AllOutputs(add_sub), fhe.AllInputs(add_sub)),
                 fhe.Wire(fhe.AllOutputs(add_sub), fhe.Input(square, 0)),
-            ]
+            }
         )
 
     assert isinstance(Module.composition, fhe.CompositionPolicy)
@@ -508,9 +508,9 @@ def test_composition_wired_enhances_complexity():
             return (x * 2) % 200
 
         composition = fhe.Wired(
-            [
+            {
                 fhe.Wire(fhe.Output(_1, 0), fhe.Input(_2, 0)),
-            ]
+            }
         )
 
     module1 = Module1.compile(
@@ -558,10 +558,10 @@ def test_composition_wired_compilation():
             return (x * 2) % 100
 
         composition = fhe.Wired(
-            [
+            {
                 fhe.Wire(fhe.Output(a, 0), fhe.Input(b, 0)),
                 fhe.Wire(fhe.Output(b, 0), fhe.Input(c, 0)),
-            ]
+            }
         )
 
     module = Module.compile(
@@ -718,3 +718,79 @@ def test_client_server_api(helpers):
             output = client.decrypt(deserialized_result, function_name="inc")
 
             assert output == 11
+
+
+def test_trace_wire_single_input_output(helpers):
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def a(x):
+            return (x * 2) % 20
+
+        @fhe.function({"x": "encrypted"})
+        def b(x):
+            return (x * 2) % 50
+
+        @fhe.function({"x": "encrypted"})
+        def c(x):
+            return (x * 2) % 100
+
+        composition = fhe.Wired()
+
+    # `wire_pipeline` takes an inputset as input, activates a context in which wiring is recorded, and returns an iterator that can be used inside of the context to iterate over samples.
+    with Module.wire_pipeline([np.random.randint(1, 20, size=()) for _ in range(100)]) as samples:
+        for s in samples:
+            Module.c(Module.b(Module.a(s)))
+
+    assert len(Module.composition.wires) == 2
+    assert fhe.Wire(fhe.Output(Module.a, 0), fhe.Input(Module.b, 0)) in Module.composition.wires
+    assert fhe.Wire(fhe.Output(Module.b, 0), fhe.Input(Module.c, 0)) in Module.composition.wires
+
+    module = Module.compile(
+        p_error=0.01,
+    )
+
+    inp_enc = module.a.encrypt(5)
+    a_enc = module.a.run(inp_enc)
+    assert module.a.decrypt(a_enc) == 10
+    b_enc = module.b.run(a_enc)
+    assert module.b.decrypt(b_enc) == 20
+    c_enc = module.c.run(b_enc)
+    assert module.c.decrypt(c_enc) == 40
+
+
+def test_trace_wires_multi_inputs_outputs(helpers):
+    @fhe.module()
+    class Module:
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def a(x, y):
+            return ((x + y) * 2) % 20, ((x - y) * 2) % 20
+
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def b(x, y):
+            return ((x + y) * 2) % 20, ((x - y) * 2) % 20
+
+        composition = fhe.Wired()
+
+    # `wire_pipeline` takes an inputset as input, activates a context in which wiring is recorded, and returns an iterator that can be used inside of the context to iterate over samples.
+    with Module.wire_pipeline(
+        [(np.random.randint(1, 20, size=()), np.random.randint(1, 20, size=())) for _ in range(100)]
+    ) as samples:
+        for s in samples:
+            output = Module.a(s[0], s[1])
+            Module.b(*output)
+
+    assert len(Module.composition.wires) == 2
+    assert fhe.Wire(fhe.Output(Module.a, 0), fhe.Input(Module.b, 0)) in Module.composition.wires
+    assert fhe.Wire(fhe.Output(Module.a, 1), fhe.Input(Module.b, 1)) in Module.composition.wires
+
+    module = Module.compile(
+        p_error=0.01,
+    )
+
+    inp_enc = module.a.encrypt(5, 1)
+    a_enc = module.a.run(*inp_enc)
+    assert module.a.decrypt(a_enc) == (12, 8)
+    b_enc = module.b.run(*a_enc)
+    assert module.b.decrypt(b_enc) == (0, 8)
