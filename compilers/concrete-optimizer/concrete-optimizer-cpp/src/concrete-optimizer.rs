@@ -1,3 +1,6 @@
+#![allow(clippy::boxed_local)]
+#![allow(clippy::too_many_arguments)]
+
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
 use concrete_optimizer::config::ProcessingUnit;
@@ -612,12 +615,19 @@ impl Dag {
 pub struct DagBuilder<'dag>(unparametrized::DagBuilder<'dag>);
 
 impl<'dag> DagBuilder<'dag> {
-    fn add_input(&mut self, out_precision: Precision, out_shape: &[u64]) -> ffi::OperatorIndex {
+    fn add_input(
+        &mut self,
+        out_precision: Precision,
+        out_shape: &[u64],
+        location: &Location,
+    ) -> ffi::OperatorIndex {
         let out_shape = Shape {
             dimensions_size: out_shape.to_owned(),
         };
 
-        self.0.add_input(out_precision, out_shape).into()
+        self.0
+            .add_input(out_precision, out_shape, location.0.clone())
+            .into()
     }
 
     fn add_lut(
@@ -625,12 +635,15 @@ impl<'dag> DagBuilder<'dag> {
         input: ffi::OperatorIndex,
         table: &[u64],
         out_precision: Precision,
+        location: &Location,
     ) -> ffi::OperatorIndex {
         let table = FunctionTable {
             values: table.to_owned(),
         };
 
-        self.0.add_lut(input.into(), table, out_precision).into()
+        self.0
+            .add_lut(input.into(), table, out_precision, location.0.clone())
+            .into()
     }
 
     #[allow(clippy::boxed_local)]
@@ -638,10 +651,11 @@ impl<'dag> DagBuilder<'dag> {
         &mut self,
         inputs: &[ffi::OperatorIndex],
         weights: Box<Weights>,
+        location: &Location,
     ) -> ffi::OperatorIndex {
         let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
 
-        self.0.add_dot(inputs, weights.0).into()
+        self.0.add_dot(inputs, weights.0, location.0.clone()).into()
     }
 
     fn add_levelled_op(
@@ -652,6 +666,7 @@ impl<'dag> DagBuilder<'dag> {
         weights: &[f64],
         out_shape: &[u64],
         comment: &str,
+        location: &Location,
     ) -> ffi::OperatorIndex {
         debug_assert!(weights.len() == inputs.len());
         let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
@@ -666,7 +681,14 @@ impl<'dag> DagBuilder<'dag> {
         };
 
         self.0
-            .add_levelled_op(inputs, complexity, weights, out_shape, comment)
+            .add_levelled_op(
+                inputs,
+                complexity,
+                weights,
+                out_shape,
+                comment,
+                location.0.clone(),
+            )
             .into()
     }
 
@@ -674,16 +696,22 @@ impl<'dag> DagBuilder<'dag> {
         &mut self,
         input: ffi::OperatorIndex,
         rounded_precision: Precision,
+        location: &Location,
     ) -> ffi::OperatorIndex {
-        self.0.add_round_op(input.into(), rounded_precision).into()
+        self.0
+            .add_round_op(input.into(), rounded_precision, location.0.clone())
+            .into()
     }
 
     fn add_unsafe_cast_op(
         &mut self,
         input: ffi::OperatorIndex,
         new_precision: Precision,
+        location: &Location,
     ) -> ffi::OperatorIndex {
-        self.0.add_unsafe_cast(input.into(), new_precision).into()
+        self.0
+            .add_unsafe_cast(input.into(), new_precision, location.0.clone())
+            .into()
     }
 
     fn tag_operator_as_output(&mut self, op: ffi::OperatorIndex) {
@@ -692,6 +720,30 @@ impl<'dag> DagBuilder<'dag> {
 
     fn dump(&self) -> String {
         format!("{}", self.0.get_circuit())
+    }
+}
+
+#[derive(Clone)]
+pub struct Location(operator::Location);
+
+fn location_unknown() -> Box<Location> {
+    Box::new(Location(operator::Location::Unknown))
+}
+
+fn location_from_string(string: &str) -> Box<Location> {
+    let location: Vec<&str> = string.split(':').collect();
+    match location[..] {
+        [file] => Box::new(Location(operator::Location::File(file.into()))),
+        [file, line] => Box::new(Location(operator::Location::Line(
+            file.into(),
+            line.parse().unwrap(),
+        ))),
+        [file, line, column] => Box::new(Location(operator::Location::LineColumn(
+            file.into(),
+            line.parse().unwrap(),
+            column.parse().unwrap(),
+        ))),
+        _ => Box::new(Location(operator::Location::Unknown)),
     }
 }
 
@@ -749,6 +801,14 @@ mod ffi {
 
         type DagBuilder<'dag>;
 
+        type Location;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn location_unknown() -> Box<Location>;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn location_from_string(string: &str) -> Box<Location>;
+
         #[namespace = "concrete_optimizer::dag"]
         fn empty() -> Box<Dag>;
 
@@ -762,6 +822,7 @@ mod ffi {
             self: &mut DagBuilder<'_>,
             out_precision: u8,
             out_shape: &[u64],
+            location: &Location,
         ) -> OperatorIndex;
 
         unsafe fn add_lut(
@@ -769,12 +830,14 @@ mod ffi {
             input: OperatorIndex,
             table: &[u64],
             out_precision: u8,
+            location: &Location,
         ) -> OperatorIndex;
 
         unsafe fn add_dot(
             self: &mut DagBuilder<'_>,
             inputs: &[OperatorIndex],
             weights: Box<Weights>,
+            location: &Location,
         ) -> OperatorIndex;
 
         unsafe fn add_levelled_op(
@@ -785,18 +848,21 @@ mod ffi {
             weights: &[f64],
             out_shape: &[u64],
             comment: &str,
+            location: &Location,
         ) -> OperatorIndex;
 
         unsafe fn add_round_op(
             self: &mut DagBuilder<'_>,
             input: OperatorIndex,
             rounded_precision: u8,
+            location: &Location,
         ) -> OperatorIndex;
 
         unsafe fn add_unsafe_cast_op(
             self: &mut DagBuilder<'_>,
             input: OperatorIndex,
             rounded_precision: u8,
+            location: &Location,
         ) -> OperatorIndex;
 
         unsafe fn tag_operator_as_output(self: &mut DagBuilder<'_>, op: OperatorIndex);
