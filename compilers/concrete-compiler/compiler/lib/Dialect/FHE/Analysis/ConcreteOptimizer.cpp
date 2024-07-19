@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <initializer_list>
+#include <iostream>
 #include <optional>
 #include <vector>
 
@@ -34,6 +35,9 @@
 
 #define GEN_PASS_CLASSES
 #include "concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h.inc"
+
+using concrete_optimizer::utils::location_from_string;
+using concrete_optimizer::utils::location_unknown;
 
 namespace mlir {
 namespace concretelang {
@@ -111,7 +115,9 @@ struct FunctionToDag {
     }
     auto precision = fhe::utils::getEintPrecision(arg);
     auto shape = getShape(arg);
-    auto opI = dagBuilder.add_input(precision, slice(shape));
+    auto opI =
+        dagBuilder.add_input(precision, slice(shape),
+                             *loc_to_location(arg.getParentRegion()->getLoc()));
     index[arg] = opI;
     return opI;
   }
@@ -207,6 +213,7 @@ struct FunctionToDag {
   void addLut(mlir::Operation &op, FHE::FheIntegerInterface inputType,
               Inputs &encrypted_inputs, int precision) {
     auto val = op.getResult(0);
+    auto loc = loc_to_location(op.getLoc());
     assert(encrypted_inputs.size() == 1);
     // No need to distinguish different lut kind until we do approximate
     // paradigm on outputs
@@ -215,13 +222,14 @@ struct FunctionToDag {
     std::vector<int32_t> operatorIndexes;
     if (inputType.isSigned()) {
       // std::vector<std::int64_t> weights_vector{1};
-      auto addIndex = dagBuilder.add_dot(
-          slice(encrypted_inputs), concrete_optimizer::weights::number(1));
+      auto addIndex =
+          dagBuilder.add_dot(slice(encrypted_inputs),
+                             concrete_optimizer::weights::number(1), *loc);
       encrypted_input = addIndex;
       operatorIndexes.push_back(addIndex.index);
     }
-    auto lutIndex =
-        dagBuilder.add_lut(encrypted_input, slice(unknowFunction), precision);
+    auto lutIndex = dagBuilder.add_lut(encrypted_input, slice(unknowFunction),
+                                       precision, *loc);
     operatorIndexes.push_back(lutIndex.index);
     mlir::Builder builder(op.getContext());
     if (setOptimizerID)
@@ -235,7 +243,8 @@ struct FunctionToDag {
     // No need to distinguish different lut kind until we do approximate
     // paradigm on outputs
     auto encrypted_input = encrypted_inputs[0];
-    index[val] = dagBuilder.add_round_op(encrypted_input, rounded_precision);
+    index[val] = dagBuilder.add_round_op(encrypted_input, rounded_precision,
+                                         *loc_to_location(val.getLoc()));
     return index[val];
   }
 
@@ -244,7 +253,8 @@ struct FunctionToDag {
                           int new_precision) {
     assert(encrypted_inputs.size() == 1);
     auto encrypted_input = encrypted_inputs[0];
-    index[val] = dagBuilder.add_unsafe_cast_op(encrypted_input, new_precision);
+    index[val] = dagBuilder.add_unsafe_cast_op(encrypted_input, new_precision,
+                                               *loc_to_location(val.getLoc()));
     return index[val];
   }
 
@@ -253,8 +263,8 @@ struct FunctionToDag {
          std::vector<std::int64_t> &weights_vector) {
     assert(encrypted_inputs.size() == 1);
     auto weights = concrete_optimizer::weights::vector(slice(weights_vector));
-    index[val] =
-        dagBuilder.add_dot(slice(encrypted_inputs), std::move(weights));
+    index[val] = dagBuilder.add_dot(slice(encrypted_inputs), std::move(weights),
+                                    *loc_to_location(val.getLoc()));
     return index[val];
   }
 
@@ -262,6 +272,10 @@ struct FunctionToDag {
     std::string loc;
     llvm::raw_string_ostream loc_stream(loc);
     location.print(loc_stream);
+    loc.erase(0, 4); // erase the loc( prefix
+    loc.pop_back();  // erase the ) postfix
+    loc.erase(std::remove(loc.begin(), loc.end(), '"'),
+              loc.end()); // erase the " characters
     return loc;
   }
 
@@ -269,22 +283,23 @@ struct FunctionToDag {
   addZeroNoise(concretelang::FHE::ZeroNoise &op) {
     auto val = op->getOpResult(0);
     auto outShape = getShape(val);
+    auto loc = loc_to_location(op.getLoc());
 
     // Trivial encrypted constants encoding
     // There are converted to input + levelledop
     auto precision = fhe::utils::getEintPrecision(val);
-    auto opI = dagBuilder.add_input(precision, slice(outShape));
+    auto opI = dagBuilder.add_input(precision, slice(outShape), *loc);
     auto inputs = Inputs{opI};
 
     // Default complexity is negligible
     double const fixedCost = NEGLIGIBLE_COMPLEXITY;
     double const lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
-    auto loc = loc_to_string(op.getLoc());
-    auto comment = std::string(op->getName().getStringRef()) + " " + loc;
+    auto comment = std::string(op->getName().getStringRef()) + " " +
+                   loc_to_string(op.getLoc());
     auto weights = std::vector<double>{1.};
-    index[val] =
-        dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor, fixedCost,
-                                   slice(weights), slice(outShape), comment);
+    index[val] = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
+                                            fixedCost, slice(weights),
+                                            slice(outShape), comment, *loc);
     return index[val];
   }
 
@@ -295,33 +310,39 @@ struct FunctionToDag {
     // Default complexity is negligible
     double fixed_cost = NEGLIGIBLE_COMPLEXITY;
     double lwe_dim_cost_factor = NEGLIGIBLE_COMPLEXITY;
-    auto loc = loc_to_string(op.getLoc());
-    auto comment = std::string(op->getName().getStringRef()) + " " + loc;
+    auto comment = std::string(op->getName().getStringRef()) + " " +
+                   loc_to_string(op.getLoc());
+    auto loc = loc_to_location(op.getLoc());
     auto weights = std::vector<double>(inputs.size(), 1.);
     index[val] = dagBuilder.add_levelled_op(slice(inputs), lwe_dim_cost_factor,
                                             fixed_cost, slice(weights),
-                                            slice(out_shape), comment);
+                                            slice(out_shape), comment, *loc);
     return index[val];
   }
 
+  rust::Box<concrete_optimizer::Location>
+  loc_to_location(mlir::Location location) {
+    return location_from_string(loc_to_string(location));
+  }
   concrete_optimizer::dag::OperatorIndex addLevelledOp(mlir::Operation &op,
                                                        Inputs &inputs) {
     auto val = op.getResult(0);
     auto out_shape = getShape(val);
+    auto loc = loc_to_location(op.getLoc());
     if (inputs.empty()) {
       // Trivial encrypted constants encoding
       // There are converted to input + levelledop
       auto precision = fhe::utils::getEintPrecision(val);
-      auto opI = dagBuilder.add_input(precision, slice(out_shape));
+      auto opI = dagBuilder.add_input(precision, slice(out_shape), *loc);
       inputs.push_back(opI);
     }
     // Default complexity is negligible
     double fixed_cost = NEGLIGIBLE_COMPLEXITY;
     double lwe_dim_cost_factor = NEGLIGIBLE_COMPLEXITY;
     auto smanp_int = op.getAttrOfType<mlir::IntegerAttr>("SMANP");
-    auto loc = loc_to_string(op.getLoc());
     assert(smanp_int && "Missing manp value on a crypto operation");
-    auto comment = std::string(op.getName().getStringRef()) + " " + loc;
+    auto comment = std::string(op.getName().getStringRef()) + " " +
+                   loc_to_string(op.getLoc());
 
     size_t n_inputs = 0;
     double sq_sum = 0;
@@ -354,7 +375,7 @@ struct FunctionToDag {
     auto weights = std::vector<double>(n_inputs, weight);
     index[val] = dagBuilder.add_levelled_op(slice(inputs), lwe_dim_cost_factor,
                                             fixed_cost, slice(weights),
-                                            slice(out_shape), comment);
+                                            slice(out_shape), comment, *loc);
     return index[val];
   }
 
@@ -370,17 +391,19 @@ struct FunctionToDag {
     assert(encrypted_inputs.size() == 1);
     auto input = lsbOp.getInput();
     auto result = lsbOp.getResult();
+    auto loc = loc_to_location(lsbOp.getLoc());
     auto input_precision = fhe::utils::getEintPrecision(input);
     auto output_precision = fhe::utils::getEintPrecision(result);
     auto lsb_shiffted_as_1bit_wop = dagBuilder.add_dot(
         slice(encrypted_inputs),
-        concrete_optimizer::weights::number(1 << input_precision));
+        concrete_optimizer::weights::number(1 << input_precision), *loc);
     std::vector<std::uint64_t> unknownFunction;
     auto overflow_bit_precision = 0;
-    auto lsb_as_0_bits = dagBuilder.add_unsafe_cast_op(
-        lsb_shiffted_as_1bit_wop, overflow_bit_precision); // id for rotation
+    auto lsb_as_0_bits = dagBuilder.add_unsafe_cast_op(lsb_shiffted_as_1bit_wop,
+                                                       overflow_bit_precision,
+                                                       *loc); // id for rotation
     auto lsb_result = dagBuilder.add_lut(lsb_as_0_bits, slice(unknownFunction),
-                                         output_precision);
+                                         output_precision, *loc);
     auto lsb_result_corrected = idPlaceholder(lsb_result);
     index[result] = lsb_result_corrected;
 
@@ -412,17 +435,20 @@ struct FunctionToDag {
     const double fixedCost = NEGLIGIBLE_COMPLEXITY;
     const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
 
-    auto loc = loc_to_string(mulOp.getLoc());
-    auto comment = std::string(mulOp->getName().getStringRef()) + " " + loc;
+    auto comment = std::string(mulOp->getName().getStringRef()) + " " +
+                   loc_to_string(mulOp.getLoc());
+    auto loc = loc_to_location(mulOp.getLoc());
 
     // for tlus
     const std::vector<std::uint64_t> unknownFunction;
 
     // tlu(x + y)
+
     auto addWeights = std::vector<double>{1, 1};
-    auto addNode = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                              fixedCost, slice(addWeights),
-                                              slice(resultShape), comment);
+    auto addNode = dagBuilder.add_levelled_op(
+        slice(inputs), lweDimCostFactor, fixedCost, slice(addWeights),
+        slice(resultShape), comment, *loc);
+
     std::optional<concrete_optimizer::dag::OperatorIndex> lhsCorrectionNode;
     if (isSignedEint(mulOp.getType())) {
       // If signed mul we need to add the addition node for correction of the
@@ -430,25 +456,28 @@ struct FunctionToDag {
       addNode = dagBuilder.add_dot(
           slice(std::vector<concrete_optimizer::dag::OperatorIndex>{addNode}),
           concrete_optimizer::weights::vector(
-              slice(std::vector<std::int64_t>{1})));
+              slice(std::vector<std::int64_t>{1})),
+          *loc);
       lhsCorrectionNode = addNode;
     }
     auto lhsTluNode =
-        dagBuilder.add_lut(addNode, slice(unknownFunction), precision);
+        dagBuilder.add_lut(addNode, slice(unknownFunction), precision, *loc);
 
     // tlu(x - y)
     auto subWeights = std::vector<double>{1, 1};
-    auto subNode = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                              fixedCost, slice(subWeights),
-                                              slice(resultShape), comment);
+    auto subNode = dagBuilder.add_levelled_op(
+        slice(inputs), lweDimCostFactor, fixedCost, slice(subWeights),
+        slice(resultShape), comment, *loc);
+
     // This is a signed tlu so we need to also add the addition for correction
     // signed tlu
     auto rhsCorrectionNode = dagBuilder.add_dot(
         slice(std::vector<concrete_optimizer::dag::OperatorIndex>{subNode}),
         concrete_optimizer::weights::vector(
-            slice(std::vector<std::int64_t>{1})));
-    auto rhsTluNode = dagBuilder.add_lut(rhsCorrectionNode,
-                                         slice(unknownFunction), precision);
+            slice(std::vector<std::int64_t>{1})),
+        *loc);
+    auto rhsTluNode = dagBuilder.add_lut(
+        rhsCorrectionNode, slice(unknownFunction), precision, *loc);
 
     // tlu(x + y) - tlu(x - y)
     auto resultWeights = std::vector<double>{1, 1};
@@ -456,7 +485,8 @@ struct FunctionToDag {
         lhsTluNode, rhsTluNode};
     auto resultNode = dagBuilder.add_levelled_op(
         slice(subInputs), lweDimCostFactor, fixedCost, slice(resultWeights),
-        slice(resultShape), comment);
+        slice(resultShape), comment, *loc);
+
     index[result] = resultNode;
 
     mlir::Builder builder(mulOp.getContext());
@@ -479,6 +509,7 @@ struct FunctionToDag {
   addTensorInnerProductEncEnc(InnerProductOp &innerProductOp, Inputs &inputs,
                               int precision) {
     mlir::Value result = innerProductOp.getResult();
+    auto loc = loc_to_location(innerProductOp.getLoc());
     const std::vector<uint64_t> resultShape = getShape(result);
 
     // We assume a first tensorized matmul step
@@ -564,9 +595,8 @@ struct FunctionToDag {
     const double fixedCost = NEGLIGIBLE_COMPLEXITY;
     const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
 
-    auto loc = loc_to_string(innerProductOp.getLoc());
-    auto comment =
-        std::string(innerProductOp->getName().getStringRef()) + " " + loc;
+    auto comment = std::string(innerProductOp->getName().getStringRef()) + " " +
+                   loc_to_string(innerProductOp.getLoc());
 
     // tlu(v)
     const double tluManp = 1;
@@ -579,9 +609,10 @@ struct FunctionToDag {
 
     // tlu(x + y)
     auto addWeights = std::vector<double>{1, 1};
-    auto addNode = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                              fixedCost, slice(addWeights),
-                                              slice(pairMatrixShape), comment);
+    auto addNode = dagBuilder.add_levelled_op(
+        slice(inputs), lweDimCostFactor, fixedCost, slice(addWeights),
+        slice(pairMatrixShape), comment, *loc);
+
     std::optional<concrete_optimizer::dag::OperatorIndex> lhsCorrectionNode;
     if (isSignedEint(innerProductOp.getType())) {
       // If signed mul we need to add the addition node for correction of the
@@ -589,25 +620,28 @@ struct FunctionToDag {
       addNode = dagBuilder.add_dot(
           slice(std::vector<concrete_optimizer::dag::OperatorIndex>{addNode}),
           concrete_optimizer::weights::vector(
-              slice(std::vector<std::int64_t>{1})));
+              slice(std::vector<std::int64_t>{1})),
+          *loc);
       lhsCorrectionNode = addNode;
     }
     auto lhsTluNode =
-        dagBuilder.add_lut(addNode, slice(unknownFunction), precision);
+        dagBuilder.add_lut(addNode, slice(unknownFunction), precision, *loc);
 
     // tlu(x - y)
     auto subWeights = std::vector<double>{1, 1};
-    auto subNode = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                              fixedCost, slice(subWeights),
-                                              slice(pairMatrixShape), comment);
+    auto subNode = dagBuilder.add_levelled_op(
+        slice(inputs), lweDimCostFactor, fixedCost, slice(subWeights),
+        slice(pairMatrixShape), comment, *loc);
+
     // This is a signed tlu so we need to also add the addition for correction
     // signed tlu
     auto rhsCorrectionNode = dagBuilder.add_dot(
         slice(std::vector<concrete_optimizer::dag::OperatorIndex>{subNode}),
         concrete_optimizer::weights::vector(
-            slice(std::vector<std::int64_t>{1})));
-    auto rhsTluNode = dagBuilder.add_lut(rhsCorrectionNode,
-                                         slice(unknownFunction), precision);
+            slice(std::vector<std::int64_t>{1})),
+        *loc);
+    auto rhsTluNode = dagBuilder.add_lut(
+        rhsCorrectionNode, slice(unknownFunction), precision, *loc);
 
     // tlu(x + y) - tlu(x - y)
     auto resultWeights = std::vector<double>{1, 1};
@@ -615,7 +649,7 @@ struct FunctionToDag {
         lhsTluNode, rhsTluNode};
     auto resultNode = dagBuilder.add_levelled_op(
         slice(subInputs), lweDimCostFactor, fixedCost, slice(resultWeights),
-        slice(pairMatrixShape), comment);
+        slice(pairMatrixShape), comment, *loc);
 
     // 3. Sum(tlu(x + y) - tlu(x - y))
     // Create a leveled op that simulates concatenation. It takes
@@ -639,7 +673,7 @@ struct FunctionToDag {
     auto weights = std::vector<double>(sumOperands.size(), manp / tluSubManp);
     index[result] = dagBuilder.add_levelled_op(
         slice(sumOperands), lwe_dim_cost_factor, fixed_cost, slice(weights),
-        slice(resultShape), comment);
+        slice(resultShape), comment, *loc);
 
     // Create the TFHE.OId attributes
     // The first elements of the vector are nodes for the encrypted
@@ -678,29 +712,31 @@ struct FunctionToDag {
 
   void addMax(FHE::MaxEintOp &maxOp, Inputs &inputs, int precision) {
     mlir::Value result = maxOp.getResult();
+    auto loc = loc_to_location(maxOp.getLoc());
     const std::vector<uint64_t> resultShape = getShape(result);
 
     const double fixedCost = NEGLIGIBLE_COMPLEXITY;
     const double lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
 
-    auto loc = loc_to_string(maxOp.getLoc());
-    auto comment = std::string(maxOp->getName().getStringRef()) + " " + loc;
+    auto comment = std::string(maxOp->getName().getStringRef()) + " " +
+                   loc_to_string(maxOp.getLoc());
 
     auto subWeights = std::vector<double>{1, 1};
-    auto subNode = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                              fixedCost, slice(subWeights),
-                                              slice(resultShape), comment);
+    auto subNode = dagBuilder.add_levelled_op(
+        slice(inputs), lweDimCostFactor, fixedCost, slice(subWeights),
+        slice(resultShape), comment, *loc);
 
     const std::vector<std::uint64_t> unknownFunction;
     auto tluNode =
-        dagBuilder.add_lut(subNode, slice(unknownFunction), precision);
+        dagBuilder.add_lut(subNode, slice(unknownFunction), precision, *loc);
 
     const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
         tluNode, inputs[1]};
     auto addWeights = std::vector<double>{1, 1};
     auto resultNode = dagBuilder.add_levelled_op(
         slice(addInputs), lweDimCostFactor, fixedCost, slice(addWeights),
-        slice(resultShape), comment);
+        slice(resultShape), comment, *loc);
+
     index[result] = resultNode;
 
     // Set attribute on the MLIR node
@@ -716,6 +752,7 @@ struct FunctionToDag {
                     int precision) {
     mlir::Value result = maxpool2dOp.getResult();
     const std::vector<uint64_t> resultShape = getShape(result);
+    auto loc = loc_to_location(maxpool2dOp.getLoc());
 
     // all TLUs are flattened into a dimension
     // to create a single TLU node in optimizer dag
@@ -743,19 +780,18 @@ struct FunctionToDag {
 
     const double subManp = sqrt(2 * inputSmanp.roundToDouble() + 1);
 
-    auto loc = loc_to_string(maxpool2dOp.getLoc());
-    auto comment =
-        std::string(maxpool2dOp->getName().getStringRef()) + " " + loc;
+    auto comment = std::string(maxpool2dOp->getName().getStringRef()) + " " +
+                   loc_to_string(maxpool2dOp.getLoc());
 
     auto subWeights = std::vector<double>(
         inputs.size(), subManp / sqrt(inputSmanp.roundToDouble()));
     auto subNode = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
                                               fixedCost, slice(subWeights),
-                                              slice(fakeShape), comment);
+                                              slice(fakeShape), comment, *loc);
 
     const std::vector<std::uint64_t> unknownFunction;
     auto tluNode =
-        dagBuilder.add_lut(subNode, slice(unknownFunction), precision);
+        dagBuilder.add_lut(subNode, slice(unknownFunction), precision, *loc);
 
     const double addManp = sqrt(inputSmanp.roundToDouble() + 1);
     const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
@@ -765,7 +801,8 @@ struct FunctionToDag {
         addInputs.size(), addManp / sqrt(inputSmanp.roundToDouble()));
     auto resultNode = dagBuilder.add_levelled_op(
         slice(addInputs), lweDimCostFactor, fixedCost, slice(resultWeights),
-        slice(resultShape), comment);
+        slice(resultShape), comment, *loc);
+
     index[result] = resultNode;
     // Set attribute on the MLIR node
     mlir::Builder builder(maxpool2dOp.getContext());
@@ -786,7 +823,8 @@ struct FunctionToDag {
   idPlaceholder(concrete_optimizer::dag::OperatorIndex input) {
     std::vector inputs = {input};
     return dagBuilder.add_dot(slice(inputs),
-                              concrete_optimizer::weights::number(1));
+                              concrete_optimizer::weights::number(1),
+                              *location_unknown());
   }
 
   Inputs encryptedInputs(mlir::Operation &op) {

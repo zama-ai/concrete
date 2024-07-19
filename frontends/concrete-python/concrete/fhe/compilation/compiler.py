@@ -49,6 +49,7 @@ class Compiler:
 
     configuration: Configuration
     artifacts: Optional[DebugArtifacts]
+    location: str
 
     inputset: List[Any]
     graph: Optional[Graph]
@@ -168,6 +169,9 @@ class Compiler:
 
         self._is_direct = False
         self._parameter_values = {}
+        self.location = (
+            f"{self.function.__code__.co_filename}:{self.function.__code__.co_firstlineno}"
+        )
 
     def __call__(
         self,
@@ -219,7 +223,7 @@ class Compiler:
             )
         }
 
-        self.graph = Tracer.trace(self.function, parameters)
+        self.graph = Tracer.trace(self.function, parameters, location=self.location)
         if self.artifacts is not None:
             self.artifacts.add_graph("initial", self.graph)
         fuse(
@@ -244,7 +248,9 @@ class Compiler:
         """
 
         if self._is_direct:
-            self.graph = Tracer.trace(self.function, self._parameter_values, is_direct=True)
+            self.graph = Tracer.trace(
+                self.function, self._parameter_values, is_direct=True, location=self.location
+            )
             if self.artifacts is not None:
                 self.artifacts.add_graph("initial", self.graph)  # pragma: no cover
 

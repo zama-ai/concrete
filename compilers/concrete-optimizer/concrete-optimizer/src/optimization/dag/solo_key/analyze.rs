@@ -541,7 +541,7 @@ impl SoloKeyDag {
 
             p_error = combine_errors(p_error, p_error_c);
         }
-        assert!(0.0 <= p_error && p_error <= 1.0);
+        assert!((0.0..=1.0).contains(&p_error));
         p_error
     }
 

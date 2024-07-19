@@ -293,12 +293,13 @@ impl VariancedDag {
             .filter(|op| op.operator().is_output())
             .try_for_each(|op| {
                 let id = op.id;
+                let loc = op.operator().location;
                 op.variance()
                     .check_growing_input_noise()
                     .map_err(|err| match err {
-                        Err::NotComposable(prev) => Err::NotComposable(format!(
-                            "Dag is not composable, because of output {id}: {prev}"
-                        )),
+                        Err::NotComposable(prev) => {
+                            Err::NotComposable(format!("At {loc}: please add `fhe.refresh(...)` to guarantee the function composability.\n{prev}."))
+                        }
                         Err::NoParametersFound => Err::NoParametersFound,
                     })
             })
@@ -484,13 +485,15 @@ impl OperatorVariance {
     pub fn check_growing_input_noise(&self) -> Result<()> {
         self.vars
             .iter()
-            .flat_map(|var| {
-                PartitionIndex::range(0, var.nb_partitions()).map(|i| (i, var.coeff_input(i)))
+            .enumerate()
+            .flat_map(|(var_i, var)| {
+                PartitionIndex::range(0, var.nb_partitions())
+                    .map(move |part_i| (var_i, part_i, var.coeff_input(part_i)))
             })
-            .try_for_each(|(partition, coeff)| {
+            .try_for_each(|(var, partition, coeff)| {
                 if !coeff.is_nan() && coeff > 1.0 {
                     Result::Err(Err::NotComposable(format!(
-                        "Partition {partition} has input coefficient {coeff}"
+                        "The noise of the node {var} is contaminated by noise coming straight from the input (partition: {partition}, coeff: {coeff:.2})"
                     )))
                 } else {
                     Ok(())
@@ -796,7 +799,7 @@ pub mod tests {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: NotComposable(\"Dag is not composable, because of output 1: Partition 0 has input coefficient 1.2100000000000002\")"
+        expected = "called `Result::unwrap()` on an `Err` value: NotComposable(\"At unknown location: please add `fhe.refresh(...)` to guarantee the function composability.\\nThe noise of the node 0 is contaminated by noise coming straight from the input (partition: 0, coeff: 1.21).\")"
     )]
     fn test_composition_with_growing_inputs_panics() {
         let mut dag = unparametrized::Dag::new();

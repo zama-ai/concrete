@@ -2,6 +2,8 @@
 Tests of everything related to modules.
 """
 
+import inspect
+import re
 import tempfile
 
 import numpy as np
@@ -110,6 +112,26 @@ def test_wrong_inputset(helpers):
         )
 
     assert str(excinfo.value) == ("Compiling function 'add' without an inputset is not supported")
+
+
+def test_non_composable_message():
+    """
+    Test the non composable Dag message.
+    """
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def add(x, y):
+            return x + y
+
+    line_of_add = inspect.currentframe().f_lineno - 2
+    expected_message = f"""\
+Program can not be composed: At test_modules.py:{line_of_add}:0: please add `fhe.refresh(...)` to guarantee the function composability.
+The noise of the node 0 is contaminated by noise coming straight from the input (partition: 0, coeff: 2.00).\
+"""
+    with pytest.raises(RuntimeError, match=re.escape(expected_message)):
+        Module.compile({"add": [(0, 0), (3, 3)]})
 
 
 def test_call_clear_circuits():

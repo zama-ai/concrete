@@ -407,8 +407,10 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
 }
 )XXX");
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(
-      err, "Program can not be composed: Dag is not composable, because of "
-           "output 1: Partition 0 has input coefficient 4");
+      err, "Program can not be composed: At -:4:8: please add "
+           "`fhe.refresh(...)` to guarantee the function composability.\n"
+           "The noise of the node 0 is contaminated by noise coming straight "
+           "from the input (partition: 0, coeff: 4.00).");
 }
 
 TEST(CompileNotComposable, not_composable_2) {
@@ -428,8 +430,10 @@ func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
 }
 )XXX");
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(
-      err, "Program can not be composed: Dag is not composable, because of "
-           "output 1: Partition 0 has input coefficient 4");
+      err, "Program can not be composed: At -:5:8: please add "
+           "`fhe.refresh(...)` to guarantee the function composability.\n"
+           "The noise of the node 0 is contaminated by noise coming straight "
+           "from the input (partition: 0, coeff: 4.00).");
 }
 
 TEST(CompileComposable, composable_supported_v0) {

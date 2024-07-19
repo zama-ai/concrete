@@ -51,7 +51,7 @@ TEST test_dag_no_lut() {
   std::vector<uint64_t> shape = {3};
 
   concrete_optimizer::dag::OperatorIndex node1 =
-      builder->add_input(PRECISION_8B, slice(shape));
+      builder->add_input(PRECISION_8B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {node1};
 
@@ -60,7 +60,7 @@ TEST test_dag_no_lut() {
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
       concrete_optimizer::weights::vector(slice(weight_vec));
 
-  auto id = builder->add_dot(slice(inputs), std::move(weights));
+  auto id = builder->add_dot(slice(inputs), std::move(weights), *concrete_optimizer::utils::location_unknown());
   builder->tag_operator_as_output(id);
 
   auto solution = dag->optimize(default_options());
@@ -75,10 +75,10 @@ TEST test_dag_lut() {
   std::vector<uint64_t> shape = {3};
 
   concrete_optimizer::dag::OperatorIndex input =
-      builder->add_input(PRECISION_8B, slice(shape));
+      builder->add_input(PRECISION_8B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   std::vector<u_int64_t> table = {};
-  auto id = builder->add_lut(input, slice(table), PRECISION_8B);
+  auto id = builder->add_lut(input, slice(table), PRECISION_8B, *concrete_optimizer::utils::location_unknown());
   builder->tag_operator_as_output(id);
 
   auto solution = dag->optimize(default_options());
@@ -94,10 +94,10 @@ TEST test_dag_lut_wop() {
   std::vector<uint64_t> shape = {3};
 
   concrete_optimizer::dag::OperatorIndex input =
-      builder->add_input(PRECISION_16B, slice(shape));
+      builder->add_input(PRECISION_16B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   std::vector<u_int64_t> table = {};
-  auto id = builder->add_lut(input, slice(table), PRECISION_16B);
+  auto id = builder->add_lut(input, slice(table), PRECISION_16B, *concrete_optimizer::utils::location_unknown());
   builder->tag_operator_as_output(id);
 
   auto solution = dag->optimize(default_options());
@@ -113,10 +113,10 @@ TEST test_dag_lut_force_wop() {
   std::vector<uint64_t> shape = {3};
 
   concrete_optimizer::dag::OperatorIndex input =
-      builder->add_input(PRECISION_8B, slice(shape));
+      builder->add_input(PRECISION_8B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   std::vector<u_int64_t> table = {};
-  auto id = builder->add_lut(input, slice(table), PRECISION_8B);
+  auto id = builder->add_lut(input, slice(table), PRECISION_8B, *concrete_optimizer::utils::location_unknown());
   builder->tag_operator_as_output(id);
 
   auto options = default_options();
@@ -133,10 +133,10 @@ TEST test_multi_parameters_1_precision() {
   std::vector<uint64_t> shape = {3};
 
   concrete_optimizer::dag::OperatorIndex input =
-      builder->add_input(PRECISION_8B, slice(shape));
+      builder->add_input(PRECISION_8B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   std::vector<u_int64_t> table = {};
-  auto id = builder->add_lut(input, slice(table), PRECISION_8B);
+  auto id = builder->add_lut(input, slice(table), PRECISION_8B, *concrete_optimizer::utils::location_unknown());
   builder->tag_operator_as_output(id);
 
   auto options = default_options();
@@ -160,14 +160,14 @@ TEST test_multi_parameters_2_precision() {
   std::vector<uint64_t> shape = {3};
 
   concrete_optimizer::dag::OperatorIndex input1 =
-      builder->add_input(PRECISION_8B, slice(shape));
+      builder->add_input(PRECISION_8B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   concrete_optimizer::dag::OperatorIndex input2 =
-      builder->add_input(PRECISION_1B, slice(shape));
+      builder->add_input(PRECISION_1B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   std::vector<u_int64_t> table = {};
-  auto lut1 = builder->add_lut(input1, slice(table), PRECISION_8B);
-  auto lut2 = builder->add_lut(input2, slice(table), PRECISION_8B);
+  auto lut1 = builder->add_lut(input1, slice(table), PRECISION_8B, *concrete_optimizer::utils::location_unknown());
+  auto lut2 = builder->add_lut(input2, slice(table), PRECISION_8B, *concrete_optimizer::utils::location_unknown());
 
   std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {lut1, lut2};
 
@@ -176,7 +176,7 @@ TEST test_multi_parameters_2_precision() {
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
       concrete_optimizer::weights::vector(slice(weight_vec));
 
-  auto id = builder->add_dot(slice(inputs), std::move(weights));
+  auto id = builder->add_dot(slice(inputs), std::move(weights), *concrete_optimizer::utils::location_unknown());
   builder->tag_operator_as_output(id);
 
   auto options = default_options();
@@ -201,14 +201,14 @@ TEST test_multi_parameters_2_precision_crt() {
   std::vector<uint64_t> shape = {3};
 
   concrete_optimizer::dag::OperatorIndex input1 =
-      builder->add_input(PRECISION_8B, slice(shape));
+      builder->add_input(PRECISION_8B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   concrete_optimizer::dag::OperatorIndex input2 =
-      builder->add_input(PRECISION_1B, slice(shape));
+      builder->add_input(PRECISION_1B, slice(shape), *concrete_optimizer::utils::location_unknown());
 
   std::vector<u_int64_t> table = {};
-  auto lut1 = builder->add_lut(input1, slice(table), PRECISION_8B);
-  auto lut2 = builder->add_lut(input2, slice(table), PRECISION_8B);
+  auto lut1 = builder->add_lut(input1, slice(table), PRECISION_8B, *concrete_optimizer::utils::location_unknown());
+  auto lut2 = builder->add_lut(input2, slice(table), PRECISION_8B, *concrete_optimizer::utils::location_unknown());
 
   std::vector<concrete_optimizer::dag::OperatorIndex> inputs = {lut1, lut2};
 
@@ -217,7 +217,7 @@ TEST test_multi_parameters_2_precision_crt() {
   rust::cxxbridge1::Box<concrete_optimizer::Weights> weights =
       concrete_optimizer::weights::vector(slice(weight_vec));
 
-  auto id = builder->add_dot(slice(inputs), std::move(weights));
+  auto id = builder->add_dot(slice(inputs), std::move(weights), *concrete_optimizer::utils::location_unknown());
   builder->tag_operator_as_output(id);
 
   auto options = default_options();

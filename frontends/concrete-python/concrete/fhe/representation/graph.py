@@ -42,6 +42,8 @@ class Graph:
 
     name: str
 
+    location: str
+
     def __init__(
         self,
         graph: nx.MultiDiGraph,
@@ -49,6 +51,7 @@ class Graph:
         output_nodes: Dict[int, Node],
         is_direct: bool = False,
         name: str = "main",
+        location: str = "",
     ):
         self.graph = graph
 
@@ -63,6 +66,7 @@ class Graph:
         self.bit_width_constraints = None
 
         self.name = name
+        self.location = location
 
         self.prune_useless_nodes()
 

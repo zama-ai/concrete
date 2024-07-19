@@ -39,6 +39,7 @@ class Tracer:
         parameters: Dict[str, ValueDescription],
         is_direct: bool = False,
         name: str = "main",
+        location: str = "",
     ) -> Graph:
         """
         Trace `function` and create the `Graph` that represents it.
@@ -168,7 +169,7 @@ class Tracer:
             output_idx: tracer.computation for output_idx, tracer in enumerate(output_tracers)
         }
 
-        return Graph(graph, input_nodes, output_nodes, is_direct, name)
+        return Graph(graph, input_nodes, output_nodes, is_direct, name, location=location)
 
         # pylint: enable=too-many-statements
 
