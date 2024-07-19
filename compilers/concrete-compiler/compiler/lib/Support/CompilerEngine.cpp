@@ -300,9 +300,6 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   if (loopParallelize)
     mlir::concretelang::dfr::_dfr_set_use_omp(true);
 
-  if (dataflowParallelize)
-    mlir::concretelang::dfr::_dfr_set_required(true);
-
   // Sanity checks for enabling GPU usage: the compiler must have been
   // compiled with Cuda support (especially important when building
   // python wheels), and at least one device must be available to
@@ -340,7 +337,21 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
         options.batchTFHEOps = false;
       }
     }
+
+    // Finally for now we cannot allow dataflow parallelization at the
+    // same time as GPU usage.  This restriction will be relaxed later.
+    if (dataflowParallelize) {
+      warnx("Dataflow parallelization and GPU offloading have both been "
+            "requested.  This is not currently supported.  Continuing without "
+            "dataflow parallelization.");
+      dataflowParallelize = false;
+    }
   }
+
+  // If dataflow parallelization will proceed, mark it for
+  // initialising the runtime
+  if (dataflowParallelize)
+    mlir::concretelang::dfr::_dfr_set_required(true);
 
   mlir::OwningOpRef<mlir::ModuleOp> mlirModuleRef(moduleOp);
   res.mlirModuleRef = std::move(mlirModuleRef);
