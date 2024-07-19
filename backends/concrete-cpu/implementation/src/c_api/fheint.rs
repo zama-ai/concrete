@@ -115,14 +115,17 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_to_lwe_array(
         // collect LWEs from fheuint
         let (radix, _) = fheuint.into_raw_parts();
         let blocks = radix.blocks();
-        let cts: Vec<LweCiphertext<Vec<u64>>> = blocks.into_iter().map(|b| b.ct.clone()).collect();
-        let lwe_size = cts[0].lwe_size().0;
+        let first_ct = match blocks.first() {
+            Some(value) => &value.ct,
+            None => return 1,
+        };
+        let lwe_size = first_ct.lwe_size().0;
         let n_cts = blocks.len();
         // copy LWEs to C buffer. Note that lsb is cts[0]
         let lwe_vector: &mut [u64] = slice::from_raw_parts_mut(lwe_vec_buffer, n_cts * lwe_size);
-        for (i, ct) in cts.iter().enumerate() {
+        for (i, block) in blocks.iter().enumerate() {
             lwe_vector[i * lwe_size..(i + 1) * lwe_size]
-                .copy_from_slice(ct.clone().into_container().as_slice());
+                .copy_from_slice(block.ct.clone().into_container().as_slice());
         }
         return 0;
     })
