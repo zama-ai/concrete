@@ -488,6 +488,7 @@ struct Stream {
   bool ct_stream;
   bool pt_stream;
   size_t generation;
+  std::atomic<size_t> uses = {0};
   const char *name;
   Stream(stream_type t, const char *sname = nullptr)
       : dep(nullptr), type(t), producer(nullptr), dfg(nullptr),
@@ -527,6 +528,7 @@ struct Stream {
       dep = d;
     }
     dep->stream_generation = generation;
+    uses = 0;
   }
   // For a given dependence, traverse the DFG backwards to extract the lattice
   // of kernels required to execute to produce this data
@@ -835,7 +837,8 @@ struct Stream {
                 }
               }
               for (auto i : inputs)
-                i->dep->free_chunk_device_data(c, dfg);
+                if (++i->uses == i->consumers.size())
+                  i->dep->free_chunk_device_data(c, dfg);
               for (auto iv : intermediate_values)
                 iv->dep->free_chunk_device_data(c, dfg);
               for (auto o : outputs)
