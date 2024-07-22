@@ -94,6 +94,7 @@ union Context {
 // across multiple locations.
 static const int32_t host_location = -1;
 static const int32_t split_location = -2;
+static const int32_t invalid_location = -3;
 // Similarly dependence chunks are either indexed (which does not
 // always correlate to the device index on which they are located) or
 // this dependence is split further.
@@ -264,17 +265,40 @@ struct Dependence {
   // multiple GPUs or execute concurrently on the host.
   void split_dependence(size_t num_chunks, size_t num_gpu_chunks,
                         size_t chunk_dim, bool constant,
-                        size_t gpu_chunk_factor) {
+                        size_t gpu_chunk_factor, GPU_DFG *dfg) {
     // If this dependence is already split, check that the split
     // matches the new request
     if (chunk_id == split_chunks) {
-      if (num_chunks + num_gpu_chunks != chunks.size())
-        warnx("WARNING: requesting to split dependence across different number "
-              "of chunks (%lu) than it already is split (%lu) which would "
-              "require remapping. This is not supported.",
-              num_chunks + num_gpu_chunks, chunks.size());
-      assert(num_chunks + num_gpu_chunks == chunks.size());
-      return;
+      if (num_chunks + num_gpu_chunks != chunks.size()) {
+        // If this is not available on host, then we need to merge on
+        // host and re-split
+        if (!onHostReady) {
+          size_t data_size = 0;
+          size_t num_samples = 0;
+          for (auto c : chunks) {
+            move_chunk_off_device(c->chunk_id, dfg);
+            data_size += memref_get_data_size(c->host_data);
+            num_samples += c->host_data.sizes[chunk_dim];
+            sdfg_gpu_debug_print_mref("Chunk", c->host_data);
+          }
+          host_data = chunks[0]->host_data;
+          host_data.allocated = host_data.aligned =
+              (uint64_t *)malloc(data_size);
+          host_data.sizes[chunk_dim] = num_samples;
+          size_t pos = 0;
+          for (auto c : chunks) {
+            memcpy(((char *)host_data.aligned) + pos, c->host_data.aligned,
+                   memref_get_data_size(c->host_data));
+            pos += memref_get_data_size(c->host_data);
+          }
+          for (auto c : chunks)
+            free_chunk_host_data(c->chunk_id, dfg);
+          onHostReady = true;
+          hostAllocated = true;
+        }
+      } else {
+        return;
+      }
     }
     if (!chunks.empty()) {
       for (auto c : chunks)
@@ -345,12 +369,14 @@ struct Dependence {
   }
   void move_chunk_off_device(int32_t chunk_id, GPU_DFG *dfg) {
     copy_chunk_off_device(chunk_id, dfg);
+    chunks[chunk_id]->location = host_location;
+    if (chunks[chunk_id]->device_data == nullptr)
+      return;
     cuda_drop_async(
         chunks[chunk_id]->device_data,
         (cudaStream_t *)dfg->get_gpu_stream(chunks[chunk_id]->location),
         chunks[chunk_id]->location);
     chunks[chunk_id]->device_data = nullptr;
-    chunks[chunk_id]->location = host_location;
   }
   void merge_output_off_device(int32_t chunk_id, GPU_DFG *dfg) {
     assert(chunks[chunk_id]->location > host_location);
@@ -381,6 +407,8 @@ struct Dependence {
         (cudaStream_t *)dfg->get_gpu_stream(chunks[chunk_id]->location),
         chunks[chunk_id]->location);
     chunks[chunk_id]->device_data = nullptr;
+    chunks[chunk_id]->location =
+        (chunks[chunk_id]->onHostReady) ? host_location : invalid_location;
   }
   inline void free_data(GPU_DFG *dfg, bool immediate = false) {
     if (device_data != nullptr) {
@@ -691,7 +719,7 @@ struct Stream {
     for (auto i : inputs)
       i->dep->split_dependence(num_chunks, num_gpu_chunks,
                                (i->ct_stream) ? 0 : 1, i->const_stream,
-                               gpu_chunk_factor);
+                               gpu_chunk_factor, dfg);
     for (auto iv : intermediate_values) {
       if (iv->need_new_gen()) {
         iv->put(new Dependence(split_location,
