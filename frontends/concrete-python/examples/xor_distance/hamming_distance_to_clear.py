@@ -5,7 +5,6 @@ import numpy as np
 
 from concrete import fhe
 
-
 # Hamming weight computation
 hw_table_values = [np.binary_repr(x).count("1") for x in range(2**8)]
 
@@ -48,8 +47,10 @@ def dist_in_fhe(x_mapped, y_mapped):
     u = np.matmul(x_mapped, y_mapped)[0][0]
 
     # So, u is a scalar:
-    # - bits which are the same between x and y_clear (either two -1's or two 1's) count for a +1 in the scalar
-    # - bits which are different between x and y_clear (either (-1, 1) or (1, -1)) count for a -1 in the scalar
+    # - bits which are the same between x and y_clear (either two -1's or two 1's) count for a +1
+    #   in the scalar
+    # - bits which are different between x and y_clear (either (-1, 1) or (1, -1)) count for a -1
+    #   in the scalar
     # Hence the HW distance is (len(x) - u) / 2
     final_result = np.prod(x_mapped.shape) - u
 
@@ -60,7 +61,8 @@ def dist_in_fhe(x_mapped, y_mapped):
 def manage_args():
     """Manage user args."""
     parser = argparse.ArgumentParser(
-        description="Hamming weight (aka XOR) distance in Concrete, between an encrypted vector and a clear vector."
+        description="Hamming weight (aka XOR) distance in Concrete, between an encrypted vector "
+        "and a clear vector."
     )
     parser.add_argument(
         "--nb_bits",
@@ -99,7 +101,8 @@ def main():
 
     # Info
     print(
-        f"Computing XOR distance on {nb_bits} bits using algorithm dist_in_fhe, using vectors of 1b cells"
+        f"Computing XOR distance on {nb_bits} bits using algorithm dist_in_fhe, using vectors of "
+        "1b cells"
     )
 
     # Compile the circuit

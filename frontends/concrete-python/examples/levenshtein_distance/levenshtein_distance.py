@@ -1,18 +1,21 @@
 # Computing Levenstein distance between strings, https://en.wikipedia.org/wiki/Levenshtein_distance
 
-import time
+# ruff: noqa:S311
+
 import argparse
 import random
+import time
 from functools import lru_cache
 
-import numpy
+import numpy as np
 
 from concrete import fhe
 
+# mypy: disable-error-code="valid-type"
+
 
 class Alphabet:
-
-    letters: str = None
+    letters: str = ""
     mapping_to_int: dict = {}
 
     @staticmethod
@@ -44,6 +47,7 @@ class Alphabet:
     def __add__(self, other: "Alphabet") -> "Alphabet":
         return Alphabet(self.letters + other.letters)
 
+    @staticmethod
     def return_available_alphabets() -> list:
         """Return available alphabets."""
         return ["string", "STRING", "StRiNg", "ACTG"]
@@ -61,12 +65,13 @@ class Alphabet:
             return Alphabet.uppercase()
         if alphabet_name == "StRiNg":
             return Alphabet.anycase()
-        if alphabet_name == "ACTG":
-            return Alphabet.dna()
+
+        assert alphabet_name == "ACTG", f"Unknown alphabet {alphabet_name}"
+        return Alphabet.dna()
 
     def random_pick_in_values(self) -> int:
         """Pick the integer-encoding of a random char in an alphabet."""
-        return numpy.random.randint(len(self.mapping_to_int))
+        return np.random.randint(len(self.mapping_to_int))
 
     def _random_string(self, length: int) -> str:
         """Pick a random string in the alphabet."""
@@ -97,16 +102,18 @@ class Alphabet:
 
         for si in string:
             if si not in self.mapping_to_int:
-                raise ValueError(
-                    f"Char {si} of {string} is not in alphabet {list(self.mapping_to_int.keys())}, please choose the right --alphabet"
+                error_string = (
+                    f"Char {si} of {string} is not in alphabet "
+                    + f"{list(self.mapping_to_int.keys())}, please choose the right --alphabet"
                 )
+                raise ValueError(error_string)
 
-        return tuple([self.mapping_to_int[si] for si in string])
+        return tuple(self.mapping_to_int[si] for si in string)
 
 
 class LevenshteinDistance:
     alphabet: Alphabet
-    module: fhe.module
+    module: fhe.module  # type: ignore
 
     def __init__(self, alphabet: Alphabet, args):
         self.alphabet = alphabet
@@ -121,18 +128,19 @@ class LevenshteinDistance:
             assert mode == "fhe", "Only 'simulate' and 'fhe' mode are available"
             self._compute_in_fhe([(a, b)], show_distance=show_distance)
 
-    def calculate_list(self, l: list, mode: str):
+    def calculate_list(self, pairs_to_compute_on: list, mode: str):
         """Compute a distance between strings of a list, either in fhe or in simulate."""
-        for (a, b) in l:
+        for a, b in pairs_to_compute_on:
             self.calculate(a, b, mode)
 
     def _encode_and_encrypt_strings(self, a: str, b: str) -> tuple:
-        """Encode a string, ie map it to integers using the alphabet, and then encrypt the integers."""
+        """Encode a string, ie map it to integers using the alphabet, and then encrypt
+        the integers."""
         a_as_int = self.alphabet.encode(a)
         b_as_int = self.alphabet.encode(b)
 
-        a_enc = tuple(self.module.equal.encrypt(ai, None)[0] for ai in a_as_int)
-        b_enc = tuple(self.module.equal.encrypt(None, bi)[1] for bi in b_as_int)
+        a_enc = tuple(self.module.equal.encrypt(ai, None)[0] for ai in a_as_int)  # type: ignore
+        b_enc = tuple(self.module.equal.encrypt(None, bi)[1] for bi in b_as_int)  # type: ignore
 
         return a_enc, b_enc
 
@@ -149,15 +157,16 @@ class LevenshteinDistance:
         ]
         inputset_mix = [
             (
-                numpy.random.randint(2),
-                numpy.random.randint(args.max_string_length),
-                numpy.random.randint(args.max_string_length),
-                numpy.random.randint(args.max_string_length),
-                numpy.random.randint(args.max_string_length),
+                np.random.randint(2),
+                np.random.randint(args.max_string_length),
+                np.random.randint(args.max_string_length),
+                np.random.randint(args.max_string_length),
+                np.random.randint(args.max_string_length),
             )
             for _ in range(1000)
         ]
 
+        # pylint: disable-next=no-member
         self.module = LevenshsteinModule.compile(
             {
                 "equal": inputset_equal,
@@ -174,7 +183,6 @@ class LevenshteinDistance:
     def _compute_in_simulation(self, list_patterns: list):
         """Check equality between distance in simulation and clear distance."""
         for a, b in list_patterns:
-
             print(f"    Computing Levenshtein between strings '{a}' and '{b}'", end="")
 
             a_as_int = self.alphabet.encode(a)
@@ -188,11 +196,10 @@ class LevenshteinDistance:
 
     def _compute_in_fhe(self, list_patterns: list, show_distance: bool = False):
         """Check equality between distance in FHE and clear distance."""
-        self.module.keygen()
+        self.module.keygen()  # type: ignore
 
         # Checks in FHE
         for a, b in list_patterns:
-
             print(f"    Computing Levenshtein between strings '{a}' and '{b}'", end="")
 
             a_enc, b_enc = self._encode_and_encrypt_strings(a, b)
@@ -201,7 +208,7 @@ class LevenshteinDistance:
             l1_fhe_enc = levenshtein_fhe(self.module, a_enc, b_enc)
             time_end = time.time()
 
-            l1_fhe = self.module.mix.decrypt(l1_fhe_enc)
+            l1_fhe = self.module.mix.decrypt(l1_fhe_enc)  # type: ignore
 
             l1_clear = levenshtein_clear(a, b)
 
@@ -216,15 +223,18 @@ class LevenshteinDistance:
 # Module FHE
 @fhe.module()
 class LevenshsteinModule:
+    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def equal(x, y):
         """Assert equality between two chars of the alphabet."""
         return x == y
 
+    @staticmethod
     @fhe.function({"x": "clear"})
     def constant(x):
         return fhe.zero() + x
 
+    @staticmethod
     @fhe.function(
         {
             "is_equal": "encrypted",
@@ -237,8 +247,8 @@ class LevenshsteinModule:
     def mix(is_equal, if_equal, case_1, case_2, case_3):
         """Compute the min of (case_1, case_2, case_3), and then return `if_equal` if `is_equal` is
         True, or the min in the other case."""
-        min_12 = numpy.minimum(case_1, case_2)
-        min_123 = numpy.minimum(min_12, case_3)
+        min_12 = np.minimum(case_1, case_2)
+        min_123 = np.minimum(min_12, case_3)
 
         return fhe.if_then_else(is_equal, if_equal, 1 + min_123)
 
@@ -296,8 +306,8 @@ def levenshtein_simulate(module: fhe.module, x: str, y: str):
     case_2 = levenshtein_simulate(module, x, y[1:])
     case_3 = if_equal
 
-    is_equal = module.equal(x[0], y[0])
-    returned_value = module.mix(is_equal, if_equal, case_1, case_2, case_3)
+    is_equal = module.equal(x[0], y[0])  # type: ignore
+    returned_value = module.mix(is_equal, if_equal, case_1, case_2, case_3)  # type: ignore
 
     return returned_value
 
@@ -306,17 +316,17 @@ def levenshtein_simulate(module: fhe.module, x: str, y: str):
 def levenshtein_fhe(module: fhe.module, x: str, y: str):
     """Compute the distance in FHE."""
     if len(x) == 0:
-        return module.constant.run(module.constant.encrypt(len(y)))
+        return module.constant.run(module.constant.encrypt(len(y)))  # type: ignore
     if len(y) == 0:
-        return module.constant.run(module.constant.encrypt(len(x)))
+        return module.constant.run(module.constant.encrypt(len(x)))  # type: ignore
 
     if_equal = levenshtein_fhe(module, x[1:], y[1:])
     case_1 = levenshtein_fhe(module, x[1:], y)
     case_2 = levenshtein_fhe(module, x, y[1:])
     case_3 = if_equal
 
-    is_equal = module.equal.run(x[0], y[0])
-    returned_value = module.mix.run(is_equal, if_equal, case_1, case_2, case_3)
+    is_equal = module.equal.run(x[0], y[0])  # type: ignore
+    returned_value = module.mix.run(is_equal, if_equal, case_1, case_2, case_3)  # type: ignore
 
     return returned_value
 
@@ -374,7 +384,7 @@ def manage_args():
 
     # At least one option
     assert (
-        args.autoperf + args.autotest + (args.distance != None) > 0
+        args.autoperf + args.autotest + (args.distance is not None) > 0
     ), "must activate one option --autoperf or --autotest or --distance"
 
     return args
@@ -389,7 +399,6 @@ def main():
 
     # Do what the user requested
     if args.autotest:
-
         alphabet = Alphabet.init_by_name(args.alphabet)
         levenshtein_distance = LevenshteinDistance(alphabet, args)
 
@@ -406,7 +415,8 @@ def main():
     if args.autoperf:
         for alphabet_name in ["ACTG", "string", "STRING", "StRiNg"]:
             print(
-                f"Typical performances for alphabet {alphabet_name}, with string of maximal length:\n"
+                f"Typical performances for alphabet {alphabet_name}, with string of "
+                "maximal length:\n"
             )
 
             alphabet = Alphabet.init_by_name(alphabet_name)
@@ -417,15 +427,17 @@ def main():
             levenshtein_distance.calculate_list(list_patterns, mode="fhe")
             print("")
 
-    if args.distance != None:
+    if args.distance is not None:
         print(
-            f"Running distance between strings '{args.distance[0]}' and '{args.distance[1]}' for alphabet {args.alphabet}:\n"
+            f"Running distance between strings '{args.distance[0]}' and '{args.distance[1]}' "
+            f"for alphabet {args.alphabet}:\n"
         )
 
         if max(len(args.distance[0]), len(args.distance[1])) > args.max_string_length:
             args.max_string_length = max(len(args.distance[0]), len(args.distance[1]))
             print(
-                "Warning, --max_string_length was smaller than lengths of the input strings, fixing it"
+                "Warning, --max_string_length was smaller than lengths of the input strings, "
+                "fixing it"
             )
 
         alphabet = Alphabet.init_by_name(args.alphabet)
