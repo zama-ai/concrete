@@ -1,6 +1,7 @@
 # Computing Levenstein distance between strings, https://en.wikipedia.org/wiki/Levenshtein_distance
 
-# ruff: noqa:S311
+# ruff: noqa:S311,N805
+# pylint: disable=no-self-argument
 
 import argparse
 import random
@@ -223,18 +224,15 @@ class LevenshteinDistance:
 # Module FHE
 @fhe.module()
 class LevenshsteinModule:
-    @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def equal(x, y):
         """Assert equality between two chars of the alphabet."""
         return x == y
 
-    @staticmethod
     @fhe.function({"x": "clear"})
     def constant(x):
         return fhe.zero() + x
 
-    @staticmethod
     @fhe.function(
         {
             "is_equal": "encrypted",
