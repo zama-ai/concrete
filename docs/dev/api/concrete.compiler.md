@@ -80,7 +80,7 @@ init_dfr()
 
 Initialize dataflow parallelization. 
 
-It is not always required to initialize the dataflow runtime as it can be implicitly done during compilation. However, it is required in case no compilation has previously been done and the runtime is needed 
+It is not always required to initialize the dataflow runtime as it can be implicitely done during compilation. However, it is required in case no compilation has previously been done and the runtime is needed 
 
 
 ---

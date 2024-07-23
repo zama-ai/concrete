@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/fhe/compilation/__init__.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/__init__.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.fhe.compilation`
 Glue the compilation process together. 
@@ -13,6 +13,7 @@ Glue the compilation process together.
 - **utils**
 - **value**
 - **client**
+- **composition**
 - **configuration**
 - **server**
 - **circuit**
