@@ -31,20 +31,6 @@ pip install lazydocs
 .venvtrash/bin/lazydocs --output-path="../docs/dev/api" --overview-file="README.md" --src-base-url="../../" --no-watermark concrete
 cd -
 
-# Add the files in the summary
-FILES=$(cd docs && find dev/api -name "*.md")
-
-TMP_FILE=$(mktemp /tmp/apidocs.XXXXXX)
-rm -rf "$TMP_FILE"
-touch "$TMP_FILE"
-
-for f in $FILES
-do
-    filename=$(echo "$f" | rev | cut -d '/' -f 1 | rev)
-
-    echo "  * [$filename]($f)" >> "$TMP_FILE"
-done
-
 rm -rf "$FRESH_DIRECTORY"
 
 # New files?
