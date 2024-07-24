@@ -1,6 +1,7 @@
 #![allow(clippy::float_cmp)]
 
 use once_cell::sync::Lazy;
+use optimization::dag::multi_parameters::partition_cut::ExternalPartition;
 
 use super::*;
 use crate::computing_cost::cpu::CpuComplexity;
@@ -848,6 +849,102 @@ fn test_bug_with_zero_noise() {
     let v2 = dag.add_levelled_op([v1], complexity, [1.0], &out_shape, "comment");
     let v3 = dag.add_unsafe_cast(v2, 1);
     let _ = dag.add_lut(v3, FunctionTable { values: vec![] }, 1);
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+}
+
+const DUMMY_MACRO_PARAM: MacroParameters = MacroParameters {
+    glwe_params: GlweParameters {
+        log2_polynomial_size: 11,
+        glwe_dimension: 1,
+    },
+    internal_dim: 887,
+};
+
+#[test]
+fn test_optimize_tfhers_in_out_dot_compute() {
+    let mut dag = unparametrized::Dag::new();
+    let input1 = dag.add_input(16, Shape::number());
+    let tfhers_partition = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: DUMMY_MACRO_PARAM,
+    };
+    let change_part1 = dag.add_change_partition(input1, Some(&tfhers_partition), None);
+    let dot = dag.add_dot([change_part1], [2]);
+    _ = dag.add_change_partition(dot, None, Some(&tfhers_partition));
+
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+    println!("solution: {:?}", sol.unwrap());
+}
+
+#[test]
+fn test_optimize_tfhers_2lut_compute() {
+    let mut dag = unparametrized::Dag::new();
+    let tfhers_precision = 11;
+    let input = dag.add_input(tfhers_precision, Shape::number());
+    let tfhers_partition_in = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: DUMMY_MACRO_PARAM,
+    };
+    let tfhers_partition_out = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: DUMMY_MACRO_PARAM,
+    };
+    let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
+    let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
+    let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
+    let _ = dag.add_change_partition(lut2, None, Some(&tfhers_partition_out));
+
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+}
+
+#[test]
+fn test_optimize_tfhers_different_in_out_2lut_compute() {
+    let mut dag = unparametrized::Dag::new();
+    let tfhers_precision = 8;
+    let input = dag.add_input(tfhers_precision, Shape::number());
+    let tfhers_partition_in = ExternalPartition {
+        name: String::from("tfhers_in"),
+        macro_params: DUMMY_MACRO_PARAM,
+    };
+    let tfhers_partition_out = ExternalPartition {
+        name: String::from("tfhers_out"),
+        macro_params: DUMMY_MACRO_PARAM,
+    };
+    let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
+    let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
+    let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
+    let _ = dag.add_change_partition(lut2, None, Some(&tfhers_partition_out));
+
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+}
+
+#[test]
+fn test_optimize_tfhers_to_concrete_and_back_example() {
+    let tfhers_partition = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: DUMMY_MACRO_PARAM,
+    };
+    let concrete_precision = 8;
+    let msg_width = 2;
+    let carry_width = 2;
+    let tfhers_precision = msg_width + carry_width;
+
+    let mut dag = unparametrized::Dag::new();
+    let input = dag.add_input(
+        tfhers_precision,
+        Shape::vector((concrete_precision / msg_width).into()),
+    );
+    // to concrete
+    let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
+    let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, concrete_precision);
+    // from concrete
+    let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
+    let _ = dag.add_change_partition(lut2, None, Some(&tfhers_partition));
+
     let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
 }

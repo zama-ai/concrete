@@ -9,13 +9,15 @@ use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::solo_key::analyze::out_variances;
 use crate::optimization::dag::solo_key::symbolic_variance::SymbolicVariance;
 
+use super::optimize::MacroParameters;
+
 const ROUND_INNER_MULTI_PARAMETER: bool = false;
 const ROUND_EXTERNAL_MULTI_PARAMETER: bool = !ROUND_INNER_MULTI_PARAMETER && true;
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub struct ExternalPartition {
     pub name: String,
-    // TODO add params (maybe just macros)
+    pub macro_params: MacroParameters,
 }
 
 impl std::fmt::Display for ExternalPartition {

@@ -872,7 +872,19 @@ impl Dag {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        optimization::dag::multi_parameters::optimize::MacroParameters, parameters::GlweParameters,
+    };
+
     use super::*;
+
+    const DUMMY_MACRO_PARAM: MacroParameters = MacroParameters {
+        glwe_params: GlweParameters {
+            log2_polynomial_size: 0,
+            glwe_dimension: 0,
+        },
+        internal_dim: 0,
+    };
 
     #[test]
     fn output_marking() {
@@ -892,6 +904,7 @@ mod tests {
         let mut graph = Dag::new();
         let tfhers_part = ExternalPartition {
             name: String::from("tfhers"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let mut builder = graph.builder("main1");
         let a = builder.add_input(1, Shape::number(), Location::Unknown);
@@ -942,6 +955,7 @@ mod tests {
 
         let tfhers_part = ExternalPartition {
             name: String::from("tfhers"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let change_part =
             builder.add_change_partition(lut2, Some(&tfhers_part), None, Location::Unknown);
