@@ -1,4 +1,6 @@
-# Overview
+# Cryptography basics
+
+In this section, we remind a bit about what Fully Homomorphic Encryption (FHE) is. Much more complete resources are available on [this webpage](https://github.com/zama-ai/awesome-zama) or [fhe.org](https://fhe.org/resources/).
 
 ## Operations on encrypted values
 
@@ -77,30 +79,3 @@ The only thing you should keep in mind is that it adds a constraint on the input
 Second takeaway is that PBS are the most costly operations in FHE, the less PBS in your circuit the faster it will run. It is an interesting metrics to optimize (you will see that Concrete could give you the number of PBS used in your circuit).
 
 Note also that PBS cost varies with the input variable precision (a circuit with 8 bit PBS will run faster than one with 16 bits PBS).
-
-## Development Workflow
-
-Allowing computation on encrypted data is particularly interesting in the client/server model, especially when the client data are sensitive and the server not trusted. You could split the workflow in two main steps: development and deployment.
-
-### Development
-
-During development, you will turn your program into its FHE equivalent. Concrete automates this task with the compilation process but you can make this process even easier by reducing the precision required, reducing the number of PBSs or allowing more parallelization in your code (e.g. working on bit chunks instead of high bit-width variables).
-
-Once happy with the code, the development process is over and you will create the compiler artifact that will be used during deployment.
-
-### Deployment
-
-A typical Concrete deployment will host on a server the compilation artifact: Client specifications required by the compiled circuits and the fhe executable itself. Client will ask for the circuit requirements, generate keys accordingly, then it will send an encrypted payload and receive an encrypted result.
-
-```mermaid
-sequenceDiagram
-    Client->>Server: Client specifications?
-    Server-->>Client: Client specifications
-    Client->>Client: Private + Evaluation Keys Generation
-    Client->>Server: Encrypted(data) + Evaluation Key
-    Server->>Server: Compiled library execution
-    Server-->>Client: Encrypted(result)
-    Client->>Client: Decrypt(result)
-```
-
-For more information on deployment, see [Howto - Deploy](../guides/deploy.md)

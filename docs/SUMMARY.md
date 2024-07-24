@@ -12,7 +12,6 @@
 
 ## Operations
 
-* [Overview](core-features/fhe_basics.md)
 * [Table Lookups basics](core-features/table_lookups.md)
 * [Non-linear operations](core-features/non_linear_operations.md)
 * Other operations
@@ -72,6 +71,7 @@
   * [Bitwise operations](core-features/bitwise.md)
   * [Direct circuits](compilation/direct_circuits.md)
   * [Tagging](core-features/tagging.md)
+* [Cryptography basics](core-features/fhe_basics.md)
 * [Security](explanations/security.md)
 * [Frontend fusing](explanations/fusing.md)
 
