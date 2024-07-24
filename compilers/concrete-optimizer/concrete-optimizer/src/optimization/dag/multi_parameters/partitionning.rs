@@ -274,7 +274,9 @@ pub mod tests {
     use super::*;
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::dag::unparametrized;
+    use crate::optimization::dag::multi_parameters::optimize::MacroParameters;
     use crate::optimization::dag::multi_parameters::partition_cut::ExternalPartition;
+    use crate::parameters::GlweParameters;
 
     fn default_p_cut() -> PartitionCut {
         PartitionCut::from_precisions(&[2, 128])
@@ -357,12 +359,21 @@ pub mod tests {
         PartitionIndex(default)
     }
 
+    const DUMMY_MACRO_PARAM: MacroParameters = MacroParameters {
+        glwe_params: GlweParameters {
+            log2_polynomial_size: 0,
+            glwe_dimension: 0,
+        },
+        internal_dim: 0,
+    };
+
     #[test]
     fn test_tfhers_in_out_dot_compute() {
         let mut dag = unparametrized::Dag::new();
         let input1 = dag.add_input(16, Shape::number());
         let tfhers_partition = ExternalPartition {
             name: String::from("tfhers"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let change_part1 = dag.add_change_partition(input1, Some(&tfhers_partition), None);
         let dot = dag.add_dot([change_part1], [2]);
@@ -381,6 +392,7 @@ pub mod tests {
         let input = dag.add_input(16, Shape::number());
         let tfhers_partition = ExternalPartition {
             name: String::from("tfhers"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
         let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
@@ -416,9 +428,11 @@ pub mod tests {
         let input = dag.add_input(16, Shape::number());
         let tfhers_partition_in = ExternalPartition {
             name: String::from("tfhers_in"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let tfhers_partition_out = ExternalPartition {
             name: String::from("tfhers_out"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
         let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
@@ -458,6 +472,7 @@ pub mod tests {
         let input = dag.add_input(16, Shape::number());
         let tfhers_partition = ExternalPartition {
             name: String::from("tfhers"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
         let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
@@ -507,9 +522,11 @@ pub mod tests {
         let input = dag.add_input(16, Shape::number());
         let tfhers_partition_in = ExternalPartition {
             name: String::from("tfhers_in"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let tfhers_partition_out = ExternalPartition {
             name: String::from("tfhers_out"),
+            macro_params: DUMMY_MACRO_PARAM,
         };
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
         let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);

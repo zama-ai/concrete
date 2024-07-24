@@ -45,7 +45,7 @@ struct PartialMicroParameters {
     complexity: f64,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub struct MacroParameters {
     pub glwe_params: GlweParameters,
     pub internal_dim: u64,
@@ -920,6 +920,11 @@ pub fn optimize(
         ciphertext_modulus_log,
     };
 
+    let dag_p_cut = p_cut.as_ref().map_or_else(
+        || PartitionCut::for_each_precision(dag),
+        std::clone::Clone::clone,
+    );
+
     let dag = analyze(dag, &noise_config, p_cut, default_partition)?;
     let kappa =
         error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
@@ -954,11 +959,27 @@ pub fn optimize(
     let mut best_params: Option<Parameters> = None;
     for iter in 0..=10 {
         for partition in PartitionIndex::range(0, nb_partitions).rev() {
+            // reduce search space to the parameters of external partitions
+            let partition_search_space = if dag_p_cut.is_external_partition(&partition) {
+                let external_part =
+                    &dag_p_cut.external_partitions[partition.0 - dag_p_cut.n_internal_partitions()];
+                let mut reduced_search_space = search_space.clone();
+                reduced_search_space.glwe_dimensions =
+                    [external_part.macro_params.glwe_params.glwe_dimension].to_vec();
+                reduced_search_space.glwe_log_polynomial_sizes =
+                    [external_part.macro_params.glwe_params.log2_polynomial_size].to_vec();
+                reduced_search_space.internal_lwe_dimensions =
+                    [external_part.macro_params.internal_dim].to_vec();
+                reduced_search_space
+            } else {
+                search_space.clone()
+            };
+
             let new_params = optimize_macro(
                 security_level,
                 ciphertext_modulus_log,
                 fft_precision,
-                search_space,
+                &partition_search_space,
                 partition,
                 &used_tlu_keyswitch,
                 &used_conversion_keyswitch,
