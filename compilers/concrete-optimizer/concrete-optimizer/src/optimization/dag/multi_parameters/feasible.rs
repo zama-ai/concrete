@@ -6,6 +6,19 @@ use crate::utils::f64::f64_dot;
 use super::operations_value::OperationsValue;
 use super::partitions::PartitionIndex;
 
+#[derive(Debug, Clone)]
+pub enum Feasibility {
+    Unknown,
+    Feasible,
+    Unfeasible(VarianceConstraint),
+}
+
+impl Feasibility {
+    pub fn is_feasible(&self) -> bool {
+        matches!(self, Feasibility::Feasible)
+    }
+}
+
 #[derive(Clone)]
 pub struct Feasible {
     // TODO: move kappa here
@@ -213,7 +226,7 @@ impl Feasible {
         }
         let compress = |c: &VarianceConstraint| VarianceConstraint {
             variance: c.variance.compress(&detect_used),
-            ..(*c)
+            ..(c.to_owned())
         };
         let constraints = self.constraints.iter().map(compress).collect();
         let undominated_constraints = self.undominated_constraints.iter().map(compress).collect();

@@ -23,6 +23,7 @@ use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
 use crate::optimization::Err::NoParametersFound;
 
+use super::feasible::Feasibility;
 use super::keys_spec::InstructionKeys;
 
 const DEBUG: bool = false;
@@ -56,7 +57,7 @@ pub struct Parameters {
     pub micro_params: MicroParameters,
     pub macro_params: Vec<Option<MacroParameters>>,
     is_lower_bound: bool,
-    is_feasible: bool,
+    is_feasible: Feasibility,
     pub p_error: f64,
     pub global_p_error: f64,
     pub complexity: f64,
@@ -710,7 +711,8 @@ fn optimize_macro(
                 &mut operations,
             );
 
-            if best_parameters.is_feasible && !feasible.feasible(&operations.variance) {
+            if best_parameters.is_feasible.is_feasible() && !feasible.feasible(&operations.variance)
+            {
                 // noise_modulus_switching is increasing with internal_dim so we can cut
                 // but as long as nothing feasible as been found we don't break to improve feasibility
                 break;
@@ -752,7 +754,7 @@ fn optimize_macro(
             );
 
             let non_feasible = !feasible.feasible(&operations.variance);
-            if best_parameters.is_feasible && non_feasible {
+            if best_parameters.is_feasible.is_feasible() && non_feasible {
                 continue;
             }
 
@@ -780,6 +782,7 @@ fn optimize_macro(
                     continue;
                 }
                 best_partition_p_error = partition_p_error;
+                let (_, _, worst_constraint) = feasible.worst_constraint(&operations.variance);
                 let p_error = feasible.p_error(&operations.variance);
                 let global_p_error = feasible.global_p_error(&operations.variance);
                 let mut pbs = init_parameters.micro_params.pbs.clone();
@@ -796,7 +799,7 @@ fn optimize_macro(
                     micro_params,
                     macro_params,
                     is_lower_bound: true,
-                    is_feasible: false,
+                    is_feasible: Feasibility::Unfeasible(worst_constraint.to_owned()),
                 };
                 continue;
             }
@@ -882,12 +885,12 @@ fn optimize_macro(
                     micro_params,
                     macro_params,
                     is_lower_bound,
-                    is_feasible: true,
+                    is_feasible: Feasibility::Feasible,
                 };
             } else {
                 // the macro parameters are feasible
                 // but the complexity is not good enough due to previous feasible solution
-                assert!(best_parameters.is_feasible);
+                assert!(best_parameters.is_feasible.is_feasible());
             }
         }
     }
@@ -939,7 +942,7 @@ pub fn optimize(
     let nb_partitions = dag.nb_partitions;
     let init_parameters = Parameters {
         is_lower_bound: false,
-        is_feasible: false,
+        is_feasible: Feasibility::Unknown,
         macro_params: vec![None; nb_partitions],
         micro_params: MicroParameters {
             pbs: vec![None; nb_partitions],
@@ -991,13 +994,15 @@ pub fn optimize(
                 best_p_error,
             );
             assert!(
-                new_params.is_feasible || !params.is_feasible,
+                new_params.is_feasible.is_feasible() || !params.is_feasible.is_feasible(),
                 "Cannot degrade feasibility"
             );
             params = new_params;
-            if !params.is_feasible {
+            if let Feasibility::Unfeasible(ref unfeasible_constraint) = params.is_feasible {
                 if nb_partitions == 1 {
-                    return Err(NoParametersFound);
+                    return Err(optimization::Err::UnfeasibleVarianceConstraint(Box::new(
+                        unfeasible_constraint.to_owned(),
+                    )));
                 }
                 if DEBUG {
                     eprintln!(
@@ -1104,7 +1109,7 @@ fn sanity_check(
     feasible: &Feasible,
     complexity: &Complexity,
 ) {
-    assert!(params.is_feasible);
+    assert!(params.is_feasible.is_feasible());
     assert!(
         !params.is_lower_bound,
         "Sanity check:lower_bound: cannot return a partial solution"
