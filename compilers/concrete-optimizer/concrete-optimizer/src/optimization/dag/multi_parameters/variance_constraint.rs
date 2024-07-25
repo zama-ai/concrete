@@ -1,23 +1,25 @@
 use std::fmt;
 
-use crate::dag::operator::Precision;
+use crate::dag::operator::{Location, Precision};
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::symbolic_variance::SymbolicVariance;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct VarianceConstraint {
     pub precision: Precision,
     pub partition: PartitionIndex,
     pub nb_constraints: u64,
     pub safe_variance_bound: f64,
     pub variance: SymbolicVariance,
+    pub location: Location,
 }
 
 impl fmt::Display for VarianceConstraint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{} < (2²)**{} ({}bits partition:{} count:{}, dom={})",
+            "At location {}:\n{} < (2²)**{} ({}bits partition:{} count:{}, dom={})",
+            self.location,
             self.variance,
             self.safe_variance_bound.log2().round() / 2.0,
             self.precision,
