@@ -17,7 +17,7 @@ from concrete import fhe
 
 class Alphabet:
     letters: str = ""
-    mapping_to_int: dict = {}
+    mapping_to_int: dict
 
     @staticmethod
     def lowercase():
@@ -41,6 +41,7 @@ class Alphabet:
 
     def __init__(self, letters: str):
         self.letters = letters
+        self.mapping_to_int = {}
 
         for i, c in enumerate(self.letters):
             self.mapping_to_int[c] = i
@@ -76,7 +77,10 @@ class Alphabet:
 
     def _random_string(self, length: int) -> str:
         """Pick a random string in the alphabet."""
-        return "".join([random.choice(list(self.mapping_to_int)) for _ in range(length)])
+        ans = "".join([random.choice(list(self.mapping_to_int)) for _ in range(length)])
+        check = [c in self.letters for c in ans]
+        assert all(check), "Issue in generation"
+        return ans
 
     def prepare_random_patterns(self, len_min: int, len_max: int, nb_strings: int) -> list:
         """Prepare random patterns of different lengths."""
