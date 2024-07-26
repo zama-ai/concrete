@@ -33,6 +33,8 @@ def test_plain_identity(sample, expected_output):
 operations = [
     lambda x: fhe.identity(x),
     lambda x: fhe.identity(x) + 100,
+    lambda x: fhe.refresh(x),
+    lambda x: fhe.refresh(x) + 100,
 ]
 
 cases = []

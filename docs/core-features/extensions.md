@@ -548,6 +548,18 @@ Identity extension can be used to clone an input while changing its bit-width. I
 Identity extension only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
 {% endhint %}
 
+## fhe.refresh(value)
+
+It is similar to `fhe.identity` but with the extra guarantee that encryption noise is refreshed.
+
+{% hint style="info" %}
+Refresh is useful when you want to control precisely where encryption noise is refreshed in your circuit. For instance if your are using modules, sometimes compilation rejects the module because it's *not composable*. This happens because a function of the module never refresh the encryption noise. Adding a `return fhe.refresh(result)` on the function result solves the issue.
+{% endhint %}
+
+{% hint style="warning" %}
+Refresh extension only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
+{% endhint %}
+
 ## fhe.inputset(...)
 
 Used for creating a random inputset with the given specifications:

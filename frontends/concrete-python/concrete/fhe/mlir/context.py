@@ -2540,7 +2540,9 @@ class Context:
     ) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.GREATER, Comparison.EQUAL})
 
-    def identity(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
+    def identity(
+        self, resulting_type: ConversionType, x: Conversion, force_noise_refresh: bool
+    ) -> Conversion:
         assert (
             x.is_encrypted
             and resulting_type.is_encrypted
@@ -2548,7 +2550,7 @@ class Context:
             and x.is_signed == resulting_type.is_signed
         )
 
-        if resulting_type.bit_width == x.bit_width:
+        if resulting_type.bit_width == x.bit_width and not force_noise_refresh:
             return x
 
         result = self.extract_bits(
