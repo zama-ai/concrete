@@ -968,6 +968,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               ::concretelang::serverlib::ServerLambda lambda,
               ::concretelang::clientlib::PublicArguments &publicArguments,
               ::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
+             pybind11::gil_scoped_release release;
              SignalGuard signalGuard;
              return library_server_call(support, lambda, publicArguments,
                                         evaluationKeys);
@@ -1249,6 +1250,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               ::concretelang::clientlib::PublicArguments &publicArguments,
               ::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
              SignalGuard signalGuard;
+             pybind11::gil_scoped_release release;
              auto keyset = evaluationKeys.keyset;
              auto values = publicArguments.values;
              GET_OR_THROW_RESULT(auto output, circuit.call(keyset, values));
@@ -1279,6 +1281,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](::concretelang::clientlib::ValueExporter &exporter,
               size_t position, int64_t value) {
              SignalGuard signalGuard;
+             pybind11::gil_scoped_release release;
 
              auto info = exporter.circuit.getCircuitInfo()
                              .asReader()
@@ -1299,6 +1302,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                                size_t position, std::vector<int64_t> values,
                                std::vector<int64_t> shape) {
         SignalGuard signalGuard;
+        pybind11::gil_scoped_release release;
         std::vector<size_t> dimensions(shape.begin(), shape.end());
         auto info =
             exporter.circuit.getCircuitInfo().asReader().getInputs()[position];
@@ -1374,6 +1378,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               size_t position,
               ::concretelang::clientlib::SharedScalarOrTensorData &value) {
              SignalGuard signalGuard;
+             pybind11::gil_scoped_release release;
 
              auto result =
                  decrypter.circuit.processOutput(value.value, position);
