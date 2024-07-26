@@ -23,25 +23,33 @@ def FHE_PartitionAttr: FHE_Attr<"Partition", "partition"> {
 
     let summary = "An attribute representing a partition.";
 
+    // OLD version using all TFHErs parameters
+    // let parameters = (ins
+    //     "int":$lweDim,
+    //     "int":$glweDim,
+    //     "int":$polySize,
+    //     "FloatAttr":$lweNoiseDistrStdDev,
+    //     "FloatAttr":$glweNoiseDistrStdDev,
+    //     "int":$pbsBaseLog,
+    //     "int":$pbsLevel,
+    //     "int":$ksBaseLog,
+    //     "int":$ksLevel,
+    //     "int":$msgModulus,
+    //     "int":$carryModulus,
+    //     "int":$maxNoiseLevel,
+    //     "FloatAttr":$log2PFail,
+    //     "bool": $bigEncryptionKey,
+    //     DefaultValuedParameter<"int", "-1">: $ciphertextModulus
+    // );
+    // let assemblyFormat = "`<` `lwe_dim` $lweDim `,` `glwe_dim` $glweDim `,` `poly_size` $polySize `,` `lwe_noise_std` $lweNoiseDistrStdDev `,` `glwe_noise_std` $glweNoiseDistrStdDev `,` `pbs_base_log` $pbsBaseLog `,` `pbs_level` $pbsLevel `,` `ks_base_log` $ksBaseLog `,` `ks_level` $ksLevel `,` `msg_modulus` $msgModulus `,` `carry_modulus` $carryModulus `,` `max_noise_level` $maxNoiseLevel `,` `log2_pfail` $log2PFail `,` `big_key` $bigEncryptionKey `,` `ct_modulus` $ciphertextModulus `>`";
+
     let parameters = (ins
+        "StringAttr":$name,
         "int":$lweDim,
         "int":$glweDim,
-        "int":$polySize,
-        "FloatAttr":$lweNoiseDistrStdDev,
-        "FloatAttr":$glweNoiseDistrStdDev,
-        "int":$pbsBaseLog,
-        "int":$pbsLevel,
-        "int":$ksBaseLog,
-        "int":$ksLevel,
-        "int":$msgModulus,
-        "int":$carryModulus,
-        "int":$maxNoiseLevel,
-        "FloatAttr":$log2PFail,
-        "bool": $bigEncryptionKey,
-        DefaultValuedParameter<"int", "-1">: $ciphertextModulus
+        "int":$polySize
     );
-
-    let assemblyFormat = "`<` `lwe_dim` $lweDim `,` `glwe_dim` $glweDim `,` `poly_size` $polySize `,` `lwe_noise_std` $lweNoiseDistrStdDev `,` `glwe_noise_std` $glweNoiseDistrStdDev `,` `pbs_base_log` $pbsBaseLog `,` `pbs_level` $pbsLevel `,` `ks_base_log` $ksBaseLog `,` `ks_level` $ksLevel `,` `msg_modulus` $msgModulus `,` `carry_modulus` $carryModulus `,` `max_noise_level` $maxNoiseLevel `,` `log2_pfail` $log2PFail `,` `big_key` $bigEncryptionKey `,` `ct_modulus` $ciphertextModulus `>`";
+    let assemblyFormat = "`<` `name` $name `,` `lwe_dim` $lweDim `,` `glwe_dim` $glweDim `,` `poly_size` $polySize `>`";
 }
 
 #endif

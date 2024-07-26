@@ -20,7 +20,11 @@ from mlir.ir import Module as MlirModule
 
 from .. import tfhers
 from ..compilation.composition import CompositionRule
-from ..compilation.configuration import Configuration, Exactness, ParameterSelectionStrategy
+from ..compilation.configuration import (
+    Configuration,
+    Exactness,
+    ParameterSelectionStrategy,
+)
 from ..representation import Graph, GraphProcessor, MultiGraphProcessor, Node, Operation
 from ..tfhers import TFHERSIntegerType
 from .context import Context
@@ -996,7 +1000,6 @@ class Converter:
             dtype.msg_width,
         )
 
-        # TODO: use parameters to change partition
         tfhers_int = ctx.change_partition(tfhers_int, src_partition=dtype.params)
 
         # number of ciphertexts representing a single integer
@@ -1092,7 +1095,6 @@ class Converter:
 
         # we are extracting lsb first so we reverse it so we have msb first
         result = ctx.concatenate(result_type, extracted_bits[::-1], axis=-1)
-        # TODO: use specified parameters
         return ctx.change_partition(result, dest_partition=dtype.params)
 
     # pylint: enable=missing-function-docstring,unused-argument
