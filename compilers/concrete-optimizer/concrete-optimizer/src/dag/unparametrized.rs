@@ -6,7 +6,10 @@ use std::{
     fmt,
 };
 
-use super::operator::dot_kind::{dot_kind, DotKind};
+use super::operator::{
+    dot_kind::{dot_kind, DotKind},
+    Location,
+};
 
 /// The name of the default. Used when adding operations directly on the dag instead of via a
 /// builder.
@@ -63,6 +66,7 @@ pub struct DagOperator<'dag> {
     pub precision: &'dag Precision,
     pub output_state: &'dag OutputState,
     pub circuit_tag: &'dag String,
+    pub location: &'dag Location,
 }
 
 impl<'dag> DagOperator<'dag> {
@@ -98,6 +102,15 @@ impl<'dag> DagCircuit<'dag> {
         self.ids.iter().map(|id| self.dag.get_operator(*id))
     }
 
+    /// Try to return an operator from its index. Returns `None` if the operator is not in the circuit.
+    pub fn try_get_operator(&self, id: OperatorIndex) -> Option<DagOperator<'dag>> {
+        if self.ids.contains(&id) {
+            Some(self.dag.get_operator(id))
+        } else {
+            None
+        }
+    }
+
     /// Returns an iterator over the circuit's input operators.
     #[allow(unused)]
     pub fn get_input_operators_iter(&self) -> impl Iterator<Item = DagOperator<'dag>> + '_ {
@@ -130,7 +143,7 @@ pub struct DagBuilder<'dag> {
 }
 
 impl<'dag> DagBuilder<'dag> {
-    fn add_operator(&mut self, operator: Operator) -> OperatorIndex {
+    fn add_operator(&mut self, operator: Operator, location: Location) -> OperatorIndex {
         debug_assert!(operator
             .get_inputs_iter()
             .all(|id| self.dag.circuit_tags[id.0] == self.circuit));
@@ -145,6 +158,7 @@ impl<'dag> DagBuilder<'dag> {
         self.dag.operators.push(operator);
         self.dag.output_state.push(OutputState::new());
         self.dag.circuit_tags.push(self.circuit.clone());
+        self.dag.locations.push(location);
         OperatorIndex(i)
     }
 
@@ -152,12 +166,16 @@ impl<'dag> DagBuilder<'dag> {
         &mut self,
         out_precision: Precision,
         out_shape: impl Into<Shape>,
+        location: Location,
     ) -> OperatorIndex {
         let out_shape = out_shape.into();
-        self.add_operator(Operator::Input {
-            out_precision,
-            out_shape,
-        })
+        self.add_operator(
+            Operator::Input {
+                out_precision,
+                out_shape,
+            },
+            location,
+        )
     }
 
     pub fn add_lut(
@@ -165,29 +183,37 @@ impl<'dag> DagBuilder<'dag> {
         input: OperatorIndex,
         table: FunctionTable,
         out_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
-        self.add_operator(Operator::Lut {
-            input,
-            table,
-            out_precision,
-        })
+        self.add_operator(
+            Operator::Lut {
+                input,
+                table,
+                out_precision,
+            },
+            location,
+        )
     }
 
     pub fn add_dot(
         &mut self,
         inputs: impl Into<Vec<OperatorIndex>>,
         weights: impl Into<Weights>,
+        location: Location,
     ) -> OperatorIndex {
         let inputs = inputs.into();
         let weights = weights.into();
         // We detect the kind of dot to simplify matching later on.
         let nb_inputs = inputs.len() as u64;
         let input_shape = self.dag.get_operator(inputs[0]).shape;
-        self.add_operator(Operator::Dot {
-            inputs,
-            kind: dot_kind(nb_inputs, input_shape, &weights),
-            weights,
-        })
+        self.add_operator(
+            Operator::Dot {
+                inputs,
+                kind: dot_kind(nb_inputs, input_shape, &weights),
+                weights,
+            },
+            location,
+        )
     }
 
     pub fn add_levelled_op(
@@ -197,6 +223,7 @@ impl<'dag> DagBuilder<'dag> {
         weights: impl Into<Vec<f64>>,
         out_shape: impl Into<Shape>,
         comment: impl Into<String>,
+        location: Location,
     ) -> OperatorIndex {
         let inputs = inputs.into();
         let out_shape = out_shape.into();
@@ -210,44 +237,56 @@ impl<'dag> DagBuilder<'dag> {
             out_shape,
             comment,
         };
-        self.add_operator(op)
+        self.add_operator(op, location)
     }
 
     pub fn add_unsafe_cast(
         &mut self,
         input: OperatorIndex,
         out_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
         let input_precision = self.dag.out_precisions[input.0];
         if input_precision == out_precision {
             return input;
         }
-        self.add_operator(Operator::UnsafeCast {
-            input,
-            out_precision,
-        })
+        self.add_operator(
+            Operator::UnsafeCast {
+                input,
+                out_precision,
+            },
+            location,
+        )
     }
 
     pub fn add_round_op(
         &mut self,
         input: OperatorIndex,
         rounded_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
         let in_precision = self.dag.out_precisions[input.0];
         assert!(rounded_precision <= in_precision);
-        self.add_operator(Operator::Round {
-            input,
-            out_precision: rounded_precision,
-        })
+        self.add_operator(
+            Operator::Round {
+                input,
+                out_precision: rounded_precision,
+            },
+            location,
+        )
     }
 
-    fn add_shift_left_lsb_to_msb_no_padding(&mut self, input: OperatorIndex) -> OperatorIndex {
+    fn add_shift_left_lsb_to_msb_no_padding(
+        &mut self,
+        input: OperatorIndex,
+        location: Location,
+    ) -> OperatorIndex {
         // Convert any input to simple 1bit msb replacing the padding
         // For now encoding is not explicit, so 1 bit content without padding <=> 0 bit content with padding.
         let in_precision = self.dag.out_precisions[input.0];
         let shift_factor = Weights::number(1 << (in_precision as i64));
-        let lsb_as_msb = self.add_dot([input], shift_factor);
-        self.add_unsafe_cast(lsb_as_msb, 0 as Precision)
+        let lsb_as_msb = self.add_dot([input], shift_factor, location.clone());
+        self.add_unsafe_cast(lsb_as_msb, 0 as Precision, location)
     }
 
     fn add_lut_1bit_no_padding(
@@ -255,46 +294,57 @@ impl<'dag> DagBuilder<'dag> {
         input: OperatorIndex,
         table: FunctionTable,
         out_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
         // For now encoding is not explicit, so 1 bit content without padding <=> 0 bit content with padding.
         let in_precision = self.dag.out_precisions[input.0];
         assert!(in_precision == 0);
         // An add after with a clear constant is skipped here as it doesn't change noise handling.
-        self.add_lut(input, table, out_precision)
+        self.add_lut(input, table, out_precision, location)
     }
 
     fn add_shift_right_msb_no_padding_to_lsb(
         &mut self,
         input: OperatorIndex,
         out_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
         // Convert simple 1 bit msb to a nbit with zero padding
         let to_nbits_padded = FunctionTable::UNKWOWN;
-        self.add_lut_1bit_no_padding(input, to_nbits_padded, out_precision)
+        self.add_lut_1bit_no_padding(input, to_nbits_padded, out_precision, location)
     }
 
-    fn add_isolate_lowest_bit(&mut self, input: OperatorIndex) -> OperatorIndex {
+    fn add_isolate_lowest_bit(
+        &mut self,
+        input: OperatorIndex,
+        location: Location,
+    ) -> OperatorIndex {
         // The lowest bit is converted to a ciphertext of same precision as input.
         // Introduce a pbs of input precision but this precision is only used on 1 levelled op and converted to lower precision
         // Noise is reduced by a pbs.
         let out_precision = self.dag.out_precisions[input.0];
-        let lsb_as_msb = self.add_shift_left_lsb_to_msb_no_padding(input);
-        self.add_shift_right_msb_no_padding_to_lsb(lsb_as_msb, out_precision)
+        let lsb_as_msb = self.add_shift_left_lsb_to_msb_no_padding(input, location.clone());
+        self.add_shift_right_msb_no_padding_to_lsb(lsb_as_msb, out_precision, location)
     }
 
-    pub fn add_truncate_1_bit(&mut self, input: OperatorIndex) -> OperatorIndex {
+    pub fn add_truncate_1_bit(
+        &mut self,
+        input: OperatorIndex,
+        location: Location,
+    ) -> OperatorIndex {
         // Reset a bit.
         // ex: 10110 is truncated to 1011, 10111 is truncated to 1011
         let in_precision = self.dag.out_precisions[input.0];
-        let lowest_bit = self.add_isolate_lowest_bit(input);
-        let bit_cleared = self.add_dot([input, lowest_bit], [1, -1]);
-        self.add_unsafe_cast(bit_cleared, in_precision - 1)
+        let lowest_bit = self.add_isolate_lowest_bit(input, location.clone());
+        let bit_cleared = self.add_dot([input, lowest_bit], [1, -1], location.clone());
+        self.add_unsafe_cast(bit_cleared, in_precision - 1, location)
     }
 
     pub fn add_expanded_round(
         &mut self,
         input: OperatorIndex,
         rounded_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
         // Round such that the output has precision out_precision.
         // We round by adding 2**(removed_precision - 1) to the last remaining bit to clear (this step is a no-op).
@@ -312,7 +362,7 @@ impl<'dag> DagBuilder<'dag> {
         // The rounded is in high precision with garbage lowest bits
         let bits_to_truncate = in_precision - rounded_precision;
         for _ in 1..=bits_to_truncate as i64 {
-            rounded = self.add_truncate_1_bit(rounded);
+            rounded = self.add_truncate_1_bit(rounded, location.clone());
         }
         rounded
     }
@@ -323,10 +373,11 @@ impl<'dag> DagBuilder<'dag> {
         table: FunctionTable,
         rounded_precision: Precision,
         out_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
         // note: this is a simplified graph, some constant additions are missing without consequence on crypto parameter choice.
-        let rounded = self.add_expanded_round(input, rounded_precision);
-        self.add_lut(rounded, table, out_precision)
+        let rounded = self.add_expanded_round(input, rounded_precision, location.clone());
+        self.add_lut(rounded, table, out_precision, location)
     }
 
     pub fn add_rounded_lut(
@@ -335,9 +386,10 @@ impl<'dag> DagBuilder<'dag> {
         table: FunctionTable,
         rounded_precision: Precision,
         out_precision: Precision,
+        location: Location,
     ) -> OperatorIndex {
-        let rounded = self.add_round_op(input, rounded_precision);
-        self.add_lut(rounded, table, out_precision)
+        let rounded = self.add_round_op(input, rounded_precision, location.clone());
+        self.add_lut(rounded, table, out_precision, location)
     }
 
     /// Marks an operator as being an output of the circuit.
@@ -463,6 +515,8 @@ pub struct Dag {
     pub(crate) output_state: Vec<OutputState>,
     // Collect the circuit the operators are associated with
     pub(crate) circuit_tags: Vec<String>,
+    // Collect the operator locations
+    pub(crate) locations: Vec<Location>,
     // Composition rules
     pub(crate) composition: CompositionRules,
 }
@@ -491,6 +545,7 @@ impl Dag {
             out_precisions: vec![],
             output_state: vec![],
             circuit_tags: vec![],
+            locations: vec![],
             composition: CompositionRules::default(),
         }
     }
@@ -509,7 +564,7 @@ impl Dag {
         out_shape: impl Into<Shape>,
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
-            .add_input(out_precision, out_shape)
+            .add_input(out_precision, out_shape, Location::Unknown)
     }
 
     pub fn add_lut(
@@ -519,7 +574,7 @@ impl Dag {
         out_precision: Precision,
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
-            .add_lut(input, table, out_precision)
+            .add_lut(input, table, out_precision, Location::Unknown)
     }
 
     pub fn add_dot(
@@ -527,7 +582,8 @@ impl Dag {
         inputs: impl Into<Vec<OperatorIndex>>,
         weights: impl Into<Weights>,
     ) -> OperatorIndex {
-        self.builder(DEFAULT_CIRCUIT).add_dot(inputs, weights)
+        self.builder(DEFAULT_CIRCUIT)
+            .add_dot(inputs, weights, Location::Unknown)
     }
 
     pub fn add_levelled_op(
@@ -538,8 +594,14 @@ impl Dag {
         out_shape: impl Into<Shape>,
         comment: impl Into<String>,
     ) -> OperatorIndex {
-        self.builder(DEFAULT_CIRCUIT)
-            .add_levelled_op(inputs, complexity, weights, out_shape, comment)
+        self.builder(DEFAULT_CIRCUIT).add_levelled_op(
+            inputs,
+            complexity,
+            weights,
+            out_shape,
+            comment,
+            Location::Unknown,
+        )
     }
 
     pub fn add_unsafe_cast(
@@ -548,7 +610,7 @@ impl Dag {
         out_precision: Precision,
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
-            .add_unsafe_cast(input, out_precision)
+            .add_unsafe_cast(input, out_precision, Location::Unknown)
     }
 
     pub fn add_round_op(
@@ -557,13 +619,13 @@ impl Dag {
         rounded_precision: Precision,
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
-            .add_round_op(input, rounded_precision)
+            .add_round_op(input, rounded_precision, Location::Unknown)
     }
 
     #[allow(unused)]
     fn add_shift_left_lsb_to_msb_no_padding(&mut self, input: OperatorIndex) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
-            .add_shift_left_lsb_to_msb_no_padding(input)
+            .add_shift_left_lsb_to_msb_no_padding(input, Location::Unknown)
     }
 
     #[allow(unused)]
@@ -573,8 +635,12 @@ impl Dag {
         table: FunctionTable,
         out_precision: Precision,
     ) -> OperatorIndex {
-        self.builder(DEFAULT_CIRCUIT)
-            .add_lut_1bit_no_padding(input, table, out_precision)
+        self.builder(DEFAULT_CIRCUIT).add_lut_1bit_no_padding(
+            input,
+            table,
+            out_precision,
+            Location::Unknown,
+        )
     }
 
     #[allow(unused)]
@@ -584,16 +650,18 @@ impl Dag {
         out_precision: Precision,
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT)
-            .add_shift_right_msb_no_padding_to_lsb(input, out_precision)
+            .add_shift_right_msb_no_padding_to_lsb(input, out_precision, Location::Unknown)
     }
 
     #[allow(unused)]
     fn add_isolate_lowest_bit(&mut self, input: OperatorIndex) -> OperatorIndex {
-        self.builder(DEFAULT_CIRCUIT).add_isolate_lowest_bit(input)
+        self.builder(DEFAULT_CIRCUIT)
+            .add_isolate_lowest_bit(input, Location::Unknown)
     }
 
     pub fn add_truncate_1_bit(&mut self, input: OperatorIndex) -> OperatorIndex {
-        self.builder(DEFAULT_CIRCUIT).add_truncate_1_bit(input)
+        self.builder(DEFAULT_CIRCUIT)
+            .add_truncate_1_bit(input, Location::Unknown)
     }
 
     pub fn add_expanded_round(
@@ -601,8 +669,11 @@ impl Dag {
         input: OperatorIndex,
         rounded_precision: Precision,
     ) -> OperatorIndex {
-        self.builder(DEFAULT_CIRCUIT)
-            .add_expanded_round(input, rounded_precision)
+        self.builder(DEFAULT_CIRCUIT).add_expanded_round(
+            input,
+            rounded_precision,
+            Location::Unknown,
+        )
     }
 
     pub fn add_expanded_rounded_lut(
@@ -617,6 +688,7 @@ impl Dag {
             table,
             rounded_precision,
             out_precision,
+            Location::Unknown,
         )
     }
 
@@ -632,6 +704,7 @@ impl Dag {
             table,
             rounded_precision,
             out_precision,
+            Location::Unknown,
         )
     }
 
@@ -732,6 +805,7 @@ impl Dag {
             precision: self.out_precisions.get(id.0).unwrap(),
             output_state: self.output_state.get(id.0).unwrap(),
             circuit_tag: self.circuit_tags.get(id.0).unwrap(),
+            location: self.locations.get(id.0).unwrap(),
         }
     }
 
@@ -766,10 +840,10 @@ mod tests {
     fn output_marking() {
         let mut graph = Dag::new();
         let mut builder = graph.builder("main1");
-        let a = builder.add_input(1, Shape::number());
-        let b = builder.add_input(1, Shape::number());
+        let a = builder.add_input(1, Shape::number(), Location::Unknown);
+        let b = builder.add_input(1, Shape::number(), Location::Unknown);
         builder.tag_operator_as_output(b);
-        let _ = builder.add_dot([a, b], [1, 1]);
+        let _ = builder.add_dot([a, b], [1, 1], Location::Unknown);
         assert!(graph.get_operator(b).is_output());
         assert!(!graph.get_operator(a).is_output());
     }
@@ -779,15 +853,15 @@ mod tests {
     fn graph_builder() {
         let mut graph = Dag::new();
         let mut builder = graph.builder("main1");
-        let a = builder.add_input(1, Shape::number());
-        let b = builder.add_input(1, Shape::number());
-        let c = builder.add_dot([a, b], [1, 1]);
-        let _d = builder.add_lut(c, FunctionTable::UNKWOWN, 1);
+        let a = builder.add_input(1, Shape::number(), Location::Unknown);
+        let b = builder.add_input(1, Shape::number(), Location::Unknown);
+        let c = builder.add_dot([a, b], [1, 1], Location::Unknown);
+        let _d = builder.add_lut(c, FunctionTable::UNKWOWN, 1, Location::Unknown);
         let mut builder = graph.builder("main2");
-        let e = builder.add_input(2, Shape::number());
-        let f = builder.add_input(2, Shape::number());
-        let g = builder.add_dot([e, f], [2, 2]);
-        let _h = builder.add_lut(g, FunctionTable::UNKWOWN, 2);
+        let e = builder.add_input(2, Shape::number(), Location::Unknown);
+        let f = builder.add_input(2, Shape::number(), Location::Unknown);
+        let g = builder.add_dot([e, f], [2, 2], Location::Unknown);
+        let _h = builder.add_lut(g, FunctionTable::UNKWOWN, 2, Location::Unknown);
         graph.tag_operator_as_output(c);
     }
 
@@ -795,8 +869,8 @@ mod tests {
     fn graph_creation() {
         let mut graph = Dag::new();
         let mut builder = graph.builder("_");
-        let input1 = builder.add_input(1, Shape::number());
-        let input2 = builder.add_input(2, Shape::number());
+        let input1 = builder.add_input(1, Shape::number(), Location::Unknown);
+        let input2 = builder.add_input(2, Shape::number(), Location::Unknown);
 
         let cpx_add = LevelledComplexity::ADDITION;
         let sum1 = builder.add_levelled_op(
@@ -805,9 +879,10 @@ mod tests {
             [1.0, 1.0],
             Shape::number(),
             "sum",
+            Location::Unknown,
         );
 
-        let lut1 = builder.add_lut(sum1, FunctionTable::UNKWOWN, 1);
+        let lut1 = builder.add_lut(sum1, FunctionTable::UNKWOWN, 1, Location::Unknown);
 
         let concat = builder.add_levelled_op(
             [input1, lut1],
@@ -815,11 +890,12 @@ mod tests {
             [1.0, 1.0],
             Shape::vector(2),
             "concat",
+            Location::Unknown,
         );
 
-        let dot = builder.add_dot([concat], [1, 2]);
+        let dot = builder.add_dot([concat], [1, 2], Location::Unknown);
 
-        let lut2 = builder.add_lut(dot, FunctionTable::UNKWOWN, 2);
+        let lut2 = builder.add_lut(dot, FunctionTable::UNKWOWN, 2, Location::Unknown);
 
         let ops_index = [input1, input2, sum1, lut1, concat, dot, lut2];
         for (expected_i, op_index) in ops_index.iter().enumerate() {

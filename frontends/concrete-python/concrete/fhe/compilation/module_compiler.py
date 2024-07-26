@@ -54,6 +54,7 @@ class FunctionDef:
     inputset: List[Any]
     graph: Optional[Graph]
     _parameter_values: Dict[str, ValueDescription]
+    location: str
 
     def __init__(
         self,
@@ -111,6 +112,9 @@ class FunctionDef:
         self.graph = None
         self.name = function.__name__
         self._parameter_values = {}
+        self.location = (
+            f"{self.function.__code__.co_filename}:{self.function.__code__.co_firstlineno}"
+        )
 
     def trace(
         self,
@@ -144,7 +148,7 @@ class FunctionDef:
             )
         }
 
-        self.graph = Tracer.trace(self.function, parameters, name=self.name)
+        self.graph = Tracer.trace(self.function, parameters, name=self.name, location=self.location)
         if artifacts is not None:
             artifacts.add_graph("initial", self.graph)
 
