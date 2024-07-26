@@ -434,7 +434,8 @@ class Converter:
 
     def identity(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-        return ctx.identity(ctx.typeof(node), preds[0])
+        force_noise_refresh = node.properties["kwargs"].get("force_noise_refresh", False)
+        return ctx.identity(ctx.typeof(node), preds[0], force_noise_refresh)
 
     def index_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) >= 2

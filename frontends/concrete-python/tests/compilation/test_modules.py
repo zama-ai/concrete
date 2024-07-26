@@ -602,3 +602,28 @@ def test_simulate_encrypt_run_decrypt(helpers):
     # Make sure computation happened in simulation.
     assert isinstance(module.dec.runtime, SimulationRt)
     assert isinstance(encrypted_result, int)
+
+
+def test_non_composable_due_to_increasing_noise():
+    """
+    Test that non composable module can be fixed with `fhe.refresh`.
+    """
+
+    inputsets = {"a": [(x, y) for x in range(16) for y in range(16)]}
+
+    @fhe.module()
+    class Broken:
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def a(x, y):
+            return fhe.identity(x + y)  # identity is optimized out in that case
+
+    with pytest.raises(RuntimeError, match="Program can not be composed"):
+        Broken.compile(inputsets)
+
+    @fhe.module()
+    class Fixed:
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def a(x, y):
+            return fhe.refresh(x + y)
+
+    assert Fixed.compile(inputsets)

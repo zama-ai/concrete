@@ -57,6 +57,7 @@ from .extensions import (
     one,
     ones,
     ones_like,
+    refresh,
     relu,
     round_bit_pattern,
     tag,
