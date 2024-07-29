@@ -23,39 +23,26 @@ public:
   matchAndRewrite(mlir::scf::ForOp forOp,
                   mlir::PatternRewriter &rewriter) const override {
     auto attr = forOp->getAttrOfType<mlir::BoolAttr>("parallel");
-    if (attr == nullptr) {
+
+    if (!attr || !attr.getValue()) {
       return mlir::failure();
     }
+
     assert(forOp.getRegionIterArgs().size() == 0 &&
            "unexpecting iter args when loops are bufferized");
-    if (attr.getValue()) {
-      rewriter.replaceOpWithNewOp<mlir::scf::ParallelOp>(
-          forOp, mlir::ValueRange{forOp.getLowerBound()},
-          mlir::ValueRange{forOp.getUpperBound()}, forOp.getStep(),
-          std::nullopt,
-          [&](mlir::OpBuilder &builder, mlir::Location location,
-              mlir::ValueRange indVar, mlir::ValueRange iterArgs) {
-            mlir::IRMapping map;
-            map.map(forOp.getInductionVar(), indVar.front());
-            for (auto &op : forOp.getRegion().front()) {
-              auto newOp = builder.clone(op, map);
-              map.map(op.getResults(), newOp->getResults());
-            }
-          });
-    } else {
-      rewriter.replaceOpWithNewOp<mlir::scf::ForOp>(
-          forOp, forOp.getLowerBound(), forOp.getUpperBound(), forOp.getStep(),
-          std::nullopt,
-          [&](mlir::OpBuilder &builder, mlir::Location location,
-              mlir::Value indVar, mlir::ValueRange iterArgs) {
-            mlir::IRMapping map;
-            map.map(forOp.getInductionVar(), indVar);
-            for (auto &op : forOp.getRegion().front()) {
-              auto newOp = builder.clone(op, map);
-              map.map(op.getResults(), newOp->getResults());
-            }
-          });
-    }
+
+    rewriter.replaceOpWithNewOp<mlir::scf::ParallelOp>(
+        forOp, mlir::ValueRange{forOp.getLowerBound()},
+        mlir::ValueRange{forOp.getUpperBound()}, forOp.getStep(), std::nullopt,
+        [&](mlir::OpBuilder &builder, mlir::Location location,
+            mlir::ValueRange indVar, mlir::ValueRange iterArgs) {
+          mlir::IRMapping map;
+          map.map(forOp.getInductionVar(), indVar.front());
+          for (auto &op : forOp.getRegion().front()) {
+            auto newOp = builder.clone(op, map);
+            map.map(op.getResults(), newOp->getResults());
+          }
+        });
 
     return mlir::success();
   }
