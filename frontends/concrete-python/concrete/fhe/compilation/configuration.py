@@ -994,6 +994,7 @@ class Configuration:
     dynamic_assignment_check_out_of_bounds: bool
     simulate_encrypt_run_decrypt: bool
     composable: bool
+    auto_schedule_run: bool
 
     def __init__(
         self,
@@ -1063,6 +1064,7 @@ class Configuration:
         dynamic_indexing_check_out_of_bounds: bool = True,
         dynamic_assignment_check_out_of_bounds: bool = True,
         simulate_encrypt_run_decrypt: bool = False,
+        auto_schedule_run: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1170,6 +1172,8 @@ class Configuration:
 
         self.simulate_encrypt_run_decrypt = simulate_encrypt_run_decrypt
 
+        self.auto_schedule_run = auto_schedule_run
+
         self._validate()
 
     class Keep:
@@ -1245,6 +1249,7 @@ class Configuration:
         dynamic_indexing_check_out_of_bounds: Union[Keep, bool] = KEEP,
         dynamic_assignment_check_out_of_bounds: Union[Keep, bool] = KEEP,
         simulate_encrypt_run_decrypt: Union[Keep, bool] = KEEP,
+        auto_schedule_run: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
