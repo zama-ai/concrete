@@ -166,6 +166,14 @@ class LevenshteinDistance:
             for _ in range(1000)
         ]
 
+        conf = fhe.Configuration(
+            enable_unsafe_features=True,
+            use_insecure_key_cache=True,
+            insecure_key_cache_location=".lev_keys",
+            min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED,
+            show_mlir=args.show_mlir,
+            show_optimizer=args.show_optimizer,
+        )
         # pylint: disable-next=no-member
         self.module = LevenshsteinModule.compile(
             {
@@ -173,10 +181,8 @@ class LevenshteinDistance:
                 "min_cost": inputset_min_cost,
                 "constant": [i for i in range(len(self.alphabet.mapping_to_int))],
             },
-            show_mlir=args.show_mlir,
-            p_error=10**-20,
-            show_optimizer=args.show_optimizer,
-            min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED,
+            conf,
+            auto_schedule_run = True,
         )
 
     def _compute_in_simulation(self, list_patterns: list):
@@ -205,9 +211,9 @@ class LevenshteinDistance:
 
             time_begin = time.time()
             l1_fhe_enc = levenshtein_fhe(self.module, a_enc, b_enc)
-            time_end = time.time()
 
             l1_fhe = self.module.min_cost.decrypt(l1_fhe_enc)  # type: ignore
+            time_end = time.time()
 
             l1_clear = levenshtein_clear(a, b)
 
