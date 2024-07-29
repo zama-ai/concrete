@@ -4,8 +4,12 @@ Declaration of `FheModule` classes.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
+import asyncio
 from pathlib import Path
+from threading import Thread
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future
 
 import numpy as np
 from concrete.compiler import (
@@ -29,14 +33,38 @@ from .value import Value
 # pylint: enable=import-error,no-member,no-name-in-module
 
 
-class ExecutionRt(NamedTuple):
+class ExecutionRt:
     """
     Runtime object class for execution.
     """
 
     client: Client
     server: Server
+    auto_schedule_run: bool
+    fhe_executor_pool: ThreadPoolExecutor
+    fhe_waiter_loop: asyncio.BaseEventLoop
+    fhe_waiter_thread: Thread # daemon thread
 
+    def __init__(self, client, server, auto_schedule_run):
+        self.client = client
+        self.server = server
+        self.auto_schedule_run = True
+        if auto_schedule_run:
+            self.fhe_executor_pool = ThreadPoolExecutor()
+            self.fhe_waiter_loop = asyncio.new_event_loop()
+            def loop_thread():
+                asyncio.set_event_loop(self.fhe_waiter_loop)
+                self.fhe_waiter_loop.run_forever()
+            self.fhe_waiter_thread = Thread(target=loop_thread, args=(), daemon=True)
+            self.fhe_waiter_thread.start()
+        else:
+            self.fhe_executor_pool = None
+            self.fhe_waiter_loop = None
+            self.fhe_waiter_thread = None
+
+    def __del__(self):
+        if self.fhe_waiter_loop:
+            self.fhe_waiter_loop.stop() # daemon cleanup
 
 class SimulationRt(NamedTuple):
     """
@@ -184,10 +212,47 @@ class FheFunction:
         assert isinstance(self.runtime, ExecutionRt)
         return self.runtime.client.encrypt(*args, function_name=self.name)
 
-    def run(
+    def run_sync(
         self,
         *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
     ) -> Union[Value, Tuple[Value, ...]]:
+        """
+        Evaluate the function synchronuously.
+
+        Args:
+            *args (Value):
+                argument(s) for evaluation
+
+        Returns:
+            Union[Value, Tuple[Value, ...]]:
+                result(s) of evaluation
+        """
+
+        return self._run(sync=True, *args)
+
+    def run_async(self, *args: Optional[Union[Value, Tuple[Optional[Value], ...]]]
+    ) -> 'Union[Future[Value], Future[Tuple[Value, ...]]]':
+        """
+        Evaluate the function asynchronuously.
+
+        Args:
+            *args (Value):
+                argument(s) for evaluation
+
+        Returns:
+            Union[Value, Tuple[Value, ...]]:
+                result(s) of evaluation
+        """
+        if not self.runtime.fhe_executor_pool:
+            self.runtime = ExecutionRt(self.runtime.client, self.runtime.server, True)
+            self.runtime.auto_schedule_run = False
+
+        return self._run(False, *args)
+
+    def run(
+        self,
+        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+    ) -> Union[Value, Tuple[Value, ...], Future]:
         """
         Evaluate the function.
 
@@ -200,13 +265,64 @@ class FheFunction:
                 result(s) of evaluation
         """
 
+        return self._run(not self.runtime.auto_schedule_run, *args)
+
+    def _run(
+        self,
+        sync,
+        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+    ) -> Union[Value, Tuple[Value, ...], Future]:
+        """
+        Evaluate the function.
+
+        Args:
+            *args (Value):
+                argument(s) for evaluation
+
+        Returns:
+            Union[Value, Tuple[Value, ...]]:
+                result(s) of evaluation
+        """
         if self.configuration.simulate_encrypt_run_decrypt:
             return self.simulate(*args)
 
         assert isinstance(self.runtime, ExecutionRt)
-        return self.runtime.server.run(
+
+        fhe_work = lambda *args:self.runtime.server.run(
             *args, evaluation_keys=self.runtime.client.evaluation_keys, function_name=self.name
         )
+
+        if not self.runtime.fhe_executor_pool:
+            # there cannot be be future args
+            return fhe_work(*args)
+
+        def args_ready(args):
+            return [arg.result() if isinstance(arg, Future) else arg for arg in args]
+
+        if sync:
+            for arg in args:
+                assert not isinstance(arg, Future)
+            return fhe_work(*args_ready(args))
+
+        all_args_done = all(not isinstance(arg, Future) or arg.done() for arg in args)
+
+        fhe_work_future = lambda *args:self.runtime.fhe_executor_pool.submit(fhe_work, *args)
+        if all_args_done:
+            return fhe_work_future(*args_ready(args))
+
+        # waiting args to be ready with async coroutines
+        # it only required one thread to run unlimited waits vs unlimited sync threads
+        async def wait_async(arg):
+            if not isinstance(arg, Future):
+                return arg
+            if arg.done():
+                return arg.result()
+            return await asyncio.wrap_future(arg, loop=self.runtime.fhe_waiter_loop)
+        async def args_ready_and_submit(*args):
+            args = [await wait_async(arg) for arg in args]
+            return await wait_async(fhe_work_future(*args))
+        run_async = args_ready_and_submit(*args)
+        return asyncio.run_coroutine_threadsafe(run_async, self.runtime.fhe_waiter_loop)
 
     def decrypt(
         self,
@@ -228,6 +344,7 @@ class FheFunction:
             return results if len(results) != 1 else results[0]  # type: ignore
 
         assert isinstance(self.runtime, ExecutionRt)
+        results = [res.result() if isinstance(res, Future) else res for res in results]
         return self.runtime.client.decrypt(*results, function_name=self.name)
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
@@ -552,6 +669,7 @@ class FheModule:
         compilation_context: CompilationContext,
         configuration: Optional[Configuration] = None,
         composition_rules: Optional[Iterable[CompositionRule]] = None,
+        auto_schedule_run: bool = False,
     ):
         assert configuration and (configuration.fhe_simulation or configuration.fhe_execution)
 
@@ -583,7 +701,7 @@ class FheModule:
                 keyset_cache_directory = self.configuration.insecure_key_cache_location
 
             client = Client(server.client_specs, keyset_cache_directory)
-            self.runtime = ExecutionRt(client, server)
+            self.runtime = ExecutionRt(client, server, auto_schedule_run)
 
     @property
     def mlir(self) -> str:
