@@ -321,35 +321,34 @@ struct FunctionToDag {
     auto smanp_int = op.getAttrOfType<mlir::IntegerAttr>("SMANP");
     auto loc = loc_to_string(op.getLoc());
     assert(smanp_int && "Missing manp value on a crypto operation");
-    // TODO: use APIFloat.sqrt when it's available
-    double manp = sqrt(smanp_int.getValue().roundToDouble());
     auto comment = std::string(op.getName().getStringRef()) + " " + loc;
 
-    double maxInputManp = 0.;
     size_t n_inputs = 0;
+    double sq_sum = 0;
     for (auto input : op.getOperands()) {
       if (!fhe::utils::isEncryptedValue(input)) {
         continue;
       }
       n_inputs += 1;
       if (input.isa<mlir::BlockArgument>()) {
-        maxInputManp = fmax(1., maxInputManp);
+        sq_sum += 1.0;
       } else {
         auto inpSmanpInt =
             input.getDefiningOp()->getAttrOfType<mlir::IntegerAttr>("SMANP");
-        const double inpManp = sqrt(inpSmanpInt.getValue().roundToDouble());
-        maxInputManp = fmax(inpManp, maxInputManp);
+        const double inpSManp = inpSmanpInt.getValue().roundToDouble();
+        sq_sum += inpSManp;
       }
     }
     assert(inputs.size() == n_inputs);
     double weight;
-    if (maxInputManp == 0) {
+    if (sq_sum == 0) {
       // The max input manp is zero, meaning the inputs are all zero tensors
       // with no noise. In this case it does not matter the weight since it will
       // multiply zero.
-      weight = 0.;
+      weight = 1.;
     } else {
-      weight = manp / maxInputManp;
+      double smanp_dbl = smanp_int.getValue().roundToDouble();
+      weight = std::max(sqrt(smanp_dbl / sq_sum), 1.0);
       assert(!std::isnan(weight));
     }
     auto weights = std::vector<double>(n_inputs, weight);

@@ -252,7 +252,7 @@ jobs:
 # Concrete-ML tests #############################
   concrete-ml-tests-linux:
     needs: file-change
-    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.push-main
+    if: needs.file-change.outputs.concrete-python == 'true' || needs.file-change.outputs.compiler == 'true' || needs.file-change.outputs.push-main
     uses: ./.github/workflows/start_slab.yml
     secrets: inherit
     with:
