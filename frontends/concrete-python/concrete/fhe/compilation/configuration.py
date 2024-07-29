@@ -997,6 +997,7 @@ class Configuration:
     composable: bool
     range_restriction: Optional[RangeRestriction]
     keyset_restriction: Optional[KeysetRestriction]
+    auto_schedule_run: bool
 
     def __init__(
         self,
@@ -1068,6 +1069,7 @@ class Configuration:
         simulate_encrypt_run_decrypt: bool = False,
         range_restriction: Optional[RangeRestriction] = None,
         keyset_restriction: Optional[KeysetRestriction] = None,
+        auto_schedule_run: bool = False,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1177,6 +1179,8 @@ class Configuration:
         self.range_restriction = range_restriction
         self.keyset_restriction = keyset_restriction
 
+        self.auto_schedule_run = auto_schedule_run
+
         self._validate()
 
     class Keep:
@@ -1254,6 +1258,7 @@ class Configuration:
         simulate_encrypt_run_decrypt: Union[Keep, bool] = KEEP,
         range_restriction: Union[Keep, Optional[RangeRestriction]] = KEEP,
         keyset_restriction: Union[Keep, Optional[KeysetRestriction]] = KEEP,
+        auto_schedule_run: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

@@ -195,7 +195,7 @@ class Circuit:
                 result(s) of evaluation
         """
 
-        return self._function.run(*args)
+        return self._function.run_sync(*args)
 
     def decrypt(
         self,

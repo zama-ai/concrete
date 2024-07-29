@@ -210,3 +210,11 @@ When options are specified both in the `configuration` and as kwargs in the `com
 #### verbose: bool = False
 - Print details related to compilation.
 
+#### auto_schedule_run: bool = False
+  - Enable automatic scheduling of `run` method calls. When enabled, fhe function are computated in parallel in a background threads pool. When several `run` are composed, they are automatically synchronized.
+  - For now, it only works for the `run` method of a `FheModule`, in that case you obtain a `Future[Value]` immediately instead of a `Value` when computation is finished.
+  - E.g. `my_module.f3.run( my_module.f1.run(a), my_module.f1.run(b) )` will runs `f1` and `f2` in parallel in the background and `f3` in background when both `f1` and `f2` intermediate results are available.
+  - If you want to manually synchronize on the termination of a full computation, e.g. you want to return the encrypted result, you can call explicitely `value.result()` to wait for the result. To simplify testing, decryption does it automatically.
+  - Automatic scheduling behavior can be override locally by calling directly a variant of `run`:
+    - `run_sync`: forces the fhe function to occur in the current thread, not in the background,
+    - `run_async`: forces the fhe function to occur in a background thread, returning immediately a `Future[Value]`
