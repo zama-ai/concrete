@@ -127,7 +127,7 @@ assert result == add(2, 6)
 - [[Video tutorial] How To Get Started With Concrete - Zama's Fully Homomorphic Encryption Compiler](https://www.zama.ai/post/how-to-started-with-concrete-zama-fully-homomorphic-encryption-compiler)
 - [The Encrypted Game of Life in Python Using Concrete](https://www.zama.ai/post/the-encrypted-game-of-life-using-concrete-python)
 - [Encrypted Key-value Database Using Homomorphic Encryption](https://www.zama.ai/post/encrypted-key-value-database-using-homomorphic-encryption)
-- [SHA-256 Implementation Using Concrete](https://github.com/zama-ai/concrete/blob/main/docs/application-tutorial/sha256.ipynb)
+- [SHA-256 Implementation Using Concrete](https://github.com/zama-ai/concrete/blob/main/frontends/concrete-python/examples/sha256/sha256.ipynb)
 
 *Explore more useful resources in [Concrete tutorials](https://docs.zama.ai/concrete/v/main-1/tutorials/see-all-tutorials) and [Awesome Zama repo](https://github.com/zama-ai/awesome-zama?tab=readme-ov-file#concrete). If you have built awesome projects using Concrete, please let us know and we will be happy to showcase them here!*
 
