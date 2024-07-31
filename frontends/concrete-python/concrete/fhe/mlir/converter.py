@@ -20,11 +20,7 @@ from mlir.ir import Module as MlirModule
 
 from .. import tfhers
 from ..compilation.composition import CompositionRule
-from ..compilation.configuration import (
-    Configuration,
-    Exactness,
-    ParameterSelectionStrategy,
-)
+from ..compilation.configuration import Configuration, Exactness, ParameterSelectionStrategy
 from ..representation import Graph, GraphProcessor, MultiGraphProcessor, Node, Operation
 from ..tfhers import TFHERSIntegerType
 from .context import Context
@@ -101,9 +97,7 @@ class Converter:
                         )
                         raise RuntimeError(msg)
 
-                    input_types = [
-                        ctx.typeof(node).mlir for node in graph.ordered_inputs()
-                    ]
+                    input_types = [ctx.typeof(node).mlir for node in graph.ordered_inputs()]
 
                     @func.FuncOp.from_py_func(*input_types, name=name)
                     def main(*args):
@@ -122,17 +116,10 @@ class Converter:
                         ]
 
                         for progress_index, node in enumerate(ordered_nodes):
-                            self.trace_progress(
-                                self.configuration, progress_index, ordered_nodes
-                            )
-                            preds = [
-                                ctx.conversions[pred]
-                                for pred in graph.ordered_preds_of(node)
-                            ]
+                            self.trace_progress(self.configuration, progress_index, ordered_nodes)
+                            preds = [ctx.conversions[pred] for pred in graph.ordered_preds_of(node)]
                             self.node(ctx, node, preds)
-                        self.trace_progress(
-                            self.configuration, len(ordered_nodes), ordered_nodes
-                        )
+                        self.trace_progress(self.configuration, len(ordered_nodes), ordered_nodes)
 
                         outputs = []
                         for node in graph.ordered_outputs():
@@ -187,9 +174,7 @@ class Converter:
         return tag[:last_dot_pos]
 
     @classmethod
-    def trace_progress(
-        cls, configuration: Configuration, progress_index: int, nodes: List[Node]
-    ):
+    def trace_progress(cls, configuration: Configuration, progress_index: int, nodes: List[Node]):
         """
         Add a trace_message for progress.
 
@@ -244,9 +229,7 @@ class Converter:
                 msg += "\n"
         else:
             return
-        concrete.lang.dialects.tracing.TraceMessageOp(
-            msg=msg
-        )  # pylint: disable=no-member
+        concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)  # pylint: disable=no-member
 
     def process(self, graphs: Dict[str, Graph]):
         """
@@ -313,11 +296,7 @@ class Converter:
         ctx.converting = node
 
         assert node.operation != Operation.Input
-        operation = (
-            "constant"
-            if node.operation == Operation.Constant
-            else node.properties["name"]
-        )
+        operation = "constant" if node.operation == Operation.Constant else node.properties["name"]
         assert operation not in ["convert", "node"]
 
         converter = getattr(self, operation, self.tlu)
@@ -340,9 +319,7 @@ class Converter:
         assert len(preds) > 0
         return ctx.array(ctx.typeof(node), elements=preds)
 
-    def assign_dynamic(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def assign_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) >= 3
 
         x = preds[0]
@@ -363,9 +340,7 @@ class Converter:
 
         return ctx.assign(ctx.typeof(node), x, y, indices)
 
-    def assign_static(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def assign_static(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.assign(
             ctx.typeof(node),
@@ -374,9 +349,7 @@ class Converter:
             node.properties["kwargs"]["index"],
         )
 
-    def bitwise_and(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def bitwise_and(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -384,9 +357,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def bitwise_or(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def bitwise_or(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -394,9 +365,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def bitwise_xor(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def bitwise_xor(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -404,9 +373,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def broadcast_to(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def broadcast_to(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.broadcast_to(preds[0], shape=node.output.shape)
 
@@ -450,9 +417,7 @@ class Converter:
         assert len(preds) == 2
         return ctx.dot(ctx.typeof(node), preds[0], preds[1])
 
-    def dynamic_tlu(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def dynamic_tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.dynamic_tlu(ctx.typeof(node), preds[0], preds[1])
 
@@ -464,19 +429,13 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def expand_dims(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def expand_dims(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.reshape(preds[0], shape=node.output.shape)
 
-    def extract_bit_pattern(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def extract_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-        return ctx.extract_bits(
-            ctx.typeof(node), preds[0], bits=node.properties["kwargs"]["bits"]
-        )
+        return ctx.extract_bits(ctx.typeof(node), preds[0], bits=node.properties["kwargs"]["bits"])
 
     def greater(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
@@ -486,9 +445,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def greater_equal(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def greater_equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -500,9 +457,7 @@ class Converter:
         assert len(preds) == 1
         return ctx.identity(ctx.typeof(node), preds[0])
 
-    def index_dynamic(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def index_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) >= 2
 
         x = preds[0]
@@ -521,9 +476,7 @@ class Converter:
 
         return ctx.index(ctx.typeof(node), x, indices)
 
-    def index_static(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def index_static(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.index(
             ctx.typeof(node),
@@ -531,9 +484,7 @@ class Converter:
             index=node.properties["kwargs"]["index"],
         )
 
-    def left_shift(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def left_shift(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -555,9 +506,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def less_equal(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def less_equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -577,15 +526,11 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def maxpool1d(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def maxpool1d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         ctx.error({node: "1-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
-    def maxpool2d(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def maxpool2d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.maxpool2d(
             ctx.typeof(node),
@@ -595,9 +540,7 @@ class Converter:
             dilations=node.properties["kwargs"]["dilations"],
         )
 
-    def maxpool3d(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def maxpool3d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         ctx.error({node: "3-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
@@ -617,9 +560,7 @@ class Converter:
         assert len(preds) == 1
         return ctx.neg(ctx.typeof(node), preds[0])
 
-    def not_equal(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def not_equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -639,9 +580,7 @@ class Converter:
         assert len(preds) == 1
         return ctx.reshape(preds[0], shape=node.output.shape)
 
-    def right_shift(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def right_shift(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -655,9 +594,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def round_bit_pattern(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def round_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         pred = preds[0]
 
@@ -721,9 +658,7 @@ class Converter:
         return ctx.reshape(preds[0], shape=node.output.shape)
 
     @classmethod
-    def tlu_adjust(
-        cls, table, variable_input, target_bit_width, clipping, reduce_precision
-    ):
+    def tlu_adjust(cls, table, variable_input, target_bit_width, clipping, reduce_precision):
         target_bit_width = min(
             variable_input.bit_width, target_bit_width
         )  # inconsistency due to more precise bound vs precision
@@ -738,12 +673,8 @@ class Converter:
             # upper = positive part, lower = negative part
             upper_clipping_index = 2**half_rounded_bit_width - 1
             lower_clipping_index = 2**table_bit_width - 2**half_rounded_bit_width
-            positive_clipped_card = (
-                2 ** (table_bit_width - 1) - upper_clipping_index - 1
-            )
-            negative_clipped_card = (
-                2 ** (table_bit_width - 1) - 2**half_rounded_bit_width
-            )
+            positive_clipped_card = 2 ** (table_bit_width - 1) - upper_clipping_index - 1
+            negative_clipped_card = 2 ** (table_bit_width - 1) - 2**half_rounded_bit_width
         else:
             upper_clipping_index = 2**target_bit_width - 1
             lower_clipping_index = 0
@@ -772,16 +703,12 @@ class Converter:
                 upper_clipping,
                 lower_clipping,
             )
-            return np.array(
-                table, dtype=np.uint64
-            )  # negative value are in unsigned representation
+            return np.array(table, dtype=np.uint64)  # negative value are in unsigned representation
 
         # adjust tlu size
         assert reduce_precision
         if variable_input.is_signed:
-            return np.concatenate(
-                (table[: upper_clipping_index + 1], table[lower_clipping_index:])
-            )
+            return np.concatenate((table[: upper_clipping_index + 1], table[lower_clipping_index:]))
 
         return table[lower_clipping_index : upper_clipping_index + 1]
 
@@ -876,9 +803,7 @@ class Converter:
 
         if is_multivariate:
             if len(tables) == 1:
-                return ctx.multivariate_tlu(
-                    ctx.typeof(node), preds, table=lut_values.tolist()
-                )
+                return ctx.multivariate_tlu(ctx.typeof(node), preds, table=lut_values.tolist())
 
             assert map_values is not None
             return ctx.multivariate_multi_tlu(
@@ -895,9 +820,7 @@ class Converter:
 
         if variable_input.origin.properties.get("name") == "truncate_bit_pattern":
             original_bit_width = variable_input.origin.properties["original_bit_width"]
-            lsbs_to_remove = variable_input.origin.properties["kwargs"][
-                "lsbs_to_remove"
-            ]
+            lsbs_to_remove = variable_input.origin.properties["kwargs"]["lsbs_to_remove"]
             truncated_bit_width = original_bit_width - lsbs_to_remove
 
             if variable_input.bit_width > original_bit_width:
@@ -908,9 +831,7 @@ class Converter:
                 )
                 variable_input = ctx.mul(variable_input.type, variable_input, shifter)
 
-            variable_input = ctx.reinterpret(
-                variable_input, bit_width=truncated_bit_width
-            )
+            variable_input = ctx.reinterpret(variable_input, bit_width=truncated_bit_width)
         elif variable_input.origin.properties.get("name") == "round_bit_pattern":
             exactness = (
                 variable_input.origin.properties["exactness"]
@@ -918,19 +839,13 @@ class Converter:
             )
             if exactness is Exactness.APPROXIMATE:
                 # we clip values to enforce input precision exactly as queried
-                original_bit_width = variable_input.origin.properties[
-                    "original_bit_width"
-                ]
-                lsbs_to_remove = variable_input.origin.properties["kwargs"][
-                    "lsbs_to_remove"
-                ]
+                original_bit_width = variable_input.origin.properties["original_bit_width"]
+                lsbs_to_remove = variable_input.origin.properties["kwargs"]["lsbs_to_remove"]
                 overflow = variable_input.origin.properties["overflow_detected"]
                 rounded_bit_width = original_bit_width - lsbs_to_remove - overflow
                 approx_config = ctx.configuration.approximate_rounding_config
                 clipping = approx_config.logical_clipping
-                reduce_precision = (
-                    approx_config.reduce_precision_after_approximate_clipping
-                )
+                reduce_precision = approx_config.reduce_precision_after_approximate_clipping
                 if len(tables) == 1:
                     lut_values = self.tlu_adjust(
                         lut_values,
@@ -950,9 +865,7 @@ class Converter:
                         )
 
         if len(tables) == 1:
-            return ctx.tlu(
-                ctx.typeof(node), on=variable_input, table=lut_values.tolist()
-            )
+            return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist())
 
         assert map_values is not None
         return ctx.multi_tlu(
@@ -962,9 +875,7 @@ class Converter:
             mapping=map_values.tolist(),
         )
 
-    def transpose(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def transpose(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.transpose(
             ctx.typeof(node),
@@ -972,13 +883,9 @@ class Converter:
             axes=node.properties["kwargs"].get("axes", []),
         )
 
-    def truncate_bit_pattern(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def truncate_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-        return ctx.truncate_bit_pattern(
-            preds[0], node.properties["kwargs"]["lsbs_to_remove"]
-        )
+        return ctx.truncate_bit_pattern(preds[0], node.properties["kwargs"]["lsbs_to_remove"])
 
     def where(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 3
@@ -988,9 +895,7 @@ class Converter:
         assert len(preds) == 0
         return ctx.zeros(ctx.typeof(node))
 
-    def tfhers_to_native(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def tfhers_to_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         tfhers_int = preds[0]
         dtype: tfhers.TFHERSIntegerType = node.properties["attributes"]["type"]
@@ -1008,16 +913,11 @@ class Converter:
         tables = [
             # we consider carry bits for all ciphertexts.
             # This means that overflow can happen, and it's undefined behavior
-            [
-                value << (msg_width * i)
-                for value in range(2 ** (msg_width + carry_width))
-            ]
+            [value << (msg_width * i) for value in range(2 ** (msg_width + carry_width))]
             for i in range(num_cts)
         ]
         # ciphertexts are oganized msb first, and tables are lsb first
-        mapping = np.broadcast_to(
-            np.array(list(reversed(range(num_cts)))), tfhers_int.shape
-        )
+        mapping = np.broadcast_to(np.array(list(reversed(range(num_cts)))), tfhers_int.shape)
 
         # intermediate type increase bit_width via TLU but keep the same shape
         interm_type = ctx.tensor(ctx.eint(result_bit_width), tfhers_int.shape)
@@ -1029,9 +929,7 @@ class Converter:
         result_type = ctx.tensor(ctx.eint(result_bit_width), result_shape)
         return ctx.sum(result_type, mapped, axes=-1)
 
-    def tfhers_from_native(
-        self, ctx: Context, node: Node, preds: List[Conversion]
-    ) -> Conversion:
+    def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         dtype: tfhers.TFHERSIntegerType = node.properties["attributes"]["type"]
         input_bit_width, carry_width, msg_width = (
@@ -1080,9 +978,7 @@ class Converter:
 
         # we want to extract `msg_width` bits at a time, and store them
         # in a `msg_width + carry_width` bits eint
-        bits_shape = ctx.tensor(
-            ctx.eint(msg_width + carry_width), reshaped_native_int.shape
-        )
+        bits_shape = ctx.tensor(ctx.eint(msg_width + carry_width), reshaped_native_int.shape)
         # we extract lsb first
         extracted_bits = [
             ctx.extract_bits(

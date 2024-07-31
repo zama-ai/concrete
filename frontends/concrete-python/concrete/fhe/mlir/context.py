@@ -4,8 +4,8 @@ Declaration of `Context` class.
 
 # pylint: disable=import-error,no-name-in-module
 
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 from random import randint
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 from concrete.lang.dialects import fhe, fhelinalg
