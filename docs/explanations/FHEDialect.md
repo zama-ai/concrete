@@ -951,21 +951,10 @@ Syntax:
 
 ```
 #FHE.partition<
+  StringAttr,   # name
   int,   # lweDim
   int,   # glweDim
-  int,   # polySize
-  FloatAttr,   # lweNoiseDistrStdDev
-  FloatAttr,   # glweNoiseDistrStdDev
-  int,   # pbsBaseLog
-  int,   # pbsLevel
-  int,   # ksBaseLog
-  int,   # ksLevel
-  int,   # msgModulus
-  int,   # carryModulus
-  int,   # maxNoiseLevel
-  FloatAttr,   # log2PFail
-  bool,   # bigEncryptionKey
-  int   # ciphertextModulus
+  int   # polySize
 >
 ```
 
@@ -974,21 +963,10 @@ Syntax:
 
 | Parameter | C++ type | Description |
 | :-------: | :-------: | ----------- |
+| name | `StringAttr` |  |
 | lweDim | `int` |  |
 | glweDim | `int` |  |
 | polySize | `int` |  |
-| lweNoiseDistrStdDev | `FloatAttr` |  |
-| glweNoiseDistrStdDev | `FloatAttr` |  |
-| pbsBaseLog | `int` |  |
-| pbsLevel | `int` |  |
-| ksBaseLog | `int` |  |
-| ksLevel | `int` |  |
-| msgModulus | `int` |  |
-| carryModulus | `int` |  |
-| maxNoiseLevel | `int` |  |
-| log2PFail | `FloatAttr` |  |
-| bigEncryptionKey | `bool` |  |
-| ciphertextModulus | `int` |  |
 
 ## Type definition
 
