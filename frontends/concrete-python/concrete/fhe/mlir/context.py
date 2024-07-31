@@ -4,8 +4,8 @@ Declaration of `Context` class.
 
 # pylint: disable=import-error,no-name-in-module
 
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 from random import randint
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 from concrete.lang.dialects import fhe, fhelinalg
@@ -20,7 +20,6 @@ from mlir.ir import Attribute as MlirAttribute
 from mlir.ir import BoolAttr as MlirBoolAttr
 from mlir.ir import Context as MlirContext
 from mlir.ir import DenseElementsAttr as MlirDenseElementsAttr
-from mlir.ir import FloatAttr as MlirFloatAttr
 from mlir.ir import IndexType
 from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import IntegerAttr as MlirIntegerAttr
@@ -3989,7 +3988,7 @@ class Context:
 
     def get_partition_name(self, partition: tfhers.TFHERSParams) -> str:
         if partition not in self.tfhers_partition.keys():
-            self.tfhers_partition[partition] = f"tfhers_{randint(0, 2**32)}"
+            self.tfhers_partition[partition] = f"tfhers_{randint(0, 2**32)}"  # noqa: S311
         return self.tfhers_partition[partition]
 
     def change_partition(
@@ -4010,7 +4009,9 @@ class Context:
             # glwe_noise_distribution_std_dev_float_attr = MlirFloatAttr.get_f64(
             #     src_partition.glwe_noise_distribution_std_dev, self.context
             # )
-            # log2_p_fail_float_attr = MlirFloatAttr.get_f64(src_partition.log2_p_fail, self.context)
+            # log2_p_fail_float_attr = MlirFloatAttr.get_f64(
+            #   src_partition.log2_p_fail, self.context
+            # )
             src = PartitionAttr.get(
                 self.context,
                 name,
@@ -4042,7 +4043,9 @@ class Context:
             # glwe_noise_distribution_std_dev_float_attr = MlirFloatAttr.get_f64(
             #     dest_partition.glwe_noise_distribution_std_dev, self.context
             # )
-            # log2_p_fail_float_attr = MlirFloatAttr.get_f64(dest_partition.log2_p_fail, self.context)
+            # log2_p_fail_float_attr = MlirFloatAttr.get_f64(
+            #   dest_partition.log2_p_fail, self.context
+            # )
             dest = PartitionAttr.get(
                 self.context,
                 name,
