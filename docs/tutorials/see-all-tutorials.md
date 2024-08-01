@@ -9,6 +9,7 @@
 
 #### Code examples on GitHub
 
+* [Floating points](../../frontends/concrete-python/examples/floating_point/floating_point.ipynb)
 * [Key value database](../../frontends/concrete-python/examples/key_value_database/key_value_database.ipynb)
 * [SHA-256 ](../../frontends/concrete-python/examples/sha256/sha256.ipynb)
 * [Game of Life](../../frontends/concrete-python/examples/game_of_life/README.md)
