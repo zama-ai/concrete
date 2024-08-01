@@ -207,7 +207,7 @@ then
 fi
 
 # Update the pandas files in CML
-poetry run python script/make_utils/update_encrypted_dataframe_files.py
+make update_encrypted_dataframe
 
 # Launch CML tests with pytest (and ignore flaky ones)
 # As compared to regular `make pytest`, known flaky errors from Concrete ML are simply ignored
