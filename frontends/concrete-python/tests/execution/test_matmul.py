@@ -286,15 +286,14 @@ test_matmul_shape_and_bounds = [
     ),
 ]
 
+
 @pytest.mark.parametrize(
     "lhs_shape,rhs_shape,bounds,clear_rhs",
     [
-        (
-            lhs_shape, rhs_shape, bounds, clear
-        )
-        for lhs_shape,rhs_shape,bounds in test_matmul_shape_and_bounds
+        (lhs_shape, rhs_shape, bounds, clear)
+        for lhs_shape, rhs_shape, bounds in test_matmul_shape_and_bounds
         for clear in [False, True]
-    ]
+    ],
 )
 def test_matmul(lhs_shape, rhs_shape, bounds, clear_rhs, helpers):
     """
