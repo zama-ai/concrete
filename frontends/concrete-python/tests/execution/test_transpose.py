@@ -32,7 +32,10 @@ from concrete import fhe
         pytest.param(
             lambda x: x.transpose((1, 0, 2)),
             {
-                "x": {"shape": (2, 3, 4), "range": [0, 10], "status": "encrypted"},
+                "x": {"shape": (2, 3, 4), 
+                      "range": [0, 10], "status": "encrypted"},
+
+                      
             },
         ),
         pytest.param(
