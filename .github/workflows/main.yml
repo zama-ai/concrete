@@ -68,7 +68,9 @@ jobs:
         id: concrete-python
         uses: tj-actions/changed-files@cc733854b1f224978ef800d29e4709d5ee2883e4
         with:
-          files: ./frontends/concrete-python/**
+          files: |
+            ./frontends/concrete-python/**
+            .github/workflows/concrete_python_*.yml
 
       - name: Check if compiler_build_and_test_cpu workflow has changed
         id: concrete-compiler-cpu-workflow

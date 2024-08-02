@@ -104,6 +104,7 @@ jobs:
           python3.10 -m venv .testenv
           . .testenv/bin/activate
           
+          python3.10 -c "from distutils import util; print(util.get_platform())"
           pip install $GITHUB_WORKSPACE/frontends/concrete-python/dist/*macos*.whl
           pip install -r $GITHUB_WORKSPACE/frontends/concrete-python/requirements.dev.txt
 
