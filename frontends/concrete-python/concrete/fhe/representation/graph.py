@@ -78,8 +78,9 @@ class Graph:
         Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
     ]:
         evaluation = self.evaluate(*args, p_error=p_error)
-        result = tuple(evaluation[node] for node in self.ordered_outputs())
-        return result if len(result) > 1 else result[0]
+        # result = tuple(evaluation[node] for node in self.ordered_outputs())
+        # return result if len(result) > 1 else result[0]
+        return tuple(evaluation[node] for node in self.ordered_outputs())
 
     def evaluate(
         self,

@@ -6,6 +6,7 @@ Declaration of `MultiCompiler` class.
 
 import inspect
 import traceback
+import types
 from copy import deepcopy
 from itertools import chain, product, repeat
 from pathlib import Path
@@ -224,6 +225,30 @@ class FunctionDef:
 
         artifacts.add_graph("final", self.graph)
 
+    def _trace_wires_inputs(
+        self,
+        *args: Any,
+    ) -> Union[
+        np.bool_,
+        np.integer,
+        np.floating,
+        np.ndarray,
+        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+    ]:
+        return args
+
+    def _trace_wires_outputs(
+        self,
+        *args: Any,
+    ) -> Union[
+        np.bool_,
+        np.integer,
+        np.floating,
+        np.ndarray,
+        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+    ]:
+        return args
+
     def __call__(
         self,
         *args: Any,
@@ -239,14 +264,16 @@ class FunctionDef:
             message = f"Calling function '{self.function.__name__}' with kwargs is not supported"
             raise RuntimeError(message)
 
-        sample = args[0] if len(args) == 1 else args
-
+        sample = self._trace_wires_inputs(*args)
         if self.graph is None:
             self.trace(sample)
             assert self.graph is not None
 
         self.inputset.append(sample)
-        return self.graph(*args)
+
+        out = self._trace_wires_outputs(*self.graph(*sample))
+
+        return  out[0] if len(out) == 1 else out
 
 
 class NotComposable:
@@ -614,6 +641,45 @@ class DebugManager:
                 pretty(module.statistics)
 
 
+# pylint: disable=missing-class-docstring
+class TracedOutput(NamedTuple):
+    out: Output
+    val: Any
+
+
+# pylint: disable=missing-class-docstring
+class WireTracingCm:
+    def __init__(self, module):
+        self.module = module
+
+    def __enter__(self):
+        for func in self.module.functions.values():
+
+            def _trace_wires_outputs(_self, *args):
+                return tuple(TracedOutput(Output(_self, i), arg) for (i, arg) in enumerate(args))
+
+            def _trace_wires_inputs(_self, *args):
+                for i, arg in enumerate(args):
+                    if isinstance(arg, TracedOutput):
+                        self.module.composition.wires.append(Wire(arg.out, Input(_self, i)))
+                return tuple(arg.val if isinstance(arg, TracedOutput) else arg for arg in args)
+
+            func._trace_wires_inputs = types.MethodType(_trace_wires_inputs, func)
+            func._trace_wires_outputs = types.MethodType(_trace_wires_outputs, func)
+
+    def __exit__(self, _exc_type, _exc_value, _exc_tb):
+        for func in self.module.functions.values():
+
+            def _trace_wires_outputs(_self, *args):
+                return args
+
+            def _trace_wires_inputs(_self, *args):
+                return args
+
+            func._trace_wires_inputs = types.MethodType(_trace_wires_inputs, func)
+            func._trace_wires_outputs = types.MethodType(_trace_wires_outputs, func)
+
+
 class ModuleCompiler:
     """
     Compiler class for multiple functions, to glue the compilation pipeline.
@@ -632,6 +698,13 @@ class ModuleCompiler:
         self.functions = {function.name: function for function in functions}
         self.compilation_context = CompilationContext.new()
         self.composition = composition
+
+    def trace_wires(self):
+        """
+        Return a context manager that traces wires automatically.
+        """
+        assert isinstance(self.composition, Wired)
+        return WireTracingCm(self)
 
     def compile(
         self,
