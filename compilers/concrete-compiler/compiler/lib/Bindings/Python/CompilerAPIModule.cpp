@@ -1015,6 +1015,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](::concretelang::clientlib::ClientParameters clientParameters,
              ::concretelang::clientlib::KeySet &keySet,
              std::vector<lambdaArgument> args, const std::string &circuitName) {
+            pybind11::gil_scoped_release release;
             std::vector<mlir::concretelang::LambdaArgument *> argsRef;
             for (auto i = 0u; i < args.size(); i++) {
               argsRef.push_back(args[i].ptr.get());
@@ -1028,6 +1029,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              ::concretelang::clientlib::KeySet &keySet,
              ::concretelang::clientlib::PublicResult &publicResult,
              const std::string &circuitName) {
+            pybind11::gil_scoped_release release;
             return decrypt_result(clientParameters, keySet, publicResult,
                                   circuitName);
           });

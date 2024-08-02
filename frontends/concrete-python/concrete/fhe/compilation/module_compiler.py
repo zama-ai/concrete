@@ -638,6 +638,7 @@ class ModuleCompiler:
         inputsets: Optional[Dict[str, Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]] = None,
         configuration: Optional[Configuration] = None,
         module_artifacts: Optional[ModuleDebugArtifacts] = None,
+        auto_schedule_run: bool = False,
         **kwargs,
     ) -> FheModule:
         """
@@ -721,6 +722,7 @@ class ModuleCompiler:
                     self.composition.get_rules_iter(
                         list(filter(None, [f.graph for f in self.functions.values()]))
                     ),
+                    auto_schedule_run,
                 )
                 if isinstance(output.runtime, ExecutionRt):
                     client_parameters = output.runtime.client.specs.client_parameters

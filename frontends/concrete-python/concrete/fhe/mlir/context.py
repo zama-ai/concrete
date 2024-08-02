@@ -2548,9 +2548,6 @@ class Context:
             and x.is_signed == resulting_type.is_signed
         )
 
-        if resulting_type.bit_width == x.bit_width:
-            return x
-
         result = self.extract_bits(
             self.tensor(self.eint(resulting_type.bit_width), shape=x.shape),
             x,
