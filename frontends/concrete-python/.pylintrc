@@ -193,6 +193,7 @@ good-names=i,
            xs,
            on,
            of,
+           db,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
