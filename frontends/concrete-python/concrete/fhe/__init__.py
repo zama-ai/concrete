@@ -24,6 +24,10 @@ from .compilation import (
     DebugArtifacts,
     EncryptionStatus,
     Exactness,
+)
+from .compilation import FheFunction as Function
+from .compilation import FheModule as Module
+from .compilation import (
     FunctionDebugArtifacts,
     Input,
     Keys,

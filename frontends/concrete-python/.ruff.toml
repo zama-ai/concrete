@@ -9,7 +9,7 @@ ignore = [
     "A", "D", "FBT", "T20", "ANN", "N806", "ARG001", "S101", "BLE001", "RUF100", "ERA001", "SIM105",
     "RET504", "TID252", "PD011", "I001", "UP015", "C901", "A001", "SIM118", "PGH003", "PLW2901",
     "PLR0915", "C416", "PLR0911", "PLR0912", "PLR0913", "RUF005", "PLR2004", "S110", "PLC1901",
-    "E731", "RET507", "SIM102"
+    "E731", "RET507", "SIM102", "N805",
 ]
 
 [per-file-ignores]
