@@ -153,7 +153,7 @@ check-sanitize-notebooks:
 
 mypy:
 	eval $(shell make silent_cp_activate)
-	mypy concrete examples scripts tests benchmarks --ignore-missing-imports
+	mypy concrete examples scripts tests benchmarks --ignore-missing-imports --explicit-package-bases
 
 pydocstyle:
 	eval $(shell make silent_cp_activate)
