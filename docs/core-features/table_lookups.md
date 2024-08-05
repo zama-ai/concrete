@@ -1,5 +1,13 @@
 # Table lookup
 
+{% hint style="success" %}
+**Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
+{% endhint %}
+
+
+
 In TFHE, there exists mainly two operations: the linear operations (additions, subtractions, multiplications by integers) and the rest. And the rest is done with table lookups (TLUs), which means that a lot of things are done with TLU. In this document, we explain briefly, from a user point of view, how TLU can be used. In [the TLU advanced documentation](table_lookups_advanced.md), we enter a bit more into the details.
 
 ## Performance
