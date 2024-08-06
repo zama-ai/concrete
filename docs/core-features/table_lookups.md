@@ -227,3 +227,8 @@ for i in range(16):
     ], f"Miscomputation {i=} {circuit.encrypt_run_decrypt(i)} {[lower_i**2, upper_i**2]}"
 ```
 
+{% hint style="success" %}
+**Zama 5-Question Developer Survey** 
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://zvajd6l0ngk.typeform.com/to/I7mXXanI) to participate.
+{% endhint %}
