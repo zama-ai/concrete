@@ -546,7 +546,6 @@ def test_composition_wired_compilation():
             "b": [np.random.randint(1, 50, size=()) for _ in range(100)],
             "c": [np.random.randint(1, 100, size=()) for _ in range(100)],
         },
-        p_error=0.01,
     )
 
     inp_enc = module.a.encrypt(5)
