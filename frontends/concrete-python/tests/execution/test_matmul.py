@@ -159,8 +159,8 @@ def test_constant_matmul(lhs_shape, rhs_shape, bounds, helpers):
     lhs_function_circuit = lhs_function.compile(lhs_inputset, configuration)
     rhs_function_circuit = rhs_function.compile(rhs_inputset, configuration)
 
-    lhs_sample = np.random.randint(minimum, maximum, size=lhs_shape)
-    rhs_sample = np.random.randint(minimum, maximum, size=rhs_shape)
+    lhs_sample = lhs_inputset[-1]
+    rhs_sample = rhs_inputset[-1]
 
     helpers.check_execution(lhs_operator_circuit, lhs_operator, lhs_sample)
     helpers.check_execution(rhs_operator_circuit, rhs_operator, rhs_sample)
