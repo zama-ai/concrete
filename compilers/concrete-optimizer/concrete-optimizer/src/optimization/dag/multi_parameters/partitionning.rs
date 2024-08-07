@@ -416,9 +416,9 @@ pub mod tests {
         };
         let mut dag = unparametrized::Dag::new();
         let input1 = dag.add_input(16, Shape::number());
-        let change_part1 = dag.add_change_partition(input1, Some(&tfhers_partition), None);
+        let change_part1 = dag.add_change_partition(input1, Some(tfhers_partition.clone()), None);
         let dot = dag.add_dot([change_part1], [2]);
-        _ = dag.add_change_partition(dot, None, Some(&tfhers_partition));
+        _ = dag.add_change_partition(dot, None, Some(tfhers_partition));
 
         let partitions = partitionning(&dag);
         assert!(partitions.nb_partitions == 1);
@@ -438,9 +438,9 @@ pub mod tests {
         };
         let mut dag = unparametrized::Dag::new();
         let input = dag.add_input(16, Shape::number());
-        let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition.clone()), None);
         let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
-        let change_part2 = dag.add_change_partition(lut, None, Some(&tfhers_partition));
+        let change_part2 = dag.add_change_partition(lut, None, Some(tfhers_partition));
 
         let partitions = partitionning(&dag);
         assert!(partitions.nb_partitions == 2);
@@ -483,9 +483,9 @@ pub mod tests {
         };
         let mut dag = unparametrized::Dag::new();
         let input = dag.add_input(16, Shape::number());
-        let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in.clone()), None);
         let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
-        let change_part2 = dag.add_change_partition(lut, None, Some(&tfhers_partition_out));
+        let change_part2 = dag.add_change_partition(lut, None, Some(tfhers_partition_out.clone()));
 
         let p_cut = PartitionCut::for_each_precision(&dag);
         let partitions = partitionning_with_preferred(&dag, &p_cut, LOW_PRECISION_PARTITION);
@@ -526,10 +526,10 @@ pub mod tests {
         };
         let mut dag = unparametrized::Dag::new();
         let input = dag.add_input(16, Shape::number());
-        let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition.clone()), None);
         let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
         let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 16);
-        let change_part2 = dag.add_change_partition(lut2, None, Some(&tfhers_partition));
+        let change_part2 = dag.add_change_partition(lut2, None, Some(tfhers_partition));
 
         let partitions = partitionning(&dag);
         assert!(partitions.nb_partitions == 3);
@@ -585,10 +585,10 @@ pub mod tests {
         };
         let mut dag = unparametrized::Dag::new();
         let input = dag.add_input(16, Shape::number());
-        let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in.clone()), None);
         let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
         let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 16);
-        let change_part2 = dag.add_change_partition(lut2, None, Some(&tfhers_partition_out));
+        let change_part2 = dag.add_change_partition(lut2, None, Some(tfhers_partition_out.clone()));
 
         let p_cut = PartitionCut::for_each_precision(&dag);
         let partitions = partitionning_with_preferred(&dag, &p_cut, LOW_PRECISION_PARTITION);
