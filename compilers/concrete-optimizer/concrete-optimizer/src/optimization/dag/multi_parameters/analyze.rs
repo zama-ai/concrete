@@ -121,6 +121,7 @@ pub struct VariancedDag {
     pub(crate) dag: Dag,
     pub(crate) partitions: Partitions,
     pub(crate) variances: Variances,
+    pub(crate) external_variance_constraints: Vec<VarianceConstraint>,
 }
 
 impl VariancedDag {
@@ -133,9 +134,11 @@ impl VariancedDag {
             dag,
             partitions,
             variances,
+            external_variance_constraints: vec![],
         };
 
         // We forward the noise once to verify the composability.
+        varianced.apply_external_partition_input_variance();
         let _ = varianced.forward_noise();
         varianced.check_composability()?;
         varianced.apply_composition_rules();
@@ -145,6 +148,8 @@ impl VariancedDag {
             // The noise gets computed from inputs down to outputs.
             if varianced.forward_noise() {
                 // Noise settled, we return the varianced dag.
+                varianced.collect_external_input_constraint();
+                varianced.collect_external_output_constraint();
                 return Ok(varianced);
             }
             // The noise of the inputs gets updated following the composition rules
@@ -178,6 +183,106 @@ impl VariancedDag {
                 .unwrap();
             let mut input = self.get_operator_mut(to);
             *(input.variance_mut()) = maxed_variance;
+        }
+    }
+
+    fn apply_external_partition_input_variance(&mut self) {
+        let p_cut = self.partitions.p_cut.clone();
+        for (i, op) in self.dag.operators.clone().iter().enumerate() {
+            if let Operator::Input { .. } = op {
+                let partition_index = self.partitions.instrs_partition[i].instruction_partition;
+                if p_cut.is_external_partition(&partition_index) {
+                    let partitions = self.partitions.clone();
+                    let external_partition =
+                        &p_cut.external_partitions[p_cut.external_partition_index(partition_index)];
+                    let max_variance = external_partition.max_variance;
+                    let variance = external_partition.variance;
+
+                    let mut input = self.get_operator_mut(OperatorIndex(i));
+                    let mut variances = input.variance().clone();
+                    variances.vars[partition_index.0] = SymbolicVariance::from_external_partition(
+                        partitions.nb_partitions,
+                        partition_index,
+                        max_variance / variance,
+                    );
+                    *(input.variance_mut()) = variances;
+                }
+            }
+        }
+    }
+
+    fn collect_external_input_constraint(&mut self) {
+        let p_cut = &self.partitions.p_cut;
+        for (i, op) in self.dag.operators.clone().iter().enumerate() {
+            if let Operator::Input {
+                out_precision,
+                out_shape,
+            } = op
+            {
+                let partition_index = self.partitions.instrs_partition[i].instruction_partition;
+                if !p_cut.is_external_partition(&partition_index) {
+                    continue;
+                }
+
+                let max_variance = p_cut.external_partitions
+                    [p_cut.external_partition_index(partition_index)]
+                .max_variance;
+
+                let variances = &self.get_operator(OperatorIndex(i)).variance().vars.clone();
+                for (i, variance) in variances.iter().enumerate() {
+                    if variance.coeffs.is_nan() {
+                        assert!(i != partition_index.0);
+                        continue;
+                    }
+                    let constraint = VarianceConstraint {
+                        precision: *out_precision,
+                        partition: partition_index,
+                        nb_constraints: out_shape.flat_size(),
+                        safe_variance_bound: max_variance,
+                        variance: variance.clone(),
+                    };
+                    self.external_variance_constraints.push(constraint);
+                }
+            }
+        }
+    }
+
+    fn collect_external_output_constraint(&mut self) {
+        let p_cut = self.partitions.p_cut.clone();
+        for dag_op in self.dag.get_output_operators_iter() {
+            let DagOperator {
+                id: op_index,
+                shape: out_shape,
+                precision: out_precision,
+                ..
+            } = dag_op;
+            let optional_partition_index = p_cut.partition(&self.dag, op_index);
+            if optional_partition_index.is_none() {
+                continue;
+            }
+            let partition_index = optional_partition_index.unwrap();
+            if !p_cut.is_external_partition(&partition_index) {
+                continue;
+            }
+            let max_variance = p_cut.external_partitions
+                [p_cut.external_partition_index(partition_index)]
+            .max_variance;
+
+            let variances = &self.get_operator(op_index).variance().vars.clone();
+            for (i, variance) in variances.iter().enumerate() {
+                if variance.coeffs.is_nan() {
+                    assert!(i != partition_index.0);
+                    continue;
+                }
+                let constraint = VarianceConstraint {
+                    precision: *out_precision,
+                    partition: partition_index,
+                    nb_constraints: out_shape.flat_size(),
+                    safe_variance_bound: max_variance,
+                    variance: variance.clone(),
+                };
+                self.external_variance_constraints.push(constraint);
+            }
         }
     }
 
@@ -343,7 +448,9 @@ pub fn analyze(
     let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition);
     let partitioned_dag = PartitionedDag { dag, partitions };
     let varianced_dag = VariancedDag::try_from_partitioned(partitioned_dag)?;
-    let variance_constraints = collect_all_variance_constraints(&varianced_dag, noise_config);
+    let mut variance_constraints = collect_all_variance_constraints(&varianced_dag, noise_config);
+    // add external variance constraints
+    variance_constraints.extend_from_slice(varianced_dag.external_variance_constraints.as_slice());
     let undominated_variance_constraints =
         VarianceConstraint::remove_dominated(&variance_constraints);
     let operations_count_per_instrs = collect_operations_count(&varianced_dag);
@@ -560,6 +667,7 @@ fn collect_all_variance_constraints(
         dag,
         partitions,
         variances,
+        ..
     } = dag;
     let mut constraints = vec![];
     for op in dag.get_operators_iter() {

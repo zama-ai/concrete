@@ -193,6 +193,15 @@ impl OperationsValue {
         }
     }
 
+    pub fn is_nan(&self) -> bool {
+        for val in self.values.iter() {
+            if !val.is_nan() {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn input(&mut self, partition: PartitionIndex) -> &mut f64 {
         &mut self.values[self.index.input(partition)]
     }

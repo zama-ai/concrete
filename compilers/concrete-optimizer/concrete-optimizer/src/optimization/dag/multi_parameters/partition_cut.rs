@@ -14,10 +14,29 @@ use super::optimize::MacroParameters;
 const ROUND_INNER_MULTI_PARAMETER: bool = false;
 const ROUND_EXTERNAL_MULTI_PARAMETER: bool = !ROUND_INNER_MULTI_PARAMETER && true;
 
-#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct ExternalPartition {
     pub name: String,
     pub macro_params: MacroParameters,
+    pub max_variance: f64,
+    pub variance: f64,
+}
+
+impl Eq for ExternalPartition {}
+
+impl PartialEq for ExternalPartition {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+            && self.macro_params == other.macro_params
+            && self.max_variance == other.max_variance
+    }
+}
+
+impl std::hash::Hash for ExternalPartition {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.macro_params.hash(state);
+    }
 }
 
 impl std::fmt::Display for ExternalPartition {
@@ -70,8 +89,12 @@ impl PartitionCut {
         self.external_partitions.len()
     }
 
+    pub fn external_partition_index(&self, partition: PartitionIndex) -> usize {
+        partition.0 - self.n_internal_partitions()
+    }
+
     pub fn is_external_partition(&self, partition: &PartitionIndex) -> bool {
-        partition.0 >= self.n_internal_partitions()
+        partition.0 >= self.n_internal_partitions() && partition.0 < self.n_partitions()
     }
 
     pub fn is_internal_partition(&self, partition: &PartitionIndex) -> bool {
