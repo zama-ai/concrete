@@ -263,8 +263,8 @@ impl<'dag> DagBuilder<'dag> {
     pub fn add_change_partition(
         &mut self,
         input: OperatorIndex,
-        src_partition: Option<&ExternalPartition>,
-        dst_partition: Option<&ExternalPartition>,
+        src_partition: Option<ExternalPartition>,
+        dst_partition: Option<ExternalPartition>,
         location: Location,
     ) -> OperatorIndex {
         assert!(
@@ -274,8 +274,8 @@ impl<'dag> DagBuilder<'dag> {
         self.add_operator(
             Operator::ChangePartition {
                 input,
-                src_partition: src_partition.cloned(),
-                dst_partition: dst_partition.cloned(),
+                src_partition,
+                dst_partition,
             },
             location,
         )
@@ -604,8 +604,8 @@ impl Dag {
     pub fn add_change_partition(
         &mut self,
         input: OperatorIndex,
-        src_partition: Option<&ExternalPartition>,
-        dst_partition: Option<&ExternalPartition>,
+        src_partition: Option<ExternalPartition>,
+        dst_partition: Option<ExternalPartition>,
     ) -> OperatorIndex {
         self.builder(DEFAULT_CIRCUIT).add_change_partition(
             input,
@@ -913,13 +913,14 @@ mod tests {
         let b = builder.add_input(1, Shape::number(), Location::Unknown);
         let c = builder.add_dot([a, b], [1, 1], Location::Unknown);
         let d = builder.add_lut(c, FunctionTable::UNKWOWN, 1, Location::Unknown);
-        let _d = builder.add_change_partition(d, Some(&tfhers_part), None, Location::Unknown);
+        let _d =
+            builder.add_change_partition(d, Some(tfhers_part.clone()), None, Location::Unknown);
         let mut builder = graph.builder("main2");
         let e = builder.add_input(2, Shape::number(), Location::Unknown);
         let f = builder.add_input(2, Shape::number(), Location::Unknown);
         let g = builder.add_dot([e, f], [2, 2], Location::Unknown);
         let h = builder.add_lut(g, FunctionTable::UNKWOWN, 2, Location::Unknown);
-        let _h = builder.add_change_partition(h, None, Some(&tfhers_part), Location::Unknown);
+        let _h = builder.add_change_partition(h, None, Some(tfhers_part), Location::Unknown);
         graph.tag_operator_as_output(c);
     }
 
@@ -962,7 +963,7 @@ mod tests {
             variance: 0.0_f64,
         };
         let change_part =
-            builder.add_change_partition(lut2, Some(&tfhers_part), None, Location::Unknown);
+            builder.add_change_partition(lut2, Some(tfhers_part.clone()), None, Location::Unknown);
 
         let ops_index = [input1, input2, sum1, lut1, concat, dot, lut2, change_part];
         for (expected_i, op_index) in ops_index.iter().enumerate() {

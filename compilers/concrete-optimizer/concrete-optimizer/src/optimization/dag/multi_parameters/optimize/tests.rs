@@ -850,9 +850,9 @@ fn test_optimize_tfhers_in_out_dot_compute() {
     };
     let mut dag = unparametrized::Dag::new();
     let input1 = dag.add_input(16, Shape::number());
-    let change_part1 = dag.add_change_partition(input1, Some(&tfhers_partition), None);
+    let change_part1 = dag.add_change_partition(input1, Some(tfhers_partition.clone()), None);
     let dot = dag.add_dot([change_part1], [2]);
-    _ = dag.add_change_partition(dot, None, Some(&tfhers_partition));
+    _ = dag.add_change_partition(dot, None, Some(tfhers_partition.clone()));
 
     let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
@@ -877,10 +877,10 @@ fn test_optimize_tfhers_2lut_compute() {
     let tfhers_precision = 11;
     let mut dag = unparametrized::Dag::new();
     let input = dag.add_input(tfhers_precision, Shape::number());
-    let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
+    let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in), None);
     let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
     let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
-    let _ = dag.add_change_partition(lut2, None, Some(&tfhers_partition_out));
+    let _ = dag.add_change_partition(lut2, None, Some(tfhers_partition_out));
 
     let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
@@ -904,10 +904,10 @@ fn test_optimize_tfhers_different_in_out_2lut_compute() {
     let mut dag = unparametrized::Dag::new();
     let tfhers_precision = 8;
     let input = dag.add_input(tfhers_precision, Shape::number());
-    let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
+    let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in), None);
     let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
     let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
-    let _ = dag.add_change_partition(lut2, None, Some(&tfhers_partition_out));
+    let _ = dag.add_change_partition(lut2, None, Some(tfhers_partition_out));
 
     let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
@@ -926,7 +926,7 @@ fn test_optimize_tfhers_input_constraints() {
         let mut dag = unparametrized::Dag::new();
         let tfhers_precision = 4;
         let input = dag.add_input(tfhers_precision, Shape::number());
-        let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition), None);
         let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, tfhers_precision);
         let out = dag.add_dot([lut], [128]);
         dag.add_composition(out, input);
@@ -960,7 +960,7 @@ fn test_optimize_tfhers_output_constraints() {
         let input = dag.add_input(tfhers_precision, Shape::number());
         let lut = dag.add_lut(input, FunctionTable::UNKWOWN, tfhers_precision);
         let dot = dag.add_dot([lut], [128]);
-        let out = dag.add_change_partition(dot, None, Some(&tfhers_partition));
+        let out = dag.add_change_partition(dot, None, Some(tfhers_partition.clone()));
         dag.add_composition(out, input);
         dag
     };
@@ -997,11 +997,11 @@ fn test_optimize_tfhers_to_concrete_and_back_example() {
         Shape::vector((concrete_precision / msg_width).into()),
     );
     // to concrete
-    let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
+    let change_part1 = dag.add_change_partition(input, Some(tfhers_partition.clone()), None);
     let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, concrete_precision);
     // from concrete
     let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
-    let _ = dag.add_change_partition(lut2, None, Some(&tfhers_partition));
+    let _ = dag.add_change_partition(lut2, None, Some(tfhers_partition.clone()));
 
     let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
