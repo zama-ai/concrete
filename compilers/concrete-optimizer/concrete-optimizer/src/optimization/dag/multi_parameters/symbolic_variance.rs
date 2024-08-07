@@ -54,6 +54,20 @@ impl SymbolicVariance {
         r
     }
 
+    pub fn from_external_partition(
+        nb_partitions: usize,
+        partition: PartitionIndex,
+        max_variance: f64,
+    ) -> Self {
+        let mut r = Self {
+            partition,
+            coeffs: OperationsValue::zero(nb_partitions),
+        };
+        // rust ..., offset cannot be inlined
+        *r.coeffs.pbs(partition) = max_variance;
+        r
+    }
+
     pub fn coeff_input(&self, partition: PartitionIndex) -> f64 {
         self.coeffs[self.coeffs.index.input(partition)]
     }

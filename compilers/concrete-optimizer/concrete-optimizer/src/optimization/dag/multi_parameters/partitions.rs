@@ -6,6 +6,8 @@ use std::{
 
 use crate::dag::operator::OperatorIndex;
 
+use super::partition_cut::PartitionCut;
+
 #[derive(Clone, Debug, PartialEq, Eq, Default, PartialOrd, Ord, Hash, Copy)]
 pub struct PartitionIndex(pub(crate) usize);
 
@@ -78,6 +80,7 @@ impl InstructionPartition {
 pub struct Partitions {
     pub nb_partitions: usize,
     pub instrs_partition: Vec<InstructionPartition>,
+    pub p_cut: PartitionCut,
 }
 
 impl Index<OperatorIndex> for Partitions {

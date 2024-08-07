@@ -905,6 +905,8 @@ mod tests {
         let tfhers_part = ExternalPartition {
             name: String::from("tfhers"),
             macro_params: DUMMY_MACRO_PARAM,
+            max_variance: 0.0_f64,
+            variance: 0.0_f64,
         };
         let mut builder = graph.builder("main1");
         let a = builder.add_input(1, Shape::number(), Location::Unknown);
@@ -956,6 +958,8 @@ mod tests {
         let tfhers_part = ExternalPartition {
             name: String::from("tfhers"),
             macro_params: DUMMY_MACRO_PARAM,
+            max_variance: 0.0_f64,
+            variance: 0.0_f64,
         };
         let change_part =
             builder.add_change_partition(lut2, Some(&tfhers_part), None, Location::Unknown);

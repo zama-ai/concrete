@@ -132,6 +132,7 @@ fn only_1_partition(dag: &unparametrized::Dag) -> Partitions {
     Partitions {
         nb_partitions: 1,
         instrs_partition,
+        p_cut: PartitionCut::empty(),
     }
 }
 
@@ -245,6 +246,7 @@ fn resolve_by_levelled_block(
     Partitions {
         nb_partitions,
         instrs_partition: instrs_p,
+        p_cut: p_cut.clone(),
     }
     // Now we can generate transitions
     // Input has no transtions
@@ -271,12 +273,32 @@ pub mod tests {
     pub const LOW_PRECISION_PARTITION: PartitionIndex = PartitionIndex(0);
     pub const HIGH_PRECISION_PARTITION: PartitionIndex = PartitionIndex(1);
 
+    use once_cell::sync::Lazy;
+
     use super::*;
+    use crate::config;
     use crate::dag::operator::{FunctionTable, Shape, Weights};
     use crate::dag::unparametrized;
     use crate::optimization::dag::multi_parameters::optimize::MacroParameters;
     use crate::optimization::dag::multi_parameters::partition_cut::ExternalPartition;
+    use crate::optimization::decomposition::cmux::get_noise_br;
+    use crate::optimization::decomposition::{self, PersistDecompCaches};
     use crate::parameters::GlweParameters;
+
+    const CIPHERTEXT_MODULUS_LOG: u32 = 64;
+    const FFT_PRECISION: u32 = 53;
+
+    pub static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
+        let processing_unit = config::ProcessingUnit::Cpu;
+        decomposition::cache(
+            128,
+            processing_unit,
+            None,
+            true,
+            CIPHERTEXT_MODULUS_LOG,
+            FFT_PRECISION,
+        )
+    });
 
     fn default_p_cut() -> PartitionCut {
         PartitionCut::from_precisions(&[2, 128])
@@ -359,22 +381,41 @@ pub mod tests {
         PartitionIndex(default)
     }
 
-    const DUMMY_MACRO_PARAM: MacroParameters = MacroParameters {
-        glwe_params: GlweParameters {
-            log2_polynomial_size: 0,
-            glwe_dimension: 0,
-        },
-        internal_dim: 0,
+    pub const GLWE_PARAMS: GlweParameters = GlweParameters {
+        log2_polynomial_size: 11,
+        glwe_dimension: 1,
     };
+
+    pub const TFHERS_PBS_LEVEL: u64 = 1;
+
+    pub const TFHERS_MACRO_PARAMS: MacroParameters = MacroParameters {
+        glwe_params: GLWE_PARAMS,
+        internal_dim: 841,
+    };
+
+    pub fn get_tfhers_noise_br() -> f64 {
+        get_noise_br(
+            SHARED_CACHES.caches(),
+            GLWE_PARAMS.log2_polynomial_size,
+            GLWE_PARAMS.glwe_dimension,
+            TFHERS_MACRO_PARAMS.internal_dim,
+            TFHERS_PBS_LEVEL,
+            None,
+        )
+        .unwrap()
+    }
 
     #[test]
     fn test_tfhers_in_out_dot_compute() {
-        let mut dag = unparametrized::Dag::new();
-        let input1 = dag.add_input(16, Shape::number());
+        let variance = get_tfhers_noise_br();
         let tfhers_partition = ExternalPartition {
             name: String::from("tfhers"),
-            macro_params: DUMMY_MACRO_PARAM,
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
         };
+        let mut dag = unparametrized::Dag::new();
+        let input1 = dag.add_input(16, Shape::number());
         let change_part1 = dag.add_change_partition(input1, Some(&tfhers_partition), None);
         let dot = dag.add_dot([change_part1], [2]);
         _ = dag.add_change_partition(dot, None, Some(&tfhers_partition));
@@ -388,12 +429,15 @@ pub mod tests {
 
     #[test]
     fn test_tfhers_in_out_lut_compute() {
-        let mut dag = unparametrized::Dag::new();
-        let input = dag.add_input(16, Shape::number());
+        let variance = get_tfhers_noise_br();
         let tfhers_partition = ExternalPartition {
             name: String::from("tfhers"),
-            macro_params: DUMMY_MACRO_PARAM,
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 6.0,
+            variance,
         };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
         let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
         let change_part2 = dag.add_change_partition(lut, None, Some(&tfhers_partition));
@@ -424,16 +468,21 @@ pub mod tests {
 
     #[test]
     fn test_tfhers_different_in_out_lut_compute() {
-        let mut dag = unparametrized::Dag::new();
-        let input = dag.add_input(16, Shape::number());
+        let variance = get_tfhers_noise_br();
         let tfhers_partition_in = ExternalPartition {
             name: String::from("tfhers_in"),
-            macro_params: DUMMY_MACRO_PARAM,
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 2.0,
+            variance,
         };
         let tfhers_partition_out = ExternalPartition {
             name: String::from("tfhers_out"),
-            macro_params: DUMMY_MACRO_PARAM,
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 2.0,
+            variance,
         };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
         let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
         let change_part2 = dag.add_change_partition(lut, None, Some(&tfhers_partition_out));
@@ -468,12 +517,15 @@ pub mod tests {
 
     #[test]
     fn test_tfhers_in_out_2lut_compute() {
-        let mut dag = unparametrized::Dag::new();
-        let input = dag.add_input(16, Shape::number());
+        let variance = get_tfhers_noise_br();
         let tfhers_partition = ExternalPartition {
             name: String::from("tfhers"),
-            macro_params: DUMMY_MACRO_PARAM,
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
         };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition), None);
         let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
         let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 16);
@@ -518,16 +570,21 @@ pub mod tests {
 
     #[test]
     fn test_tfhers_different_in_out_2lut_compute() {
-        let mut dag = unparametrized::Dag::new();
-        let input = dag.add_input(16, Shape::number());
+        let variance = get_tfhers_noise_br();
         let tfhers_partition_in = ExternalPartition {
             name: String::from("tfhers_in"),
-            macro_params: DUMMY_MACRO_PARAM,
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
         };
         let tfhers_partition_out = ExternalPartition {
             name: String::from("tfhers_out"),
-            macro_params: DUMMY_MACRO_PARAM,
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
         };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
         let change_part1 = dag.add_change_partition(input, Some(&tfhers_partition_in), None);
         let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
         let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 16);
