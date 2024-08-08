@@ -213,7 +213,7 @@ class Graph:
         horizontal: bool = False,
         save_to: Optional[Union[Path, str]] = None,
         show: bool = False,
-    ) -> Path:
+    ) -> Path:  # pragma: no cover
         """
         Draw the graph.
 
