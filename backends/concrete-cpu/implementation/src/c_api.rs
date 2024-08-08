@@ -3,6 +3,7 @@ pub mod bootstrap;
 pub mod csprng;
 pub mod encrypt;
 pub mod fft;
+pub mod fheint;
 pub mod keyswitch;
 pub mod linear_op;
 pub mod secret_key;
