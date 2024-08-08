@@ -473,7 +473,7 @@ class Node:
         ]
 
     @property
-    def conversion_have_table_lookup(self) -> bool:
+    def conversion_have_table_lookup(self) -> bool:  # pragma: no cover
         """
         Get whether the node will have table lookups during execution.
 
@@ -481,6 +481,7 @@ class Node:
             bool:
                 True if the node will have table lookups during execution, False otherwise
         """
+        # this is used only to draw graph
 
         has_tlu = self.converted_to_table_lookup
         if not has_tlu:
