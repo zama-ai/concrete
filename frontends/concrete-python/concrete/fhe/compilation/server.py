@@ -299,13 +299,17 @@ class Server:
         shutil.make_archive(path, "zip", self._output_dir)
 
     @staticmethod
-    def load(path: Union[str, Path]) -> "Server":
+    def load(path: Union[str, Path], **kwargs) -> "Server":
         """
         Load the server from the given path in zip format.
 
         Args:
             path (Union[str, Path]):
                 path to load the server from
+
+            kwargs (Dict[str, Any]):
+                configuration options to overwrite when loading a server saved with `via_mlir`
+                if server isn't loaded via mlir, kwargs are ignored
 
         Returns:
             Server:
@@ -343,7 +347,7 @@ class Server:
                 mlir = f.read()
 
             with open(output_dir_path / "configuration.json", "r", encoding="utf-8") as f:
-                configuration = Configuration().fork(**jsonpickle.loads(f.read()))
+                configuration = Configuration().fork(**jsonpickle.loads(f.read())).fork(**kwargs)
 
             return Server.create(
                 mlir, configuration, is_simulated, composition_rules=composition_rules

@@ -397,6 +397,31 @@ def test_client_server_api_via_mlir(helpers):
         server.cleanup()
 
 
+def test_server_loading_via_mlir_kwargs(helpers):
+    """
+    Test server loading via MLIR with kwarg overrides.
+    """
+
+    configuration = helpers.configuration().fork(global_p_error=None, p_error=0.001)
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def function(x, y):
+        return x == y
+
+    inputset = fhe.inputset(fhe.uint4, fhe.uint4)
+    circuit = function.compile(inputset, configuration)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_dir_path = Path(tmp_dir)
+
+        server_path = tmp_dir_path / "server.zip"
+        circuit.server.save(server_path, via_mlir=True)
+
+        server = Server.load(server_path, p_error=0.05)
+
+        assert server.complexity < circuit.complexity
+
+
 def test_circuit_run_with_unused_arg(helpers):
     """
     Test `encrypt_run_decrypt` method of `Circuit` class with unused arguments.
