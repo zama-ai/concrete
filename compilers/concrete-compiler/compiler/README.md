@@ -148,6 +148,9 @@ You can create a tarball containing libs, bins, and include files for the tools 
 
 ### Build the Python Package
 
+> [!IMPORTANT]  
+> The wheel built in the following steps is for `concrete-compiler` (which doesn't have the frontend layer) and not `concrete-python`. If you are interested in the `concrete-python` package, then you should build it from [here](../../../frontends/concrete-python) instead.
+
 Currently supported platforms:
 - Linux x86_64 for python 3.8, 3.9, 3.10, and 3.11
 
