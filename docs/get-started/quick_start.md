@@ -3,6 +3,7 @@
 This document covers how to compute on encrypted data homomorphically using the **Concrete** framework. We will walk you through a complete example step-by-step.
 
 
+
 The basic workflow of computation is as follows:
 1. Define the function you want to compute
 2. Compile the function into a Concrete `Circuit`
@@ -148,3 +149,9 @@ encrypted_x, encrypted_y = circuit.encrypt(2, 6)
 encrypted_result = circuit.run(encrypted_x, encrypted_y)
 result = circuit.decrypt(encrypted_result)
 ```
+
+{% hint style="success" %}
+**Zama 5-Question Developer Survey**
+
+We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
+{% endhint %}
