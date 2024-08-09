@@ -14,6 +14,7 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 
 include "concretelang/Dialect/FHE/IR/FHEDialect.td"
 include "concretelang/Dialect/FHE/IR/FHETypes.td"
+include "concretelang/Dialect/FHE/IR/FHEAttrs.td"
 include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.td"
 
 class FHE_Op<string mnemonic, list<Trait> traits = []> :
@@ -521,6 +522,25 @@ def FHE_ReinterpretPrecisionEintOp: FHE_Op<"reinterpret_precision", [Pure, Unary
 
     let arguments = (ins FHE_AnyEncryptedInteger:$input);
     let results = (outs FHE_AnyEncryptedInteger);
+}
+
+def FHE_ChangePartitionEintOp: FHE_Op<"change_partition", [Pure, UnaryEint]> {
+
+    let summary = "Change partition if necessary.";
+
+    let description = [{
+      Changing the partition of a ciphertext.
+      If necessary, it keyswitch the ciphertext to a different key having a different set of parameters than the original one.
+
+      Example:
+      ```mlir
+        %new_eint = "FHE.change_partition"(%eint): (!FHE.eint<16>) -> (!FHE.eint<16>)
+    ```
+    }];
+
+    let arguments = (ins FHE_AnyEncryptedInteger:$input, OptionalAttr<FHE_PartitionAttr>:$src, OptionalAttr<FHE_PartitionAttr>:$dest);
+    let results = (outs FHE_AnyEncryptedInteger);
+    let hasVerifier = 1;
 }
 
 // FHE Boolean Operations

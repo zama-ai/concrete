@@ -260,6 +260,43 @@ Effects: MemoryEffects::Effect{}
 | :----: | ----------- |
 &laquo;unnamed&raquo; | An encrypted boolean
 
+### `FHE.change_partition` (::mlir::concretelang::FHE::ChangePartitionEintOp)
+
+Change partition if necessary.
+
+  Changing the partition of a ciphertext.
+  If necessary, it keyswitch the ciphertext to a different key having a different set of parameters than the original one.
+
+  Example:
+  ```mlir
+    %new_eint = "FHE.change_partition"(%eint): (!FHE.eint<16>) -> (!FHE.eint<16>)
+```
+
+Traits: AlwaysSpeculatableImplTrait
+
+Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
+
+Effects: MemoryEffects::Effect{}
+
+#### Attributes:
+
+| Attribute | MLIR Type | Description |
+| :-------: | :-------: | ----------- |
+| `src` | ::mlir::concretelang::FHE::PartitionAttr | An attribute representing a partition.
+| `dest` | ::mlir::concretelang::FHE::PartitionAttr | An attribute representing a partition.
+
+#### Operands:
+
+| Operand | Description |
+| :-----: | ----------- |
+| `input` | 
+
+#### Results:
+
+| Result | Description |
+| :----: | ----------- |
+&laquo;unnamed&raquo; | 
+
 ### `FHE.from_bool` (::mlir::concretelang::FHE::FromBoolOp)
 
 Cast a boolean to an unsigned integer
@@ -903,6 +940,33 @@ Effects: MemoryEffects::Effect{}
 | Result | Description |
 | :----: | ----------- |
 | `tensor` | 
+
+## Attribute definition
+
+### PartitionAttr
+
+An attribute representing a partition.
+
+Syntax:
+
+```
+#FHE.partition<
+  StringAttr,   # name
+  int,   # lweDim
+  int,   # glweDim
+  int   # polySize
+>
+```
+
+
+#### Parameters:
+
+| Parameter | C++ type | Description |
+| :-------: | :-------: | ----------- |
+| name | `StringAttr` |  |
+| lweDim | `int` |  |
+| glweDim | `int` |  |
+| polySize | `int` |  |
 
 ## Type definition
 
