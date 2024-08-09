@@ -55,6 +55,7 @@ jobs:
         uses: tj-actions/changed-files@cc733854b1f224978ef800d29e4709d5ee2883e4
         with:
           files: |
+            ./tools/parameter-curves/concrete-security-curves-rust/**
             ./compilers/concrete-optimizer/**
             ./.github/workflows/optimizer.yml
 
