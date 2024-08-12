@@ -4,6 +4,31 @@
 
 ## Modules
 
+- [`concrete.compiler`](./concrete.compiler.md): Compiler submodule.
+- [`concrete.compiler.client_parameters`](./concrete.compiler.client_parameters.md): Client parameters.
+- [`concrete.compiler.client_support`](./concrete.compiler.client_support.md): Client support.
+- [`concrete.compiler.compilation_context`](./concrete.compiler.compilation_context.md): CompilationContext.
+- [`concrete.compiler.compilation_feedback`](./concrete.compiler.compilation_feedback.md): Compilation feedback.
+- [`concrete.compiler.compilation_options`](./concrete.compiler.compilation_options.md): CompilationOptions.
+- [`concrete.compiler.evaluation_keys`](./concrete.compiler.evaluation_keys.md): EvaluationKeys.
+- [`concrete.compiler.key_set`](./concrete.compiler.key_set.md): KeySet.
+- [`concrete.compiler.key_set_cache`](./concrete.compiler.key_set_cache.md): KeySetCache.
+- [`concrete.compiler.lambda_argument`](./concrete.compiler.lambda_argument.md): LambdaArgument.
+- [`concrete.compiler.library_compilation_result`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult.
+- [`concrete.compiler.library_lambda`](./concrete.compiler.library_lambda.md): LibraryLambda.
+- [`concrete.compiler.library_support`](./concrete.compiler.library_support.md): LibrarySupport.
+- [`concrete.compiler.parameter`](./concrete.compiler.parameter.md): Parameter.
+- [`concrete.compiler.public_arguments`](./concrete.compiler.public_arguments.md): PublicArguments.
+- [`concrete.compiler.public_result`](./concrete.compiler.public_result.md): PublicResult.
+- [`concrete.compiler.server_circuit`](./concrete.compiler.server_circuit.md): ServerCircuit.
+- [`concrete.compiler.server_program`](./concrete.compiler.server_program.md): ServerProgram.
+- [`concrete.compiler.simulated_value_decrypter`](./concrete.compiler.simulated_value_decrypter.md): SimulatedValueDecrypter.
+- [`concrete.compiler.simulated_value_exporter`](./concrete.compiler.simulated_value_exporter.md): SimulatedValueExporter.
+- [`concrete.compiler.utils`](./concrete.compiler.utils.md): Common utils for the compiler submodule.
+- [`concrete.compiler.value`](./concrete.compiler.value.md): Value.
+- [`concrete.compiler.value_decrypter`](./concrete.compiler.value_decrypter.md): ValueDecrypter.
+- [`concrete.compiler.value_exporter`](./concrete.compiler.value_exporter.md): ValueExporter.
+- [`concrete.compiler.wrapper`](./concrete.compiler.wrapper.md): Wrapper for native Cpp objects.
 - [`concrete.fhe`](./concrete.fhe.md): Concrete.
 - [`concrete.fhe.compilation`](./concrete.fhe.compilation.md): Glue the compilation process together.
 - [`concrete.fhe.compilation.artifacts`](./concrete.fhe.compilation.artifacts.md): Declaration of `DebugArtifacts` class.
@@ -70,32 +95,7 @@
 - [`concrete.fhe.values.scalar`](./concrete.fhe.values.scalar.md): Declaration of `ClearScalar` and `EncryptedScalar` wrappers.
 - [`concrete.fhe.values.tensor`](./concrete.fhe.values.tensor.md): Declaration of `ClearTensor` and `EncryptedTensor` wrappers.
 - [`concrete.fhe.values.value_description`](./concrete.fhe.values.value_description.md): Declaration of `ValueDescription` class.
-- [`concrete.fhe.version`](./concrete.fhe.version.md): Version of the project, which is updated automatically by the CI right before releasing.
-- [`concrete.compiler`](./concrete.compiler.md): Compiler submodule.
-- [`concrete.compiler.client_parameters`](./concrete.compiler.client_parameters.md): Client parameters.
-- [`concrete.compiler.client_support`](./concrete.compiler.client_support.md): Client support.
-- [`concrete.compiler.compilation_context`](./concrete.compiler.compilation_context.md): CompilationContext.
-- [`concrete.compiler.compilation_feedback`](./concrete.compiler.compilation_feedback.md): Compilation feedback.
-- [`concrete.compiler.compilation_options`](./concrete.compiler.compilation_options.md): CompilationOptions.
-- [`concrete.compiler.evaluation_keys`](./concrete.compiler.evaluation_keys.md): EvaluationKeys.
-- [`concrete.compiler.key_set`](./concrete.compiler.key_set.md): KeySet.
-- [`concrete.compiler.key_set_cache`](./concrete.compiler.key_set_cache.md): KeySetCache.
-- [`concrete.compiler.lambda_argument`](./concrete.compiler.lambda_argument.md): LambdaArgument.
-- [`concrete.compiler.library_compilation_result`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult.
-- [`concrete.compiler.library_lambda`](./concrete.compiler.library_lambda.md): LibraryLambda.
-- [`concrete.compiler.library_support`](./concrete.compiler.library_support.md): LibrarySupport.
-- [`concrete.compiler.parameter`](./concrete.compiler.parameter.md): Parameter.
-- [`concrete.compiler.public_arguments`](./concrete.compiler.public_arguments.md): PublicArguments.
-- [`concrete.compiler.public_result`](./concrete.compiler.public_result.md): PublicResult.
-- [`concrete.compiler.server_circuit`](./concrete.compiler.server_circuit.md): ServerCircuit.
-- [`concrete.compiler.server_program`](./concrete.compiler.server_program.md): ServerProgram.
-- [`concrete.compiler.simulated_value_decrypter`](./concrete.compiler.simulated_value_decrypter.md): SimulatedValueDecrypter.
-- [`concrete.compiler.simulated_value_exporter`](./concrete.compiler.simulated_value_exporter.md): SimulatedValueExporter.
-- [`concrete.compiler.utils`](./concrete.compiler.utils.md): Common utils for the compiler submodule.
-- [`concrete.compiler.value`](./concrete.compiler.value.md): Value.
-- [`concrete.compiler.value_decrypter`](./concrete.compiler.value_decrypter.md): ValueDecrypter.
-- [`concrete.compiler.value_exporter`](./concrete.compiler.value_exporter.md): ValueExporter.
-- [`concrete.compiler.wrapper`](./concrete.compiler.wrapper.md): Wrapper for native Cpp objects.
+- [`concrete.fhe.version`](./concrete.fhe.version.md)
 - [`concrete.lang`](./concrete.lang.md): Concretelang python module
 - [`concrete.lang.dialects`](./concrete.lang.dialects.md)
 - [`concrete.lang.dialects.fhe`](./concrete.lang.dialects.fhe.md): FHE dialect module
@@ -104,6 +104,30 @@
 
 ## Classes
 
+- [`client_parameters.ClientParameters`](./concrete.compiler.client_parameters.md): ClientParameters are public parameters used for key generation.
+- [`client_support.ClientSupport`](./concrete.compiler.client_support.md): Client interface for doing key generation and encryption.
+- [`compilation_context.CompilationContext`](./concrete.compiler.compilation_context.md): Support class for compilation context.
+- [`compilation_feedback.CircuitCompilationFeedback`](./concrete.compiler.compilation_feedback.md): CircuitCompilationFeedback is a set of hint computed by the compiler engine for a circuit.
+- [`compilation_feedback.ProgramCompilationFeedback`](./concrete.compiler.compilation_feedback.md): CompilationFeedback is a set of hint computed by the compiler engine.
+- [`compilation_options.CompilationOptions`](./concrete.compiler.compilation_options.md): CompilationOptions holds different flags and options of the compilation process.
+- [`evaluation_keys.EvaluationKeys`](./concrete.compiler.evaluation_keys.md): EvaluationKeys required for execution.
+- [`key_set.KeySet`](./concrete.compiler.key_set.md): KeySet stores the different keys required for an encrypted computation.
+- [`key_set_cache.KeySetCache`](./concrete.compiler.key_set_cache.md): KeySetCache is a cache for KeySet to avoid generating similar keys multiple times.
+- [`lambda_argument.LambdaArgument`](./concrete.compiler.lambda_argument.md): LambdaArgument holds scalar or tensor values.
+- [`library_compilation_result.LibraryCompilationResult`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult holds the result of the library compilation.
+- [`library_lambda.LibraryLambda`](./concrete.compiler.library_lambda.md): LibraryLambda reference a compiled library and can be ran using LibrarySupport.
+- [`library_support.LibrarySupport`](./concrete.compiler.library_support.md): Support class for library compilation and execution.
+- [`parameter.Parameter`](./concrete.compiler.parameter.md): An FHE parameter.
+- [`public_arguments.PublicArguments`](./concrete.compiler.public_arguments.md): PublicArguments holds encrypted and plain arguments, as well as public materials.
+- [`public_result.PublicResult`](./concrete.compiler.public_result.md): PublicResult holds the result of an encrypted execution and can be decrypted using ClientSupport.
+- [`server_circuit.ServerCircuit`](./concrete.compiler.server_circuit.md): ServerCircuit references a circuit that can be called for execution and simulation.
+- [`server_program.ServerProgram`](./concrete.compiler.server_program.md): ServerProgram references compiled circuit objects.
+- [`simulated_value_decrypter.SimulatedValueDecrypter`](./concrete.compiler.simulated_value_decrypter.md): A helper class to decrypt `Value`s.
+- [`simulated_value_exporter.SimulatedValueExporter`](./concrete.compiler.simulated_value_exporter.md): A helper class to create `Value`s.
+- [`value.Value`](./concrete.compiler.value.md): An encrypted/clear value which can be scalar/tensor.
+- [`value_decrypter.ValueDecrypter`](./concrete.compiler.value_decrypter.md): A helper class to decrypt `Value`s.
+- [`value_exporter.ValueExporter`](./concrete.compiler.value_exporter.md): A helper class to create `Value`s.
+- [`wrapper.WrapperCpp`](./concrete.compiler.wrapper.md): Wrapper base class for native Cpp objects.
 - [`artifacts.DebugArtifacts`](./concrete.fhe.compilation.artifacts.md): DebugArtifacts class, to export information about the compilation process for single function.
 - [`artifacts.FunctionDebugArtifacts`](./concrete.fhe.compilation.artifacts.md): An object containing debug artifacts for a certain function in an fhe module.
 - [`artifacts.ModuleDebugArtifacts`](./concrete.fhe.compilation.artifacts.md): An object containing debug artifacts for an fhe module.
@@ -312,33 +336,13 @@
 - [`typing.uint8`](./concrete.fhe.tracing.typing.md): Scalar uint8 annotation.
 - [`typing.uint9`](./concrete.fhe.tracing.typing.md): Scalar uint9 annotation.
 - [`value_description.ValueDescription`](./concrete.fhe.values.value_description.md): ValueDescription class, to combine data type, shape, and encryption status into a single object.
-- [`client_parameters.ClientParameters`](./concrete.compiler.client_parameters.md): ClientParameters are public parameters used for key generation.
-- [`client_support.ClientSupport`](./concrete.compiler.client_support.md): Client interface for doing key generation and encryption.
-- [`compilation_context.CompilationContext`](./concrete.compiler.compilation_context.md): Support class for compilation context.
-- [`compilation_feedback.CircuitCompilationFeedback`](./concrete.compiler.compilation_feedback.md): CircuitCompilationFeedback is a set of hint computed by the compiler engine for a circuit.
-- [`compilation_feedback.ProgramCompilationFeedback`](./concrete.compiler.compilation_feedback.md): CompilationFeedback is a set of hint computed by the compiler engine.
-- [`compilation_options.CompilationOptions`](./concrete.compiler.compilation_options.md): CompilationOptions holds different flags and options of the compilation process.
-- [`evaluation_keys.EvaluationKeys`](./concrete.compiler.evaluation_keys.md): EvaluationKeys required for execution.
-- [`key_set.KeySet`](./concrete.compiler.key_set.md): KeySet stores the different keys required for an encrypted computation.
-- [`key_set_cache.KeySetCache`](./concrete.compiler.key_set_cache.md): KeySetCache is a cache for KeySet to avoid generating similar keys multiple times.
-- [`lambda_argument.LambdaArgument`](./concrete.compiler.lambda_argument.md): LambdaArgument holds scalar or tensor values.
-- [`library_compilation_result.LibraryCompilationResult`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult holds the result of the library compilation.
-- [`library_lambda.LibraryLambda`](./concrete.compiler.library_lambda.md): LibraryLambda reference a compiled library and can be ran using LibrarySupport.
-- [`library_support.LibrarySupport`](./concrete.compiler.library_support.md): Support class for library compilation and execution.
-- [`parameter.Parameter`](./concrete.compiler.parameter.md): An FHE parameter.
-- [`public_arguments.PublicArguments`](./concrete.compiler.public_arguments.md): PublicArguments holds encrypted and plain arguments, as well as public materials.
-- [`public_result.PublicResult`](./concrete.compiler.public_result.md): PublicResult holds the result of an encrypted execution and can be decrypted using ClientSupport.
-- [`server_circuit.ServerCircuit`](./concrete.compiler.server_circuit.md): ServerCircuit references a circuit that can be called for execution and simulation.
-- [`server_program.ServerProgram`](./concrete.compiler.server_program.md): ServerProgram references compiled circuit objects.
-- [`simulated_value_decrypter.SimulatedValueDecrypter`](./concrete.compiler.simulated_value_decrypter.md): A helper class to decrypt `Value`s.
-- [`simulated_value_exporter.SimulatedValueExporter`](./concrete.compiler.simulated_value_exporter.md): A helper class to create `Value`s.
-- [`value.Value`](./concrete.compiler.value.md): An encrypted/clear value which can be scalar/tensor.
-- [`value_decrypter.ValueDecrypter`](./concrete.compiler.value_decrypter.md): A helper class to decrypt `Value`s.
-- [`value_exporter.ValueExporter`](./concrete.compiler.value_exporter.md): A helper class to create `Value`s.
-- [`wrapper.WrapperCpp`](./concrete.compiler.wrapper.md): Wrapper base class for native Cpp objects.
 
 ## Functions
 
+- [`compiler.init_dfr`](./concrete.compiler.md): Initialize dataflow parallelization.
+- [`compiler.round_trip`](./concrete.compiler.md): Parse the MLIR input, then return it back.
+- [`compilation_feedback.tag_from_location`](./concrete.compiler.compilation_feedback.md): Extract tag of the operation from its location.
+- [`utils.lookup_runtime_lib`](./concrete.compiler.utils.md): Try to find the absolute path to the runtime library.
 - [`decorators.circuit`](./concrete.fhe.compilation.decorators.md): Provide a direct interface for compilation of single circuit programs.
 - [`decorators.compiler`](./concrete.fhe.compilation.decorators.md): Provide an easy interface for the compilation of single-circuit programs.
 - [`decorators.function`](./concrete.fhe.compilation.decorators.md): Provide an easy interface to define a function within an fhe module.
@@ -393,7 +397,3 @@
 - [`tensor.encrypted_tensor_builder`](./concrete.fhe.values.tensor.md): Build an encrypted tensor value.
 - [`tensor.clear_tensor_builder`](./concrete.fhe.values.tensor.md): Build a clear tensor value.
 - [`tensor.encrypted_tensor_builder`](./concrete.fhe.values.tensor.md): Build an encrypted tensor value.
-- [`compiler.init_dfr`](./concrete.compiler.md): Initialize dataflow parallelization.
-- [`compiler.round_trip`](./concrete.compiler.md): Parse the MLIR input, then return it back.
-- [`compilation_feedback.tag_from_location`](./concrete.compiler.compilation_feedback.md): Extract tag of the operation from its location.
-- [`utils.lookup_runtime_lib`](./concrete.compiler.utils.md): Try to find the absolute path to the runtime library.
