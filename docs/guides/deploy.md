@@ -130,6 +130,10 @@ serialized_result: bytes = result.serialize()
 
 Then, send the serialized result back to the client. After this, the client can decrypt to receive the result of the computation.
 
+{% hint style="info" %}
+Clear arguments can directly be passed to `server.run` (e.g., `server.run(x, 10, z, evaluation_keys=...)`).
+{% endhint %}
+
 ## Decrypting the result (on the client)
 
 Once you have received the serialized result of the computation from the server, you can deserialize it:

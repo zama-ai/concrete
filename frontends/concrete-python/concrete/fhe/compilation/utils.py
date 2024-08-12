@@ -82,10 +82,16 @@ def validate_input_args(
     Returns:
         List[Optional[Union[int, np.ndarray]]]: ordered validated args
     """
+
     functions_parameters = json.loads(client_specs.client_parameters.serialize())["circuits"]
-    client_parameters_json = next(
-        filter(lambda x: x["name"] == function_name, functions_parameters)
-    )
+    for function_parameters in functions_parameters:
+        if function_parameters["name"] == function_name:
+            client_parameters_json = function_parameters
+            break
+    else:
+        message = f"Function `{function_name}` is not in the module"
+        raise ValueError(message)
+
     assert "inputs" in client_parameters_json
     input_specs = client_parameters_json["inputs"]
     if len(args) != len(input_specs):
