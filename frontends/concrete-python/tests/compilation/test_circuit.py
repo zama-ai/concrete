@@ -291,6 +291,41 @@ def test_client_server_api(helpers):
         server.cleanup()
 
 
+def test_client_server_api_run_with_clear(helpers):
+    """
+    Test running server run API with a clear input.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "clear", "z": "clear"})
+    def function(x, y, z):
+        return x + y + z
+
+    inputset = fhe.inputset(fhe.uint3, fhe.uint3, fhe.tensor[fhe.uint3, 2, 2])  # type: ignore
+    circuit = function.compile(inputset, configuration.fork())
+
+    client = circuit.client
+    server = circuit.server
+
+    x, y, z = 3, 2, [[1, 2], [3, 4]]
+
+    encrypted_x, _, _ = client.encrypt(x, None, None)
+    encrypted_result = server.run(encrypted_x, y, z, evaluation_keys=client.evaluation_keys)
+    result = client.decrypt(encrypted_result)
+    assert np.array_equal(result, x + y + np.array(z))
+
+    with pytest.raises(ValueError) as excinfo:
+        server.run(1, 2, 3, evaluation_keys=client.evaluation_keys)
+
+    assert str(excinfo.value) == "Expected argument 0 to be an fhe.Value but it's int"
+
+    with pytest.raises(RuntimeError) as excinfo:
+        server.run(encrypted_x, [2, 2], 3, evaluation_keys=client.evaluation_keys)
+
+    assert str(excinfo.value) == "Tried to transform plaintext value with incompatible shape."
+
+
 def test_client_server_api_crt(helpers):
     """
     Test client/server API on a CRT circuit.
