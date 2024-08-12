@@ -230,7 +230,7 @@ Load the server lambda for a given circuit from the library compilation result.
 
 ```python
 new(
-    output_path: str = '/Users/benoitchevalliermames/Documents/Zama/Git/concrete/tempdirectoryforapidocs/concrete-compiler_compilation_artifacts',
+    output_path: str = './concrete-compiler_compilation_artifacts',
     runtime_library_path: Optional[str] = None,
     generateSharedLib: bool = True,
     generateStaticLib: bool = False,

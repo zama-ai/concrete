@@ -30,6 +30,17 @@ env:
   RELEASE_TYPE: ${{ inputs.user_inputs }}
 
 jobs:
+  release-checks:
+    runs-on: ${{ github.event.inputs.runner_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Check python api doc is up to date
+        run: ci/scripts/make_apidocs.sh
+
   build-linux-x86:
     strategy:
       matrix:
@@ -227,7 +238,7 @@ jobs:
       base64-subjects: ${{ needs.hash.outputs.hash }}
 
   push:
-    needs: [build-linux-x86, build-macos, provenance]
+    needs: [release-checks, build-linux-x86, build-macos, provenance]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
