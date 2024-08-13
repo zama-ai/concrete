@@ -45,7 +45,7 @@ fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
     decomposition::cache(
         options.security_level,
         processing_unit,
-        Some(ProcessingUnit::Cpu.complexity_model()),
+        Some(processing_unit.complexity_model()),
         options.cache_on_disk,
         options.ciphertext_modulus_log,
         options.fft_precision,
