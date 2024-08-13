@@ -71,14 +71,14 @@ pub unsafe extern "C" fn concrete_cpu_init_lwe_circuit_bootstrap_private_functio
                 &mut fpksk_list,
                 &input_key,
                 &output_key,
-                Variance::from_variance(variance),
+                Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
                 &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
             ),
             Parallelism::Rayon => par_generate_circuit_bootstrap_lwe_pfpksk_list(
                 &mut fpksk_list,
                 &input_key,
                 &output_key,
-                Variance::from_variance(variance),
+                Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
                 &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
             ),
         }

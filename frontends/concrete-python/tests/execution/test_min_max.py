@@ -233,3 +233,25 @@ def test_minimum_maximum(
     ]
     for sample in samples:
         helpers.check_execution(circuit, function, sample, retries=5)
+
+
+def test_internal_signed_tlu_padding(helpers):
+    """Test that the signed input LUT is correctly padded in the case of substraction trick."""
+
+    inputset = [(i, j) for i in [0, 1] for j in [0, 1]]
+
+    @fhe.compiler({"a": "encrypted", "b": "encrypted"})
+    def min2(a, b):
+        min_12 = np.minimum(a, b)
+        return (min_12, a + 3, b + 3)
+
+    c = min2.compile(inputset, helpers.configuration())
+    min_0_1, _, _ = c.encrypt_run_decrypt(0, 1)
+
+    assert min_0_1 == 0
+
+    # Some extra checks to verify that the test is relevant (substraction trick).
+    assert c.mlir.count("to_signed") == 2  # check substraction trick is used
+    assert c.mlir.count("sub_eint") == 1  # check substraction trick is used
+    assert c.mlir.count("<[0, 0, -2, -1, 0, 0, 0, 0]>") == 0  # lut wrongly padded at the end
+    assert c.mlir.count("<[0, 0, 0, 0, 0, 0, -2, -1]>") == 1  # lut correctly padded in the middle

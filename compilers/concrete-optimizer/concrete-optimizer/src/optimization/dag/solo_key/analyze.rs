@@ -1,4 +1,4 @@
-use super::symbolic_variance::{SymbolicVariance, VarianceOrigin};
+use super::symbolic_variance::SymbolicVariance;
 use crate::dag::operator::{
     DotKind, LevelledComplexity, Operator, OperatorIndex, Precision, Shape,
 };
@@ -47,7 +47,8 @@ fn assert_inputs_index(op: &Operator, first_bad_index: usize) {
         Operator::Input { .. } => true,
         Operator::Lut { input, .. }
         | Operator::UnsafeCast { input, .. }
-        | Operator::Round { input, .. } => input.0 < first_bad_index,
+        | Operator::Round { input, .. }
+        | Operator::ChangePartition { input, .. } => input.0 < first_bad_index,
         Operator::LevelledOp { inputs, .. } | Operator::Dot { inputs, .. } => {
             inputs.iter().all(|input| input.0 < first_bad_index)
         }
@@ -73,6 +74,15 @@ pub fn has_round(dag: &Dag) -> bool {
     false
 }
 
+pub fn has_change_partition(dag: &Dag) -> bool {
+    for op in &dag.operators {
+        if matches!(op, Operator::ChangePartition { .. }) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn has_unsafe_cast(dag: &Dag) -> bool {
     for op in &dag.operators {
         if matches!(op, Operator::UnsafeCast { .. }) {
@@ -84,6 +94,10 @@ pub fn has_unsafe_cast(dag: &Dag) -> bool {
 
 pub fn assert_no_round(dag: &Dag) {
     assert!(!has_round(dag));
+}
+
+pub fn assert_no_change_partition(dag: &Dag) {
+    assert!(!has_change_partition(dag));
 }
 
 fn assert_valid_variances(dag: &SoloKeyDag) {
@@ -98,17 +112,6 @@ fn assert_valid_variances(dag: &SoloKeyDag) {
 
 fn assert_properties_correctness(dag: &SoloKeyDag) {
     assert_valid_variances(dag);
-}
-
-fn variance_origin(inputs: &[OperatorIndex], out_variances: &[SymbolicVariance]) -> VarianceOrigin {
-    let first_origin = first(inputs, out_variances).origin();
-    for input in inputs.iter().skip(1) {
-        let item = &out_variances[input.0];
-        if first_origin != item.origin() {
-            return VarianceOrigin::Mixed;
-        }
-    }
-    first_origin
 }
 
 #[derive(Clone, Debug)]
@@ -146,15 +149,15 @@ fn out_variance(
     match op {
         Operator::Input { .. } => SymbolicVariance::INPUT,
         Operator::Lut { .. } => SymbolicVariance::LUT,
-        Operator::LevelledOp { inputs, manp, .. } => {
-            let variance_factor = SymbolicVariance::manp_to_variance_factor(*manp);
-            let origin = match variance_origin(inputs, out_variances) {
-                    VarianceOrigin::Input => SymbolicVariance::INPUT,
-                    VarianceOrigin::Lut | VarianceOrigin::Mixed /* Mixed: assume the worst */
-                    => SymbolicVariance::LUT
-            };
-            origin * variance_factor
-        }
+        Operator::LevelledOp {
+            inputs, weights, ..
+        } => inputs
+            .iter()
+            .map(|i| out_variances[i.0])
+            .zip(weights)
+            .fold(SymbolicVariance::ZERO, |acc, (var, &weight)| {
+                acc + var * square(weight)
+            }),
         Operator::Dot {
             kind: DotKind::CompatibleTensor { .. },
             ..
@@ -187,7 +190,9 @@ fn out_variance(
             .fold(SymbolicVariance::ZERO, |acc, (weight, var)| {
                 acc + var * square(*weight as f64)
             }),
-        Operator::UnsafeCast { input, .. } => out_variances[input.0],
+        Operator::UnsafeCast { input, .. } | Operator::ChangePartition { input, .. } => {
+            out_variances[input.0]
+        }
         Operator::Round { .. } => {
             unreachable!("Round should have been either expanded or integrated to a lut")
         }
@@ -247,9 +252,10 @@ fn op_levelled_complexity(op: &Operator, out_shapes: &[Shape]) -> LevelledComple
         }
 
         Operator::LevelledOp { complexity, .. } => *complexity,
-        Operator::Input { .. } | Operator::Lut { .. } | Operator::UnsafeCast { .. } => {
-            LevelledComplexity::ZERO
-        }
+        Operator::Input { .. }
+        | Operator::Lut { .. }
+        | Operator::UnsafeCast { .. }
+        | Operator::ChangePartition { .. } => LevelledComplexity::ZERO,
         Operator::Round { .. } => {
             unreachable!("Round should have been either expanded or integrated to a lut")
         }
@@ -385,6 +391,7 @@ pub fn analyze(dag: &Dag, noise_config: &NoiseBoundConfig) -> SoloKeyDag {
     assert_dag_correctness(dag);
     let dag = &expand_round(dag);
     assert_no_round(dag);
+    assert_no_change_partition(dag);
     let out_variances = out_variances(dag);
     let in_luts_variance = in_luts_variance(dag, &out_variances);
     let nb_luts = lut_count_from_dag(dag);
@@ -552,7 +559,7 @@ impl SoloKeyDag {
 
             p_error = combine_errors(p_error, p_error_c);
         }
-        assert!(0.0 <= p_error && p_error <= 1.0);
+        assert!((0.0..=1.0).contains(&p_error));
         p_error
     }
 
@@ -702,14 +709,13 @@ pub mod tests {
         let cpx_dot = LevelledComplexity::ADDITION;
         let weights = Weights::vector([1, 2]);
         #[allow(clippy::imprecise_flops)]
-        let manp = (1.0 * 1.0 + 2.0 * 2_f64).sqrt();
-        let dot = graph.add_levelled_op([input1, input1], cpx_dot, manp, Shape::number(), "dot");
+        let dot =
+            graph.add_levelled_op([input1, input1], cpx_dot, [1., 2.], Shape::number(), "dot");
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;
         let complexity_cost = analysis.complexity(lwe_dim, one_lut_cost);
 
-        assert!(analysis.out_variances[dot.0].origin() == VarianceOrigin::Input);
         assert_eq!(graph.out_precisions[dot.0], 3);
         let expected_square_norm2 = weights.square_norm2() as f64;
         let actual_square_norm2 = analysis.out_variances[dot.0].input_coeff;
@@ -720,7 +726,6 @@ pub mod tests {
         let constraint = analysis.constraint();
         assert!(constraint.pareto_in_lut.is_empty());
         assert!(constraint.pareto_output.len() == 1);
-        assert_eq!(constraint.pareto_output[0].origin(), VarianceOrigin::Input);
         assert_f64_eq(constraint.pareto_output[0].input_coeff, 5.0);
     }
 
@@ -763,10 +768,8 @@ pub mod tests {
         assert_f64_eq(expected_cost, complexity_cost);
         let constraint = analysis.constraint();
         assert_eq!(constraint.pareto_output.len(), 1);
-        assert_eq!(constraint.pareto_output[0].origin(), VarianceOrigin::Lut);
         assert_f64_eq(constraint.pareto_output[0].lut_coeff, 1.0);
         assert_eq!(constraint.pareto_in_lut.len(), 1);
-        assert_eq!(constraint.pareto_in_lut[0].origin(), VarianceOrigin::Lut);
         assert_f64_eq(
             constraint.pareto_in_lut[0].lut_coeff,
             weights.square_norm2() as f64,
@@ -796,7 +799,6 @@ pub mod tests {
         assert_eq!(constraint.pareto_output.len(), 1);
         assert_eq!(constraint.pareto_output[0], SymbolicVariance::LUT);
         assert_eq!(constraint.pareto_in_lut.len(), 1);
-        assert_eq!(constraint.pareto_in_lut[0].origin(), VarianceOrigin::Mixed);
         assert_eq!(constraint.pareto_in_lut[0], expected_mixed);
     }
 

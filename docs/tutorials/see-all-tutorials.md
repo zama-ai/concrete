@@ -9,16 +9,18 @@
 
 #### Code examples on GitHub
 
-* [Key value database](../application-tutorial/key_value_database.ipynb)
-* [SHA-256 ](../application-tutorial/sha256.ipynb)
-* [Game of Life](../../frontends/concrete-python/examples/game_of_life/game_of_life.md)
-* [XOR distance](../../frontends/concrete-python/examples/xor_distance/xor_distance.md)
-* [SHA1 with Modules](../../frontends/concrete-python/examples/sha1/sha1.md)
+* [Floating points](../../frontends/concrete-python/examples/floating_point/floating_point.ipynb)
+* [Key value database](../../frontends/concrete-python/examples/key_value_database/key_value_database.ipynb)
+* [SHA-256 ](../../frontends/concrete-python/examples/sha256/sha256.ipynb)
+* [Game of Life](../../frontends/concrete-python/examples/game_of_life/README.md)
+* [XOR distance](../../frontends/concrete-python/examples/xor_distance/README.md)
+* [SHA1 with Modules](../../frontends/concrete-python/examples/sha1/README.md)
+* [Levenshtein distance with Modules](../../frontends/concrete-python/examples/levenshtein_distance/README.md)
 
 #### Blog tutorials
 
-* [The Encrypted Game of Life in Python Using Concrete](https://www.zama.ai/post/the-encrypted-game-of-life-using-concrete-python) - November 7, 2023
-* [Encrypted Key-value Database Using Homomorphic Encryption](https://www.zama.ai/post/encrypted-key-value-database-using-homomorphic-encryption) - March 16, 2023
+* [The Encrypted Game of Life in Python Using Concrete](https://www.zama.ai/post/the-encrypted-game-of-life-using-concrete-python) - November 2023
+* [Encrypted Key-value Database Using Homomorphic Encryption](https://www.zama.ai/post/encrypted-key-value-database-using-homomorphic-encryption) - March 2023
 
 #### Video tutorials
 

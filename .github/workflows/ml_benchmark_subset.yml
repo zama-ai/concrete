@@ -46,13 +46,8 @@ jobs:
         run: |
           echo "BENCH_DATE=$(date --iso-8601=seconds)" >> "${GITHUB_ENV}"
 
-      # SSH private key is required as some dependencies are from private repos
-      - uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
-
       - name: Fetch submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
           submodules: recursive
@@ -86,7 +81,7 @@ jobs:
           make BINDINGS_PYTHON_ENABLED=OFF ML_BENCH_SUBSET_ID=${{ inputs.matrix_item }} run-mlbench-subset
 
       - name: Upload raw results artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: ${{ github.sha }}_raw
           path: compiler/benchmarks_results.json
@@ -105,13 +100,13 @@ jobs:
           --bench-date "${{ env.BENCH_DATE }}"
 
       - name: Upload parsed results artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: ${{ github.sha }}
           path: ${{ env.RESULTS_FILENAME }}
 
       - name: Checkout Slab repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           repository: zama-ai/slab
           path: slab

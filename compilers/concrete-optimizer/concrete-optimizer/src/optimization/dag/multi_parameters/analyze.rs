@@ -20,7 +20,7 @@ use super::partitions::Partitions;
 use super::variance_constraint::VarianceConstraint;
 use crate::utils::square;
 
-const MAX_FORWARDING: u16 = 1000;
+const MAX_FORWARDING: u16 = 500;
 
 #[derive(Debug, Clone)]
 pub struct PartitionedDag {
@@ -121,6 +121,7 @@ pub struct VariancedDag {
     pub(crate) dag: Dag,
     pub(crate) partitions: Partitions,
     pub(crate) variances: Variances,
+    pub(crate) external_variance_constraints: Vec<VarianceConstraint>,
 }
 
 impl VariancedDag {
@@ -133,9 +134,11 @@ impl VariancedDag {
             dag,
             partitions,
             variances,
+            external_variance_constraints: vec![],
         };
 
         // We forward the noise once to verify the composability.
+        varianced.apply_external_partition_input_variance();
         let _ = varianced.forward_noise();
         varianced.check_composability()?;
         varianced.apply_composition_rules();
@@ -145,6 +148,8 @@ impl VariancedDag {
             // The noise gets computed from inputs down to outputs.
             if varianced.forward_noise() {
                 // Noise settled, we return the varianced dag.
+                varianced.collect_external_input_constraint();
+                varianced.collect_external_output_constraint();
                 return Ok(varianced);
             }
             // The noise of the inputs gets updated following the composition rules
@@ -181,6 +186,106 @@ impl VariancedDag {
         }
     }
 
+    fn apply_external_partition_input_variance(&mut self) {
+        let p_cut = self.partitions.p_cut.clone();
+        for (i, op) in self.dag.operators.clone().iter().enumerate() {
+            if let Operator::Input { .. } = op {
+                let partition_index = self.partitions.instrs_partition[i].instruction_partition;
+                if p_cut.is_external_partition(&partition_index) {
+                    let partitions = self.partitions.clone();
+                    let external_partition =
+                        &p_cut.external_partitions[p_cut.external_partition_index(partition_index)];
+                    let max_variance = external_partition.max_variance;
+                    let variance = external_partition.variance;
+
+                    let mut input = self.get_operator_mut(OperatorIndex(i));
+                    let mut variances = input.variance().clone();
+                    variances.vars[partition_index.0] = SymbolicVariance::from_external_partition(
+                        partitions.nb_partitions,
+                        partition_index,
+                        max_variance / variance,
+                    );
+                    *(input.variance_mut()) = variances;
+                }
+            }
+        }
+    }
+
+    fn collect_external_input_constraint(&mut self) {
+        let p_cut = &self.partitions.p_cut;
+        for (i, op) in self.dag.operators.clone().iter().enumerate() {
+            if let Operator::Input {
+                out_precision,
+                out_shape,
+            } = op
+            {
+                let partition_index = self.partitions.instrs_partition[i].instruction_partition;
+                if !p_cut.is_external_partition(&partition_index) {
+                    continue;
+                }
+
+                let max_variance = p_cut.external_partitions
+                    [p_cut.external_partition_index(partition_index)]
+                .max_variance;
+
+                let variances = &self.get_operator(OperatorIndex(i)).variance().vars.clone();
+                for (i, variance) in variances.iter().enumerate() {
+                    if variance.coeffs.is_nan() {
+                        assert!(i != partition_index.0);
+                        continue;
+                    }
+                    let constraint = VarianceConstraint {
+                        precision: *out_precision,
+                        partition: partition_index,
+                        nb_constraints: out_shape.flat_size(),
+                        safe_variance_bound: max_variance,
+                        variance: variance.clone(),
+                    };
+                    self.external_variance_constraints.push(constraint);
+                }
+            }
+        }
+    }
+
+    fn collect_external_output_constraint(&mut self) {
+        let p_cut = self.partitions.p_cut.clone();
+        for dag_op in self.dag.get_output_operators_iter() {
+            let DagOperator {
+                id: op_index,
+                shape: out_shape,
+                precision: out_precision,
+                ..
+            } = dag_op;
+            let optional_partition_index = p_cut.partition(&self.dag, op_index);
+            if optional_partition_index.is_none() {
+                continue;
+            }
+            let partition_index = optional_partition_index.unwrap();
+            if !p_cut.is_external_partition(&partition_index) {
+                continue;
+            }
+            let max_variance = p_cut.external_partitions
+                [p_cut.external_partition_index(partition_index)]
+            .max_variance;
+
+            let variances = &self.get_operator(op_index).variance().vars.clone();
+            for (i, variance) in variances.iter().enumerate() {
+                if variance.coeffs.is_nan() {
+                    assert!(i != partition_index.0);
+                    continue;
+                }
+                let constraint = VarianceConstraint {
+                    precision: *out_precision,
+                    partition: partition_index,
+                    nb_constraints: out_shape.flat_size(),
+                    safe_variance_bound: max_variance,
+                    variance: variance.clone(),
+                };
+                self.external_variance_constraints.push(constraint);
+            }
+        }
+    }
+
     /// Propagates the noise downward in the graph.
     fn forward_noise(&mut self) -> bool {
         // We save the old variance to compute the diff at the end.
@@ -194,7 +299,6 @@ impl VariancedDag {
             if operator.operator().is_input() {
                 continue;
             }
-            let max_var = |acc: SymbolicVariance, input: SymbolicVariance| acc.max(&input);
             // Operator variance will be used to override the noise
             let mut operator_variance = OperatorVariance::nan(nb_partitions);
             // We first compute the noise in the partition of the operator
@@ -207,14 +311,13 @@ impl VariancedDag {
                     nb_partitions,
                     operator.partition().instruction_partition,
                 ),
-                Operator::LevelledOp { manp, .. } => {
-                    let max_var = operator
-                        .get_inputs_iter()
-                        .map(|a| a.variance()[operator.partition().instruction_partition].clone())
-                        .reduce(max_var)
-                        .unwrap();
-                    max_var.after_levelled_op(*manp)
-                }
+                Operator::LevelledOp { weights, .. } => operator
+                    .get_inputs_iter()
+                    .zip(weights)
+                    .fold(SymbolicVariance::ZERO, |acc, (inp, &weight)| {
+                        acc + inp.variance()[operator.partition().instruction_partition].clone()
+                            * square(weight)
+                    }),
                 Operator::Dot {
                     kind: DotKind::CompatibleTensor { .. },
                     ..
@@ -254,7 +357,7 @@ impl VariancedDag {
                         acc + var[operator.partition().instruction_partition].clone()
                             * square(*weight as f64)
                     }),
-                Operator::UnsafeCast { .. } => {
+                Operator::UnsafeCast { .. } | Operator::ChangePartition { .. } => {
                     operator.get_inputs_iter().next().unwrap().variance()
                         [operator.partition().instruction_partition]
                         .clone()
@@ -295,12 +398,13 @@ impl VariancedDag {
             .filter(|op| op.operator().is_output())
             .try_for_each(|op| {
                 let id = op.id;
+                let loc = op.operator().location;
                 op.variance()
                     .check_growing_input_noise()
                     .map_err(|err| match err {
-                        Err::NotComposable(prev) => Err::NotComposable(format!(
-                            "Dag is not composable, because of output {id}: {prev}"
-                        )),
+                        Err::NotComposable(prev) => {
+                            Err::NotComposable(format!("At {loc}: please add `fhe.refresh(...)` to guarantee the function composability.\n{prev}."))
+                        }
                         Err::NoParametersFound => Err::NoParametersFound,
                     })
             })
@@ -344,7 +448,9 @@ pub fn analyze(
     let partitions = partitionning_with_preferred(&dag, &p_cut, default_partition);
     let partitioned_dag = PartitionedDag { dag, partitions };
     let varianced_dag = VariancedDag::try_from_partitioned(partitioned_dag)?;
-    let variance_constraints = collect_all_variance_constraints(&varianced_dag, noise_config);
+    let mut variance_constraints = collect_all_variance_constraints(&varianced_dag, noise_config);
+    // add external variance constraints
+    variance_constraints.extend_from_slice(varianced_dag.external_variance_constraints.as_slice());
     let undominated_variance_constraints =
         VarianceConstraint::remove_dominated(&variance_constraints);
     let operations_count_per_instrs = collect_operations_count(&varianced_dag);
@@ -486,13 +592,15 @@ impl OperatorVariance {
     pub fn check_growing_input_noise(&self) -> Result<()> {
         self.vars
             .iter()
-            .flat_map(|var| {
-                PartitionIndex::range(0, var.nb_partitions()).map(|i| (i, var.coeff_input(i)))
+            .enumerate()
+            .flat_map(|(var_i, var)| {
+                PartitionIndex::range(0, var.nb_partitions())
+                    .map(move |part_i| (var_i, part_i, var.coeff_input(part_i)))
             })
-            .try_for_each(|(partition, coeff)| {
+            .try_for_each(|(var, partition, coeff)| {
                 if !coeff.is_nan() && coeff > 1.0 {
                     Result::Err(Err::NotComposable(format!(
-                        "Partition {partition} has input coefficient {coeff}"
+                        "The noise of the node {var} is contaminated by noise coming straight from the input (partition: {partition}, coeff: {coeff:.2})"
                     )))
                 } else {
                     Ok(())
@@ -559,6 +667,7 @@ fn collect_all_variance_constraints(
         dag,
         partitions,
         variances,
+        ..
     } = dag;
     let mut constraints = vec![];
     for op in dag.get_operators_iter() {
@@ -759,13 +868,30 @@ pub mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Forwarding of noise did not reach a fixed point.")]
+    fn test_decreasing_panics() {
+        let mut dag = unparametrized::Dag::new();
+        let inp = dag.add_input(1, Shape::number());
+        let oup = dag.add_levelled_op(
+            [inp],
+            LevelledComplexity::ZERO,
+            [0.5],
+            Shape::number(),
+            "comment",
+        );
+        dag.add_composition(oup, inp);
+        let p_cut = PartitionCut::for_each_precision(&dag);
+        let _ = super::analyze(&dag, &CONFIG, &Some(p_cut), LOW_PRECISION_PARTITION).unwrap();
+    }
+
+    #[test]
     fn test_composition_with_nongrowing_inputs_only() {
         let mut dag = unparametrized::Dag::new();
         let inp = dag.add_input(1, Shape::number());
         let oup = dag.add_levelled_op(
             [inp],
             LevelledComplexity::ZERO,
-            1.0,
+            [1.0],
             Shape::number(),
             "comment",
         );
@@ -781,7 +907,7 @@ pub mod tests {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: NotComposable(\"Dag is not composable, because of output 1: Partition 0 has input coefficient 1.2100000000000002\")"
+        expected = "called `Result::unwrap()` on an `Err` value: NotComposable(\"At unknown location: please add `fhe.refresh(...)` to guarantee the function composability.\\nThe noise of the node 0 is contaminated by noise coming straight from the input (partition: 0, coeff: 1.21).\")"
     )]
     fn test_composition_with_growing_inputs_panics() {
         let mut dag = unparametrized::Dag::new();
@@ -789,7 +915,7 @@ pub mod tests {
         let oup = dag.add_levelled_op(
             [inp],
             LevelledComplexity::ZERO,
-            1.1,
+            [1.1],
             Shape::number(),
             "comment",
         );
@@ -952,7 +1078,7 @@ pub mod tests {
         let _levelled = dag.add_levelled_op(
             [lut1, input2],
             LevelledComplexity::ZERO,
-            manp,
+            [manp, manp],
             &out_shape,
             "comment",
         );
@@ -1304,6 +1430,6 @@ pub mod tests {
         let p_cut = PartitionCut::from_precisions(&precisions);
         let dag =
             super::analyze(&dag, &CONFIG, &Some(p_cut.clone()), LOW_PRECISION_PARTITION).unwrap();
-        assert!(dag.nb_partitions == p_cut.p_cut.len() + 1);
+        assert!(dag.nb_partitions == p_cut.n_partitions());
     }
 }

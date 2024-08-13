@@ -997,6 +997,9 @@ public:
         return mlir::failure();
     }
 
+    if (oldOp->getAttr("_dfr_work_function_attribute"))
+      newOp->setAttr("_dfr_work_function_attribute", rewriter.getUnitAttr());
+
     return mlir::success();
   }
 

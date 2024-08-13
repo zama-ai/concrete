@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use super::common::VERSION;
+use super::DecompCaches;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct CmuxComplexityNoise {
@@ -146,4 +147,33 @@ pub fn cache(
         )
     };
     PersistentCacheHashMap::new_no_read(&path, VERSION, function)
+}
+
+#[derive(Debug)]
+pub enum MaxVarianceError {
+    PbsBaseLogNotFound,
+    PbsLevelNotFound,
+}
+
+pub fn get_noise_br(
+    mut cache: DecompCaches,
+    log2_polynomial_size: u64,
+    glwe_dimension: u64,
+    lwe_dim: u64,
+    pbs_level: u64,
+    pbs_log2_base: Option<u64>,
+) -> Result<f64, MaxVarianceError> {
+    let cmux_quantities = cache.cmux.pareto_quantities(GlweParameters {
+        log2_polynomial_size,
+        glwe_dimension,
+    });
+    for cmux_quantity in cmux_quantities {
+        if cmux_quantity.decomp.level == pbs_level {
+            if pbs_log2_base.is_some() && cmux_quantity.decomp.log2_base == pbs_log2_base.unwrap() {
+                return Err(MaxVarianceError::PbsBaseLogNotFound);
+            }
+            return Ok(cmux_quantity.noise_br(lwe_dim));
+        }
+    }
+    Err(MaxVarianceError::PbsLevelNotFound)
 }

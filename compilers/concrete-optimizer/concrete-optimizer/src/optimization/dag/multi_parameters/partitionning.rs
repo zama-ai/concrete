@@ -55,7 +55,9 @@ fn extract_levelled_block(dag: &unparametrized::Dag) -> Blocks {
             // Block entry point and pre-exit point
             Op::Lut { .. } => (),
             // Connectors
-            Op::UnsafeCast { input, .. } => uf.union(input.0, op_i),
+            Op::UnsafeCast { input, .. } | Op::ChangePartition { input, .. } => {
+                uf.union(input.0, op_i);
+            }
             Op::LevelledOp { inputs, .. } | Op::Dot { inputs, .. } => {
                 for input in inputs {
                     uf.union(input.0, op_i);
@@ -120,7 +122,7 @@ fn only_1_partition(dag: &unparametrized::Dag) -> Partitions {
             Op::Dot { inputs, .. } | Op::LevelledOp { inputs, .. } => {
                 instrs_partition[op_i].inputs_transition = vec![None; inputs.len()];
             }
-            Op::Lut { .. } | Op::UnsafeCast { .. } => {
+            Op::Lut { .. } | Op::UnsafeCast { .. } | Operator::ChangePartition { .. } => {
                 instrs_partition[op_i].inputs_transition = vec![None];
             }
             Op::Input { .. } => (),
@@ -130,6 +132,7 @@ fn only_1_partition(dag: &unparametrized::Dag) -> Partitions {
     Partitions {
         nb_partitions: 1,
         instrs_partition,
+        p_cut: PartitionCut::empty(),
     }
 }
 
@@ -146,7 +149,7 @@ fn resolve_by_levelled_block(
         .copied()
         .collect();
     let nb_partitions = present_partitions.len().max(1); // no tlu = no constraints
-    if p_cut.p_cut.len() + 1 != nb_partitions {
+    if p_cut.n_partitions() != nb_partitions {
         return resolve_by_levelled_block(
             dag,
             &p_cut.delete_unused_cut(&present_partitions),
@@ -169,7 +172,15 @@ fn resolve_by_levelled_block(
             1 => get_singleton_value(&constraints.forced),
             _ => {
                 let forced = constraints.forced;
-                if forced.contains(&default_partition) {
+                // in case of conflict, prioritize the external partition, then the default partition
+                let externals: Vec<_> = forced
+                    .iter()
+                    .filter(|p| p_cut.is_external_partition(p))
+                    .collect();
+                assert!(externals.len() <= 1);
+                if externals.len() == 1 {
+                    *externals[0]
+                } else if forced.contains(&default_partition) {
                     default_partition
                 } else {
                     *forced.iter().min().unwrap()
@@ -217,7 +228,7 @@ fn resolve_by_levelled_block(
                     }
                 }
             }
-            Op::UnsafeCast { input, .. } => {
+            Op::UnsafeCast { input, .. } | Op::ChangePartition { input, .. } => {
                 instrs_p[op_i].instruction_partition = group_partition;
                 let input_partition = instrs_p[input.0].instruction_partition;
                 instrs_p[op_i].inputs_transition = if group_partition == input_partition {
@@ -235,6 +246,7 @@ fn resolve_by_levelled_block(
     Partitions {
         nb_partitions,
         instrs_partition: instrs_p,
+        p_cut: p_cut.clone(),
     }
     // Now we can generate transitions
     // Input has no transtions
@@ -247,7 +259,7 @@ pub fn partitionning_with_preferred(
     p_cut: &PartitionCut,
     default_partition: PartitionIndex,
 ) -> Partitions {
-    if p_cut.p_cut.is_empty() {
+    if p_cut.n_partitions() <= 1 {
         only_1_partition(dag)
     } else {
         resolve_by_levelled_block(dag, p_cut, default_partition)
@@ -261,9 +273,32 @@ pub mod tests {
     pub const LOW_PRECISION_PARTITION: PartitionIndex = PartitionIndex(0);
     pub const HIGH_PRECISION_PARTITION: PartitionIndex = PartitionIndex(1);
 
+    use once_cell::sync::Lazy;
+
     use super::*;
-    use crate::dag::operator::{FunctionTable, Shape, Weights};
+    use crate::config;
+    use crate::dag::operator::{FunctionTable, LevelledComplexity, Shape, Weights};
     use crate::dag::unparametrized;
+    use crate::optimization::dag::multi_parameters::optimize::MacroParameters;
+    use crate::optimization::dag::multi_parameters::partition_cut::ExternalPartition;
+    use crate::optimization::decomposition::cmux::get_noise_br;
+    use crate::optimization::decomposition::{self, PersistDecompCaches};
+    use crate::parameters::GlweParameters;
+
+    const CIPHERTEXT_MODULUS_LOG: u32 = 64;
+    const FFT_PRECISION: u32 = 53;
+
+    pub static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
+        let processing_unit = config::ProcessingUnit::Cpu;
+        decomposition::cache(
+            128,
+            processing_unit,
+            None,
+            true,
+            CIPHERTEXT_MODULUS_LOG,
+            FFT_PRECISION,
+        )
+    });
 
     fn default_p_cut() -> PartitionCut {
         PartitionCut::from_precisions(&[2, 128])
@@ -331,6 +366,316 @@ pub mod tests {
             assert!(instr_partition.instruction_partition == LOW_PRECISION_PARTITION);
             assert!(instr_partition.no_transition());
         }
+    }
+
+    fn get_external_partition_index_or(
+        external_partition: &ExternalPartition,
+        p_cut: &PartitionCut,
+        default: usize,
+    ) -> PartitionIndex {
+        for (i, e_partition) in p_cut.external_partitions.iter().enumerate() {
+            if external_partition == e_partition {
+                return PartitionIndex(i + p_cut.n_internal_partitions());
+            }
+        }
+        PartitionIndex(default)
+    }
+
+    pub const GLWE_PARAMS: GlweParameters = GlweParameters {
+        log2_polynomial_size: 11,
+        glwe_dimension: 1,
+    };
+
+    pub const TFHERS_PBS_LEVEL: u64 = 1;
+
+    pub const TFHERS_MACRO_PARAMS: MacroParameters = MacroParameters {
+        glwe_params: GLWE_PARAMS,
+        internal_dim: 841,
+    };
+
+    pub fn get_tfhers_noise_br() -> f64 {
+        get_noise_br(
+            SHARED_CACHES.caches(),
+            GLWE_PARAMS.log2_polynomial_size,
+            GLWE_PARAMS.glwe_dimension,
+            TFHERS_MACRO_PARAMS.internal_dim,
+            TFHERS_PBS_LEVEL,
+            None,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn test_tfhers_in_out_dot_compute() {
+        let variance = get_tfhers_noise_br();
+        let tfhers_partition = ExternalPartition {
+            name: String::from("tfhers"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let input1 = dag.add_input(16, Shape::number());
+        let change_part1 = dag.add_change_partition(input1, Some(tfhers_partition.clone()), None);
+        let dot = dag.add_dot([change_part1], [2]);
+        _ = dag.add_change_partition(dot, None, Some(tfhers_partition));
+
+        let partitions = partitionning(&dag);
+        assert!(partitions.nb_partitions == 1);
+        let instrs_partition = partitions.instrs_partition;
+        show_partitionning(&dag, &instrs_partition);
+        assert!(instrs_partition[0].instruction_partition == LOW_PRECISION_PARTITION);
+    }
+
+    #[test]
+    fn test_tfhers_in_out_lut_compute() {
+        let variance = get_tfhers_noise_br();
+        let tfhers_partition = ExternalPartition {
+            name: String::from("tfhers"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 6.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition.clone()), None);
+        let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
+        let change_part2 = dag.add_change_partition(lut, None, Some(tfhers_partition));
+
+        let partitions = partitionning(&dag);
+        assert!(partitions.nb_partitions == 2);
+        let tfhers_partition_index = PartitionIndex(1);
+        let instrs_partition = partitions.instrs_partition;
+        show_partitionning(&dag, &instrs_partition);
+
+        let consider = |op_i: OperatorIndex| &instrs_partition[op_i.0];
+        assert!(consider(input).instruction_partition == tfhers_partition_index);
+        assert!(consider(change_part1).instruction_partition == tfhers_partition_index);
+        assert!(consider(change_part1).inputs_transition == [None]);
+        assert!(consider(lut).instruction_partition == LOW_PRECISION_PARTITION);
+        assert!(consider(lut).alternative_output_representation.len() == 1);
+        assert!(consider(lut)
+            .alternative_output_representation
+            .contains(&tfhers_partition_index));
+        assert!(consider(change_part2).instruction_partition == tfhers_partition_index);
+        assert!(
+            consider(change_part2).inputs_transition
+                == [Some(Transition::Additional {
+                    src_partition: LOW_PRECISION_PARTITION
+                })]
+        );
+    }
+
+    #[test]
+    fn test_tfhers_in_out_lut_compute_mix_external() {
+        let variance = get_tfhers_noise_br();
+        let tfhers_partition = ExternalPartition {
+            name: String::from("tfhers"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 6.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let external_input = dag.add_input(16, Shape::number());
+        let other_input = dag.add_input(16, Shape::number());
+        let other_lut = dag.add_lut(other_input, FunctionTable::UNKWOWN, 16);
+        let mix_add = dag.add_levelled_op(
+            [external_input, other_lut],
+            LevelledComplexity::ADDITION,
+            [1.0, 1.0],
+            Shape::number(),
+            "add",
+        );
+        let change_part1 = dag.add_change_partition(mix_add, Some(tfhers_partition.clone()), None);
+        let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
+        let change_part2 = dag.add_change_partition(lut, None, Some(tfhers_partition));
+
+        let partitions = partitionning(&dag);
+        assert!(partitions.nb_partitions == 2);
+        let tfhers_partition_index = PartitionIndex(1);
+        let instrs_partition = partitions.instrs_partition;
+        show_partitionning(&dag, &instrs_partition);
+
+        let consider = |op_i: OperatorIndex| &instrs_partition[op_i.0];
+        assert!(consider(external_input).instruction_partition == tfhers_partition_index);
+        assert!(consider(other_input).instruction_partition == LOW_PRECISION_PARTITION);
+        assert!(consider(other_lut).alternative_output_representation.len() == 1);
+        assert!(consider(other_lut)
+            .alternative_output_representation
+            .contains(&tfhers_partition_index));
+        assert!(consider(change_part1).instruction_partition == tfhers_partition_index);
+        assert!(consider(change_part1).inputs_transition == [None]);
+        assert!(consider(lut).instruction_partition == LOW_PRECISION_PARTITION);
+        assert!(consider(lut).alternative_output_representation.len() == 1);
+        assert!(consider(lut)
+            .alternative_output_representation
+            .contains(&tfhers_partition_index));
+        assert!(consider(change_part2).instruction_partition == tfhers_partition_index);
+    }
+
+    #[test]
+    fn test_tfhers_different_in_out_lut_compute() {
+        let variance = get_tfhers_noise_br();
+        let tfhers_partition_in = ExternalPartition {
+            name: String::from("tfhers_in"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 2.0,
+            variance,
+        };
+        let tfhers_partition_out = ExternalPartition {
+            name: String::from("tfhers_out"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 2.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in.clone()), None);
+        let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 16);
+        let change_part2 = dag.add_change_partition(lut, None, Some(tfhers_partition_out.clone()));
+
+        let p_cut = PartitionCut::for_each_precision(&dag);
+        let partitions = partitionning_with_preferred(&dag, &p_cut, LOW_PRECISION_PARTITION);
+        assert!(partitions.nb_partitions == 3);
+        let tfhers_partition_index_in =
+            get_external_partition_index_or(&tfhers_partition_in, &p_cut, 1);
+        let tfhers_partition_index_out =
+            get_external_partition_index_or(&tfhers_partition_out, &p_cut, 2);
+        let instrs_partition = partitions.instrs_partition;
+        show_partitionning(&dag, &instrs_partition);
+
+        let consider = |op_i: OperatorIndex| &instrs_partition[op_i.0];
+        assert!(consider(input).instruction_partition == tfhers_partition_index_in);
+        assert!(consider(change_part1).instruction_partition == tfhers_partition_index_in);
+        assert!(consider(change_part1).inputs_transition == [None]);
+        assert!(consider(lut).instruction_partition == LOW_PRECISION_PARTITION);
+        assert!(consider(lut).alternative_output_representation.len() == 1);
+        assert!(consider(lut)
+            .alternative_output_representation
+            .contains(&tfhers_partition_index_out));
+        assert!(consider(change_part2).instruction_partition == tfhers_partition_index_out);
+        assert!(
+            consider(change_part2).inputs_transition
+                == [Some(Transition::Additional {
+                    src_partition: LOW_PRECISION_PARTITION
+                })]
+        );
+    }
+
+    #[test]
+    fn test_tfhers_in_out_2lut_compute() {
+        let variance = get_tfhers_noise_br();
+        let tfhers_partition = ExternalPartition {
+            name: String::from("tfhers"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition.clone()), None);
+        let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
+        let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 16);
+        let change_part2 = dag.add_change_partition(lut2, None, Some(tfhers_partition));
+
+        let partitions = partitionning(&dag);
+        assert!(partitions.nb_partitions == 3);
+        let tfhers_partition_index = PartitionIndex(2);
+        let instrs_partition = partitions.instrs_partition;
+        show_partitionning(&dag, &instrs_partition);
+
+        let consider = |op_i: OperatorIndex| &instrs_partition[op_i.0];
+        assert!(consider(input).instruction_partition == tfhers_partition_index);
+        assert!(consider(change_part1).instruction_partition == tfhers_partition_index);
+        assert!(consider(change_part1).inputs_transition == [None]);
+        assert!(consider(lut1).instruction_partition == HIGH_PRECISION_PARTITION);
+        assert!(
+            consider(lut1).inputs_transition
+                == [Some(Transition::Internal {
+                    src_partition: tfhers_partition_index
+                })]
+        );
+        assert!(consider(lut2).alternative_output_representation.len() == 1);
+        assert!(consider(lut2)
+            .alternative_output_representation
+            .contains(&tfhers_partition_index));
+        assert!(consider(lut2).instruction_partition == LOW_PRECISION_PARTITION);
+        assert!(
+            consider(lut2).inputs_transition
+                == [Some(Transition::Internal {
+                    src_partition: HIGH_PRECISION_PARTITION
+                })]
+        );
+        assert!(consider(change_part2).instruction_partition == tfhers_partition_index);
+        assert!(
+            consider(change_part2).inputs_transition
+                == [Some(Transition::Additional {
+                    src_partition: LOW_PRECISION_PARTITION
+                })]
+        );
+    }
+
+    #[test]
+    fn test_tfhers_different_in_out_2lut_compute() {
+        let variance = get_tfhers_noise_br();
+        let tfhers_partition_in = ExternalPartition {
+            name: String::from("tfhers_in"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
+        };
+        let tfhers_partition_out = ExternalPartition {
+            name: String::from("tfhers_out"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let input = dag.add_input(16, Shape::number());
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in.clone()), None);
+        let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
+        let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 16);
+        let change_part2 = dag.add_change_partition(lut2, None, Some(tfhers_partition_out.clone()));
+
+        let p_cut = PartitionCut::for_each_precision(&dag);
+        let partitions = partitionning_with_preferred(&dag, &p_cut, LOW_PRECISION_PARTITION);
+        assert!(partitions.nb_partitions == 4);
+        let tfhers_partition_index_in =
+            get_external_partition_index_or(&tfhers_partition_in, &p_cut, 2);
+        let tfhers_partition_index_out =
+            get_external_partition_index_or(&tfhers_partition_out, &p_cut, 3);
+        let instrs_partition = partitions.instrs_partition;
+        show_partitionning(&dag, &instrs_partition);
+
+        let consider = |op_i: OperatorIndex| &instrs_partition[op_i.0];
+        assert!(consider(input).instruction_partition == tfhers_partition_index_in);
+        assert!(consider(change_part1).instruction_partition == tfhers_partition_index_in);
+        assert!(consider(change_part1).inputs_transition == [None]);
+        assert!(consider(lut1).instruction_partition == HIGH_PRECISION_PARTITION);
+        assert!(
+            consider(lut1).inputs_transition
+                == [Some(Transition::Internal {
+                    src_partition: tfhers_partition_index_in
+                })]
+        );
+        assert!(consider(lut2).alternative_output_representation.len() == 1);
+        assert!(consider(lut2)
+            .alternative_output_representation
+            .contains(&tfhers_partition_index_out));
+        assert!(consider(lut2).instruction_partition == LOW_PRECISION_PARTITION);
+        assert!(
+            consider(lut2).inputs_transition
+                == [Some(Transition::Internal {
+                    src_partition: HIGH_PRECISION_PARTITION
+                })]
+        );
+        assert!(consider(change_part2).instruction_partition == tfhers_partition_index_out);
+        assert!(
+            consider(change_part2).inputs_transition
+                == [Some(Transition::Additional {
+                    src_partition: LOW_PRECISION_PARTITION
+                })]
+        );
     }
 
     #[test]

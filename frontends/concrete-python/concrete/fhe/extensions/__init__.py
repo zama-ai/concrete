@@ -8,7 +8,7 @@ from .array import array
 from .bits import bits
 from .convolution import conv
 from .hint import hint
-from .identity import identity
+from .identity import identity, refresh
 from .maxpool import maxpool
 from .multivariate import multivariate
 from .ones import one, ones, ones_like

@@ -6,51 +6,9 @@ As explained in the [Basics of FHE](fhe\_basics.md), the challenge for developer
 All code snippets provided here are temporary workarounds. In future versions of Concrete, some functions described here could be directly available in a more generic and efficient form. These code snippets are coming from support answers in our [community forum](https://community.zama.ai)
 {% endhint %}
 
-## Minimum for Two values
+## Minimum/Maximum for several values
 
-In this first example, we compute a minimum by creating the difference between two numbers `y` and `x` and conditionally remove this diff from `y` to either get `x` if `y>x` or `y` if `x>y`:
-
-```python
-import numpy as np
-from concrete import fhe
-
-@fhe.compiler({"x": "encrypted", "y": "encrypted"})
-def min_two(x, y):
-	diff = y - x
-	min_x_y = y - np.maximum(y - x, 0)
-	return min_x_y
-
-inputset = [tuple(np.random.randint(0, 16, size=2)) for _ in range(50)]
-circuit = min_two.compile(inputset)
-
-x, y = np.random.randint(0, 16, size=2)
-assert circuit.encrypt_run_decrypt(x, y) == min(x, y)
-```
-
-## Maximum for Two values
-
-The companion example of above with the maximum value of two integers instead of the minimum:
-
-```python
-import numpy as np
-from concrete import fhe
-
-@fhe.compiler({"x": "encrypted", "y": "encrypted"})
-def max_two(x, y):
-	diff = y - x
-	max_x_y = y - np.minimum(y - x, 0)
-	return max_x_y
-
-inputset = [tuple(np.random.randint(0, 16, size=2)) for _ in range(50)]
-circuit = max_two.compile(inputset)
-
-x, y = np.random.randint(0, 16, size=2)
-assert circuit.encrypt_run_decrypt(x, y) == max(x, y)
-```
-
-## Minimum for several values
-
-And an extension for more than two values:
+Concrete supports `np.minimum`/`np.maximum` natively, but not `np.min`/`np.max` yet. To work around it, you can do a series of `np.minimum`/`np.maximum`s:
 
 ```python
 import numpy as np
@@ -62,12 +20,11 @@ def fhe_min(args):
     while len(remaining) > 1:
         a = remaining.pop()
         b = remaining.pop()
-        min_a_b = b - np.maximum(b - a, 0)
-        remaining.insert(0, min_a_b)
+        remaining.insert(0, np.minimum(a, b))
     return remaining[0]
 
 inputset = [np.random.randint(0, 16, size=5) for _ in range(50)]
-circuit = fhe_min.compile(inputset)
+circuit = fhe_min.compile(inputset, min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED)
 
 x1, x2, x3, x4, x5 = np.random.randint(0, 16, size=5)
 assert circuit.encrypt_run_decrypt([x1, x2, x3, x4, x5]) == min(x1, x2, x3, x4, x5)

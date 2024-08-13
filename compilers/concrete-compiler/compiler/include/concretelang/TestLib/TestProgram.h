@@ -23,6 +23,7 @@
 #include <ostream>
 #include <string>
 #include <thread>
+#include <unistd.h>
 
 using concretelang::clientlib::ClientCircuit;
 using concretelang::clientlib::ClientProgram;
@@ -220,37 +221,32 @@ private:
     auto new_path = [=]() {
       llvm::SmallString<0> outputPath;
       llvm::sys::path::append(outputPath, rootFolder);
-      std::string uid = std::to_string(
-          std::hash<std::thread::id>()(std::this_thread::get_id()));
+      auto pid = getpid();
+      std::string uid = std::to_string(pid);
       uid.append("-");
       uid.append(std::to_string(std::rand()));
       llvm::sys::path::append(outputPath, uid);
       return std::string(outputPath);
     };
 
-    // Macos sometimes fail to create new directories. We have to retry a few
-    // times.
-    for (size_t i = 0; i < 5; i++) {
-      auto pathString = new_path();
-      auto ec = std::error_code();
-      llvm::errs() << "TestProgram: create temporary directory(" << pathString
-                   << ")\n";
-      if (!std::filesystem::create_directory(pathString, ec)) {
-        llvm::errs() << "TestProgram: fail to create temporary directory("
-                     << pathString << "), ";
-        if (ec) {
-          llvm::errs() << "already exists";
-        } else {
-          llvm::errs() << "error(" << ec.message() << ")";
-        }
+    auto pathString = new_path();
+    auto ec = std::error_code();
+    llvm::errs() << "TestProgram: create temporary directory(" << pathString
+                 << ")\n";
+    if (!std::filesystem::create_directory(pathString, ec)) {
+      llvm::errs() << "TestProgram: fail to create temporary directory("
+                   << pathString << "), ";
+      if (ec) {
+        llvm::errs() << "already exists";
       } else {
-        llvm::errs() << "TestProgram: directory(" << pathString
-                     << ") successfully created\n";
-        return pathString;
+        llvm::errs() << "error(" << ec.message() << ")";
       }
+      assert(false);
+    } else {
+      llvm::errs() << "TestProgram: directory(" << pathString
+                   << ") successfully created\n";
+      return pathString;
     }
-    llvm::errs() << "Failed to create temp directory 5 times. Aborting...\n";
-    assert(false);
   }
 };
 

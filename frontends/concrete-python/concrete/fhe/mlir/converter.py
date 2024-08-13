@@ -78,34 +78,45 @@ class Converter:
 
                     input_types = [ctx.typeof(node).mlir for node in graph.ordered_inputs()]
 
-                    @func.FuncOp.from_py_func(*input_types, name=name)
-                    def main(*args):
-                        for index, node in enumerate(graph.ordered_inputs()):
-                            conversion = Conversion(node, args[index])
-                            if "original_bit_width" in node.properties:
-                                conversion.set_original_bit_width(
-                                    node.properties["original_bit_width"]
+                    location = graph.location.split(":")
+                    with MlirLocation.file(
+                        location[0], line=int(location[1]), col=0, context=context
+                    ):
+
+                        @func.FuncOp.from_py_func(*input_types, name=name)
+                        def main(*args):
+                            for index, node in enumerate(graph.ordered_inputs()):
+                                conversion = Conversion(node, args[index])
+                                if "original_bit_width" in node.properties:
+                                    conversion.set_original_bit_width(
+                                        node.properties["original_bit_width"]
+                                    )
+                                ctx.conversions[node] = conversion
+
+                            ordered_nodes = [
+                                node
+                                for node in nx.lexicographical_topological_sort(graph.graph)
+                                if node.operation != Operation.Input
+                            ]
+
+                            for progress_index, node in enumerate(ordered_nodes):
+                                self.trace_progress(
+                                    self.configuration, progress_index, ordered_nodes
                                 )
-                            ctx.conversions[node] = conversion
+                                preds = [
+                                    ctx.conversions[pred] for pred in graph.ordered_preds_of(node)
+                                ]
+                                self.node(ctx, node, preds)
+                            self.trace_progress(
+                                self.configuration, len(ordered_nodes), ordered_nodes
+                            )
 
-                        ordered_nodes = [
-                            node
-                            for node in nx.lexicographical_topological_sort(graph.graph)
-                            if node.operation != Operation.Input
-                        ]
+                            outputs = []
+                            for node in graph.ordered_outputs():
+                                assert node in ctx.conversions
+                                outputs.append(ctx.conversions[node].result)
 
-                        for progress_index, node in enumerate(ordered_nodes):
-                            self.trace_progress(self.configuration, progress_index, ordered_nodes)
-                            preds = [ctx.conversions[pred] for pred in graph.ordered_preds_of(node)]
-                            self.node(ctx, node, preds)
-                        self.trace_progress(self.configuration, len(ordered_nodes), ordered_nodes)
-
-                        outputs = []
-                        for node in graph.ordered_outputs():
-                            assert node in ctx.conversions
-                            outputs.append(ctx.conversions[node].result)
-
-                        return tuple(outputs)
+                            return tuple(outputs)
 
         return module
 
@@ -434,7 +445,8 @@ class Converter:
 
     def identity(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-        return ctx.identity(ctx.typeof(node), preds[0])
+        force_noise_refresh = node.properties["kwargs"].get("force_noise_refresh", False)
+        return ctx.identity(ctx.typeof(node), preds[0], force_noise_refresh)
 
     def index_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) >= 2

@@ -45,12 +45,6 @@ jobs:
           echo "Request ID: ${{ inputs.request_id }}"
           echo "Matrix item: ${{ inputs.matrix_item }}"
 
-      # A SSH private key is required as some dependencies are from private repos
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
-
       - name: Set up env
         # "Install rust" step require root user to have a HOME directory which is not set.
         run: |
@@ -58,7 +52,7 @@ jobs:
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
 
       - name: Fetch repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
@@ -70,7 +64,7 @@ jobs:
         run: mkdir build
 
       - name: Build and test compiler
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler
         with:
           registry: ghcr.io
@@ -86,7 +80,7 @@ jobs:
             --gpus all
           shell: bash
           run: |
-            rustup toolchain install nightly-2024-01-31
+            rustup toolchain install nightly-2024-07-01
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*

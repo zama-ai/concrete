@@ -7,15 +7,9 @@ runs:
   using: "composite"
   steps:
     - name: Rust install
-      uses: actions-rs/toolchain@v1
+      uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
       with:
         toolchain: stable
 
     - name: Download cargo cache
-      uses: Swatinem/rust-cache@v2
-
-    # A SSH private key is required as some dependencies are from private repos
-    - name: Set ssh keys
-      uses: webfactory/ssh-agent@v0.6.0
-      with:
-        ssh-private-key: ${{ inputs.ssh_private_key }}
+      uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3

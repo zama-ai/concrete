@@ -6,7 +6,6 @@
 #include <type_traits>
 
 #include "concretelang/Common/Values.h"
-#include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/CompilationFeedback.h"
 #include "concretelang/TestLib/TestProgram.h"
 #include "end_to_end_fixture/EndToEndFixture.h"
@@ -59,17 +58,9 @@ public:
   void testOnce() {
     for (auto tests_rep = 0; tests_rep <= options.numberOfRetry; tests_rep++) {
       // We execute the circuit.
-      auto maybeRes =
-          testCircuit->call((mlir::concretelang::dfr::_dfr_is_root_node())
-                                ? args
-                                : std::vector<Value>());
-      if (!mlir::concretelang::dfr::_dfr_is_root_node())
-        return;
+      auto maybeRes = testCircuit->call(args);
       ASSERT_OUTCOME_HAS_VALUE(maybeRes);
       auto result = maybeRes.value();
-
-      if (!mlir::concretelang::dfr::_dfr_is_root_node())
-        return;
 
       /* Check results */
       bool allgood = true;

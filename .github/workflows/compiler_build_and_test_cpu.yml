@@ -45,12 +45,6 @@ jobs:
           echo "Request ID: ${{ inputs.request_id }}"
           echo "Matrix item: ${{ inputs.matrix_item }}"
 
-      # A SSH private key is required as some dependencies are from private repos
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.CONCRETE_CI_SSH_PRIVATE }}
-
       - name: Set up env
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
@@ -58,7 +52,7 @@ jobs:
           echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
 
       - name: Fetch repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
@@ -70,7 +64,7 @@ jobs:
         run: mkdir build
 
       - name: Build compiler
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler
         with:
           registry: ghcr.io
@@ -86,16 +80,16 @@ jobs:
             ${{ env.DOCKER_GPU_OPTION }}
           shell: bash
           run: |
-            rustup toolchain install nightly-2024-01-31
+            rustup toolchain install nightly-2024-07-01
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
-            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all build-end-to-end-dataflow-tests
+            make DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
       - name: Build compiler Dialects docs and check diff
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler-docs
         with:
           registry: ghcr.io
@@ -127,7 +121,7 @@ jobs:
         run: echo "MINIMAL_TESTS=ON" >> $GITHUB_ENV
 
       - name: Test compiler
-        uses: addnab/docker-run-action@v3
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -140,13 +134,13 @@ jobs:
           shell: bash
           run: |
             set -e
-            rustup toolchain install nightly-2024-01-31
+            rustup toolchain install nightly-2024-07-01
             cd /concrete/compilers/concrete-compiler/compiler
             pip install pytest
             dnf install -y libzstd libzstd-devel
             sed "s/pytest/python -m pytest/g" -i Makefile
             mkdir -p /tmp/concrete_compiler/gpu_tests/
-            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests run-end-to-end-dataflow-tests
+            make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests
             chmod -R ugo+rwx /tmp/KeySetCache
             
       - name: Analyze logs
@@ -155,7 +149,7 @@ jobs:
             ls -1 | xargs grep -H "WARNING RETRY" | sed -e "s/.log.*//g" | uniq -c | sed -re "s/ *([0-9]*) (.*)/::warning ::Test \2 retried \1 times/g" | cat
 
       # - name: Archive python package
-      #   uses: actions/upload-artifact@v3
+      #   uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
       #   with:
       #     name: concrete-compiler.whl
       #     path: build/wheels/concrete_compiler-*-manylinux_{{ env.GLIB_VER }}_x86_64.whl

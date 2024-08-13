@@ -54,15 +54,13 @@ static void BM_ExportArguments(benchmark::State &state,
   inputArguments.reserve(test.inputs.size());
 
   auto client = tc.getClientCircuit().value();
-  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-    for (auto _ : state) {
-      for (size_t i = 0; i < test.inputs.size(); i++) {
-        auto input = client.prepareInput(test.inputs[i].getValue(), i).value();
-        inputArguments.push_back(input);
-      }
+  for (auto _ : state) {
+    for (size_t i = 0; i < test.inputs.size(); i++) {
+      auto input = client.prepareInput(test.inputs[i].getValue(), i).value();
+      inputArguments.push_back(input);
     }
-    inputArguments.resize(0);
   }
+  inputArguments.resize(0);
 }
 
 /// Benchmark time of the program evaluation
@@ -78,12 +76,10 @@ static void BM_Evaluate(benchmark::State &state, EndToEndDesc description,
   auto inputArguments = std::vector<TransportValue>();
   inputArguments.reserve(test.inputs.size());
 
-  if (mlir::concretelang::dfr::_dfr_is_root_node()) {
-    for (size_t i = 0; i < test.inputs.size(); i++) {
-      auto input =
-          clientCircuit.prepareInput(test.inputs[i].getValue(), i).value();
-      inputArguments.push_back(input);
-    }
+  for (size_t i = 0; i < test.inputs.size(); i++) {
+    auto input =
+        clientCircuit.prepareInput(test.inputs[i].getValue(), i).value();
+    inputArguments.push_back(input);
   }
 
   auto serverCircuit = tc.getServerCircuit().value();

@@ -1,3 +1,4 @@
+#include <err.h>
 #include "bootstrap_fast_multibit.cuh"
 #include "bootstrap_multibit.cuh"
 #include "bootstrap_multibit.h"
@@ -172,6 +173,8 @@ void cuda_multi_bit_pbs_lwe_ciphertext_vector_64(
     }
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }
@@ -311,6 +314,8 @@ void scratch_cuda_multi_bit_pbs_64(
     }
     break;
   default:
+    errx(EXIT_FAILURE, "polynomial size %u is not supported. Supported values "
+	 "are: 256, 512, 1024, 2048, 4096, 8192, 16384.", polynomial_size);
     break;
   }
 }

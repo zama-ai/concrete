@@ -16,6 +16,7 @@
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Common/Transformers.h"
 #include "concretelang/Common/Values.h"
+#include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/context.h"
 #include "concretelang/ServerLib/ServerLib.h"
 #include "concretelang/Support/CompilerEngine.h"
@@ -355,6 +356,7 @@ DynamicModule::open(const std::string &sharedLibPath) {
   if (!module->libraryHandle) {
     return StringError("Cannot open shared library ") << dlerror();
   }
+  mlir::concretelang::dfr::_dfr_register_lib(module->libraryHandle);
   return module;
 }
 
@@ -430,6 +432,13 @@ bool getGateIsSigned(const Message<concreteprotocol::GateInfo> &gateInfo) {
 Result<std::vector<TransportValue>>
 ServerCircuit::call(const ServerKeyset &serverKeyset,
                     std::vector<TransportValue> &args) {
+  std::vector<TransportValue> returns(returnsBuffer.size());
+  mlir::concretelang::dfr::_dfr_register_lib(dynamicModule->libraryHandle);
+  if (!mlir::concretelang::dfr::_dfr_is_root_node()) {
+    mlir::concretelang::dfr::_dfr_run_remote_scheduler();
+    return returns;
+  }
+
   if (args.size() != argsBuffer.size()) {
     return StringError("Called circuit with wrong number of arguments");
   }
@@ -444,7 +453,6 @@ ServerCircuit::call(const ServerKeyset &serverKeyset,
   invoke(serverKeyset);
 
   // We process the return values to turn them into transport values.
-  std::vector<TransportValue> returns(returnsBuffer.size());
   for (size_t i = 0; i < returnsBuffer.size(); i++) {
     OUTCOME_TRY(returns[i], returnTransformers[i](returnsBuffer[i]));
   }

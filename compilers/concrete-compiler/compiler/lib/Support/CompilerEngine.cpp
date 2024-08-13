@@ -63,14 +63,10 @@
 #include "concretelang/Support/LLVMEmitFile.h"
 #include "concretelang/Support/Pipeline.h"
 #include "concretelang/Support/Utils.h"
+#include <concretelang/Runtime/GPUDFG.hpp>
 
 namespace mlir {
 namespace concretelang {
-// TODO: should be removed when bufferization is not related to CAPI lowering
-// Control whether we should call a cpu of gpu function when lowering
-// to CAPI
-static bool EMIT_GPU_OPS;
-bool getEmitGPUOption() { return EMIT_GPU_OPS; }
 
 /// Creates a new compilation context that can be shared across
 /// compilation engines and results
@@ -297,9 +293,6 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
 
   mlir::MLIRContext &mlirContext = *this->compilationContext->getMLIRContext();
 
-  // enable/disable usage of gpu functions during bufferization
-  EMIT_GPU_OPS = options.emitGPUOps;
-
   auto dataflowParallelize =
       options.autoParallelize || options.dataflowParallelize;
   auto loopParallelize = options.autoParallelize || options.loopParallelize;
@@ -307,6 +300,56 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
   if (loopParallelize)
     mlir::concretelang::dfr::_dfr_set_use_omp(true);
 
+  // Sanity checks for enabling GPU usage: the compiler must have been
+  // compiled with Cuda support (especially important when building
+  // python wheels), and at least one device must be available to
+  // execute on.
+  if (options.emitGPUOps) {
+    // If this compiler is not compiled using Cuda support, then
+    // requesting GPU is forbidden - instead of a hard error, issue a
+    // warning and disable the GPU option.
+    if (!mlir::concretelang::gpu_dfg::check_cuda_runtime_enabled()) {
+      // Allow compilation to complete if only code generation is expected.
+      if (target != Target::LIBRARY) {
+        warnx("This instance of the Concrete compiler does not support GPU "
+              "acceleration."
+              " Allowing code generation to proceed, but execution will not be "
+              "possible.");
+      } else {
+        warnx("This instance of the Concrete compiler does not support GPU "
+              "acceleration."
+              " If you are using Concrete-Python, it means that the module "
+              "installed is not GPU enabled.\n"
+              "Continuing without GPU acceleration.");
+        options.emitGPUOps = false;
+        options.emitSDFGOps = false;
+        options.batchTFHEOps = false;
+      }
+    } else {
+      // Ensure that at least one Cuda device is available if GPU option
+      // is used
+      if (!mlir::concretelang::gpu_dfg::check_cuda_device_available()) {
+        warnx("No Cuda device available on this system (either not present or "
+              "the driver is not online).\n"
+              "Continuing without GPU acceleration.");
+        options.emitGPUOps = false;
+        options.emitSDFGOps = false;
+        options.batchTFHEOps = false;
+      }
+    }
+
+    // Finally for now we cannot allow dataflow parallelization at the
+    // same time as GPU usage.  This restriction will be relaxed later.
+    if (dataflowParallelize) {
+      warnx("Dataflow parallelization and GPU offloading have both been "
+            "requested.  This is not currently supported.  Continuing without "
+            "dataflow parallelization.");
+      dataflowParallelize = false;
+    }
+  }
+
+  // If dataflow parallelization will proceed, mark it for
+  // initialising the runtime
   if (dataflowParallelize)
     mlir::concretelang::dfr::_dfr_set_required(true);
 
@@ -594,8 +637,11 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     }
   }
 
+  // Restrict direct lowering when already generating GPU code through
+  // the SDFG dialect.
+  bool lowerDirectlyToGPUOps = (options.emitGPUOps && !options.emitSDFGOps);
   if (mlir::concretelang::pipeline::lowerToCAPI(mlirContext, module, enablePass,
-                                                options.emitGPUOps)
+                                                lowerDirectlyToGPUOps)
           .failed()) {
     return StreamStringError("Failed to lower to CAPI");
   }

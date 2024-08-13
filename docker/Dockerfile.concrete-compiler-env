@@ -19,7 +19,7 @@ RUN ccache -F 0
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
-RUN rustup install nightly-2024-01-31
+RUN rustup install nightly-2024-07-01
 SHELL ["/bin/bash", "-c"]
 # Install boost
 ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
@@ -31,7 +31,6 @@ COPY --from=ghcr.io/zama-ai/hpx:latest /hpx /hpx
 ENV HPX_INSTALL_DIR=/hpx/build
 # Setup CUDA
 COPY --from=ghcr.io/zama-ai/cuda:11-8 /usr/local/cuda-11.8/ /usr/local/cuda-11.8/
-COPY --from=ghcr.io/zama-ai/cuda:11-8 /usr/lib64/libcuda.so* /usr/lib64/
 ENV PATH "$PATH:/usr/local/cuda-11.8/bin"
 # Set the python path. Options: [cp37-cp37m, cp38-cp38, cp39-cp39, cp310-cp310]
 # Links and env would be available to use the appropriate python version
@@ -45,7 +44,7 @@ RUN pip install numpy pybind11==2.8 PyYAML pytest wheel auditwheel
 COPY / /workdir
 WORKDIR /workdir/compilers/concrete-compiler/compiler
 RUN mkdir -p /build
-RUN --mount=type=ssh make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
+RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
     Python3_EXECUTABLE=${PYTHON_EXEC} \
     concretecompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"

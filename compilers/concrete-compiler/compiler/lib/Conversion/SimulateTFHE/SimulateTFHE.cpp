@@ -3,6 +3,7 @@
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
+#include "concretelang/Dialect/Tracing/IR/TracingOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -686,6 +687,37 @@ struct ZeroTensorOpPattern
   };
 };
 
+struct TraceCiphertextOpPattern
+    : public mlir::OpConversionPattern<Tracing::TraceCiphertextOp> {
+  TraceCiphertextOpPattern(mlir::MLIRContext *context,
+                           mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<Tracing::TraceCiphertextOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(Tracing::TraceCiphertextOp traceCiphertextOp,
+                  Tracing::TraceCiphertextOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    Tracing::TracePlaintextOp ptOp =
+        rewriter.replaceOpWithNewOp<Tracing::TracePlaintextOp>(
+            traceCiphertextOp, mlir::TypeRange{}, adaptor.getCiphertext());
+
+    if (auto msg = traceCiphertextOp.getMsg())
+      ptOp.setMsg(msg);
+
+    if (auto nmsb = traceCiphertextOp.getNmsb())
+      ptOp.setNmsb(nmsb);
+
+    auto inputWidth =
+        ptOp.getPlaintext().getType().cast<mlir::IntegerType>().getWidth();
+
+    ptOp->setAttr("input_width", rewriter.getI64IntegerAttr(inputWidth));
+
+    return ::mlir::success();
+  };
+};
+
 struct SimulateTFHEPass : public SimulateTFHEBase<SimulateTFHEPass> {
   bool enableOverflowDetection;
   SimulateTFHEPass(bool enableOverflowDetection)
@@ -704,7 +736,8 @@ void SimulateTFHEPass::runOnOperation() {
   target.addLegalOp<mlir::func::CallOp, mlir::memref::GetGlobalOp,
                     mlir::memref::CastOp, mlir::bufferization::AllocTensorOp,
                     mlir::tensor::CastOp, mlir::LLVM::GlobalOp,
-                    mlir::LLVM::AddressOfOp, mlir::LLVM::GEPOp>();
+                    mlir::LLVM::AddressOfOp, mlir::LLVM::GEPOp,
+                    Tracing::TracePlaintextOp>();
   // Make sure that no ops from `TFHE` remain after the lowering
   target.addIllegalDialect<TFHE::TFHEDialect>();
 
@@ -742,11 +775,11 @@ void SimulateTFHEPass::runOnOperation() {
       mlir::tensor::InsertOp, mlir::tensor::InsertSliceOp,
       mlir::tensor::ParallelInsertSliceOp, mlir::tensor::FromElementsOp,
       mlir::tensor::ExpandShapeOp, mlir::tensor::CollapseShapeOp,
-      mlir::bufferization::AllocTensorOp, mlir::tensor::EmptyOp>(
-      [&](mlir::Operation *op) {
-        return converter.isLegal(op->getResultTypes()) &&
-               converter.isLegal(op->getOperandTypes());
-      });
+      mlir::bufferization::AllocTensorOp, mlir::tensor::EmptyOp,
+      Tracing::TraceCiphertextOp>([&](mlir::Operation *op) {
+    return converter.isLegal(op->getResultTypes()) &&
+           converter.isLegal(op->getOperandTypes());
+  });
   // Make sure that no ops `linalg.generic` that have illegal types
   target
       .addDynamicallyLegalOp<mlir::linalg::GenericOp, mlir::tensor::GenerateOp>(
@@ -778,8 +811,8 @@ void SimulateTFHEPass::runOnOperation() {
 
   patterns.insert<ZeroOpPattern, ZeroTensorOpPattern, KeySwitchGLWEOpPattern,
                   WopPBSGLWEOpPattern, EncodeLutForCrtWopPBSOpPattern,
-                  EncodePlaintextWithCrtOpPattern, NegOpPattern>(&getContext(),
-                                                                 converter);
+                  EncodePlaintextWithCrtOpPattern, NegOpPattern,
+                  TraceCiphertextOpPattern>(&getContext(), converter);
   patterns.insert<SubIntGLWEOpPattern>(&getContext());
 
   // if overflow detection is enable, then rewrite to CAPI functions that

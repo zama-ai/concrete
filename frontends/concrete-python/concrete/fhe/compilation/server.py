@@ -8,11 +8,12 @@ import json
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 # mypy: disable-error-code=attr-defined
 import concrete.compiler
 import jsonpickle
+import numpy as np
 from concrete.compiler import (
     CompilationContext,
     CompilationOptions,
@@ -23,6 +24,7 @@ from concrete.compiler import (
     ProgramCompilationFeedback,
     PublicArguments,
     ServerProgram,
+    SimulatedValueExporter,
     set_compiler_logging,
     set_llvm_debug_flag,
 )
@@ -45,6 +47,7 @@ from .configuration import (
     ParameterSelectionStrategy,
 )
 from .specs import ClientSpecs
+from .utils import friendly_type_format
 from .value import Value
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -68,6 +71,9 @@ class Server:
     _configuration: Optional[Configuration]
     _composition_rules: Optional[List[CompositionRule]]
 
+    _clear_input_indices: Dict[str, Set[int]]
+    _clear_input_shapes: Dict[str, Dict[int, Tuple[int, ...]]]
+
     def __init__(
         self,
         client_specs: ClientSpecs,
@@ -88,6 +94,23 @@ class Server:
         self._server_program = server_program
         self._mlir = None
         self._composition_rules = composition_rules
+
+        self._clear_input_indices = {}
+        self._clear_input_shapes = {}
+
+        functions_parameters = json.loads(client_specs.client_parameters.serialize())["circuits"]
+        for function_parameters in functions_parameters:
+            name = function_parameters["name"]
+            self._clear_input_indices[name] = {
+                index
+                for index, input_spec in enumerate(function_parameters["inputs"])
+                if "plaintext" in input_spec["typeInfo"]
+            }
+            self._clear_input_shapes[name] = {
+                index: tuple(input_spec["rawInfo"]["shape"]["dimensions"])
+                for index, input_spec in enumerate(function_parameters["inputs"])
+                if "plaintext" in input_spec["typeInfo"]
+            }
 
         assert_that(
             support.load_client_parameters(compilation_result).serialize()
@@ -299,13 +322,17 @@ class Server:
         shutil.make_archive(path, "zip", self._output_dir)
 
     @staticmethod
-    def load(path: Union[str, Path]) -> "Server":
+    def load(path: Union[str, Path], **kwargs) -> "Server":
         """
         Load the server from the given path in zip format.
 
         Args:
             path (Union[str, Path]):
                 path to load the server from
+
+            kwargs (Dict[str, Any]):
+                configuration options to overwrite when loading a server saved with `via_mlir`
+                if server isn't loaded via mlir, kwargs are ignored
 
         Returns:
             Server:
@@ -343,7 +370,7 @@ class Server:
                 mlir = f.read()
 
             with open(output_dir_path / "configuration.json", "r", encoding="utf-8") as f:
-                configuration = Configuration().fork(**jsonpickle.loads(f.read()))
+                configuration = Configuration().fork(**jsonpickle.loads(f.read())).fork(**kwargs)
 
             return Server.create(
                 mlir, configuration, is_simulated, composition_rules=composition_rules
@@ -412,10 +439,32 @@ class Server:
                 raise ValueError(message)
 
             if not isinstance(arg, Value):
-                message = f"Expected argument {i} to be an fhe.Value but it's {type(arg).__name__}"
-                raise ValueError(message)
+                if i not in self._clear_input_indices[function_name]:
+                    message = (
+                        f"Expected argument {i} to be an fhe.Value "
+                        f"but it's {friendly_type_format(type(arg))}"
+                    )
+                    raise ValueError(message)
 
-            buffers.append(arg.inner)
+                # Simulated value exporter can be used here
+                # as "clear" fhe.Values have the same
+                # internal representation as "simulation" fhe.Values
+
+                exporter = SimulatedValueExporter.new(
+                    self.client_specs.client_parameters,
+                    function_name,
+                )
+
+                if isinstance(arg, (int, np.integer)):
+                    arg = exporter.export_scalar(i, arg)
+                else:
+                    arg = np.array(arg)
+                    arg = exporter.export_tensor(i, arg.flatten().tolist(), arg.shape)
+
+            if isinstance(arg, Value):
+                buffers.append(arg.inner)
+            else:
+                buffers.append(arg)
 
         public_args = PublicArguments.new(self.client_specs.client_parameters, buffers)
         server_circuit = self._server_program.get_server_circuit(function_name)

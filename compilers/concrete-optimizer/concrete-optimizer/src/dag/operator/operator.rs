@@ -3,6 +3,7 @@ use std::iter::{empty, once};
 use std::ops::Deref;
 
 use crate::dag::operator::tensor::{ClearTensor, Shape};
+use crate::optimization::dag::multi_parameters::partition_cut::ExternalPartition;
 
 use super::DotKind;
 
@@ -89,7 +90,7 @@ pub enum Operator {
     LevelledOp {
         inputs: Vec<OperatorIndex>,
         complexity: LevelledComplexity,
-        manp: f64,
+        weights: Vec<f64>,
         out_shape: Shape,
         comment: String,
     },
@@ -104,6 +105,11 @@ pub enum Operator {
         input: OperatorIndex,
         out_precision: Precision,
     },
+    ChangePartition {
+        input: OperatorIndex,
+        src_partition: Option<ExternalPartition>,
+        dst_partition: Option<ExternalPartition>,
+    },
 }
 
 impl Operator {
@@ -114,7 +120,8 @@ impl Operator {
             Self::LevelledOp { inputs, .. } | Self::Dot { inputs, .. } => Box::new(inputs.iter()),
             Self::UnsafeCast { input, .. }
             | Self::Lut { input, .. }
-            | Self::Round { input, .. } => Box::new(once(input)),
+            | Self::Round { input, .. }
+            | Self::ChangePartition { input, .. } => Box::new(once(input)),
         }
     }
 }
@@ -171,7 +178,7 @@ impl fmt::Display for Operator {
             }
             Self::LevelledOp {
                 inputs,
-                manp,
+                weights,
                 out_shape,
                 ..
             } => {
@@ -182,13 +189,30 @@ impl fmt::Display for Operator {
                     }
                     write!(f, "%{}", input.0)?;
                 }
-                write!(f, "] : manp={manp} x {out_shape:?}")?;
+                write!(f, "] : weights={weights:?}, out_shape={out_shape:?}")?;
             }
             Self::Round {
                 input,
                 out_precision,
             } => {
                 write!(f, "ROUND[%{}] : u{out_precision}", input.0)?;
+            }
+            Self::ChangePartition {
+                input,
+                src_partition,
+                dst_partition,
+            } => {
+                write!(f, "CHANGE_PARTITION[%{}] : {{", input.0)?;
+                if let Some(partition) = src_partition {
+                    write!(f, "src_partition: {}", partition.name)?;
+                }
+                if let Some(partition) = dst_partition {
+                    if src_partition.is_some() {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "dst_partition: {}", partition.name)?;
+                }
+                write!(f, "}}")?;
             }
         }
         Ok(())

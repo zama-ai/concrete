@@ -87,24 +87,28 @@ impl<'dag> Viz for crate::dag::unparametrized::DagOperator<'dag> {
         } else {
             "lightgreen"
         };
+        let location = self.location;
         match self.operator {
             Operator::Input { out_precision, .. } => {
-                format!("{index} [label =\"{{%{index} = Input({input_string}) |{{out_precision:|{out_precision:?}}}}}\" fillcolor={color}];")
+                format!("{index} [label =\"{{%{index} = Input({input_string}) |{{out_precision:|{out_precision:?}}} | {{loc:|{location}}}}}\" fillcolor={color}];")
             }
             Operator::Lut { out_precision, .. } => {
-                format!("{index} [label = \"{{%{index} = Lut({input_string}) |{{out_precision:|{out_precision:?}}}}}\" fillcolor={color}];")
+                format!("{index} [label = \"{{%{index} = Lut({input_string}) |{{out_precision:|{out_precision:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];")
             }
             Operator::Dot { .. } => {
-                format!("{index} [label = \"{{%{index} = Dot({input_string})}}\" fillcolor={color}];")
+                format!("{index} [label = \"{{%{index} = Dot({input_string})| {{loc:|{location}}}}}\" fillcolor={color}];")
             }
-            Operator::LevelledOp { manp, .. } => {
-                format!("{index} [label = \"{{%{index} = LevelledOp({input_string}) |{{manp:|{manp:?}}}}}\" fillcolor={color}];")
+            Operator::LevelledOp { weights, .. } => {
+                format!("{index} [label = \"{{%{index} = LevelledOp({input_string}) |{{weights:|{weights:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];")
             }
             Operator::UnsafeCast { out_precision, .. } => format!(
-                "{index} [label = \"{{%{index} = UnsafeCast({input_string}) |{{out_precision:|{out_precision:?}}}}}\" fillcolor={color}];"
+                "{index} [label = \"{{%{index} = UnsafeCast({input_string}) |{{out_precision:|{out_precision:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];"
             ),
             Operator::Round { out_precision, .. } => {
-                format!("{index} [label = \"{{%{index} = Round({input_string}) |{{out_precision:|{out_precision:?}}}}}\" fillcolor={color}];",)
+                format!("{index} [label = \"{{%{index} = Round({input_string}) |{{out_precision:|{out_precision:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];",)
+            }
+            Operator::ChangePartition { .. } => {
+                format!("{index} [label = \"{{%{index} = ChangePartition({input_string})}}\" fillcolor={color}];",)
             }
         }
     }

@@ -2507,9 +2507,6 @@ class Context:
 
             assert lsb is not None
             bit_value = self.to_signedness(lsb, of=resulting_type)
-            bit_value = self.reinterpret(
-                bit_value, bit_width=max(resulting_type.bit_width, max_bit)
-            )
 
             delta_precision = position - actual_position
             assert actual_position < 0 or 0 <= delta_precision < resulting_type.bit_width, (
@@ -2518,6 +2515,9 @@ class Context:
                 resulting_type.bit_width,
             )
             if delta_precision:
+                bit_value = self.reinterpret(
+                    bit_value, bit_width=max(resulting_type.bit_width, max_bit)
+                )
                 bit_value = self.shift_left_at_constant_precision(bit_value, delta_precision)
 
             bit_value = self.reinterpret(bit_value, bit_width=resulting_type.bit_width)
@@ -2540,7 +2540,9 @@ class Context:
     ) -> Conversion:
         return self.comparison(resulting_type, x, y, accept={Comparison.GREATER, Comparison.EQUAL})
 
-    def identity(self, resulting_type: ConversionType, x: Conversion) -> Conversion:
+    def identity(
+        self, resulting_type: ConversionType, x: Conversion, force_noise_refresh: bool
+    ) -> Conversion:
         assert (
             x.is_encrypted
             and resulting_type.is_encrypted
@@ -2548,7 +2550,7 @@ class Context:
             and x.is_signed == resulting_type.is_signed
         )
 
-        if resulting_type.bit_width == x.bit_width:
+        if resulting_type.bit_width == x.bit_width and not force_noise_refresh:
             return x
 
         result = self.extract_bits(
@@ -3776,7 +3778,12 @@ class Context:
                 result = self.add(resulting_type, result, constant)
             return result
 
-        table += [0] * ((2**on.bit_width) - len(table))
+        padding = [0] * ((2**on.bit_width) - len(table))
+        if padding:
+            if on.is_unsigned:
+                table += padding
+            else:
+                table = table[: len(table) // 2] + padding + table[-len(table) // 2 :]
 
         dialect = fhe if on.is_scalar else fhelinalg
         operation = dialect.ApplyLookupTableEintOp

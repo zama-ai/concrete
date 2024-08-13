@@ -2,6 +2,8 @@
 Tests of everything related to modules.
 """
 
+import inspect
+import re
 import tempfile
 
 import numpy as np
@@ -110,6 +112,26 @@ def test_wrong_inputset(helpers):
         )
 
     assert str(excinfo.value) == ("Compiling function 'add' without an inputset is not supported")
+
+
+def test_non_composable_message():
+    """
+    Test the non composable Dag message.
+    """
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def add(x, y):
+            return x + y
+
+    line_of_add = inspect.currentframe().f_lineno - 2
+    expected_message = f"""\
+Program can not be composed: At test_modules.py:{line_of_add}:0: please add `fhe.refresh(...)` to guarantee the function composability.
+The noise of the node 0 is contaminated by noise coming straight from the input (partition: 0, coeff: 2.00).\
+"""
+    with pytest.raises(RuntimeError, match=re.escape(expected_message)):
+        Module.compile({"add": [(0, 0), (3, 3)]})
 
 
 def test_call_clear_circuits():
@@ -546,7 +568,6 @@ def test_composition_wired_compilation():
             "b": [np.random.randint(1, 50, size=()) for _ in range(100)],
             "c": [np.random.randint(1, 100, size=()) for _ in range(100)],
         },
-        p_error=0.01,
     )
 
     inp_enc = module.a.encrypt(5)
@@ -602,3 +623,28 @@ def test_simulate_encrypt_run_decrypt(helpers):
     # Make sure computation happened in simulation.
     assert isinstance(module.dec.runtime, SimulationRt)
     assert isinstance(encrypted_result, int)
+
+
+def test_non_composable_due_to_increasing_noise():
+    """
+    Test that non composable module can be fixed with `fhe.refresh`.
+    """
+
+    inputsets = {"a": [(x, y) for x in range(16) for y in range(16)]}
+
+    @fhe.module()
+    class Broken:
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def a(x, y):
+            return fhe.identity(x + y)  # identity is optimized out in that case
+
+    with pytest.raises(RuntimeError, match="Program can not be composed"):
+        Broken.compile(inputsets)
+
+    @fhe.module()
+    class Fixed:
+        @fhe.function({"x": "encrypted", "y": "encrypted"})
+        def a(x, y):
+            return fhe.refresh(x + y)
+
+    assert Fixed.compile(inputsets)

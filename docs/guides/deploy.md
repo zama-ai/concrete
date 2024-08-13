@@ -2,9 +2,24 @@
 
 After developing your circuit, you may want to deploy it. However, sharing the details of your circuit with every client might not be desirable. As well as this, you might want to perform the computation on dedicated servers. In this case, you can use the `Client` and `Server` features of **Concrete**.
 
-## Development of the circuit
+### Deployment
 
-You can develop your circuit using the techniques discussed in previous chapters. Here is a simple example:
+A typical Concrete deployment will host on a server the compilation artifact: Client specifications required by the compiled circuits and the fhe executable itself. Client will ask for the circuit requirements, generate keys accordingly, then it will send an encrypted payload and receive an encrypted result.
+
+```mermaid
+sequenceDiagram
+    Client->>Server: Client specifications?
+    Server-->>Client: Client specifications
+    Client->>Client: Private + Evaluation Keys Generation
+    Client->>Server: Encrypted(data) + Evaluation Key
+    Server->>Server: Compiled library execution
+    Server-->>Client: Encrypted(result)
+    Client->>Client: Decrypt(result)
+```
+
+## Starting from an example
+
+You can develop your circuit using the techniques discussed in previous chapters. Let's take the following example to describe deployment:
 
 <!--pytest-codeblocks:skip-->
 ```python
@@ -114,6 +129,10 @@ serialized_result: bytes = result.serialize()
 ```
 
 Then, send the serialized result back to the client. After this, the client can decrypt to receive the result of the computation.
+
+{% hint style="info" %}
+Clear arguments can directly be passed to `server.run` (e.g., `server.run(x, 10, z, evaluation_keys=...)`).
+{% endhint %}
 
 ## Decrypting the result (on the client)
 

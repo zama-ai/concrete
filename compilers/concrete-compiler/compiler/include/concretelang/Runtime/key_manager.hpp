@@ -109,10 +109,8 @@ struct RuntimeContextManager {
   bool allocated = false;
   bool lazy_key_transfer = false;
 
-  RuntimeContextManager(bool lazy = false) : lazy_key_transfer(lazy) {
-    context = nullptr;
-    _dfr_node_level_runtime_context_manager = this;
-  }
+  RuntimeContextManager(bool lazy = false)
+      : context(nullptr), lazy_key_transfer(lazy) {}
 
   void setContext(void *ctx) {
     assert(context == nullptr &&

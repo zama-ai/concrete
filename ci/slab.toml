@@ -1,32 +1,42 @@
+# This is the new version of Slab that handles multi backend providers.
+[backend.aws.m7i-cpu-bench]
+region = "eu-west-1"
+image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
+instance_type = "m7i.48xlarge"
+security_group = ["sg-0e55cc31dfda0d8a7", ]
+
 [profile.m7i-cpu-bench]
 region = "eu-west-1"
 image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
 instance_type = "m7i.48xlarge"
+security_group= ["sg-0e55cc31dfda0d8a7", ]
 
 [profile.m7i-cpu-test]
 region = "eu-west-1"
 image_id = "ami-002bdcd64b8472cf9"
 instance_type = "m7i.16xlarge"
+security_group= ["sg-0e55cc31dfda0d8a7", ]
 
 [profile.m7i-metal]
 region = "eu-west-1"
 image_id = "ami-002bdcd64b8472cf9"
 instance_type = "m7i.metal-24xl"
+security_group= ["sg-0e55cc31dfda0d8a7", ]
 
 [profile.gpu-bench]
 region = "us-east-1"
 image_id = "ami-08e27480d79e82238"
 instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
-security_group= ["sg-0f8b52622a2669491", ]
+security_group= ["sg-017afab1f328af917", ]
 
 # Docker is well configured for test inside docker in this AMI
 [profile.gpu-test]
 region = "us-east-1"
-image_id = "ami-0c4773f5626d919b6"
+image_id = "ami-0257c6ad39f902b5e"
 instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
-security_group= ["sg-0f8b52622a2669491", ]
+security_group= ["sg-017afab1f328af917", ]
 
 # It has CUDA Driver (<=12.5) and Docker installed
 [profile.gpu-test-ubuntu22]
@@ -34,13 +44,14 @@ region = "us-east-1"
 image_id = "ami-05385e0c3c574621f"
 instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
-security_group= ["sg-0f8b52622a2669491", ]
+security_group= ["sg-017afab1f328af917", ]
 
 [profile.slurm-cluster]
 region = "eu-west-3"
 image_id = "ami-0bb5bb9cb747b5ddd"
 instance_id = "i-0e5ae2a14134d6275"
 instance_type = "m6i.8xlarge"
+security_group= ["sg-02dd8470fa845f31b", ]
 
 #################################################
 # Compiler commands
@@ -121,5 +132,5 @@ check_run_name = "Concrete Python Release (GPU)"
 
 [command.concrete-python-test-gpu-wheel]
 workflow = "concrete_python_test_gpu_wheel.yml"
-profile = "gpu-test-ubuntu22"
+profile = "gpu-test"
 check_run_name = "Concrete Python Test GPU Wheel"

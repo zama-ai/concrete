@@ -68,6 +68,19 @@ def get_random_string(length):
     return result_str
 
 
+def add_chunked_number(x, y):
+    result = fhe.zeros((32,))
+    carry = 0
+
+    addition = x + y
+    for i in range(32):
+        addition_and_carry = addition[i] + carry
+        carry = addition_and_carry >> 1
+        result[i] = addition_and_carry - (carry * 2)
+
+    return result
+
+
 # FHE functions
 @fhe.module()
 class MyModule:
@@ -105,51 +118,19 @@ class MyModule:
     @staticmethod
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add2(x, y):
-        ans = fhe.zeros((32,))
-        cy = 0
-
-        for i in range(32):
-            t = x[i] + y[i] + cy
-            cy, tr = t >= 2, t % 2
-            ans[i] = tr
-
-        return ans
+        return fhe.bits(add_chunked_number(x, y))[0]
 
     @staticmethod
     @fhe.function(
         {"x": "encrypted", "y": "encrypted", "u": "encrypted", "v": "encrypted", "w": "encrypted"}
     )
     def add5(x, y, u, v, w):
-        ans = fhe.zeros((32,))
-        cy = 0
+        result = add_chunked_number(x, y)
+        result = add_chunked_number(result, u)
+        result = add_chunked_number(result, v)
+        result = add_chunked_number(result, w)
 
-        for i in range(32):
-            t = x[i] + y[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + u[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + v[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        cy = 0
-
-        for i in range(32):
-            t = ans[i] + w[i] + cy
-            cy, tr = t // 2, t % 2
-            ans[i] = tr
-
-        return ans
+        return fhe.bits(result)[0]
 
 
 # Compilation of the FHE functions
@@ -202,7 +183,6 @@ my_module = MyModule.compile(  # type: ignore
 
 # Split and encrypt on the client side
 def message_schedule_and_split_and_encrypt(chunk):
-
     assert len(chunk) == 64
 
     w = [0] * 80
@@ -239,25 +219,21 @@ def _process_encrypted_chunk_server_side(
 
     for i in range(80):
         if 0 <= i <= 19:
-
             # Do f = d ^ (b & (c ^ d))
             fsplit_enc = my_module.iftern.run(bsplit_enc, csplit_enc, dsplit_enc)
 
             ksplit = split(0x5A827999)
         elif 20 <= i <= 39:
-
             # Do f = b ^ c ^ d
             fsplit_enc = my_module.xor3.run(bsplit_enc, csplit_enc, dsplit_enc)
 
             ksplit = split(0x6ED9EBA1)
         elif 40 <= i <= 59:
-
             # Do f = (b & c) | (b & d) | (c & d)
             fsplit_enc = my_module.maj.run(bsplit_enc, csplit_enc, dsplit_enc)
 
             ksplit = split(0x8F1BBCDC)
         elif 60 <= i <= 79:
-
             # Do f = b ^ c ^ d
             fsplit_enc = my_module.xor3.run(bsplit_enc, csplit_enc, dsplit_enc)
 
@@ -346,7 +322,6 @@ class Sha1Hash:
 
         # Read the rest of the data, 64 bytes at a time
         while len(chunk) == 64:
-
             wsplit_enc = message_schedule_and_split_and_encrypt(chunk)
             self._hsplit_enc = _process_encrypted_chunk_server_side(wsplit_enc, *self._hsplit_enc)
             self._message_byte_length += 64
@@ -390,7 +365,6 @@ class Sha1Hash:
         hsplit_enc = _process_encrypted_chunk_server_side(wsplit_enc, *self._hsplit_enc)
 
         if len(message) != 64:
-
             wsplit_enc = message_schedule_and_split_and_encrypt(message[64:])
             hsplit_enc = _process_encrypted_chunk_server_side(wsplit_enc, *hsplit_enc)
 
@@ -446,12 +420,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.autotest:
-
         filename = "tmp_sha1_test_file.txt"
 
         # Checking random patterns
         for _ in range(20):
-
             string_length = np.random.randint(100)
 
             # Take a random string
@@ -486,7 +458,6 @@ if __name__ == "__main__":
                 "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12",
             ),
         ]:
-
             with open(filename, "w", encoding="utf-8") as file:
                 file.write(f"{hash_input}")
 
@@ -528,7 +499,6 @@ if __name__ == "__main__":
             if os.path.isfile(argument):
                 # An argument is given and it's a valid file. Read it
                 with open(filename, "rb") as data:
-
                     # Show the final digest
                     print_timed_sha1(data)
 

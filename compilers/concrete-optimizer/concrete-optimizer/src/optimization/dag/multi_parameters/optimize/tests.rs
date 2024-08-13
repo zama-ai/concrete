@@ -1,30 +1,17 @@
 #![allow(clippy::float_cmp)]
 
 use once_cell::sync::Lazy;
+use optimization::dag::multi_parameters::partition_cut::ExternalPartition;
 
 use super::*;
 use crate::computing_cost::cpu::CpuComplexity;
-use crate::config;
 use crate::dag::operator::{FunctionTable, LevelledComplexity, Shape};
 use crate::dag::unparametrized;
+use crate::optimization::dag::multi_parameters::partitionning::tests::{
+    get_tfhers_noise_br, SHARED_CACHES, TFHERS_MACRO_PARAMS,
+};
 use crate::optimization::dag::solo_key;
 use crate::optimization::dag::solo_key::optimize::{add_v0_dag, v0_dag};
-use crate::optimization::decomposition;
-
-const CIPHERTEXT_MODULUS_LOG: u32 = 64;
-const FFT_PRECISION: u32 = 53;
-
-static SHARED_CACHES: Lazy<PersistDecompCaches> = Lazy::new(|| {
-    let processing_unit = config::ProcessingUnit::Cpu;
-    decomposition::cache(
-        128,
-        processing_unit,
-        None,
-        true,
-        CIPHERTEXT_MODULUS_LOG,
-        FFT_PRECISION,
-    )
-});
 
 const _4_SIGMA: f64 = 0.000_063_342_483_999_973;
 
@@ -436,7 +423,7 @@ fn optimize_sign_extract() {
     let input1 = dag.add_levelled_op(
         [small_input1],
         complexity,
-        1.0,
+        [1.0],
         Shape::vector(1_000_000),
         "comment",
     );
@@ -489,7 +476,7 @@ fn test_partition_chain(decreasing: bool) {
         let sol = optimize(&dag, &Some(p_cut.clone()), PartitionIndex(0)).unwrap();
         let nb_partitions = sol.macro_params.len();
         assert!(
-            nb_partitions == (p_cut.p_cut.len() + 1),
+            nb_partitions == p_cut.n_partitions(),
             "bad nb partitions {} {p_cut}",
             sol.macro_params.len()
         );
@@ -587,7 +574,7 @@ fn test_chained_partitions_non_feasible_single_params() {
         lut_input = dag.add_levelled_op(
             [lut_input],
             LevelledComplexity::ZERO,
-            noise_factor,
+            [noise_factor],
             Shape::number(),
             "",
         );
@@ -844,10 +831,178 @@ fn test_bug_with_zero_noise() {
     let out_shape = Shape::number();
     let mut dag = unparametrized::Dag::new();
     let v0 = dag.add_input(2, &out_shape);
-    let v1 = dag.add_levelled_op([v0], complexity, 0.0, &out_shape, "comment");
-    let v2 = dag.add_levelled_op([v1], complexity, 1.0, &out_shape, "comment");
+    let v1 = dag.add_levelled_op([v0], complexity, [0.0], &out_shape, "comment");
+    let v2 = dag.add_levelled_op([v1], complexity, [1.0], &out_shape, "comment");
     let v3 = dag.add_unsafe_cast(v2, 1);
     let _ = dag.add_lut(v3, FunctionTable { values: vec![] }, 1);
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+}
+
+#[test]
+fn test_optimize_tfhers_in_out_dot_compute() {
+    let variance = get_tfhers_noise_br();
+    let tfhers_partition = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: TFHERS_MACRO_PARAMS,
+        max_variance: variance * 2.0,
+        variance,
+    };
+    let mut dag = unparametrized::Dag::new();
+    let input1 = dag.add_input(16, Shape::number());
+    let change_part1 = dag.add_change_partition(input1, Some(tfhers_partition.clone()), None);
+    let dot = dag.add_dot([change_part1], [2]);
+    _ = dag.add_change_partition(dot, None, Some(tfhers_partition.clone()));
+
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+    println!("solution: {:?}", sol.unwrap());
+}
+
+#[test]
+fn test_optimize_tfhers_2lut_compute() {
+    let variance = get_tfhers_noise_br();
+    let tfhers_partition_in = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: TFHERS_MACRO_PARAMS,
+        max_variance: variance * 4.0,
+        variance,
+    };
+    let tfhers_partition_out = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: TFHERS_MACRO_PARAMS,
+        max_variance: variance * 4.0,
+        variance,
+    };
+    let tfhers_precision = 11;
+    let mut dag = unparametrized::Dag::new();
+    let input = dag.add_input(tfhers_precision, Shape::number());
+    let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in), None);
+    let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
+    let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
+    let _ = dag.add_change_partition(lut2, None, Some(tfhers_partition_out));
+
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+}
+
+#[test]
+fn test_optimize_tfhers_different_in_out_2lut_compute() {
+    let variance = get_tfhers_noise_br();
+    let tfhers_partition_in = ExternalPartition {
+        name: String::from("tfhers_in"),
+        macro_params: TFHERS_MACRO_PARAMS,
+        max_variance: variance * 6.0,
+        variance,
+    };
+    let tfhers_partition_out = ExternalPartition {
+        name: String::from("tfhers_out"),
+        macro_params: TFHERS_MACRO_PARAMS,
+        max_variance: variance * 6.0,
+        variance,
+    };
+    let mut dag = unparametrized::Dag::new();
+    let tfhers_precision = 8;
+    let input = dag.add_input(tfhers_precision, Shape::number());
+    let change_part1 = dag.add_change_partition(input, Some(tfhers_partition_in), None);
+    let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, 4);
+    let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
+    let _ = dag.add_change_partition(lut2, None, Some(tfhers_partition_out));
+
+    let sol = optimize(&dag, &None, PartitionIndex(0));
+    assert!(sol.is_some());
+}
+
+#[test]
+fn test_optimize_tfhers_input_constraints() {
+    let variances = [1.0, 6.14e-14, 2.14e-16];
+    let dag_builder = |variance: f64| -> Dag {
+        let tfhers_partition = ExternalPartition {
+            name: String::from("tfhers"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let tfhers_precision = 4;
+        let input = dag.add_input(tfhers_precision, Shape::number());
+        let change_part1 = dag.add_change_partition(input, Some(tfhers_partition), None);
+        let lut = dag.add_lut(change_part1, FunctionTable::UNKWOWN, tfhers_precision);
+        let out = dag.add_dot([lut], [128]);
+        dag.add_composition(out, input);
+        dag
+    };
+
+    let sol = optimize(&dag_builder(variances[0]), &None, PartitionIndex(0));
+    assert!(sol.is_some());
+    let mut last_complexity = sol.unwrap().complexity;
+    for variance in &variances[1..] {
+        let sol = optimize(&dag_builder(*variance), &None, PartitionIndex(0));
+        assert!(sol.is_some());
+        let complexity = sol.unwrap().complexity;
+        assert!(complexity > last_complexity);
+        last_complexity = complexity;
+    }
+}
+
+#[test]
+fn test_optimize_tfhers_output_constraints() {
+    let variances = [1.0, 6.14e-14, 2.14e-16];
+    let dag_builder = |variance: f64| -> Dag {
+        let tfhers_partition = ExternalPartition {
+            name: String::from("tfhers"),
+            macro_params: TFHERS_MACRO_PARAMS,
+            max_variance: variance * 4.0,
+            variance,
+        };
+        let mut dag = unparametrized::Dag::new();
+        let tfhers_precision = 4;
+        let input = dag.add_input(tfhers_precision, Shape::number());
+        let lut = dag.add_lut(input, FunctionTable::UNKWOWN, tfhers_precision);
+        let dot = dag.add_dot([lut], [128]);
+        let out = dag.add_change_partition(dot, None, Some(tfhers_partition.clone()));
+        dag.add_composition(out, input);
+        dag
+    };
+
+    let sol = optimize(&dag_builder(variances[0]), &None, PartitionIndex(0));
+    assert!(sol.is_some());
+    let mut last_complexity = sol.unwrap().complexity;
+    for variance in &variances[1..] {
+        let sol = optimize(&dag_builder(*variance), &None, PartitionIndex(0));
+        assert!(sol.is_some());
+        let complexity = sol.unwrap().complexity;
+        assert!(complexity > last_complexity);
+        last_complexity = complexity;
+    }
+}
+
+#[test]
+fn test_optimize_tfhers_to_concrete_and_back_example() {
+    let variance = get_tfhers_noise_br();
+    let tfhers_partition = ExternalPartition {
+        name: String::from("tfhers"),
+        macro_params: TFHERS_MACRO_PARAMS,
+        max_variance: variance * 8.0,
+        variance,
+    };
+    let concrete_precision = 8;
+    let msg_width = 2;
+    let carry_width = 2;
+    let tfhers_precision = msg_width + carry_width;
+
+    let mut dag = unparametrized::Dag::new();
+    let input = dag.add_input(
+        tfhers_precision,
+        Shape::vector((concrete_precision / msg_width).into()),
+    );
+    // to concrete
+    let change_part1 = dag.add_change_partition(input, Some(tfhers_partition.clone()), None);
+    let lut1 = dag.add_lut(change_part1, FunctionTable::UNKWOWN, concrete_precision);
+    // from concrete
+    let lut2 = dag.add_lut(lut1, FunctionTable::UNKWOWN, tfhers_precision);
+    let _ = dag.add_change_partition(lut2, None, Some(tfhers_partition.clone()));
+
     let sol = optimize(&dag, &None, PartitionIndex(0));
     assert!(sol.is_some());
 }

@@ -35,16 +35,15 @@ jobs:
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
         with:
           python-version: ${{ matrix.python-version }}
 
-      # TODO: specify CP version
       - name: Install CP
-        run: pip install --pre --extra-index-url https://pypi.zama.ai/gpu/ concrete-python
+        run: pip install --pre --extra-index-url https://pypi.zama.ai/gpu/ "concrete-python==${{ env.CP_VERSION }}"
 
       - name: Checkout the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           path: repo
 

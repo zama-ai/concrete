@@ -206,6 +206,9 @@ then
     git diff
 fi
 
+# Update the pandas files in CML
+make update_encrypted_dataframe
+
 # Launch CML tests with pytest (and ignore flaky ones)
 # As compared to regular `make pytest`, known flaky errors from Concrete ML are simply ignored
 # and coverage is disabled

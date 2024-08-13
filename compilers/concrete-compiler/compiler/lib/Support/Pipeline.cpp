@@ -47,8 +47,10 @@
 #include "concretelang/Dialect/FHELinalg/Transforms/Tiling.h"
 #include "concretelang/Dialect/RT/Analysis/Autopar.h"
 #include "concretelang/Dialect/RT/Transforms/Passes.h"
+#include "concretelang/Dialect/SDFG/Transforms/Passes.h"
 #include "concretelang/Dialect/TFHE/Analysis/ExtractStatistics.h"
 #include "concretelang/Dialect/TFHE/Transforms/Transforms.h"
+#include "concretelang/Runtime/utils.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
 #include "concretelang/Support/Pipeline.h"
@@ -361,6 +363,7 @@ mlir::LogicalResult batchTFHE(mlir::MLIRContext &context,
       pm, mlir::concretelang::createCollapseParallelLoops(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createBatchingPass(maxBatchSize), enablePass);
+  addPotentiallyNestedPass(pm, mlir::createCanonicalizerPass(), enablePass);
 
   return pm.run(module.getOperation());
 }
@@ -569,6 +572,8 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
                            enablePass);
   addPotentiallyNestedPass(
       pm, mlir::concretelang::createFixupBufferDeallocationPass(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createSDFGBufferOwnershipPass(), enablePass);
 
   return pm.run(module);
 }
@@ -610,8 +615,7 @@ std::unique_ptr<llvm::Module>
 lowerLLVMDialectToLLVMIR(mlir::MLIRContext &context,
                          llvm::LLVMContext &llvmContext,
                          mlir::ModuleOp &module) {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
+  mlir::concretelang::LLVMInitializeNativeTarget();
   mlir::registerLLVMDialectTranslation(*module->getContext());
   mlir::registerOpenMPDialectTranslation(*module->getContext());
 
