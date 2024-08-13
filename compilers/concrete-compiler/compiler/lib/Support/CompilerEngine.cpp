@@ -221,6 +221,10 @@ llvm::Error CompilerEngine::determineFHEParameters(CompilationResult &res) {
     res.feedback.emplace(feedback);
   }
 
+  // we don't need change_partition ops after getting parameters
+  mlir::concretelang::pipeline::removeChangePartitionOps(
+      res.mlirModuleRef->get());
+
   return llvm::Error::success();
 }
 

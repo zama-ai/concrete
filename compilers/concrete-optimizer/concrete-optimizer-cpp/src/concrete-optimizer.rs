@@ -1,6 +1,8 @@
 #![allow(clippy::boxed_local)]
 #![allow(clippy::too_many_arguments)]
 
+use core::panic;
+
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
 use concrete_optimizer::config::ProcessingUnit;
@@ -11,12 +13,16 @@ use concrete_optimizer::dag::unparametrized;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::CircuitSolution;
+use concrete_optimizer::optimization::dag::multi_parameters::optimize::MacroParameters;
 use concrete_optimizer::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
 use concrete_optimizer::optimization::decomposition;
-use concrete_optimizer::parameters::{BrDecompositionParameters, KsDecompositionParameters};
+use concrete_optimizer::optimization::decomposition::cmux::MaxVarianceError;
+use concrete_optimizer::parameters::{
+    BrDecompositionParameters, GlweParameters, KsDecompositionParameters,
+};
 use concrete_optimizer::utils::cache::persistent::default_cache_dir;
 use concrete_optimizer::utils::viz::Viz;
 use cxx::CxxString;
@@ -50,6 +56,60 @@ fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
         options.ciphertext_modulus_log,
         options.fft_precision,
     )
+}
+
+#[derive(Clone)]
+pub struct ExternalPartition(
+    concrete_optimizer::optimization::dag::multi_parameters::partition_cut::ExternalPartition,
+);
+
+pub fn get_external_partition(
+    name: String,
+    log2_polynomial_size: u64,
+    glwe_dimension: u64,
+    internal_dim: u64,
+    max_variance: f64,
+    variance: f64,
+) -> Box<ExternalPartition> {
+    Box::new(ExternalPartition(
+        concrete_optimizer::optimization::dag::multi_parameters::partition_cut::ExternalPartition {
+            name,
+            macro_params: MacroParameters {
+                glwe_params: GlweParameters {
+                    log2_polynomial_size,
+                    glwe_dimension,
+                },
+                internal_dim,
+            },
+            max_variance,
+            variance,
+        },
+    ))
+}
+
+pub fn get_noise_br(
+    options: ffi::Options,
+    log2_polynomial_size: u64,
+    glwe_dimension: u64,
+    lwe_dim: u64,
+    pbs_level: u64,
+    pbs_log2_base: u64,
+) -> f64 {
+    let cache = caches_from(options).caches();
+    match decomposition::cmux::get_noise_br(
+        cache,
+        log2_polynomial_size,
+        glwe_dimension,
+        lwe_dim,
+        pbs_level,
+        Some(pbs_log2_base),
+    ) {
+        Ok(max_variance) => max_variance,
+        Err(err) => match err {
+            MaxVarianceError::PbsBaseLogNotFound => panic!("pbs base log didn't match"),
+            MaxVarianceError::PbsLevelNotFound => panic!("pbs level not found"),
+        },
+    }
 }
 
 fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) -> ffi::Solution {
@@ -714,6 +774,38 @@ impl<'dag> DagBuilder<'dag> {
             .into()
     }
 
+    fn add_change_partition_with_src(
+        &mut self,
+        input: ffi::OperatorIndex,
+        src_partition: &ExternalPartition,
+        location: &Location,
+    ) -> ffi::OperatorIndex {
+        self.0
+            .add_change_partition(
+                input.into(),
+                Some(src_partition.0.clone()),
+                None,
+                location.0.clone(),
+            )
+            .into()
+    }
+
+    fn add_change_partition_with_dst(
+        &mut self,
+        input: ffi::OperatorIndex,
+        dst_partition: &ExternalPartition,
+        location: &Location,
+    ) -> ffi::OperatorIndex {
+        self.0
+            .add_change_partition(
+                input.into(),
+                None,
+                Some(dst_partition.0.clone()),
+                location.0.clone(),
+            )
+            .into()
+    }
+
     fn tag_operator_as_output(&mut self, op: ffi::OperatorIndex) {
         self.0.tag_operator_as_output(op.into());
     }
@@ -803,11 +895,33 @@ mod ffi {
 
         type Location;
 
+        type ExternalPartition;
+
         #[namespace = "concrete_optimizer::utils"]
         fn location_unknown() -> Box<Location>;
 
         #[namespace = "concrete_optimizer::utils"]
         fn location_from_string(string: &str) -> Box<Location>;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn get_external_partition(
+            name: String,
+            log2_polynomial_size: u64,
+            glwe_dimension: u64,
+            internal_dim: u64,
+            max_variance: f64,
+            variance: f64,
+        ) -> Box<ExternalPartition>;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn get_noise_br(
+            options: Options,
+            log2_polynomial_size: u64,
+            glwe_dimension: u64,
+            lwe_dim: u64,
+            pbs_level: u64,
+            pbs_log2_base: u64,
+        ) -> f64;
 
         #[namespace = "concrete_optimizer::dag"]
         fn empty() -> Box<Dag>;
@@ -862,6 +976,20 @@ mod ffi {
             self: &mut DagBuilder<'_>,
             input: OperatorIndex,
             rounded_precision: u8,
+            location: &Location,
+        ) -> OperatorIndex;
+
+        fn add_change_partition_with_src(
+            self: &mut DagBuilder<'_>,
+            input: OperatorIndex,
+            src_partition: &ExternalPartition,
+            location: &Location,
+        ) -> OperatorIndex;
+
+        fn add_change_partition_with_dst(
+            self: &mut DagBuilder<'_>,
+            input: OperatorIndex,
+            dst_partition: &ExternalPartition,
             location: &Location,
         ) -> OperatorIndex;
 

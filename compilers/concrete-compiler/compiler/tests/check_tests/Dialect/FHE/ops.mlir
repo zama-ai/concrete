@@ -374,3 +374,19 @@ func.func @round(%arg0: !FHE.eint<5>) -> !FHE.eint<3> {
   %1 = "FHE.round"(%arg0) : (!FHE.eint<5>) -> !FHE.eint<3>
   return %1: !FHE.eint<3>
 }
+
+// CHECK-LABEL: func.func @change_partition_src(%arg0: !FHE.eint<4>) -> !FHE.eint<4>
+func.func @change_partition_src(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHE.change_partition"(%arg0) {src = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<4>) -> !FHE.eint<4>
+  %0 = "FHE.change_partition"(%arg0) {src = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<4>) -> (!FHE.eint<4>)
+  // CHECK-NEXT: return %[[v0]] : !FHE.eint<4>
+  return %0: !FHE.eint<4>
+}
+
+// CHECK-LABEL: func.func @change_partition_dest(%arg0: !FHE.eint<4>) -> !FHE.eint<4>
+func.func @change_partition_dest(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
+  // CHECK-NEXT: %[[v0:.*]] = "FHE.change_partition"(%arg0) {dest = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<4>) -> !FHE.eint<4>
+  %0 = "FHE.change_partition"(%arg0) {dest = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<4>) -> (!FHE.eint<4>)
+  // CHECK-NEXT: return %[[v0]] : !FHE.eint<4>
+  return %0: !FHE.eint<4>
+}

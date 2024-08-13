@@ -26,6 +26,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h"
 #include "concretelang/Dialect/FHE/Analysis/utils.h"
+#include "concretelang/Dialect/FHE/IR/FHEAttrs.h"
 #include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgOps.h"
@@ -155,6 +156,8 @@ struct FunctionToDag {
     if (auto inputType = isLut(op); inputType != nullptr) {
       addLut(op, inputType, encrypted_inputs, precision);
       return;
+    } else if (isChangePartition(op)) {
+      index = addChangePartition(op, val, encrypted_inputs);
     } else if (isRound(op)) {
       index = addRound(val, encrypted_inputs, precision);
     } else if (isReinterpretPrecision(op)) {
@@ -245,6 +248,55 @@ struct FunctionToDag {
     auto encrypted_input = encrypted_inputs[0];
     index[val] = dagBuilder.add_round_op(encrypted_input, rounded_precision,
                                          *loc_to_location(val.getLoc()));
+    return index[val];
+  }
+
+  concrete_optimizer::dag::OperatorIndex
+  addChangePartition(mlir::Operation &op, mlir::Value &val,
+                     Inputs &encrypted_inputs) {
+    assert(encrypted_inputs.size() == 1);
+    auto encrypted_input = encrypted_inputs[0];
+    auto options = options_from_config(config);
+
+    auto partitionBuilder =
+        [&options](mlir::concretelang::FHE::PartitionAttr partitionAttr) {
+          auto glweDim = partitionAttr.getGlweDim();
+          auto lweDim = partitionAttr.getLweDim();
+          auto pbsLevel = partitionAttr.getPbsLevel();
+          auto pbsLogBase = partitionAttr.getPbsBaseLog();
+          auto doubleLogPolySize = log2(partitionAttr.getPolySize());
+          assert(ceil(doubleLogPolySize) == doubleLogPolySize &&
+                 "polySize is not a power of 2");
+          auto logPolySize = (uint64_t)doubleLogPolySize;
+          auto max_variance = concrete_optimizer::utils::get_noise_br(
+              options, logPolySize, glweDim, lweDim, pbsLevel, pbsLogBase);
+          auto name = partitionAttr.getName().getValue().str();
+          // TODO: max_variance vs variance
+          return concrete_optimizer::utils::get_external_partition(
+              name, logPolySize, glweDim, lweDim, max_variance, max_variance);
+        };
+
+    if (auto srcPartitionAttr =
+            op.getAttrOfType<mlir::concretelang::FHE::PartitionAttr>("src")) {
+      assert(
+          !op.getAttrOfType<mlir::concretelang::FHE::PartitionAttr>("dest") &&
+          "ChangePartition: can't have both src and dest partitions set");
+
+      auto partition = partitionBuilder(srcPartitionAttr);
+
+      index[val] = dagBuilder.add_change_partition_with_src(
+          encrypted_input, *partition, *loc_to_location(val.getLoc()));
+    } else if (auto destPartitionAttr =
+                   op.getAttrOfType<mlir::concretelang::FHE::PartitionAttr>(
+                       "dest")) {
+      auto partition = partitionBuilder(destPartitionAttr);
+
+      index[val] = dagBuilder.add_change_partition_with_dst(
+          encrypted_input, *partition, *loc_to_location(val.getLoc()));
+    } else {
+      assert(false &&
+             "ChangePartition: one of src or dest partitions need to be set");
+    }
     return index[val];
   }
 
@@ -876,6 +928,10 @@ struct FunctionToDag {
       return getEintTypeOfLut(lut);
     }
     return nullptr;
+  }
+
+  bool isChangePartition(mlir::Operation &op) {
+    return llvm::isa<mlir::concretelang::FHE::ChangePartitionEintOp>(op);
   }
 
   bool isRound(mlir::Operation &op) {
