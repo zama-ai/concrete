@@ -54,7 +54,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--strategy",
         type=str,
-        default=None,
+        default="multi",
         action="store",
         help="Which optimization strategy to use in execution tests (v0, mono or multi)",
     )
@@ -95,7 +95,7 @@ def pytest_sessionstart(session):
         OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.V0
     elif strategy == "multi":
         OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MULTI
-    else:
+    elif strategy == "mono":
         OPTIMIZATION_STRATEGY = fhe.ParameterSelectionStrategy.MONO
 
     USE_GPU = session.config.getoption("--use_gpu", default=False)
