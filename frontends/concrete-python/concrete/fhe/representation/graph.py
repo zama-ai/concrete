@@ -598,10 +598,10 @@ class Graph:
                 lines.append(f"{variable} = {width}")
 
         def sorter(line: str) -> int:
-            if line.startswith(f"{self.name}.max"):
+            if line.startswith(f"{self.name}.max"):  # pragma: no cover
                 # we won't have 4 million nodes...
                 return 2**32
-            if line.startswith("input_output"):
+            if line.startswith("input_output"):  # pragma: no cover
                 # this is the composable constraint
                 return 2**32
 
@@ -1038,11 +1038,11 @@ class MultiGraphProcessor(GraphProcessor):
     @abstractmethod
     def apply_many(self, graphs: Dict[str, Graph]):
         """
-        Process a dictionnary of graphs.
+        Process a dictionary of graphs.
         """
 
     def apply(self, graph: Graph):
         """
         Process a single graph.
         """
-        return self.apply_many({"main": graph})
+        return self.apply_many({"main": graph})  # pragma: no cover

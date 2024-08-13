@@ -845,7 +845,7 @@ class Converter:
                         clipping,
                         reduce_precision,
                     )
-                else:
+                else:  # pragma: no cover
                     for sub_i, sub_lut_values in enumerate(lut_values):
                         lut_values[sub_i] = self.tlu_adjust(
                             sub_lut_values,

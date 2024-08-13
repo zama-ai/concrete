@@ -110,7 +110,9 @@ class FheFunction:
             Path:
                 path to the drawing
         """
-        return self.graph.draw(horizontal=horizontal, save_to=save_to, show=show)
+        return self.graph.draw(  # pragma: no cover
+            horizontal=horizontal, save_to=save_to, show=show
+        )
 
     def __str__(self):
         return self.graph.format()

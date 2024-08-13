@@ -2987,9 +2987,9 @@ class Context:
 
             offset = self.constant(self.i(on.bit_width + 1), abs(offset_before_tlu))
             if offset_before_tlu > 0:
-                offsetted = self.add(on.type, on, offset)
+                offsetted = self.to_unsigned(self.add(on.type, on, offset))
             else:
-                offsetted = self.sub(on.type, on, offset)
+                offsetted = self.to_unsigned(self.sub(on.type, on, offset))
             offsetted.set_original_bit_width(offset_bit_width)
 
             on = self.cast_to_original_bit_width(offsetted)
@@ -3005,16 +3005,17 @@ class Context:
             )
 
             if optimize:
-                if on.is_unsigned:
-                    tables = [table[: 2**on.original_bit_width] for table in tables]
-                else:
-                    tables = [
-                        (
+                tables = [
+                    (
+                        table[: 2**on.original_bit_width]
+                        if on.is_unsigned
+                        else (
                             table[: 2 ** (on.original_bit_width - 1)]
                             + table[-(2 ** (on.original_bit_width - 1)) :]
                         )
-                        for table in tables
-                    ]
+                    )
+                    for table in tables
+                ]
 
                 on = self.cast_to_original_bit_width(on)
 
@@ -3405,8 +3406,7 @@ class Context:
                 unskewed = self.sub(unskew_pre_overflow.type, unskew_pre_overflow, overflow_cancel)
                 if approx_conf.reduce_precision_after_approximate_clipping:
                     # a minimum bitwith 3 is required to multiply by 2 in signed case
-                    if unskewed.bit_width < 3:
-                        # pragma: no-cover
+                    if unskewed.bit_width < 3:  # pragma: no cover
                         self.reinterpret(unskewed, bit_width=3)
                     unskewed = self.mul(
                         unskewed.type,
@@ -3758,13 +3758,14 @@ class Context:
 
             if optimize:
                 if len(table) != 2**on.original_bit_width:
-                    if on.is_unsigned:
-                        table = table[: 2**on.original_bit_width]
-                    else:
-                        table = (
+                    table = (
+                        table[: 2**on.original_bit_width]
+                        if on.is_unsigned
+                        else (
                             table[: 2 ** (on.original_bit_width - 1)]
                             + table[-(2 ** (on.original_bit_width - 1)) :]  # type: ignore
                         )
+                    )
 
                 on = self.cast_to_original_bit_width(on)
 

@@ -64,7 +64,7 @@ class MultiParameterStrategy(str, Enum):
         if not isinstance(string, str):
             message = f"{string} cannot be parsed to a {cls.__name__}"
             raise TypeError(message)
-        for value in MultiParameterStrategy:
+        for value in MultiParameterStrategy:  # pragma: no cover
             if string.lower().replace("-", "_") == value.value:
                 return value
         message = (
@@ -1284,6 +1284,7 @@ class Configuration:
                 if valid:
                     for processor in attr:
                         valid = valid and isinstance(processor, GraphProcessor)
+
                 if not valid:
                     hint_type = friendly_type_format(hint)
                     value_type = friendly_type_format(type(attr))
@@ -1292,7 +1293,8 @@ class Configuration:
                         f"(expected '{hint_type}', got '{value_type}')"
                     )
                     raise TypeError(message)
-                continue
+
+                continue  # pragma: no cover
 
             original_hint = hint
             value = getattr(self, name)

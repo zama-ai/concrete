@@ -5,6 +5,7 @@ Tests of everything related to modules.
 import inspect
 import re
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -324,6 +325,7 @@ def test_compiled_simulation(helpers):
         fhe_simulation=True,
     )
 
+    assert module.client is None
     assert module.keys is None
     assert module.inc.simulate(5) == 6
     assert module.dec.simulate(5) == 4
@@ -648,3 +650,71 @@ def test_non_composable_due_to_increasing_noise():
             return fhe.refresh(x + y)
 
     assert Fixed.compile(inputsets)
+
+
+def test_client_server_api(helpers):
+    """
+    Test client/server API of modules.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return x + 1
+
+        @fhe.function({"x": "encrypted"})
+        def dec(x):
+            return x - 1
+
+    @fhe.compiler({"x": "encrypted"})
+    def function(x):
+        return x + 42
+
+    inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
+    module = Module.compile({"inc": inputset, "dec": inputset}, verbose=True)
+
+    module.keygen()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_dir_path = Path(tmp_dir)
+
+        server_path = tmp_dir_path / "server.zip"
+        module.server.save(server_path)
+
+        client_path = tmp_dir_path / "client.zip"
+        module.client.save(client_path)
+
+        server = fhe.Server.load(server_path)
+
+        serialized_client_specs = server.client_specs.serialize()
+        client_specs = fhe.ClientSpecs.deserialize(serialized_client_specs)
+
+        clients = [
+            fhe.Client(client_specs, configuration.insecure_key_cache_location),
+            fhe.Client.load(client_path, configuration.insecure_key_cache_location),
+        ]
+
+        for client in clients:
+            arg = client.encrypt(10, function_name="inc")
+
+            serialized_arg = arg.serialize()
+            serialized_evaluation_keys = client.evaluation_keys.serialize()
+
+            deserialized_arg = fhe.Value.deserialize(serialized_arg)
+            deserialized_evaluation_keys = fhe.EvaluationKeys.deserialize(
+                serialized_evaluation_keys,
+            )
+
+            result = server.run(
+                deserialized_arg,
+                evaluation_keys=deserialized_evaluation_keys,
+                function_name="inc",
+            )
+            serialized_result = result.serialize()
+
+            deserialized_result = fhe.Value.deserialize(serialized_result)
+            output = client.decrypt(deserialized_result, function_name="inc")
+
+            assert output == 11
