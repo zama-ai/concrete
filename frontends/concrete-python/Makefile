@@ -58,7 +58,7 @@ pytest-default:
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \
 		--cov=concrete.fhe \
-		--cov-fail-under=98.9 \
+		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
@@ -79,7 +79,7 @@ pytest-multi:
 		--precision=multi \
 		--strategy=multi \
 		--cov=concrete.fhe \
-		--cov-fail-under=99 \
+		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"

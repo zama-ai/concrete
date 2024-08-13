@@ -28,15 +28,16 @@ def to_native(value: Union[Tracer, TFHERSInteger]) -> Union[Tracer, int, np.ndar
     Returns:
         Union[Tracer, int, ndarray]: Tracer if the input is a tracer. int or ndarray otherwise.
     """
-    if isinstance(value, Tracer):
+
+    if isinstance(value, Tracer) and isinstance(value.output.dtype, TFHERSIntegerType):
         dtype = value.output.dtype
-        if not isinstance(dtype, TFHERSIntegerType):
-            msg = f"tracer didn't contain an output of TFHEInteger type. Type is: {dtype}"
-            raise TypeError(msg)
         return _trace_to_native(value, dtype)
-    assert isinstance(value, TFHERSInteger)
-    dtype = value.dtype
-    return _eval_to_native(value)
+
+    if isinstance(value, TFHERSInteger):
+        return _eval_to_native(value)
+
+    msg = "tfhers.to_native should be called with a TFHERSInteger"
+    raise ValueError(msg)
 
 
 def from_native(

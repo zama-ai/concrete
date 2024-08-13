@@ -451,3 +451,50 @@ def test_graph_processors(helpers):
     assert pre_processor1.input_bit_width == 3
     assert post_processor1.input_bit_width == 8 if configuration.single_precision else 4
     assert post_processor2.node_count == 5
+
+
+@pytest.mark.parametrize(
+    "function,encryption_status,inputset,expected_inputs_count,expected_outputs_count",
+    [
+        pytest.param(
+            lambda x: (x + 1, x * 2),
+            {"x": "encrypted"},
+            fhe.inputset(fhe.uint4),
+            1,
+            2,
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {"x": "encrypted", "y": "encrypted"},
+            fhe.inputset(fhe.uint4, fhe.uint4),
+            2,
+            1,
+        ),
+        pytest.param(
+            lambda x, y, z: (x + y, x + z, y + z),
+            {"x": "encrypted", "y": "encrypted", "z": "encrypted"},
+            fhe.inputset(fhe.uint4, fhe.uint4, fhe.uint4),
+            3,
+            3,
+        ),
+    ],
+)
+def test_graph_inputs_outputs_count(
+    function,
+    encryption_status,
+    inputset,
+    expected_inputs_count,
+    expected_outputs_count,
+    helpers,
+):
+    """
+    Test `inputs_count` property of `Graph`.
+    """
+
+    configuration = helpers.configuration()
+
+    compiler = fhe.Compiler(function, encryption_status)
+    graph = compiler.trace(inputset, configuration)
+
+    assert graph.inputs_count == expected_inputs_count
+    assert graph.outputs_count == expected_outputs_count

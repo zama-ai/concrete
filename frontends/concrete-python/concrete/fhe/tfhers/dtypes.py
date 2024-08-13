@@ -37,7 +37,7 @@ class TFHERSIntegerType(Integer):
             f"{self.bit_width}, {self.carry_width}, {self.msg_width}>"
         )
 
-    def encode(self, value: Union[int, np.integer, np.ndarray]) -> np.ndarray:
+    def encode(self, value: Union[int, np.integer, list, np.ndarray]) -> np.ndarray:
         """Encode a scalar or tensor to tfhers integers.
 
         Args:
@@ -57,14 +57,22 @@ class TFHERSIntegerType(Integer):
             return np.array(
                 [int(value_bin[i : i + msg_width], 2) for i in range(0, bit_width, msg_width)]
             )
+
+        if isinstance(value, list):  # pragma: no cover
+            try:
+                value = np.array(value)
+            except Exception:  # pylint: disable=broad-except
+                pass  # pragma: no cover
+
         if isinstance(value, np.ndarray):
             return np.array([self.encode(int(v)) for v in value.flatten()]).reshape(
                 value.shape + (bit_width // msg_width,)
             )
-        msg = f"can only encode int or ndarray, but got {type(value)}"
+
+        msg = f"can only encode int, np.integer, list or ndarray, but got {type(value)}"
         raise TypeError(msg)
 
-    def decode(self, value: np.ndarray) -> Union[int, np.ndarray]:
+    def decode(self, value: Union[list, np.ndarray]) -> Union[int, np.ndarray]:
         """Decode a tfhers-encoded integer (scalar or tensor).
 
         Args:
@@ -79,15 +87,28 @@ class TFHERSIntegerType(Integer):
         bit_width = self.bit_width
         msg_width = self.msg_width
         expected_ct_shape = bit_width // msg_width
+
+        if isinstance(value, list):  # pragma: no cover
+            try:
+                value = np.array(value)
+            except Exception:  # pylint: disable=broad-except
+                pass  # pragma: no cover
+
+        if not isinstance(value, np.ndarray) or not np.issubdtype(value.dtype, np.integer):
+            msg = f"can only decode list of integers or ndarray of integers, but got {type(value)}"
+            raise TypeError(msg)
+
         if value.shape[-1] != expected_ct_shape:
             msg = (
-                f"bad encoding: expected value with last shape being {expected_ct_shape} "
-                f"but got {value.shape[-1]}"
+                f"expected the last dimension of encoded value "
+                f"to be {expected_ct_shape} but it's {value.shape[-1]}"
             )
             raise ValueError(msg)
+
         if len(value.shape) == 1:
             # reversed because it's msb first and we are computing powers lsb first
             return sum(v << i * msg_width for i, v in enumerate(reversed(value)))
+
         cts = value.reshape((-1, expected_ct_shape))
         return np.array([self.decode(ct) for ct in cts]).reshape(value.shape[:-1])
 

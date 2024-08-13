@@ -288,6 +288,11 @@ def test_client_server_api(helpers):
 
         assert str(excinfo.value) == "Loaded server objects cannot be saved again via MLIR"
 
+        with pytest.raises(ValueError) as excinfo:
+            client.encrypt([1, 2, 3], function_name="foo")
+
+        assert str(excinfo.value) == "Function `foo` is not in the module"
+
         server.cleanup()
 
 

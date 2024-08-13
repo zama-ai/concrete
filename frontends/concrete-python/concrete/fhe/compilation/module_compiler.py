@@ -262,7 +262,7 @@ class NotComposable:
         """
         Return an iterator over composition rules.
         """
-        return []
+        return []  # pragma: no cover
 
 
 class AllComposable:
@@ -339,8 +339,8 @@ class AllOutputs(NamedTuple):
         """
         Return an iterator over the possible outputs of the wire output.
         """
-        assert self.func.graph
-        return map(
+        assert self.func.graph  # pragma: no cover
+        return map(  # pragma: no cover
             CompositionClause.create,
             zip(repeat(self.func.name), range(self.func.graph.outputs_count)),
         )
@@ -372,8 +372,8 @@ class AllInputs(NamedTuple):
         """
         Return an iterator over the possible inputs of the wire input.
         """
-        assert self.func.graph
-        return map(
+        assert self.func.graph  # pragma: no cover
+        return map(  # pragma: no cover
             CompositionClause.create,
             zip(repeat(self.func.name), range(self.func.graph.inputs_count)),
         )

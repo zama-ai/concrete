@@ -188,6 +188,8 @@ def test_bad_plain_bit_extraction(
         pytest.param(3, True, lambda x: fhe.bits(x)[0:3], id="signed-3b[0:3] + 100"),
         pytest.param(5, True, lambda x: fhe.bits(x)[0] + 100, id="signed-5b[0] + 100"),
         pytest.param(5, True, lambda x: fhe.bits(x)[1:3] + 100, id="signed-5b[1:3] + 100"),
+        # unsigned high bits
+        pytest.param(10, False, lambda x: fhe.bits(x)[5:15], id="unsigned-10b[5:15]"),
     ],
 )
 def test_bit_extraction(input_bit_width, input_is_signed, operation, helpers):
@@ -347,3 +349,28 @@ def test_bit_extract_to_1_tlu(helpers):
     circuit = operation.compile(inputset, helpers.configuration())
     assert mlir_count_ops(circuit.mlir, "lsb") == 2
     assert mlir_count_ops(circuit.mlir, "lookup") == 0
+
+
+def test_bit_extraction_in_direct_circuit(helpers):
+    """
+    Test single bit extraction in a direct circuit and check assigned bit width.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.circuit({"x": "encrypted"}, configuration)
+    def circuit(x: fhe.uint4):
+        return fhe.bits(x)[0]
+
+    assert (
+        str(circuit).strip()
+        == (
+            """
+
+%0 = x                  # EncryptedScalar<uint4>
+%1 = bits(%0)[0]        # EncryptedScalar<uint1>
+return %1
+
+        """
+        ).strip()
+    )
