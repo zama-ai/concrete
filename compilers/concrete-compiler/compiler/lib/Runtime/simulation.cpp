@@ -55,7 +55,79 @@ uint64_t sim_keyswitch_lwe_u64(uint64_t plaintext, uint32_t level,
   double variance = concrete_cpu_variance_keyswitch(input_lwe_dim, base_log,
                                                     level, 64, variance_ksk);
   uint64_t ks_noise = gaussian_noise(0, variance);
+  const char* disabling = std::getenv("CONCRETE_SIMULATION_DISABLE_KEYSWITCH_NOISE");
+  if (disabling != nullptr) {
+    return plaintext;
+  }
   return plaintext + ks_noise;
+}
+
+const uint64_t NOISE_PATTERN_BITWIDTH = 5;
+const uint64_t NOISE_PATTERN_MASK = 31;
+
+const double OFF_BY_ONE_PROBA[32] = {
+  0 / 3500,		// 0, 0.0
+	0 / 3500,		// 1, 0.0
+	0 / 3500,		// 2, 0.0
+	0 / 3500,		// 3, 0.0
+	0 / 3500,		// 4, 0.0
+	0 / 3500,		// 5, 0.0
+	0 / 3500,		// 6, 0.0
+	0 / 3500,		// 7, 0.0
+	0 / 3500,		// 8, 0.0
+	0 / 3500,		// 9, 0.0
+	0 / 3500,		// 10, 0.0
+	3.0 / 3500,		// 11, 0.0008571428571428571
+	18.0 / 3500,	// 12, 0.005142857142857143
+	97.0 / 3500,	// 13, 0.027714285714285716
+	392.0 / 3500,	// 14, 0.112
+	922.0 / 3500,	// 15, 0.2634285714285714
+	1678.0 / 3500,// 16, 0.4794285714285714
+	845.0 / 3500,	// 17, 0.24142857142857144
+	282.0 / 3500,	// 18, 0.08057142857142857
+	92.0 / 3500,	// 19, 0.026285714285714287
+	20.0 / 3500,	// 20, 0.005714285714285714
+	2.0 / 3500,		// 21, 0.0005714285714285715
+	0 / 3500,		// 22, 0.0
+	0 / 3500,		// 23, 0.0
+	0 / 3500,		// 24, 0.0
+	0 / 3500,		// 25, 0.0
+	0 / 3500,		// 26, 0.0
+	0 / 3500,		// 27, 0.0
+	0 / 3500,		// 28, 0.0
+	0 / 3500,		// 29, 0.0
+	0 / 3500,		// 30, 0.0
+	0 / 3500,		// 31, 0.0
+};
+
+const int OFF_BY_ONE_DIR[32] = {
+  +1, +1, +1, +1, +1, +1, +1, +1, +1, +1, +1, +1, +1, +1, +1, +1,
+  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+};
+
+static std::bernoulli_distribution OFF_BY_ONE_DIST[32] = {
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[0]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[1]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[2]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[3]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[4]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[5]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[6]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[7]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[8]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[9]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[10]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[11]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[12]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[13]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[14]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[15]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[16]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[17]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[18]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[19]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[20]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[21]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[22]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[23]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[24]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[25]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[26]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[27]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[28]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[29]),
+  std::bernoulli_distribution(OFF_BY_ONE_PROBA[30]), std::bernoulli_distribution(OFF_BY_ONE_PROBA[31]),
+};
+
+static std::default_random_engine generator(std::random_device{}());
+
+bool random_boolean(std::bernoulli_distribution &distribution) {
+  return distribution(generator);
 }
 
 uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
@@ -65,6 +137,9 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
                                uint32_t level, uint32_t base_log,
                                uint32_t glwe_dim, bool overflow_detection,
                                char *loc) {
+  const char* disabling_pbs_ms_noise = std::getenv("CONCRETE_SIMULATION_DISABLE_PBS_MS_NOISE");
+  const char* disabling_noise_pattern = std::getenv("CONCRETE_SIMULATION_DISABLE_NOISE_PATTERN_DETECTION");
+
   auto tlu = tlu_aligned + tlu_offset;
 
   // modulus switching
@@ -79,10 +154,36 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
   noise >>= 1;
   // mod_switch
   uint64_t mod_switched = plaintext >> shift;
-  mod_switched += mod_switched & 1;
+  if (disabling_noise_pattern != nullptr) {
+    mod_switched += mod_switched & 1;
+  }
   mod_switched >>= 1;
-  mod_switched += noise;
+  if (disabling_pbs_ms_noise == nullptr) {
+    mod_switched += noise;
+  };
   mod_switched %= 2 * poly_size;
+
+  // detect cell size
+  int cell_size = 0;
+  int log2_cell_size;
+  for (log2_cell_size = 0; log2_cell_size < 8; log2_cell_size++) {
+    if (tlu[1 << log2_cell_size] != tlu[0]) {
+      cell_size = 1 << log2_cell_size;
+      break;
+    }
+  }
+  assert(cell_size != 0);
+  if (tlu[cell_size] == tlu[2*cell_size]) {
+    cell_size *= 2;
+    log2_cell_size += 1;
+  }
+
+  // depending on the noise pattern, we add a pseudo-random off-by-one error
+  int shift_noise_pattern = shift + 1 - NOISE_PATTERN_BITWIDTH + log2_cell_size;
+  uint64_t noise_pattern = (plaintext >> shift_noise_pattern) & NOISE_PATTERN_MASK;
+  if (disabling_noise_pattern == nullptr && OFF_BY_ONE_PROBA[noise_pattern] != 0.0 && random_boolean(OFF_BY_ONE_DIST[noise_pattern])) {
+    mod_switched += OFF_BY_ONE_DIR[noise_pattern] * cell_size;
+  }
 
   uint64_t out;
   // blind rotate & sample extract:
