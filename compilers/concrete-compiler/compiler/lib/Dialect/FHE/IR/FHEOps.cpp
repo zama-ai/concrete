@@ -266,9 +266,59 @@ mlir::LogicalResult RoundEintOp::verify() {
   return mlir::success();
 }
 
+bool verifyPartitionConsistency(FHE::ChangePartitionEintOp *op) {
+  // one of the two attr has to be set, but not both
+  FHE::PartitionAttr partitionAttr;
+  int partitionCount = 0;
+  if (auto src = op->getSrc()) {
+    partitionCount++;
+    partitionAttr = src.value();
+  }
+  if (auto dest = op->getDest()) {
+    partitionCount++;
+    partitionAttr = dest.value();
+  }
+  if (partitionCount == 2) {
+    op->emitOpError(
+        "only one partition need to be specified, not both src and dest");
+    return false;
+  }
+  return true;
+}
+
 mlir::LogicalResult ChangePartitionEintOp::verify() {
-  auto input = this->getInput().getType().cast<FheIntegerInterface>();
-  auto output = this->getResult().getType().cast<FheIntegerInterface>();
+  FHE::FheIntegerInterface input, output;
+
+  if (auto inputType = this->getInput()
+                           .getType()
+                           .dyn_cast_or_null<mlir::RankedTensorType>()) {
+    auto outputType =
+        this->getResult().getType().dyn_cast_or_null<mlir::RankedTensorType>();
+    if (!outputType) {
+      this->emitOpError()
+          << "output should be a tensor if the input is a tensor";
+      return mlir::failure();
+    }
+    auto inputShape = inputType.getShape();
+    auto outputShape = outputType.getShape();
+
+    if (inputShape != outputShape) {
+      this->emitOpError()
+          << "input and output should either be both tensors or scalars";
+      return mlir::failure();
+    }
+    input = inputType.getElementType().cast<FHE::FheIntegerInterface>();
+    output = outputType.getElementType().cast<FHE::FheIntegerInterface>();
+  } else {
+    input = this->getInput().getType().dyn_cast_or_null<FheIntegerInterface>();
+    output =
+        this->getResult().getType().dyn_cast_or_null<FheIntegerInterface>();
+    if (!input || !output) {
+      this->emitOpError()
+          << "input and output should either be both tensors or scalars";
+      return mlir::failure();
+    }
+  }
 
   if (!verifyEncryptedIntegerInputAndResultConsistency(*this->getOperation(),
                                                        input, output)) {

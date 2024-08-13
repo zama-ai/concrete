@@ -169,7 +169,7 @@ pub fn get_noise_br(
     });
     for cmux_quantity in cmux_quantities {
         if cmux_quantity.decomp.level == pbs_level {
-            if pbs_log2_base.is_some() && cmux_quantity.decomp.log2_base == pbs_log2_base.unwrap() {
+            if pbs_log2_base.is_some() && cmux_quantity.decomp.log2_base != pbs_log2_base.unwrap() {
                 return Err(MaxVarianceError::PbsBaseLogNotFound);
             }
             return Ok(cmux_quantity.noise_br(lwe_dim));

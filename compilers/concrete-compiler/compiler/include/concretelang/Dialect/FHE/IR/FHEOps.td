@@ -534,12 +534,23 @@ def FHE_ChangePartitionEintOp: FHE_Op<"change_partition", [Pure, UnaryEint]> {
 
       Example:
       ```mlir
-        %new_eint = "FHE.change_partition"(%eint): (!FHE.eint<16>) -> (!FHE.eint<16>)
-    ```
+        %from_src = "FHE.change_partition"(%eint) {src = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<16>) -> (!FHE.eint<16>)
+        %to_dest = "FHE.change_partition"(%eint) {dest = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<16>) -> (!FHE.eint<16>)
+      ```
     }];
 
-    let arguments = (ins FHE_AnyEncryptedInteger:$input, OptionalAttr<FHE_PartitionAttr>:$src, OptionalAttr<FHE_PartitionAttr>:$dest);
-    let results = (outs FHE_AnyEncryptedInteger);
+    let arguments = (ins
+        Type<Or<[
+            FHE_AnyEncryptedInteger.predicate,
+            And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>
+        ]>>:$input,
+        OptionalAttr<FHE_PartitionAttr>:$src,
+        OptionalAttr<FHE_PartitionAttr>:$dest
+    );
+    let results = (outs Type<Or<[
+        FHE_AnyEncryptedInteger.predicate,
+        And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>
+    ]>>);
     let hasVerifier = 1;
 }
 

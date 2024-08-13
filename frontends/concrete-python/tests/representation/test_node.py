@@ -48,18 +48,8 @@ def default_tfhers_dtype() -> tfhers.TFHERSIntegerType:
         761,
         1,
         2048,
-        6.36835566258815e-06,
-        3.1529322391500584e-16,
         23,
         1,
-        3,
-        5,
-        4,
-        4,
-        5,
-        -40.05,
-        None,
-        True,
     )
     return tfhers.int8_2_2(tfhers_params)
 

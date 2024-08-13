@@ -12,7 +12,6 @@
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 
-include "concretelang/Dialect/FHE/IR/FHEAttrs.td"
 include "concretelang/Dialect/FHE/Interfaces/FHEInterfaces.td"
 
 include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.td"
@@ -1412,28 +1411,6 @@ def FHELinalg_ReinterpretPrecisionEintOp: FHELinalg_Op<"reinterpret_precision", 
     }];
 
     let arguments = (ins Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input);
-    let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$output);
-    let hasVerifier = 1;
-}
-
-def FHELinalg_ChangePartitionEintOp: FHELinalg_Op<"change_partition", [Pure, TensorUnaryEint, UnaryEint]> {
-
-    let summary = "Change partition if necessary.";
-
-    let description = [{
-      Changing the partition of a ciphertext.
-      If necessary, it keyswitch the ciphertext to a different key having a different set of parameters than the original one.
-
-      Example:
-      ```mlir
-        %new_eint = "FHE.change_partition"(%eint): (tensor<2x3x!FHE.eint<16>>) -> (tensor<2x3x!FHE.eint<16>>)
-    }];
-
-    let arguments = (ins
-        Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$input,
-        OptionalAttr<FHE_PartitionAttr>:$src,
-        OptionalAttr<FHE_PartitionAttr>:$dest
-    );
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$output);
     let hasVerifier = 1;
 }

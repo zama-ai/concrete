@@ -264,12 +264,13 @@ Effects: MemoryEffects::Effect{}
 
 Change partition if necessary.
 
-  Changing the partition of a ciphertext.
-  If necessary, it keyswitch the ciphertext to a different key having a different set of parameters than the original one.
+Changing the partition of a ciphertext.
+If necessary, it keyswitch the ciphertext to a different key having a different set of parameters than the original one.
 
-  Example:
-  ```mlir
-    %new_eint = "FHE.change_partition"(%eint): (!FHE.eint<16>) -> (!FHE.eint<16>)
+Example:
+```mlir
+  %from_src = "FHE.change_partition"(%eint) {src = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<16>) -> (!FHE.eint<16>)
+  %to_dest = "FHE.change_partition"(%eint) {dest = #FHE.partition<name "tfhers", lwe_dim 761, glwe_dim 1, poly_size 2048, pbs_base_log 23, pbs_level 1>} : (!FHE.eint<16>) -> (!FHE.eint<16>)
 ```
 
 Traits: AlwaysSpeculatableImplTrait
@@ -952,9 +953,11 @@ Syntax:
 ```
 #FHE.partition<
   StringAttr,   # name
-  int,   # lweDim
-  int,   # glweDim
-  int   # polySize
+  uint64_t,   # lweDim
+  uint64_t,   # glweDim
+  uint64_t,   # polySize
+  uint64_t,   # pbsBaseLog
+  uint64_t   # pbsLevel
 >
 ```
 
@@ -964,9 +967,11 @@ Syntax:
 | Parameter | C++ type | Description |
 | :-------: | :-------: | ----------- |
 | name | `StringAttr` |  |
-| lweDim | `int` |  |
-| glweDim | `int` |  |
-| polySize | `int` |  |
+| lweDim | `uint64_t` |  |
+| glweDim | `uint64_t` |  |
+| polySize | `uint64_t` |  |
+| pbsBaseLog | `uint64_t` |  |
+| pbsLevel | `uint64_t` |  |
 
 ## Type definition
 

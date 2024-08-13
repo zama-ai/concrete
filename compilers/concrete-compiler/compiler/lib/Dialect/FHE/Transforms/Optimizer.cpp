@@ -58,17 +58,6 @@ struct OptimizerPartitionFrontierMaterializationPass
     func.walk([&](mlir::Operation *producer) {
       mlir::IRRewriter rewriter(producer->getContext());
 
-      // Remove the change_partition op.
-      // TODO: The crypto parameters used in the op should be considered before
-      // removal
-      if (mlir::dyn_cast_or_null<FHELinalg::ChangePartitionEintOp>(producer) ||
-          mlir::dyn_cast_or_null<FHE::ChangePartitionEintOp>(producer)) {
-        rewriter.startRootUpdate(func);
-        rewriter.replaceOp(producer, producer->getOperand(0));
-        rewriter.finalizeRootUpdate(func);
-        return;
-      }
-
       std::optional<uint64_t> producerOid =
           getOid(producer, OperationKind::PRODUCER);
 

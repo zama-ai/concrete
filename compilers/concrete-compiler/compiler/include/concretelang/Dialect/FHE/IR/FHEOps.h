@@ -27,26 +27,6 @@ bool verifyEncryptedIntegerInputsConsistency(mlir::Operation &op,
                                              FheIntegerInterface &a,
                                              FheIntegerInterface &b);
 
-template <typename Op> bool verifyPartitionConsistency(Op op) {
-  // one of the two attr has to be set, but not both
-  FHE::PartitionAttr partitionAttr;
-  int partitionCount = 0;
-  if (auto src = op->getSrc()) {
-    partitionCount++;
-    partitionAttr = src.value();
-  }
-  if (auto dest = op->getDest()) {
-    partitionCount++;
-    partitionAttr = dest.value();
-  }
-  if (partitionCount == 2) {
-    op->emitOpError(
-        "only one partition need to be specified, not both src and dest");
-    return false;
-  }
-  return true;
-}
-
 /// Shared error message for all ApplyLookupTable variant Op (several Dialect)
 /// E.g. FHE.apply_lookup_table(input, lut)
 /// Message when the lut tensor has an invalid size,

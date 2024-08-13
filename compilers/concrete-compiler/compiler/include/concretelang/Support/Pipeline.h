@@ -29,6 +29,8 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
                      optimizer::Config config,
                      std::function<bool(mlir::Pass *)> enablePass);
 
+uint64_t removeChangePartitionOps(mlir::ModuleOp module);
+
 mlir::LogicalResult
 markFHELinalgForTiling(mlir::MLIRContext &context, mlir::ModuleOp &module,
                        llvm::ArrayRef<int64_t> tileSizes,

@@ -38,6 +38,7 @@
 #include "concretelang/Dialect/Concrete/Transforms/Passes.h"
 #include "concretelang/Dialect/FHE/Analysis/ConcreteOptimizer.h"
 #include "concretelang/Dialect/FHE/Analysis/MANP.h"
+#include "concretelang/Dialect/FHE/IR/FHEOps.h"
 #include "concretelang/Dialect/FHE/Transforms/BigInt/BigInt.h"
 #include "concretelang/Dialect/FHE/Transforms/Boolean/Boolean.h"
 #include "concretelang/Dialect/FHE/Transforms/DynamicTLU/DynamicTLU.h"
@@ -146,6 +147,21 @@ getFHEContextFromFHE(mlir::MLIRContext &context, mlir::ModuleOp &module,
     description = {*constraint, std::move(dag)};
   }
   return std::move(description);
+}
+
+uint64_t removeChangePartitionOps(mlir::ModuleOp module) {
+  // Remove change_partition ops as they are only needed
+  uint64_t count = 0;
+  module.walk([&](mlir::Operation *producer) {
+    mlir::IRRewriter rewriter(producer->getContext());
+    if (mlir::dyn_cast_or_null<FHE::ChangePartitionEintOp>(producer)) {
+      count++;
+      rewriter.startRootUpdate(module);
+      rewriter.replaceOp(producer, producer->getOperand(0));
+      rewriter.finalizeRootUpdate(module);
+    }
+  });
+  return count;
 }
 
 mlir::LogicalResult materializeOptimizerPartitionFrontiers(

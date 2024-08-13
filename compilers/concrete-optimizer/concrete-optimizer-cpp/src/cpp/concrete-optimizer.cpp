@@ -944,6 +944,7 @@ namespace concrete_optimizer {
   struct Dag;
   struct DagBuilder;
   struct Location;
+  struct ExternalPartition;
   struct Weights;
   enum class Encoding : ::std::uint8_t;
   enum class MultiParamStrategy : ::std::uint8_t;
@@ -1000,6 +1001,8 @@ struct DagBuilder final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, ::rust::Slice<double const> weights, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_change_partition_with_src(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &src_partition, ::concrete_optimizer::Location const &location) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_change_partition_with_dst(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &dst_partition, ::concrete_optimizer::Location const &location) noexcept;
   void tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept;
   ~DagBuilder() = delete;
 
@@ -1025,6 +1028,20 @@ private:
   };
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Location
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$ExternalPartition
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$ExternalPartition
+struct ExternalPartition final : public ::rust::Opaque {
+  ~ExternalPartition() = delete;
+
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$ExternalPartition
 
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Weights
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$Weights
@@ -1305,6 +1322,8 @@ extern "C" {
 ::std::size_t concrete_optimizer$cxxbridge1$DagBuilder$operator$alignof() noexcept;
 ::std::size_t concrete_optimizer$cxxbridge1$Location$operator$sizeof() noexcept;
 ::std::size_t concrete_optimizer$cxxbridge1$Location$operator$alignof() noexcept;
+::std::size_t concrete_optimizer$cxxbridge1$ExternalPartition$operator$sizeof() noexcept;
+::std::size_t concrete_optimizer$cxxbridge1$ExternalPartition$operator$alignof() noexcept;
 } // extern "C"
 
 namespace utils {
@@ -1312,6 +1331,10 @@ extern "C" {
 ::concrete_optimizer::Location *concrete_optimizer$utils$cxxbridge1$location_unknown() noexcept;
 
 ::concrete_optimizer::Location *concrete_optimizer$utils$cxxbridge1$location_from_string(::rust::Str string) noexcept;
+
+::concrete_optimizer::ExternalPartition *concrete_optimizer$utils$cxxbridge1$get_external_partition(::rust::String *name, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t internal_dim, double max_variance, double variance) noexcept;
+
+double concrete_optimizer$utils$cxxbridge1$get_noise_br(::concrete_optimizer::Options options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept;
 } // extern "C"
 } // namespace utils
 
@@ -1339,6 +1362,10 @@ void concrete_optimizer$cxxbridge1$DagBuilder$dump(::concrete_optimizer::DagBuil
 ::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_round_op(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
 
 ::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_unsafe_cast_op(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
+
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_change_partition_with_src(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &src_partition, ::concrete_optimizer::Location const &location) noexcept;
+
+::concrete_optimizer::dag::OperatorIndex concrete_optimizer$cxxbridge1$DagBuilder$add_change_partition_with_dst(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &dst_partition, ::concrete_optimizer::Location const &location) noexcept;
 
 void concrete_optimizer$cxxbridge1$DagBuilder$tag_operator_as_output(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex op) noexcept;
 
@@ -1426,6 +1453,14 @@ namespace utils {
   return concrete_optimizer$cxxbridge1$Location$operator$alignof();
 }
 
+::std::size_t ExternalPartition::layout::size() noexcept {
+  return concrete_optimizer$cxxbridge1$ExternalPartition$operator$sizeof();
+}
+
+::std::size_t ExternalPartition::layout::align() noexcept {
+  return concrete_optimizer$cxxbridge1$ExternalPartition$operator$alignof();
+}
+
 namespace utils {
 ::rust::Box<::concrete_optimizer::Location> location_unknown() noexcept {
   return ::rust::Box<::concrete_optimizer::Location>::from_raw(concrete_optimizer$utils$cxxbridge1$location_unknown());
@@ -1433,6 +1468,14 @@ namespace utils {
 
 ::rust::Box<::concrete_optimizer::Location> location_from_string(::rust::Str string) noexcept {
   return ::rust::Box<::concrete_optimizer::Location>::from_raw(concrete_optimizer$utils$cxxbridge1$location_from_string(string));
+}
+
+::rust::Box<::concrete_optimizer::ExternalPartition> get_external_partition(::rust::String name, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t internal_dim, double max_variance, double variance) noexcept {
+  return ::rust::Box<::concrete_optimizer::ExternalPartition>::from_raw(concrete_optimizer$utils$cxxbridge1$get_external_partition(&name, log2_polynomial_size, glwe_dimension, internal_dim, max_variance, variance));
+}
+
+double get_noise_br(::concrete_optimizer::Options options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept {
+  return concrete_optimizer$utils$cxxbridge1$get_noise_br(options, log2_polynomial_size, glwe_dimension, lwe_dim, pbs_level, pbs_log2_base);
 }
 } // namespace utils
 
@@ -1480,6 +1523,14 @@ namespace dag {
 
 ::concrete_optimizer::dag::OperatorIndex DagBuilder::add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept {
   return concrete_optimizer$cxxbridge1$DagBuilder$add_unsafe_cast_op(*this, input, rounded_precision, location);
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_change_partition_with_src(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &src_partition, ::concrete_optimizer::Location const &location) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_change_partition_with_src(*this, input, src_partition, location);
+}
+
+::concrete_optimizer::dag::OperatorIndex DagBuilder::add_change_partition_with_dst(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &dst_partition, ::concrete_optimizer::Location const &location) noexcept {
+  return concrete_optimizer$cxxbridge1$DagBuilder$add_change_partition_with_dst(*this, input, dst_partition, location);
 }
 
 void DagBuilder::tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept {
@@ -1563,6 +1614,10 @@ extern "C" {
 ::concrete_optimizer::Location *cxxbridge1$box$concrete_optimizer$Location$alloc() noexcept;
 void cxxbridge1$box$concrete_optimizer$Location$dealloc(::concrete_optimizer::Location *) noexcept;
 void cxxbridge1$box$concrete_optimizer$Location$drop(::rust::Box<::concrete_optimizer::Location> *ptr) noexcept;
+
+::concrete_optimizer::ExternalPartition *cxxbridge1$box$concrete_optimizer$ExternalPartition$alloc() noexcept;
+void cxxbridge1$box$concrete_optimizer$ExternalPartition$dealloc(::concrete_optimizer::ExternalPartition *) noexcept;
+void cxxbridge1$box$concrete_optimizer$ExternalPartition$drop(::rust::Box<::concrete_optimizer::ExternalPartition> *ptr) noexcept;
 
 ::concrete_optimizer::Dag *cxxbridge1$box$concrete_optimizer$Dag$alloc() noexcept;
 void cxxbridge1$box$concrete_optimizer$Dag$dealloc(::concrete_optimizer::Dag *) noexcept;
@@ -1662,6 +1717,18 @@ void Box<::concrete_optimizer::Location>::allocation::dealloc(::concrete_optimiz
 template <>
 void Box<::concrete_optimizer::Location>::drop() noexcept {
   cxxbridge1$box$concrete_optimizer$Location$drop(this);
+}
+template <>
+::concrete_optimizer::ExternalPartition *Box<::concrete_optimizer::ExternalPartition>::allocation::alloc() noexcept {
+  return cxxbridge1$box$concrete_optimizer$ExternalPartition$alloc();
+}
+template <>
+void Box<::concrete_optimizer::ExternalPartition>::allocation::dealloc(::concrete_optimizer::ExternalPartition *ptr) noexcept {
+  cxxbridge1$box$concrete_optimizer$ExternalPartition$dealloc(ptr);
+}
+template <>
+void Box<::concrete_optimizer::ExternalPartition>::drop() noexcept {
+  cxxbridge1$box$concrete_optimizer$ExternalPartition$drop(this);
 }
 template <>
 ::concrete_optimizer::Dag *Box<::concrete_optimizer::Dag>::allocation::alloc() noexcept {

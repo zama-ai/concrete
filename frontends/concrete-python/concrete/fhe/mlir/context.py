@@ -4003,75 +4003,28 @@ class Context:
         dest = None
         if isinstance(src_partition, tfhers.TFHERSParams):
             name = self.get_partition_name(src_partition)
-            # lwe_noise_distribution_std_dev_float_attr = MlirFloatAttr.get_f64(
-            #     src_partition.lwe_noise_distribution_std_dev, self.context
-            # )
-            # glwe_noise_distribution_std_dev_float_attr = MlirFloatAttr.get_f64(
-            #     src_partition.glwe_noise_distribution_std_dev, self.context
-            # )
-            # log2_p_fail_float_attr = MlirFloatAttr.get_f64(
-            #   src_partition.log2_p_fail, self.context
-            # )
             src = PartitionAttr.get(
                 self.context,
                 name,
                 src_partition.lwe_dimension,
                 src_partition.glwe_dimension,
                 src_partition.polynomial_size,
-                # lwe_noise_distribution_std_dev_float_attr,
-                # glwe_noise_distribution_std_dev_float_attr,
-                # src_partition.pbs_base_log,
-                # src_partition.pbs_level,
-                # src_partition.ks_base_log,
-                # src_partition.ks_level,
-                # src_partition.message_modulus,
-                # src_partition.carry_modulus,
-                # src_partition.max_noise_level,
-                # log2_p_fail_float_attr,
-                # src_partition.big_encryption_key,
-                # (
-                #     src_partition.ciphertext_modulus
-                #     if src_partition.ciphertext_modulus is not None
-                #     else -1
-                # ),
+                src_partition.pbs_base_log,
+                src_partition.pbs_level,
             )
         if isinstance(dest_partition, tfhers.TFHERSParams):
             name = self.get_partition_name(dest_partition)
-            # lwe_noise_distribution_std_dev_float_attr = MlirFloatAttr.get_f64(
-            #     dest_partition.lwe_noise_distribution_std_dev, self.context
-            # )
-            # glwe_noise_distribution_std_dev_float_attr = MlirFloatAttr.get_f64(
-            #     dest_partition.glwe_noise_distribution_std_dev, self.context
-            # )
-            # log2_p_fail_float_attr = MlirFloatAttr.get_f64(
-            #   dest_partition.log2_p_fail, self.context
-            # )
             dest = PartitionAttr.get(
                 self.context,
                 name,
                 dest_partition.lwe_dimension,
                 dest_partition.glwe_dimension,
                 dest_partition.polynomial_size,
-                # lwe_noise_distribution_std_dev_float_attr,
-                # glwe_noise_distribution_std_dev_float_attr,
-                # dest_partition.pbs_base_log,
-                # dest_partition.pbs_level,
-                # dest_partition.ks_base_log,
-                # dest_partition.ks_level,
-                # dest_partition.message_modulus,
-                # dest_partition.carry_modulus,
-                # dest_partition.max_noise_level,
-                # log2_p_fail_float_attr,
-                # dest_partition.big_encryption_key,
-                # (
-                #     dest_partition.ciphertext_modulus
-                #     if dest_partition.ciphertext_modulus is not None
-                #     else -1
-                # ),
+                dest_partition.pbs_base_log,
+                dest_partition.pbs_level,
             )
 
-        dialect = fhe if x.is_scalar else fhelinalg
-        operation = dialect.ChangePartitionEintOp
+        operation = fhe.ChangePartitionEintOp
         return self.operation(operation, x.type, x.result, src=src, dest=dest)
 
     # pylint: enable=missing-function-docstring

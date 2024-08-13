@@ -190,6 +190,8 @@ inline size_t getPolynomialSizeFromSolution(optimizer::Solution solution) {
   return 42;
 }
 
+concrete_optimizer::Options options_from_config(optimizer::Config config);
+
 } // namespace concretelang
 } // namespace mlir
 
