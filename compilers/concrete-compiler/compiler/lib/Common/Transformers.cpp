@@ -196,30 +196,43 @@ updateGateInfoAccordingValue(Message<concreteprotocol::GateInfo> &gate,
   }
   auto gateCiphertext = gateTypeInfo.getLweCiphertext();
   auto gateCompression = gateCiphertext.getCompression();
-  if (gateCompression == concreteprotocol::Compression::SEED) {
-    auto valueReader = value.asReader();
-    auto valueTypeInfo = valueReader.getTypeInfo();
-    if (!valueTypeInfo.hasLweCiphertext()) {
-      return gate;
-    }
-    auto valueCiphertext = valueTypeInfo.getLweCiphertext();
-    auto valueCompression = valueCiphertext.getCompression();
-    if (valueCompression == concreteprotocol::Compression::NONE) {
-      // If the compression of transportValue is none and the gateInfo have
-      // compression we update the gateInfo to allow uncompressed transportValue
-      auto gateBuilder = gate.asBuilder();
-      gateBuilder.getTypeInfo().getLweCiphertext().setCompression(
-          concreteprotocol::Compression::NONE);
-      auto gateDimensions = gateBuilder.getRawInfo().getShape().getDimensions();
-      auto lweSize = gateCiphertext.getEncryption().getLweDimension() + 1;
-      gateDimensions.set(gateDimensions.size() - 1, lweSize);
-      auto concreteShapeDimensions = gateBuilder.getTypeInfo()
-                                         .getLweCiphertext()
-                                         .getConcreteShape()
-                                         .getDimensions();
-      concreteShapeDimensions.set(concreteShapeDimensions.size() - 1, lweSize);
-      return gateBuilder.asReader();
-    }
+  auto valueReader = value.asReader();
+  auto valueTypeInfo = valueReader.getTypeInfo();
+  if (!valueTypeInfo.hasLweCiphertext()) {
+    return gate;
+  }
+  auto valueCiphertext = valueTypeInfo.getLweCiphertext();
+  auto valueCompression = valueCiphertext.getCompression();
+  auto gateBuilder = gate.asBuilder();
+  auto gateDimensions = gateBuilder.getRawInfo().getShape().getDimensions();
+  auto concreteShapeDimensions = gateBuilder.getTypeInfo()
+                                     .getLweCiphertext()
+                                     .getConcreteShape()
+                                     .getDimensions();
+  if (gateCompression == concreteprotocol::Compression::SEED &&
+      valueCompression == concreteprotocol::Compression::NONE) {
+    // If the compression of transportValue is none and the gateInfo have
+    // compression we update the gateInfo to allow uncompressed transportValue
+    // by setting the gate info as none for compression and lwesize for last
+    // dimension of the shape.
+    gateBuilder.getTypeInfo().getLweCiphertext().setCompression(
+        concreteprotocol::Compression::NONE);
+    auto lweSize = gateCiphertext.getEncryption().getLweDimension() + 1;
+    gateDimensions.set(gateDimensions.size() - 1, lweSize);
+    concreteShapeDimensions.set(concreteShapeDimensions.size() - 1, lweSize);
+    return gateBuilder.asReader();
+  }
+  if (gateCompression == concreteprotocol::Compression::NONE &&
+      valueCompression == concreteprotocol::Compression::SEED) {
+    // If the compression of transportValue is seed and the gateInfo have no
+    // compression we update the gateInfo to allow uncompressed transportValue
+    // by setting the gate info as seed for compression and 3 for last
+    // dimension of the shape.
+    gateBuilder.getTypeInfo().getLweCiphertext().setCompression(
+        concreteprotocol::Compression::SEED);
+    gateDimensions.set(gateDimensions.size() - 1, 3);
+    concreteShapeDimensions.set(concreteShapeDimensions.size() - 1, 3);
+    return gateBuilder.asReader();
   }
   return gate;
 }
@@ -903,6 +916,27 @@ Result<Transformer> getSeededLweCiphertextDecompressionTransformer(
   };
 }
 
+Result<ArgTransformer> getDecompressionTransformer(
+    const Message<concreteprotocol::LweCiphertextEncryptionInfo> &info,
+    bool useSimulation) {
+
+  if (useSimulation)
+    return Value::fromRawTransportValue;
+
+  return [=](TransportValue transportVal) -> Result<Value> {
+    auto value = Value::fromRawTransportValue(transportVal);
+    auto compression = transportVal.asReader()
+                           .getTypeInfo()
+                           .getLweCiphertext()
+                           .getCompression();
+    if (compression == concreteprotocol::Compression::SEED) {
+      OUTCOME_TRY(auto d, getSeededLweCiphertextDecompressionTransformer(info));
+      return d(value);
+    }
+    return value;
+  };
+}
+
 Result<ArgTransformer> TransformerFactory::getLweCiphertextArgTransformer(
     Message<concreteprotocol::GateInfo> gateInfo, bool useSimulation) {
   if (!gateInfo.asReader().getTypeInfo().hasLweCiphertext()) {
@@ -911,20 +945,10 @@ Result<ArgTransformer> TransformerFactory::getLweCiphertextArgTransformer(
   }
 
   /// Generating the decompression transformer.
-  Transformer decompressionTransformer;
   auto lweCiphertextInfo = gateInfo.asReader().getTypeInfo().getLweCiphertext();
-  auto compression = lweCiphertextInfo.getCompression();
-  if (compression == concreteprotocol::Compression::NONE || useSimulation) {
-    OUTCOME_TRY(decompressionTransformer, getNoneDecompressionTransformer());
-  } else if (compression == concreteprotocol::Compression::SEED) {
-    OUTCOME_TRY(decompressionTransformer,
-                getSeededLweCiphertextDecompressionTransformer(
-                    lweCiphertextInfo.getEncryption()));
-  } else {
-    return StringError(
-        "Only none compression is currently supported for lwe ciphertext "
-        "currently.");
-  }
+  OUTCOME_TRY(auto decompressionTransformer,
+              getDecompressionTransformer(lweCiphertextInfo.getEncryption(),
+                                          useSimulation));
 
   // Generating the verifier.
   TransportValueVerifier verify;
@@ -936,13 +960,7 @@ Result<ArgTransformer> TransformerFactory::getLweCiphertextArgTransformer(
 
   return [=](TransportValue transportVal) -> Result<Value> {
     OUTCOME_TRYV(verify(transportVal));
-    auto value = Value::fromRawTransportValue(transportVal);
-    if (transportVal.asReader()
-            .getTypeInfo()
-            .getLweCiphertext()
-            .getCompression() == concreteprotocol::Compression::NONE)
-      return value;
-    return decompressionTransformer(value);
+    return decompressionTransformer(transportVal);
   };
 }
 
@@ -1002,15 +1020,10 @@ Result<OutputTransformer> TransformerFactory::getLweCiphertextOutputTransformer(
   }
 
   /// Generating the decompression transformer.
-  Transformer decompressionTransformer;
-  if (gateInfo.asReader().getTypeInfo().getLweCiphertext().getCompression() ==
-      concreteprotocol::Compression::NONE) {
-    OUTCOME_TRY(decompressionTransformer, getNoneDecompressionTransformer());
-  } else {
-    return StringError(
-        "Only none compression is currently supported for lwe ciphertext "
-        "currently.");
-  }
+  auto encryptionInfo =
+      gateInfo.asReader().getTypeInfo().getLweCiphertext().getEncryption();
+  OUTCOME_TRY(auto decompressionTransformer,
+              getDecompressionTransformer(encryptionInfo, useSimulation));
 
   /// Generating the decryption transformer.
   Transformer decryptionTransformer;
@@ -1057,8 +1070,8 @@ Result<OutputTransformer> TransformerFactory::getLweCiphertextOutputTransformer(
 
   return [=](TransportValue transportVal) -> Result<Value> {
     OUTCOME_TRYV(verify(transportVal));
-    return decodingTransformer(decryptionTransformer(
-        decompressionTransformer(Value::fromRawTransportValue(transportVal))));
+    OUTCOME_TRY(auto value, decompressionTransformer(transportVal));
+    return decodingTransformer(decryptionTransformer(value));
   };
 }
 
