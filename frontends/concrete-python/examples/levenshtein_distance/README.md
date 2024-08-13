@@ -16,18 +16,20 @@ More information can be found for example on the [Wikipedia page](https://en.wik
 
 ## Computing the distance in FHE
 
-It can be interesting to compute this distance over encrypted data, for example in the banking sector.
+It can be interesting to compute this distance over encrypted data, for example in the banking sector (see also our [notebook](IBAN_name_check.ipynb) for IBAN name checks).
+
 We show in [our code](levenshtein_distance.py) how to do that simply, with our FHE modules.
 
 Available options are:
 
 ```
 usage: levenshtein_distance.py [-h] [--show_mlir] [--show_optimizer] [--autotest] [--autoperf] [--distance DISTANCE DISTANCE]
-                               [--alphabet {string,STRING,StRiNg,ACTG}] [--max_string_length MAX_STRING_LENGTH]
+                               [--alphabet {string,STRING,StRiNg,ACTG,name}] [--max_string_length MAX_STRING_LENGTH]
+                               [--normalize_strings_before_distance]
 
 Levenshtein distance in Concrete.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --show_mlir           Show the MLIR
   --show_optimizer      Show the optimizer outputs
@@ -35,10 +37,12 @@ optional arguments:
   --autoperf            Run benchmarks
   --distance DISTANCE DISTANCE
                         Compute a distance
-  --alphabet {string,STRING,StRiNg,ACTG}
+  --alphabet {string,STRING,StRiNg,ACTG,name}
                         Setting the alphabet
   --max_string_length MAX_STRING_LENGTH
                         Setting the maximal size of strings
+  --normalize_strings_before_distance
+                        Normalize strings before computing their distance
 ```
 
 The different alphabets are:
@@ -46,6 +50,7 @@ The different alphabets are:
 - STRING: capitalized letters, ie `[A-Z]*`
 - StRiNg: non capitalized letters and capitalized letters
 - ACTG: `[ACTG]*`, for DNA analysis
+- name: non capitalized letters and capitalized letters, plus spaces, '.' and '-'
 
 It is very easy to add a new alphabet in the code.
 
@@ -155,6 +160,8 @@ Typical performances for alphabet StRiNg, with string of maximal length:
     Computing Levenshtein between strings 'hZyX' and 'vhHH' - OK in 30.11 seconds
     Computing Levenshtein between strings 'sJdj' and 'strn' - OK in 30.48 seconds
 
+FIXME: to be updated, by launching on hpc7a
+
 Successful end
 ```
 
@@ -202,6 +209,8 @@ Typical performances for alphabet StRiNg, with string of maximal length:
     Computing Levenshtein between strings 'ixgu' and 'cOSy' - OK in 30.94 seconds
     Computing Levenshtein between strings 'QGCj' and 'Lknx' - OK in 29.82 seconds
     Computing Levenshtein between strings 'fKVC' and 'xqaI' - OK in 30.27 seconds
+
+FIXME: to be updated, by launching on hpc7a
 
 Successful end
 ```
