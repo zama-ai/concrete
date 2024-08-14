@@ -2,6 +2,9 @@
 Tests execution of tfhers conversion operations.
 """
 
+import json
+from typing import List
+
 import numpy as np
 import pytest
 
@@ -32,13 +35,31 @@ def parameterize_partial_dtype(partial_dtype) -> tfhers.TFHERSIntegerType:
         tfhers.TFHERSIntegerType: tfhers type
     """
     tfhers_params = tfhers.TFHERSParams(
-        761,
+        909,
         1,
-        2048,
-        23,
-        1,
+        4096,
+        15,
+        2,
     )
     return partial_dtype(tfhers_params)
+
+
+def is_input_and_output_tfhers(
+    circuit: fhe.Circuit,
+    lwe_dim: int,
+    tfhers_ins: List[int],
+    tfhers_outs: List[int],
+) -> bool:
+    params = json.loads(circuit.client.specs.client_parameters.serialize())
+    main_circuit = params["circuits"][0]
+    # check all encrypted input/output have the correct lwe_dim
+    ins = main_circuit["inputs"]
+    outs = main_circuit["outputs"]
+    for indices, param in [(tfhers_ins, ins), (tfhers_outs, outs)]:
+        for i in indices:
+            if param[i]["rawInfo"]["shape"]["dimensions"][-1] != lwe_dim + 1:
+                return False
+    return True
 
 
 @pytest.mark.parametrize(
@@ -107,6 +128,15 @@ def test_tfhers_conversion_binary_encrypted(
         for inpt in helpers.generate_inputset(parameters)
     ]
     circuit = compiler.compile(inputset, configuration)
+
+    assert is_input_and_output_tfhers(
+        circuit,
+        dtype.params.polynomial_size,
+        [0, 1],
+        [
+            0,
+        ],
+    )
 
     sample = helpers.generate_sample(parameters)
     encoded_sample = (dtype.encode(v) for v in sample)
@@ -217,6 +247,19 @@ def test_tfhers_conversion_one_encrypted_one_native(
         for inpt in helpers.generate_inputset(parameters)
     ]
     circuit = compiler.compile(inputset, configuration)
+
+    assert is_input_and_output_tfhers(
+        circuit,
+        dtype.params.polynomial_size,
+        (
+            [
+                0,
+            ]
+        ),
+        [
+            0,
+        ],
+    )
 
     sample = helpers.generate_sample(parameters)
     encoded_sample = (dtype.encode(sample[0]), sample[1])
