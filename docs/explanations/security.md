@@ -36,7 +36,7 @@ To compare the current curves with the output of the lattice estimator, use:
 
     make compare-curves
 
-this will compare the four curves generated above against the output of the version of the lattice estimator found in the [third_party folder](https://github.com/zama-ai/concrete/tree/main/third_party).
+this will compare the four curves generated above against the output of the version of the lattice estimator found in the [third_party folder](../../third_party).
 
 To generate the associated cpp and rust code, use::
 
@@ -46,7 +46,7 @@ further advanced options can be found inside the Makefile.
 
 ## Example
 
-To look at the raw data gathered in step 1., we can look in the [sage-object folder](https://github.com/zama-ai/concrete/tree/main/tools/parameter-curves/sage-object). These objects can be loaded in the following way using SageMath:
+To look at the raw data gathered in step 1., we can look in the [sage-object folder](../../tools/parameter-curves/sage-object). These objects can be loaded in the following way using SageMath:
 
     sage: X = load("128.sobj")
 
@@ -55,7 +55,7 @@ entries are tuples of the form: $$(n, log_2(q), log_2(\sigma), \lambda)$$. We ca
     sage: X["128"][0]
     (2366, 64.0, 4.0, 128.51)
 
-To view the interpolated curves we load the `verified_curves.sobj` object inside the [sage-object folder](https://github.com/zama-ai/concrete/tree/main/tools/parameter-curves/sage-object).
+To view the interpolated curves we load the `verified_curves.sobj` object inside the [sage-object folder](../../tools/parameter-curves/sage-object).
 
     sage: curves = load("verified_curves.sobj")
 

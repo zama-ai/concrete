@@ -8,10 +8,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - name: Pre-Commit Checks
+      - name: Install Platform Dependencies
         run: |
           sudo apt install -y graphviz libgraphviz-dev
-          cd frontends/concrete-python
-          make venv
-          source .venv/bin/activate
-          make pcc
+      - name: Pre-Commit Checks
+        run: |
+          ./frontends/concrete-python/scripts/checks/checks.sh

@@ -7,16 +7,16 @@ In contrast to traditional infrastructure for compilers, the set of operations a
 
 Concrete compiler takes advantage of these concepts by defining a set of dialects, capable of representing an FHE program from an abstract specification that is independent of the actual cryptosystem down to a program that can easily be mapped to function calls of a cryptographic library. The dialects for the representation of an FHE program are:
 
-* The FHELinalg Dialect ([documentation](FHELinalgDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHELinalg/IR/FHELinalgOps.td))
-* The FHE Dialect ([documentation](FHEDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHE/IR/FHEOps.td))
-* The TFHE Dialect ([documentation](TFHEDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/TFHE/IR/TFHEOps.td))
-* The Concrete Dialect ([documentation](ConcreteDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/Concrete/IR/ConcreteOps.td))
-* and for debugging purposes, the Tracing Dialect ([documentation](TracingDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/Tracing/IR/TracingOps.td)).
+* The FHELinalg Dialect ([documentation](FHELinalgDialect.md), [source](../../compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHELinalg/IR/FHELinalgOps.td))
+* The FHE Dialect ([documentation](FHEDialect.md), [source](../../compilers/concrete-compiler/compiler/include/concretelang/Dialect/FHE/IR/FHEOps.td))
+* The TFHE Dialect ([documentation](TFHEDialect.md), [source](../../compilers/concrete-compiler/compiler/include/concretelang/Dialect/TFHE/IR/TFHEOps.td))
+* The Concrete Dialect ([documentation](ConcreteDialect.md), [source](../../compilers/concrete-compiler/compiler/include/concretelang/Dialect/Concrete/IR/ConcreteOps.td))
+* and for debugging purposes, the Tracing Dialect ([documentation](TracingDialect.md), [source](../../compilers/concrete-compiler/compiler/include/concretelang/Dialect/Tracing/IR/TracingOps.td)).
 
 In addition, the project further defines two dialects that help expose dynamic task-parallelism and static data-flow graphs in order to benefit from multi-core, multi-accelerator and distributed systems. These are:
 
-* The RT Dialect ([documentation](RTDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/RT/IR/RTOps.td)) and
-* The SDFG Dialect ([documentation](SDFGDialect.md), [source](https://github.com/zama-ai/concrete/tree/main/compilers/concrete-compiler/compiler/include/concretelang/Dialect/SDFG/IR/SDFGOps.td)).
+* The RT Dialect ([documentation](RTDialect.md), [source](../../compilers/concrete-compiler/compiler/include/concretelang/Dialect/RT/IR/RTOps.td)) and
+* The SDFG Dialect ([documentation](SDFGDialect.md), [source](../../compilers/concrete-compiler/compiler/include/concretelang/Dialect/SDFG/IR/SDFGOps.td)).
 
 The figure below illustrates the relationship between the dialects and their embedding into the compilation pipeline.
 
