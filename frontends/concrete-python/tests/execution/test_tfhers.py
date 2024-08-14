@@ -50,6 +50,7 @@ def is_input_and_output_tfhers(
     tfhers_ins: List[int],
     tfhers_outs: List[int],
 ) -> bool:
+    """Check if inputs and outputs description match tfhers parameters"""
     params = json.loads(circuit.client.specs.client_parameters.serialize())
     main_circuit = params["circuits"][0]
     # check all encrypted input/output have the correct lwe_dim
@@ -534,3 +535,12 @@ def test_tfhers_conversion_without_multi(function, parameters, parameter_strateg
     ]
     with pytest.raises(RuntimeError, match=f"Can't use tfhers integers with {parameter_strategy}"):
         compiler.compile(inputset, configuration)
+
+
+def test_tfhers_circuit_eval():
+    """Test evaluation of tfhers function."""
+    dtype = parameterize_partial_dtype(tfhers.uint16_2_2)
+    x = tfhers.TFHERSInteger(dtype, 1)
+    y = tfhers.TFHERSInteger(dtype, 2)
+    result = binary_tfhers(x, y, lambda x, y: x + y, dtype)
+    assert result == 3

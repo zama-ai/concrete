@@ -33,14 +33,14 @@ class TFHERSParams:
         self.pbs_base_log = pbs_base_log
         self.pbs_level = pbs_level
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: no cover
         return (
             f"tfhers_params<lwe_dim={self.lwe_dimension}, glwe_dim={self.glwe_dimension}, "
             f"poly_size={self.polynomial_size}, pbs_base_log={self.pbs_base_log}, "
             f"pbs_level={self.pbs_level}>"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # pragma: no cover
         return (
             isinstance(other, self.__class__)
             and self.lwe_dimension == other.lwe_dimension
@@ -84,7 +84,7 @@ class TFHERSIntegerType(Integer):
         self.msg_width = msg_width
         self.params = params
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # pragma: no cover
         return (
             isinstance(other, self.__class__)
             and super().__eq__(other)
