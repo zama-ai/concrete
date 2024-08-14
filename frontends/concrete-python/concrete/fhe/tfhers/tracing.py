@@ -31,6 +31,9 @@ def to_native(value: Union[Tracer, TFHERSInteger]) -> Union[Tracer, int, np.ndar
 
     if isinstance(value, Tracer) and isinstance(value.output.dtype, TFHERSIntegerType):
         dtype = value.output.dtype
+        if not isinstance(dtype, TFHERSIntegerType):  # pragma: no cover
+            msg = f"tracer didn't contain an output of TFHEInteger type. Type is: {dtype}"
+            raise TypeError(msg)
         return _trace_to_native(value, dtype)
 
     if isinstance(value, TFHERSInteger):
