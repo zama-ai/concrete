@@ -31,7 +31,8 @@ uint64_t from_torus(double torus) {
 uint64_t gaussian_noise(double variance, Csprng *csprng = default_csprng.ptr) {
   uint64_t random_gaussian_buff[2];
 
-  concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, variance,
+  double std_dev = std::sqrt(variance);
+  concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, std_dev,
                                          csprng);
   return random_gaussian_buff[0];
 }
