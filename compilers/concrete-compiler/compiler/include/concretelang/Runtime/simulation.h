@@ -6,6 +6,8 @@
 #ifndef CONCRETELANG_RUNTIME_SIMULATION_H
 #define CONCRETELANG_RUNTIME_SIMULATION_H
 
+#include "concretelang/Common/Csprng.h"
+
 #include <stdint.h>
 
 extern "C" {
@@ -16,7 +18,8 @@ extern "C" {
 /// \param lwe_dim
 /// \param csprng used to generate noise during encryption
 /// \return noisy plaintext
-uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim, void *csprng);
+uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim,
+                             Csprng *encrypt_csprng);
 
 /// \brief simulate the negation of a noisy plaintext
 ///
