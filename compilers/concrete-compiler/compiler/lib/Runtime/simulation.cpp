@@ -16,8 +16,7 @@
 
 using concretelang::csprng::SoftCSPRNG;
 
-thread_local auto csprng = SoftCSPRNG(0);
-
+thread_local auto default_csprng = SoftCSPRNG(0);
 const uint64_t UINT63_MAX = UINT64_MAX >> 1;
 
 inline concrete::SecurityCurve *security_curve() {
@@ -29,22 +28,18 @@ uint64_t from_torus(double torus) {
   return (uint64_t)round(torus * pow(2, 64));
 }
 
-// TODO: what's the overhead of creating a csprng everytime? Should we have a
-// single one?
-uint64_t gaussian_noise(double mean, double variance) {
+uint64_t gaussian_noise(double variance, Csprng *csprng = default_csprng.ptr) {
   uint64_t random_gaussian_buff[2];
 
   concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, variance,
-                                         csprng.ptr);
+                                         csprng);
   return random_gaussian_buff[0];
 }
 
-uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim, void *csprng) {
+uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim,
+                             Csprng *csprng) {
   double variance = security_curve()->getVariance(1, lwe_dim, 64);
-  uint64_t random_gaussian_buff[2];
-  concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, variance,
-                                         (Csprng *)csprng);
-  uint64_t encryption_noise = random_gaussian_buff[0];
+  uint64_t encryption_noise = gaussian_noise(variance, (Csprng *)csprng);
   return message + encryption_noise;
 }
 
@@ -54,7 +49,7 @@ uint64_t sim_keyswitch_lwe_u64(uint64_t plaintext, uint32_t level,
   double variance_ksk = security_curve()->getVariance(1, output_lwe_dim, 64);
   double variance = concrete_cpu_variance_keyswitch(input_lwe_dim, base_log,
                                                     level, 64, variance_ksk);
-  uint64_t ks_noise = gaussian_noise(0, variance);
+  uint64_t ks_noise = gaussian_noise(variance);
   return plaintext + ks_noise;
 }
 
@@ -73,7 +68,7 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
           input_lwe_dim, log2(poly_size), 64);
   uint64_t shift = (64 - log2(poly_size) - 2);
   // mod_switch noise
-  auto noise = gaussian_noise(0, variance_ms);
+  auto noise = gaussian_noise(variance_ms);
   noise >>= shift;
   noise += noise & 1;
   noise >>= 1;
@@ -118,7 +113,7 @@ uint64_t sim_bootstrap_lwe_u64(uint64_t plaintext, uint64_t *tlu_allocated,
   double variance = concrete_cpu_variance_blind_rotate(
       input_lwe_dim, glwe_dim, poly_size, base_log, level, 64,
       mlir::concretelang::optimizer::DEFAULT_FFT_PRECISION, variance_bsk);
-  out = out + gaussian_noise(0, variance);
+  out = out + gaussian_noise(variance);
   return out;
 }
 
