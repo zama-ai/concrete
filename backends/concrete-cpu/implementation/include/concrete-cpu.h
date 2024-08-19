@@ -295,6 +295,8 @@ size_t concrete_cpu_ggsw_ciphertext_size_u64(size_t glwe_dimension,
 
 size_t concrete_cpu_glwe_ciphertext_size_u64(size_t glwe_dimension, size_t polynomial_size);
 
+size_t concrete_cpu_glwe_secret_key_buffer_size_u64(size_t glwe_dimension, size_t polynomial_size);
+
 size_t concrete_cpu_glwe_secret_key_size_u64(size_t lwe_dimension, size_t polynomial_size);
 
 void concrete_cpu_init_lwe_bootstrap_key_u64(uint64_t *lwe_bsk,
@@ -397,6 +399,12 @@ size_t concrete_cpu_seeded_bootstrap_key_size_u64(size_t decomposition_level_cou
 
 size_t concrete_cpu_seeded_keyswitch_key_size_u64(size_t decomposition_level_count,
                                                   size_t input_dimension);
+
+size_t concrete_cpu_serialize_glwe_secret_key_u64(const uint64_t *glwe_sk,
+                                                  size_t glwe_dimension,
+                                                  size_t polynomial_size,
+                                                  uint8_t *out_buffer,
+                                                  size_t out_buffer_len);
 
 struct TfhersFheIntDescription concrete_cpu_tfhers_uint8_description(const uint8_t *serialized_data_ptr,
                                                                      size_t serialized_data_len);

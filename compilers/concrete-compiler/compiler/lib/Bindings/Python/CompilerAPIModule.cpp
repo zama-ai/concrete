@@ -1372,6 +1372,28 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](::concretelang::clientlib::KeySet &keySet) {
              return pybind11::bytes(keySetSerialize(keySet));
            })
+      .def("serialize_lwe_secret_key_as_glwe",
+           [](::concretelang::clientlib::KeySet &keySet, size_t keyIndex,
+              size_t glwe_dimension, size_t polynomial_size) {
+             auto secretKeys = keySet.keyset.client.lweSecretKeys;
+             if (keyIndex >= secretKeys.size()) {
+               throw std::runtime_error(
+                   "keyIndex is bigger than the number of keys");
+             }
+             auto secretKey = secretKeys[keyIndex];
+             auto skBuffer = secretKey.getBuffer();
+             auto buffer_size = concrete_cpu_glwe_secret_key_buffer_size_u64(
+                 glwe_dimension, polynomial_size);
+             std::vector<uint8_t> buffer(buffer_size, 0);
+             buffer_size = concrete_cpu_serialize_glwe_secret_key_u64(
+                 skBuffer.data(), glwe_dimension, polynomial_size,
+                 buffer.data(), buffer_size);
+             if (buffer_size == 0) {
+               throw std::runtime_error("couldn't serialize the secret key");
+             }
+             auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
+             return bytes;
+           })
       .def("get_evaluation_keys",
            [](::concretelang::clientlib::KeySet &keySet) {
              return ::concretelang::clientlib::EvaluationKeys{

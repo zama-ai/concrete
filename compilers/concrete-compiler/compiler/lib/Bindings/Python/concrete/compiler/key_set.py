@@ -44,6 +44,30 @@ class KeySet(WrapperCpp):
         """
         return self.cpp().serialize()
 
+    def serialize_lwe_secret_key_as_glwe(
+        self, keyid: int, glwe_dim: int, poly_size: int
+    ) -> bytes:
+        """Serialize key as a glwe secret key.
+
+        Args:
+            keyid (int): id of the key to serialize
+            glwe_dim (int): glwe dimension of the key
+            poly_size (int): polynomial size of the key
+
+        Raises:
+            TypeError: if wrong types for input arguments
+
+        Returns:
+            bytes: serialized key
+        """
+        if not isinstance(keyid, int):
+            raise TypeError(f"keyid must be of type int, not {type(keyid)}")
+        if not isinstance(glwe_dim, int):
+            raise TypeError(f"glwe_dim must be of type int, not {type(glwe_dim)}")
+        if not isinstance(poly_size, int):
+            raise TypeError(f"poly_size must be of type int, not {type(poly_size)}")
+        return self.cpp().serialize_lwe_secret_key_as_glwe(keyid, glwe_dim, poly_size)
+
     @staticmethod
     def deserialize(serialized_key_set: bytes) -> "KeySet":
         """Deserialize KeySet from bytes.

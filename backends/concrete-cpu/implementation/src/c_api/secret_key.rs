@@ -212,6 +212,36 @@ pub unsafe extern "C" fn concrete_cpu_decompress_seeded_lwe_ciphertext_u64(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_serialize_glwe_secret_key_u64(
+    glwe_sk: *const u64,
+    glwe_dimension: usize,
+    polynomial_size: usize,
+    out_buffer: *mut u8,
+    out_buffer_len: usize,
+) -> usize {
+    let glwe_sk = GlweSecretKey::from_container(
+        slice::from_raw_parts(
+            glwe_sk,
+            concrete_cpu_glwe_secret_key_size_u64(glwe_dimension, polynomial_size),
+        ),
+        PolynomialSize(polynomial_size),
+    );
+    let mut serialized_data = Vec::new();
+    match bincode::serialize_into(&mut serialized_data, &glwe_sk) {
+        Ok(_) => (),
+        Err(_) => return 0,
+    }
+
+    if serialized_data.len() > out_buffer_len {
+        return 0;
+    }
+
+    let buff: &mut [u8] = slice::from_raw_parts_mut(out_buffer, serialized_data.len());
+    buff.copy_from_slice(&serialized_data);
+    serialized_data.len()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_decrypt_glwe_ciphertext_u64(
     glwe_sk: *const u64,
     output: *mut u64,
@@ -255,6 +285,15 @@ pub unsafe extern "C" fn concrete_cpu_glwe_secret_key_size_u64(
     polynomial_size: usize,
 ) -> usize {
     lwe_dimension * polynomial_size
+}
+
+#[no_mangle]
+pub extern "C" fn concrete_cpu_glwe_secret_key_buffer_size_u64(
+    glwe_dimension: usize,
+    polynomial_size: usize,
+) -> usize {
+    let metadata = core::mem::size_of::<GlweSecretKey<&[u64]>>();
+    metadata + glwe_dimension * polynomial_size * 8 /*u64*/
 }
 
 #[no_mangle]
