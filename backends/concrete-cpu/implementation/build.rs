@@ -7,6 +7,7 @@ fn main() {
     let package_name = env::var("CARGO_PKG_NAME").unwrap();
     let output_file = format!("include/{package_name}.h");
     println!("cargo:rerun-if-changed={output_file}");
+    println!("cargo:rerun-if-changed=src");
 
     cbindgen::generate(crate_dir)
         .unwrap()
