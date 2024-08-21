@@ -27,7 +27,7 @@ Then, you can compile the FHE module `Counter` using the `compile` method. To do
 
 ```python
 inputset = list(range(20))
-CounterFhe = CounterFhe.compile({"inc": inputset, "dec": inputset})
+CounterFhe = Counter.compile({"inc": inputset, "dec": inputset})
 ```
 
 After the module is compiled, you can encrypt and call the different functions as follows:
@@ -150,7 +150,7 @@ class Collatz:
 
 print("Compiling `Collatz` module ...")
 inputset = [i for i in range(63)]
-CollatzFhe = collatz.compile({"collatz": inputset})
+CollatzFhe = Collatz.compile({"collatz": inputset})
 
 print("Generating keyset ...")
 CollatzFhe.keygen()
