@@ -37,6 +37,50 @@ class ClientParameters(WrapperCpp):
             )
         super().__init__(client_parameters)
 
+    def input_keyid_at(self, input_idx: int, circuit_name: str = "main") -> int:
+        """Get the keyid of a selected encrypted input in a given circuit.
+
+        Args:
+            input_idx (int): index of the input in the circuit.
+            circuit_name (str, optional): name of the circuit containing the desired input.
+                Defaults to "main".
+
+        Raises:
+            TypeError: if arguments aren't of expected types
+
+        Returns:
+            int: keyid
+        """
+        if not isinstance(input_idx, int):
+            raise TypeError(f"input_idx must be of type int, not {type(input_idx)}")
+        if not isinstance(circuit_name, str):
+            raise TypeError(
+                f"circuit_name must be of type str, not {type(circuit_name)}"
+            )
+        return self.cpp().input_keyid_at(input_idx, circuit_name)
+
+    def input_variance_at(self, input_idx: int, circuit_name: str = "main") -> float:
+        """Get the variance of a selected encrypted input in a given circuit.
+
+        Args:
+            input_idx (int): index of the input in the circuit.
+            circuit_name (str, optional): name of the circuit containing the desired input.
+                Defaults to "main".
+
+        Raises:
+            TypeError: if arguments aren't of expected types
+
+        Returns:
+            float: variance
+        """
+        if not isinstance(input_idx, int):
+            raise TypeError(f"input_idx must be of type int, not {type(input_idx)}")
+        if not isinstance(circuit_name, str):
+            raise TypeError(
+                f"circuit_name must be of type str, not {type(circuit_name)}"
+            )
+        return self.cpp().input_variance_at(input_idx, circuit_name)
+
     def input_signs(self) -> List[bool]:
         """Return the sign information of inputs.
 
