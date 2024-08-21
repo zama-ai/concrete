@@ -8,7 +8,11 @@ import numpy as np
 import pytest
 
 from examples.key_value_database.static_size import StaticKeyValueDatabase
-from examples.levenshtein_distance.levenshtein_distance import Alphabet, LevenshteinDistance
+from examples.levenshtein_distance.levenshtein_distance import (
+    Alphabet,
+    LevenshteinDistance,
+    levenshtein_clear,
+)
 
 
 def test_static_kvdb(helpers):
@@ -181,3 +185,89 @@ def test_static_kvdb(helpers):
     )
 
     assert query(db, maximum_key) == minimum_value
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "simulate",
+        "fhe",
+    ],
+)
+def test_levenshtein_distance(mode, helpers):
+    """
+    Test levenshtein distance example.
+    """
+
+    configuration = helpers.configuration()
+    if mode == "simulate":
+        configuration = configuration.fork(fhe_execution=False, fhe_simulation=True)
+
+    alphabet = Alphabet.lowercase()
+    max_string_length = 5
+
+    levenshtein_distance = LevenshteinDistance(alphabet, max_string_length, configuration)
+    levenshtein_distance.module.keygen()
+
+    samples = [
+        # same
+        ("hello", "hello", 0),
+        # one character missing from the end
+        ("hell", "hello", 1),
+        ("hello", "hell", 1),
+        # one character missing from the start
+        ("ello", "hello", 1),
+        ("hello", "ello", 1),
+        # one character missing from the middle
+        ("hllo", "hello", 1),
+        ("hello", "hllo", 1),
+        # two characters missing from the start and the end
+        ("ell", "hello", 2),
+        ("hello", "ell", 2),
+        # three characters missing from the start, the end and the middle
+        ("el", "hello", 3),
+        ("hello", "el", 3),
+        # shifted one character
+        ("hello", "elloh", 2),
+        ("elloh", "hello", 2),
+        # shifted two characters
+        ("hello", "llohe", 4),
+        ("llohe", "hello", 4),
+        # shifted three characters
+        ("hello", "lohel", 4),
+        ("lohel", "hello", 4),
+        # shifted four characters
+        ("hello", "ohell", 2),
+        ("ohell", "hello", 2),
+        # completely different
+        ("hello", "numpy", 5),
+    ]
+
+    for str1, str2, expected_distance in samples:
+        actual_distance = levenshtein_distance.calculate(str1, str2, mode, show_distance=True)
+        assert actual_distance == expected_distance
+
+
+@pytest.mark.parametrize(
+    "alphabet_name",
+    Alphabet.return_available_alphabets(),
+)
+@pytest.mark.parametrize(
+    "max_length",
+    [2, 3],
+)
+def test_levenshtein_distance_randomly(alphabet_name, max_length, helpers):
+    """
+    Test levenshtein distance example with randomly generated strings.
+    """
+
+    configuration = helpers.configuration().fork(fhe_execution=False, fhe_simulation=True)
+
+    alphabet = Alphabet.init_by_name(alphabet_name)
+    levenshtein_distance = LevenshteinDistance(alphabet, max_length, configuration)
+    levenshtein_distance.module.keygen()
+
+    for str1, str2 in alphabet.prepare_random_patterns(0, max_length, nb_strings=3):
+        expected_distance = levenshtein_clear(str1, str2)
+        actual_distance = levenshtein_distance.calculate(str1, str2, "simulate", show_distance=True)
+        assert actual_distance == expected_distance
