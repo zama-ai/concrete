@@ -666,6 +666,48 @@ lambdaArgument lambdaArgumentFromSignedScalar(int64_t scalar) {
   return scalar_arg;
 }
 
+concreteprotocol::LweCiphertextEncryptionInfo::Reader
+clientParametersInputEncryptionAt(
+    ::concretelang::clientlib::ClientParameters &clientParameters,
+    size_t inputId, std::string circuitName) {
+  auto reader = clientParameters.programInfo.asReader();
+  if (!reader.hasCircuits()) {
+    throw std::runtime_error("can't get keyid: no circuit info");
+  }
+  auto circuits = reader.getCircuits();
+  for (auto circuit : circuits) {
+    if (circuit.hasName() &&
+        circuitName.compare(circuit.getName().cStr()) == 0) {
+      if (!circuit.hasInputs()) {
+        throw std::runtime_error("can't get keyid: no input");
+      }
+      auto inputs = circuit.getInputs();
+      if (inputId >= inputs.size()) {
+        throw std::runtime_error(
+            "can't get keyid: inputId bigger than number of inputs");
+      }
+      auto input = inputs[inputId];
+      if (!input.hasTypeInfo()) {
+        throw std::runtime_error("can't get keyid: input don't have typeInfo");
+      }
+      auto typeInfo = input.getTypeInfo();
+      if (!typeInfo.hasLweCiphertext()) {
+        throw std::runtime_error("can't get keyid: typeInfo don't "
+                                 "have lwe ciphertext info");
+      }
+      auto lweCt = typeInfo.getLweCiphertext();
+      if (!lweCt.hasEncryption()) {
+        throw std::runtime_error("can't get keyid: lwe ciphertext "
+                                 "don't have encryption info");
+      }
+      return lweCt.getEncryption();
+    }
+  }
+
+  throw std::runtime_error("can't get keyid: no circuit with name " +
+                           circuitName);
+}
+
 /// Populate the compiler API python module.
 void mlir::concretelang::python::populateCompilerAPISubmodule(
     pybind11::module &m) {
@@ -1249,6 +1291,20 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](::concretelang::clientlib::ClientParameters &clientParameters) {
              return pybind11::bytes(
                  clientParametersSerialize(clientParameters));
+           })
+      .def("input_keyid_at",
+           [](::concretelang::clientlib::ClientParameters &clientParameters,
+              size_t inputId, std::string circuitName) {
+             auto encryption = clientParametersInputEncryptionAt(
+                 clientParameters, inputId, circuitName);
+             return encryption.getKeyId();
+           })
+      .def("input_variance_at",
+           [](::concretelang::clientlib::ClientParameters &clientParameters,
+              size_t inputId, std::string circuitName) {
+             auto encryption = clientParametersInputEncryptionAt(
+                 clientParameters, inputId, circuitName);
+             return encryption.getVariance();
            })
       .def("output_signs",
            [](::concretelang::clientlib::ClientParameters &clientParameters) {
