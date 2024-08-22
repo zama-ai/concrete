@@ -46,6 +46,7 @@ further advanced options can be found inside the Makefile.
 
 ## Example
 
+<!-- markdown-link-check-disable -->
 To look at the raw data gathered in step 1., we can look in the [sage-object folder](../../tools/parameter-curves/sage-object). These objects can be loaded in the following way using SageMath:
 
     sage: X = load("128.sobj")
@@ -69,4 +70,4 @@ Here we can see the linear model parameters $$(a = -0.026599462343105267, b = 2.
 $$ \sigma = a * n + b = -37.85 $$
 
 This value corresponds to the logarithm of the relative error size. Using the parameter set $$(n, log(q), \sigma = 2^{64 - 37.85})$$ in the Lattice Estimator confirms a 128-bit security level.
-
+<!-- markdown-link-check-enable -->

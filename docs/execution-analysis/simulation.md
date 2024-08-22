@@ -34,3 +34,24 @@ After the simulation runs, it prints the following:
 {% hint style="warning" %}
 There are some operations which are not supported in simulation yet. They will result in compilation failures. You can revert to simulation using graph execution using `circuit.graph(...)` instead of `circuit.simulate(...)`, which won't simulate FHE, but it will evaluate the computation graph, which is like simulating the operations without any errors due to FHE.
 {% endhint %}
+
+## Overflow Detection in Simulation
+
+Overflow can happen during an FHE computation, leading to unexpected behaviors. Using simulation can help you detect these events by printing a warning whenever an overflow happens. This feature is disabled by default, but you can enable it by setting `detect_overflow_in_simulation=True` during compilation.
+
+To demonstrate, we will compile the previous circuit with overflow detection enabled and trigger an overflow:
+
+```python
+# compile with overflow detection enabled
+circuit = f.compile(inputset, p_error=0.1, fhe_simulation=True, detect_overflow_in_simulation=True)
+# cause an overflow
+circuit.simulate([0,1,2,3,4,5,6,7,8,15])
+```
+
+You will see the following warning after the simulation call:
+
+```bash
+WARNING at loc("script.py":3:0): overflow happened during addition in simulation
+```
+
+If you look at the MLIR (`circuit.mlir`), you will see that the input type is supposed to be `eint4` represented in 4 bits with a maximum value of 15. Since there's an addition of the input, we used the maximum value (15) here to trigger an overflow (15 + 1 = 16 which needs 5 bits). The warning specifies the operation that caused the overflow and its location. Similar warnings will be displayed for all basic FHE operations such as add, mul, and lookup tables.
