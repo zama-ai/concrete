@@ -1,6 +1,16 @@
 PYTHON=python
 PIP=$(PYTHON) -m pip
 
+OS=undefined
+COVERAGE_OPT=""
+ifeq ($(shell uname), Linux)
+	OS=linux
+	COVERAGE_OPT="--cov=concrete.fhe --cov-fail-under=100 --cov-report=term-missing:skip-covered"
+else ifeq ($(shell uname), Darwin)
+	OS=darwin
+endif
+
+
 COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
 BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
 RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
@@ -57,9 +67,7 @@ pytest: pytest-default
 pytest-default:
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \
-		--cov=concrete.fhe \
-		--cov-fail-under=100 \
-		--cov-report=term-missing:skip-covered \
+		${COVERAGE_OPT} \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
@@ -78,9 +86,7 @@ pytest-multi:
 	pytest tests -svv -n auto \
 		--precision=multi \
 		--strategy=multi \
-		--cov=concrete.fhe \
-		--cov-fail-under=100 \
-		--cov-report=term-missing:skip-covered \
+		${COVERAGE_OPT} \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
@@ -94,9 +100,7 @@ pytest-gpu:
 	# test multi precision
 	pytest tests -svv -n0 --use_gpu \
 		--precision=multi \
-		--cov=concrete.fhe \
-		--cov-fail-under=100 \
-		--cov-report=term-missing:skip-covered \
+		${COVERAGE_OPT} \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
@@ -176,13 +180,6 @@ pcc: check-format check-sanitize-notebooks mypy pydocstyle pylint ruff
 # ============
 # Distribution
 # ============
-
-OS=undefined
-ifeq ($(shell uname), Linux)
-	OS=linux
-else ifeq ($(shell uname), Darwin)
-	OS=darwin
-endif
 
 clear-whls:
 	rm -rf dist
