@@ -11,6 +11,15 @@ from concrete.fhe.tracing.typing import uint4
 from concrete.fhe.values import EncryptedTensor
 
 
+def bad_assignment(x):
+    """
+    Function with an invalid assignment.
+    """
+    idx = [[1, 2], [1, 2, 3], [1]]
+    x[idx] = 0
+    return x
+
+
 @pytest.mark.parametrize(
     "function,parameters,expected_error,expected_message",
     [
@@ -57,6 +66,13 @@ from concrete.fhe.values import EncryptedTensor
             ValueError,
             "Tracer<output=EncryptedTensor<uint7, shape=(3, 2)>> "
             "cannot be indexed with ['abc', 3, 2.2, (1,)]",
+        ),
+        pytest.param(
+            bad_assignment,
+            {"x": EncryptedTensor(UnsignedInteger(7), shape=(3, 2))},
+            ValueError,
+            "Tracer<output=EncryptedTensor<uint7, shape=(3, 2)>>[[[1, 2], [1, 2, 3], [1]]] "
+            "cannot be assigned 0",
         ),
     ],
 )

@@ -58,7 +58,7 @@ pytest-default:
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \
 		--cov=concrete.fhe \
-		--cov-fail-under=98.9 \
+		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
@@ -79,7 +79,7 @@ pytest-multi:
 		--precision=multi \
 		--strategy=multi \
 		--cov=concrete.fhe \
-		--cov-fail-under=99 \
+		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
@@ -171,7 +171,29 @@ ruff:
 	eval $(shell make silent_cp_activate)
 	ruff concrete/ examples/ scripts/ tests/ benchmarks/
 
-pcc: check-format check-sanitize-notebooks mypy pydocstyle pylint ruff
+check-links:
+	@# Check that no links target the main branch, some internal repositories (Concrete ML or Concrete) or our internal GitBook
+	bash ./scripts/links/check_internal_links.sh
+
+	@# To avoid some issues with priviledges and linkcheckmd
+	find ../../docs/ -name "*.md" -type f | xargs chmod +r
+
+	@# Run linkcheck on mardown files. It is mainly used for web links
+	$(PYTHON)  -m linkcheckmd ../../docs -local
+
+	$(PYTHON)  -m linkcheckmd ../../README.md
+
+	@# Check that relative links in mardown files are targeting existing files
+	$(PYTHON)  ./scripts/links/local_link_check.py
+
+	@# Check that links to mardown headers in mardown files are targeting existing headers
+	$(PYTHON)  ./scripts/links/check_headers.py
+
+	@# For weblinks and internal references
+	linkchecker ../../docs --check-extern \
+		--no-warnings
+
+pcc: check-format check-sanitize-notebooks mypy pydocstyle pylint ruff check-links
 
 # ============
 # Distribution

@@ -19,6 +19,8 @@
   <a href="https://slsa.dev"><img alt="SLSA 3" src="https://slsa.dev/images/gh-badge-level3.svg" /></a>
 </p>
 
+
+
 ## About
 
 ### What is Concrete
@@ -28,6 +30,7 @@ Fully Homomorphic Encryption (FHE) enables performing computations on encrypted 
 
 Concrete is a versatile library that can be used for a variety of purposes. For instance, [Concrete ML](https://github.com/zama-ai/concrete-ml) is built on top of Concrete to simplify Machine-Learning oriented use cases.
 <br></br>
+
 
 
 ## Table of Contents
@@ -44,6 +47,7 @@ Concrete is a versatile library that can be used for a variety of purposes. For 
    - [License](#license)
 - **[Support](#support)**
 <br></br>
+
 
 ## Getting Started
 
@@ -116,6 +120,11 @@ assert result == add(2, 6)
 <p align="right">
   <a href="#about" > ↑ Back to top </a>
 </p>
+
+>[!Note]
+>**Zama 5-Question Developer Survey**
+>
+>We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **[👉 Click here](https://www.zama.ai/developer-survey)** to participate. 
 
 ## Resources
 

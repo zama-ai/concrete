@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <bitset>
 #include <cmath>
+#include <execinfo.h>
 #include <functional>
 #include <iostream>
 #include <stdio.h>
@@ -1010,4 +1011,40 @@ void memref_trace_plaintext(uint64_t input, uint64_t input_width,
 void memref_trace_message(char *message_ptr, uint32_t message_len) {
   std::string message{message_ptr, (size_t)message_len};
   std::cout << message << std::flush;
+}
+
+void *concrete_checked_malloc(size_t size) {
+  void *ptr = malloc(size);
+  if (ptr != nullptr)
+    return ptr;
+
+  // print value based on biggest unit possible
+  std::string unit;
+  if (size < 1024) {
+    unit = "B";
+  } else if (size < 1024 * 1024) {
+    unit = "KB";
+    size /= 1024;
+  } else if (size < 1024 * 1024 * 1024) {
+    unit = "MB";
+    size /= 1024 * 1024;
+  } else {
+    unit = "GB";
+    size /= 1024 * 1024 * 1024;
+  }
+  fprintf(stderr, "bad alloc: nullptr while calling malloc(%zu %s)\n", size,
+          unit.c_str());
+
+  // get backtrace
+  void *array[10];
+  size_t bt_size = backtrace(array, 10);
+  char **symbols = backtrace_symbols(array, bt_size);
+
+  // print backtrace
+  fprintf(stderr, "Backtrace:\n");
+  for (size_t i = 0; i < bt_size; i++) {
+    fprintf(stderr, " #%ld %s\n", i, symbols[i]);
+  }
+
+  exit(1);
 }

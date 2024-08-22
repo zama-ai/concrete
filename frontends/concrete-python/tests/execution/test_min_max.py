@@ -110,6 +110,38 @@ cases += [
         ),
     ]
 ]
+cases = [
+    [
+        # operation
+        ("maximum_increased_bit_widths", lambda x, y: (np.maximum(x, y), x + 100, y + 100)),
+        # bit widths
+        7,
+        7,
+        # signednesses
+        True,
+        False,
+        # shapes
+        (),
+        (),
+        # strategy
+        fhe.MinMaxStrategy.CHUNKED,
+    ],
+    [
+        # operation
+        ("maximum_increased_bit_widths", lambda x, y: (np.maximum(x, y), x + 100, y + 100)),
+        # bit widths
+        7,
+        7,
+        # signednesses
+        False,
+        True,
+        # shapes
+        (),
+        (),
+        # strategy
+        fhe.MinMaxStrategy.CHUNKED,
+    ],
+]
 for lhs_bit_width in range(1, 5):
     for rhs_bit_width in range(1, 5):
         strategies = []

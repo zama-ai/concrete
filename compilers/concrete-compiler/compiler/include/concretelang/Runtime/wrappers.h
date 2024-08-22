@@ -305,6 +305,11 @@ void memref_trace_plaintext(uint64_t input, uint64_t input_width,
                             uint32_t msb);
 
 void memref_trace_message(char *message_ptr, uint32_t message_len);
+
+/// @brief Allocate memory using malloc and check for nullptr
+/// @param size number of bytes to allocate
+/// @return pointer to the allocated memory or nullptr
+void *concrete_checked_malloc(size_t size);
 }
 
 #endif

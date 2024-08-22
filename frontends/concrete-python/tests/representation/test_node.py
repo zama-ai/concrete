@@ -424,6 +424,63 @@ def test_node_format(node, predecessors, expected_result):
             ),
             "□[□, □]",
         ),
+        pytest.param(
+            Node.generic(
+                name="assign_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8,)),
+                    ClearScalar(UnsignedInteger(3)),
+                    ClearScalar(UnsignedInteger(5)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(8,)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None,)},
+            ),
+            "□[□] = □",
+        ),
+        pytest.param(
+            Node.generic(
+                name="assign_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearScalar(UnsignedInteger(3)),
+                    ClearScalar(UnsignedInteger(5)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None, 0)},
+            ),
+            "□[□, 0] = □",
+        ),
+        pytest.param(
+            Node.generic(
+                name="assign_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearScalar(UnsignedInteger(3)),
+                    ClearScalar(UnsignedInteger(5)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (0, None)},
+            ),
+            "□[0, □] = □",
+        ),
+        pytest.param(
+            Node.generic(
+                name="assign_dynamic",
+                inputs=[
+                    EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                    ClearScalar(UnsignedInteger(3)),
+                    ClearScalar(UnsignedInteger(2)),
+                    ClearScalar(UnsignedInteger(5)),
+                ],
+                output=EncryptedTensor(UnsignedInteger(5), shape=(8, 4)),
+                operation=lambda *args: args,
+                kwargs={"static_indices": (None, None)},
+            ),
+            "□[□, □] = □",
+        ),
     ],
 )
 def test_node_label(node, expected_result):

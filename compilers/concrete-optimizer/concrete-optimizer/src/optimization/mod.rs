@@ -1,13 +1,16 @@
+use dag::multi_parameters::variance_constraint::VarianceConstraint;
+
 pub mod atomic_pattern;
 pub mod config;
 pub mod dag;
 pub mod decomposition;
 pub mod wop_atomic_pattern;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Err {
     NotComposable(String),
     NoParametersFound,
+    UnfeasibleVarianceConstraint(Box<VarianceConstraint>),
 }
 
 impl std::fmt::Display for Err {
@@ -15,6 +18,9 @@ impl std::fmt::Display for Err {
         match self {
             Self::NotComposable(details) => write!(f, "Program can not be composed: {details}"),
             Self::NoParametersFound => write!(f, "No crypto parameters could be found"),
+            Self::UnfeasibleVarianceConstraint(constraint) => {
+                write!(f, "Unfeasible noise constraint encountered: {constraint}")
+            }
         }
     }
 }

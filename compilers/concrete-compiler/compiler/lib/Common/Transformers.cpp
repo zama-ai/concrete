@@ -8,6 +8,7 @@
 #include "concrete-cpu.h"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/Common/CRT.h"
+#include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keysets.h"
 #include "concretelang/Common/Values.h"
@@ -596,7 +597,7 @@ Result<Transformer> getEncryptionSimulationTransformer(
 
     for (size_t i = 0; i < inputTensor.values.size(); i++) {
       outputTensor.values[i] = sim_encrypt_lwe_u64(
-          inputTensor.values[i], lweDimension, (void *)(*csprng).ptr);
+          inputTensor.values[i], lweDimension, (Csprng *)(*csprng).ptr);
     }
 
     return Value{outputTensor};

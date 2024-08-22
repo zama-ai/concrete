@@ -753,7 +753,7 @@ fn test_composition_2_partitions() {
     )
     .unwrap()
     .1;
-    assert!(composed_sol.is_feasible);
+    assert!(matches!(composed_sol.is_feasible, Feasibility::Feasible));
     assert!(composed_sol.complexity > normal_sol.complexity);
 }
 

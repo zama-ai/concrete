@@ -30,6 +30,11 @@ from ..conftest import USE_MULTI_PRECISION
             RuntimeError,
             "Insecure key cache cannot be enabled without specifying its location",
         ),
+        pytest.param(
+            {"enable_unsafe_features": False, "simulate_encrypt_run_decrypt": True},
+            RuntimeError,
+            "Simulating encrypt/run/decrypt cannot be used without enabling unsafe features",
+        ),
     ],
 )
 def test_configuration_bad_init(kwargs, expected_error, expected_message):

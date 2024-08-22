@@ -213,13 +213,14 @@ impl VariancedDag {
 
     fn collect_external_input_constraint(&mut self) {
         let p_cut = &self.partitions.p_cut;
-        for (i, op) in self.dag.operators.clone().iter().enumerate() {
+        for op in self.dag.get_operators_iter() {
             if let Operator::Input {
                 out_precision,
                 out_shape,
-            } = op
+            } = op.operator
             {
-                let partition_index = self.partitions.instrs_partition[i].instruction_partition;
+                let partition_index =
+                    self.partitions.instrs_partition[op.id.0].instruction_partition;
                 if !p_cut.is_external_partition(&partition_index) {
                     continue;
                 }
@@ -228,7 +229,7 @@ impl VariancedDag {
                     [p_cut.external_partition_index(partition_index)]
                 .max_variance;
 
-                let variances = &self.get_operator(OperatorIndex(i)).variance().vars.clone();
+                let variances = &self.get_operator(op.id).variance().vars.clone();
                 for (i, variance) in variances.iter().enumerate() {
                     if variance.coeffs.is_nan() {
                         assert!(i != partition_index.0);
@@ -240,6 +241,7 @@ impl VariancedDag {
                         nb_constraints: out_shape.flat_size(),
                         safe_variance_bound: max_variance,
                         variance: variance.clone(),
+                        location: op.location.clone(),
                     };
                     self.external_variance_constraints.push(constraint);
                 }
@@ -280,6 +282,7 @@ impl VariancedDag {
                     nb_constraints: out_shape.flat_size(),
                     safe_variance_bound: max_variance,
                     variance: variance.clone(),
+                    location: dag_op.location.clone(),
                 };
                 self.external_variance_constraints.push(constraint);
             }
@@ -405,7 +408,7 @@ impl VariancedDag {
                         Err::NotComposable(prev) => {
                             Err::NotComposable(format!("At {loc}: please add `fhe.refresh(...)` to guarantee the function composability.\n{prev}."))
                         }
-                        Err::NoParametersFound => Err::NoParametersFound,
+                        _ => unreachable!(),
                     })
             })
     }
@@ -647,12 +650,14 @@ fn variance_constraint(
 ) -> VarianceConstraint {
     let nb_constraints = dag.out_shapes[op_i].flat_size();
     let safe_variance_bound = safe_noise_bound(precision, noise_config);
+    let location = dag.locations[op_i].clone();
     VarianceConstraint {
         precision,
         partition,
         nb_constraints,
         safe_variance_bound,
         variance,
+        location,
     }
 }
 
@@ -939,8 +944,8 @@ pub mod tests {
             .map(ToString::to_string)
             .collect::<Vec<String>>();
         let expected_constraint_strings = vec![
-            "1σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-5 (1bits partition:0 count:1, dom=10)",
-            "1σ²Br[0] < (2²)**-6 (2bits partition:0 count:1, dom=12)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-5 (1bits partition:0 count:1, dom=10)",
+            "At location unknown location:\n1σ²Br[0] < (2²)**-6 (2bits partition:0 count:1, dom=12)",
         ];
         assert!(actual_constraint_strings == expected_constraint_strings);
     }
@@ -962,10 +967,10 @@ pub mod tests {
             .map(ToString::to_string)
             .collect::<Vec<String>>();
         let expected_constraint_strings = vec![
-            "1σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
-            "1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
-            "1σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
-            "1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "At location unknown location:\n1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
         ];
         assert_eq!(actual_constraint_strings, expected_constraint_strings);
         let partitions = vec![
@@ -1005,12 +1010,12 @@ pub mod tests {
             .map(ToString::to_string)
             .collect::<Vec<String>>();
         let expected_constraint_strings = vec![
-            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
-            "1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
-            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→2] + 1σ²M[2] < (2²)**-17 (13bits partition:2 count:1, dom=34)",
-            "1σ²Br[2] < (2²)**-7 (3bits partition:2 count:1, dom=14)",
-            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
-            "1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→2] + 1σ²M[2] < (2²)**-17 (13bits partition:2 count:1, dom=34)",
+            "At location unknown location:\n1σ²Br[2] < (2²)**-7 (3bits partition:2 count:1, dom=14)",
+            "At location unknown location:\n1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "At location unknown location:\n1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
         ];
         assert_eq!(actual_constraint_strings, expected_constraint_strings);
         let partitions = [1, 1, 0, 1, 1, 1, 2, 0]
@@ -1267,17 +1272,17 @@ pub mod tests {
             .collect();
         let expected_constraints = [
             // First lut to force partition HIGH_PRECISION_PARTITION
-            "1σ²In[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
+            "At location unknown location:\n1σ²In[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
             // 16384(shift) = (2**7)², for Br[1]
-            "16384σ²Br[1] + 16384σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
+            "At location unknown location:\n16384σ²Br[1] + 16384σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
             // 4096(shift) = (2**6)², 1(due to 1 erase bit) for Br[0] and 1 for Br[1]
-            "4096σ²Br[0] + 4096σ²Br[1] + 4096σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
+            "At location unknown location:\n4096σ²Br[0] + 4096σ²Br[1] + 4096σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
             // 1024(shift) = (2**5)², 2(due to 2 erase bit for Br[0] and 1 for Br[1]
-            "2048σ²Br[0] + 1024σ²Br[1] + 1024σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
+            "At location unknown location:\n2048σ²Br[0] + 1024σ²Br[1] + 1024σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
             // 3(erase bit) Br[0] and 1 initial Br[1]
-            "3σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
+            "At location unknown location:\n3σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
             // Last lut to close the cycle
-            "1σ²Br[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
+            "At location unknown location:\n1σ²Br[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
         ];
         for (c, ec) in constraints.iter().zip(expected_constraints) {
             assert!(
@@ -1328,14 +1333,14 @@ pub mod tests {
             .collect();
         let expected_constraints = [
             // First lut to force partition HIGH_PRECISION_PARTITION
-            "1σ²In[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
+            "At location unknown location:\n1σ²In[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
             // 16384(shift) = (2**7)², for Br[1]
-            "16384σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
+            "At location unknown location:\n16384σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
             // 4096(shift) = (2**6)², 1(due to 1 erase bit) for Br[0] and 1 for Br[1]
-            "4096σ²Br[0] + 4096σ²FK[0→1] + 4096σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
+            "At location unknown location:\n4096σ²Br[0] + 4096σ²FK[0→1] + 4096σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
             // 1024(shift) = (2**5)², 2(due to 2 erase bit for Br[0] and 1 for Br[1]
-            "2048σ²Br[0] + 2048σ²FK[0→1] + 1024σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
-            "3σ²Br[0] + 3σ²FK[0→1] + 1σ²Br[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
+            "At location unknown location:\n2048σ²Br[0] + 2048σ²FK[0→1] + 1024σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
+            "At location unknown location:\n3σ²Br[0] + 3σ²FK[0→1] + 1σ²Br[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
         ];
         for (c, ec) in constraints.iter().zip(expected_constraints) {
             assert!(

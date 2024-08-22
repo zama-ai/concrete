@@ -35,6 +35,11 @@ class Alphabet:
         return Alphabet.lowercase() + Alphabet.uppercase()
 
     @staticmethod
+    def name():
+        """Set alphabet for family names"""
+        return Alphabet.lowercase() + Alphabet.uppercase() + Alphabet("-. ")
+
+    @staticmethod
     def dna():
         """Set DNA alphabet."""
         return Alphabet("ATGC")
@@ -52,7 +57,7 @@ class Alphabet:
     @staticmethod
     def return_available_alphabets() -> list:
         """Return available alphabets."""
-        return ["string", "STRING", "StRiNg", "ACTG"]
+        return ["string", "STRING", "StRiNg", "ACTG", "name"]
 
     @staticmethod
     def init_by_name(alphabet_name: str) -> "Alphabet":
@@ -67,6 +72,8 @@ class Alphabet:
             return Alphabet.uppercase()
         if alphabet_name == "StRiNg":
             return Alphabet.anycase()
+        if alphabet_name == "name":
+            return Alphabet.name()
 
         assert alphabet_name == "ACTG", f"Unknown alphabet {alphabet_name}"
         return Alphabet.dna()
@@ -120,18 +127,28 @@ class LevenshteinDistance:
     alphabet: Alphabet
     module: fhe.module  # type: ignore
 
-    def __init__(self, alphabet: Alphabet, args):
+    def __init__(
+        self, alphabet: Alphabet, max_string_length: int, show_mlir: bool, show_optimizer: bool
+    ):
         self.alphabet = alphabet
 
-        self._compile_module(args)
+        self._compile_module(max_string_length, show_mlir, show_optimizer)
 
     def calculate(self, a: str, b: str, mode: str, show_distance: bool = False):
         """Compute a distance between two strings, either in fhe or in simulate."""
         if mode == "simulate":
-            self._compute_in_simulation([(a, b)])
+            self._compute_in_simulation([(a, b)], show_distance=show_distance)
         else:
             assert mode == "fhe", "Only 'simulate' and 'fhe' mode are available"
             self._compute_in_fhe([(a, b)], show_distance=show_distance)
+
+    def calculate_and_return(self, a: str, b: str, mode: str) -> int:
+        """Return distance between two strings, either in fhe or in simulate."""
+        if mode == "simulate":
+            return self._compute_and_return_in_simulation(a, b)
+
+        assert mode == "fhe", "Only 'simulate' and 'fhe' mode are available"
+        return self._compute_and_return_in_fhe(a, b)
 
     def calculate_list(self, pairs_to_compute_on: list, mode: str):
         """Compute a distance between strings of a list, either in fhe or in simulate."""
@@ -149,7 +166,7 @@ class LevenshteinDistance:
 
         return a_enc, b_enc
 
-    def _compile_module(self, args):
+    def _compile_module(self, max_string_length: int, show_mlir: bool, show_optimizer: bool):
         """Compile the FHE module."""
         assert len(self.alphabet.mapping_to_int) > 0, "Mapping not defined"
 
@@ -163,41 +180,63 @@ class LevenshteinDistance:
         inputset_mix = [
             (
                 np.random.randint(2),
-                np.random.randint(args.max_string_length),
-                np.random.randint(args.max_string_length),
-                np.random.randint(args.max_string_length),
-                np.random.randint(args.max_string_length),
+                np.random.randint(max_string_length),
+                np.random.randint(max_string_length),
+                np.random.randint(max_string_length),
+                np.random.randint(max_string_length),
             )
             for _ in range(1000)
         ]
 
         # pylint: disable-next=no-member
-        self.module = LevenshsteinModule.compile(
+        self.module = LevenshsteinModule.compile(  # type: ignore[attr-defined]
             {
                 "equal": inputset_equal,
                 "mix": inputset_mix,
                 "constant": [i for i in range(len(self.alphabet.mapping_to_int))],
             },
-            show_mlir=args.show_mlir,
+            show_mlir=show_mlir,
             p_error=10**-20,
-            show_optimizer=args.show_optimizer,
+            show_optimizer=show_optimizer,
             comparison_strategy_preference=fhe.ComparisonStrategy.ONE_TLU_PROMOTED,
             min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED,
         )
 
-    def _compute_in_simulation(self, list_patterns: list):
+    def _compute_and_return_in_simulation(self, a: str, b: str) -> int:
+        """Check equality between distance in simulation and clear distance, and return."""
+        a_as_int = self.alphabet.encode(a)
+        b_as_int = self.alphabet.encode(b)
+
+        l1_simulate = levenshtein_simulate(self.module, a_as_int, b_as_int)
+        l1_clear = levenshtein_clear(a_as_int, b_as_int)
+
+        assert l1_simulate == l1_clear, f"    {l1_simulate=} and {l1_clear=} are different"
+
+        return int(l1_simulate)
+
+    def _compute_in_simulation(self, list_patterns: list, show_distance: bool = False):
         """Check equality between distance in simulation and clear distance."""
         for a, b in list_patterns:
             print(f"    Computing Levenshtein between strings '{a}' and '{b}'", end="")
 
-            a_as_int = self.alphabet.encode(a)
-            b_as_int = self.alphabet.encode(b)
+            l1_simulate = self._compute_and_return_in_simulation(a, b)
 
-            l1_simulate = levenshtein_simulate(self.module, a_as_int, b_as_int)
-            l1_clear = levenshtein_clear(a_as_int, b_as_int)
+            if not show_distance:
+                print(" - OK")
+            else:
+                print(f" - distance is {l1_simulate}")
 
-            assert l1_simulate == l1_clear, f"    {l1_simulate=} and {l1_clear=} are different"
-            print(" - OK")
+    def _compute_and_return_in_fhe(self, a: str, b: str):
+        """Check equality between distance in FHE and clear distance."""
+        a_enc, b_enc = self._encode_and_encrypt_strings(a, b)
+
+        l1_fhe_enc = levenshtein_fhe(self.module, a_enc, b_enc)
+        l1_fhe = self.module.mix.decrypt(l1_fhe_enc)  # type: ignore
+        l1_clear = levenshtein_clear(a, b)
+
+        assert l1_fhe == l1_clear, f"    {l1_fhe=} and {l1_clear=} are different"
+
+        return l1_fhe
 
     def _compute_in_fhe(self, list_patterns: list, show_distance: bool = False):
         """Check equality between distance in FHE and clear distance."""
@@ -207,17 +246,9 @@ class LevenshteinDistance:
         for a, b in list_patterns:
             print(f"    Computing Levenshtein between strings '{a}' and '{b}'", end="")
 
-            a_enc, b_enc = self._encode_and_encrypt_strings(a, b)
-
             time_begin = time.time()
-            l1_fhe_enc = levenshtein_fhe(self.module, a_enc, b_enc)
+            l1_fhe = self._compute_and_return_in_fhe(a, b)
             time_end = time.time()
-
-            l1_fhe = self.module.mix.decrypt(l1_fhe_enc)  # type: ignore
-
-            l1_clear = levenshtein_clear(a, b)
-
-            assert l1_fhe == l1_clear, f"    {l1_fhe=} and {l1_clear=} are different"
 
             if not show_distance:
                 print(f" - OK in {time_end - time_begin:.2f} seconds")
@@ -275,6 +306,21 @@ class LevenshsteinModule:
             fhe.Wire(fhe.AllOutputs(constant), fhe.Input(mix, 4)),
         ]
     )
+
+
+def normalized_string(st):
+    """Normalize a string, to later make that the distance between non-normalized
+    string 'John Doe' and 'doe john' is small.
+    """
+
+    # Force lower case
+    st = st.lower()
+
+    # Sort the words and join
+    words = st.split()
+    st = "".join(sorted(words))
+
+    return st
 
 
 @lru_cache
@@ -382,6 +428,11 @@ def manage_args():
         default=4,
         help="Setting the maximal size of strings",
     )
+    parser.add_argument(
+        "--normalize_strings_before_distance",
+        action="store_true",
+        help="Normalize strings before computing their distance",
+    )
     args = parser.parse_args()
 
     # At least one option
@@ -402,7 +453,9 @@ def main():
     # Do what the user requested
     if args.autotest:
         alphabet = Alphabet.init_by_name(args.alphabet)
-        levenshtein_distance = LevenshteinDistance(alphabet, args)
+        levenshtein_distance = LevenshteinDistance(
+            alphabet, args.max_string_length, args.show_mlir, args.show_optimizer
+        )
 
         print(f"Making random tests with alphabet {args.alphabet}")
         print(f"Letters are {alphabet.letters}\n")
@@ -415,14 +468,16 @@ def main():
         print("")
 
     if args.autoperf:
-        for alphabet_name in ["ACTG", "string", "STRING", "StRiNg"]:
+        for alphabet_name in ["ACTG", "name", "string", "STRING", "StRiNg"]:
             print(
                 f"Typical performances for alphabet {alphabet_name}, with string of "
                 "maximal length:\n"
             )
 
             alphabet = Alphabet.init_by_name(alphabet_name)
-            levenshtein_distance = LevenshteinDistance(alphabet, args)
+            levenshtein_distance = LevenshteinDistance(
+                alphabet, args.max_string_length, args.show_mlir, args.show_optimizer
+            )
             list_patterns = alphabet.prepare_random_patterns(
                 args.max_string_length, args.max_string_length, 3
             )
@@ -432,21 +487,34 @@ def main():
     if args.distance is not None:
         print(
             f"Running distance between strings '{args.distance[0]}' and '{args.distance[1]}' "
-            f"for alphabet {args.alphabet}:\n"
+            f"for alphabet {args.alphabet}:"
         )
 
-        if max(len(args.distance[0]), len(args.distance[1])) > args.max_string_length:
-            args.max_string_length = max(len(args.distance[0]), len(args.distance[1]))
+        string0 = args.distance[0]
+        string1 = args.distance[1]
+
+        if args.normalize_strings_before_distance:
+            string0 = normalized_string(string0)
+            string1 = normalized_string(string1)
             print(
-                "Warning, --max_string_length was smaller than lengths of the input strings, "
-                "fixing it"
+                f"Normalized strings are '{string0}' and '{string1}' "
+                "(lower case, no space, sorted words)"
             )
 
+        if max(len(string0), len(string1)) > args.max_string_length:
+            args.max_string_length = max(len(string0), len(string1))
+            print(
+                "Warning, --max_string_length was smaller than lengths of "
+                "the input strings, fixing it"
+            )
+
+        print()
+
         alphabet = Alphabet.init_by_name(args.alphabet)
-        levenshtein_distance = LevenshteinDistance(alphabet, args)
-        levenshtein_distance.calculate(
-            args.distance[0], args.distance[1], mode="fhe", show_distance=True
+        levenshtein_distance = LevenshteinDistance(
+            alphabet, args.max_string_length, args.show_mlir, args.show_optimizer
         )
+        levenshtein_distance.calculate(string0, string1, mode="fhe", show_distance=True)
         print("")
 
     print("Successful end\n")

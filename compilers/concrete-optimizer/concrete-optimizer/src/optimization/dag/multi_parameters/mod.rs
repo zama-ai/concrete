@@ -11,4 +11,4 @@ mod partitionning;
 mod partitions;
 mod symbolic_variance;
 mod union_find;
-mod variance_constraint;
+pub(crate) mod variance_constraint;

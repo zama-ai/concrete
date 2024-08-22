@@ -1,0 +1,7 @@
+add_custom_target(ConcretelangRuntimeTests)
+
+add_dependencies(ConcretelangUnitTests ConcretelangRuntimeTests)
+
+add_unittest(ConcretelangRuntimeTests unit_tests_concretelang_runtime Wrappers.cpp)
+
+target_link_libraries(unit_tests_concretelang_runtime PRIVATE ConcretelangRuntime)

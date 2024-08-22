@@ -861,6 +861,19 @@ def issue650(x):
             id="(x**2, x + 100) [x: [12, 13]] {optimize_tlu_based_on_measured_bounds: True}",
         ),
         pytest.param(
+            lambda x: fhe.univariate(lambda x: x // [2, 3])(x),
+            {
+                "x": {"range": [-12, -11], "status": "encrypted", "shape": (2,)},
+            },
+            {
+                "optimize_tlu_based_on_measured_bounds": True,
+            },
+            id=(
+                "fhe.univariate(lambda x: x // [2, 3])(x) [x: [-12, -11]] "
+                "{optimize_tlu_based_on_measured_bounds: True}"
+            ),
+        ),
+        pytest.param(
             lambda x: fhe.univariate(lambda x: x // np.array([2, 3]))(x),
             {
                 "x": {"range": [12, 15], "status": "encrypted", "shape": (2,)},
@@ -973,6 +986,14 @@ def issue650(x):
             },
             {},
             id="x + (x // 3)",
+        ),
+        pytest.param(
+            lambda x: (x**3, x + 100),
+            {
+                "x": {"range": [-(2**3), 2**3 - 1], "status": "encrypted", "shape": ()},
+            },
+            {},
+            id="(x ** 3, x + 100)",
         ),
     ],
 )
