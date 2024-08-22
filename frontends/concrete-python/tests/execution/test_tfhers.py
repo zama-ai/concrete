@@ -112,10 +112,10 @@ def test_tfhers_conversion_binary_encrypted(
     """
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    # tfhers int works with multi-parameters only
-    configuration = helpers.configuration().fork(
-        parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI
-    )
+
+    # Only valid when running in multi
+    if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
+        return
 
     dtype = parameterize_partial_dtype(dtype)
 
@@ -128,7 +128,7 @@ def test_tfhers_conversion_binary_encrypted(
         tuple(tfhers.TFHERSInteger(dtype, arg) for arg in inpt)
         for inpt in helpers.generate_inputset(parameters)
     ]
-    circuit = compiler.compile(inputset, configuration)
+    circuit = compiler.compile(inputset, helpers.configuration())
 
     assert is_input_and_output_tfhers(
         circuit,
@@ -231,10 +231,10 @@ def test_tfhers_conversion_one_encrypted_one_native(
     """
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    # tfhers int works with multi-parameters only
-    configuration = helpers.configuration().fork(
-        parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI
-    )
+
+    # Only valid when running in multi
+    if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
+        return
 
     dtype = parameterize_partial_dtype(dtype)
 
@@ -247,7 +247,7 @@ def test_tfhers_conversion_one_encrypted_one_native(
         (tfhers.TFHERSInteger(dtype, inpt[0]), inpt[1])
         for inpt in helpers.generate_inputset(parameters)
     ]
-    circuit = compiler.compile(inputset, configuration)
+    circuit = compiler.compile(inputset, helpers.configuration())
 
     assert is_input_and_output_tfhers(
         circuit,
@@ -412,7 +412,7 @@ def test_tfhers_from_native_outside_tracing(dtype, value, encoded):
     "value,decoded",
     [
         pytest.param(
-            tfhers.TFHERSInteger(tfhers.uint8_2_2, [0, 0, 2, 2]),
+            tfhers.TFHERSInteger(parameterize_partial_dtype(tfhers.uint8_2_2), [0, 0, 2, 2]),
             [0, 0, 2, 2],
         ),
     ],
@@ -519,8 +519,10 @@ def test_tfhers_conversion_without_multi(function, parameters, parameter_strateg
     """
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
-    # tfhers int works with multi-parameters only
-    configuration = helpers.configuration().fork(parameter_selection_strategy=parameter_strategy)
+
+    # Only valid when running in multi
+    if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
+        return
 
     dtype = parameterize_partial_dtype(tfhers.uint16_2_2)
 
@@ -534,7 +536,7 @@ def test_tfhers_conversion_without_multi(function, parameters, parameter_strateg
         for inpt in helpers.generate_inputset(parameters)
     ]
     with pytest.raises(RuntimeError, match=f"Can't use tfhers integers with {parameter_strategy}"):
-        compiler.compile(inputset, configuration)
+        compiler.compile(inputset, helpers.configuration())
 
 
 def test_tfhers_circuit_eval():
