@@ -140,7 +140,8 @@ getTfhersFheUint8Description(llvm::ArrayRef<uint8_t> serializedFheUint8) {
 }
 
 Result<TransportValue>
-importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8) {
+importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
+                     uint32_t encryptionKeyId, double encryptionVariance) {
   auto fheUintInfoOrError = getTfhersFheUint8Description(serializedFheUint8);
   if (fheUintInfoOrError.has_error()) {
     return fheUintInfoOrError.error();
@@ -166,9 +167,8 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8) {
   auto encryption = lwe.initEncryption();
   encryption.setLweDimension((uint32_t)fheUintDesc.lwe_size - 1);
   encryption.initModulus().initMod().initNative();
-  // TODO: how to set key id and variance?
-  encryption.setKeyId(0);
-  encryption.setVariance(9.9409770026943975e-32);
+  encryption.setKeyId(encryptionKeyId);
+  encryption.setVariance(encryptionVariance);
   // Encoding
   auto encoding = lwe.initEncoding();
   auto integer = encoding.initInteger();

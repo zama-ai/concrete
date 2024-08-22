@@ -728,12 +728,13 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   m.def("check_cuda_device_available", &checkCudaDeviceAvailable);
 
   m.def("import_tfhers_fheuint8",
-        [](const pybind11::bytes &serialized_fheuint) {
+        [](const pybind11::bytes &serialized_fheuint, uint32_t encryptionKeyId,
+           double encryptionVariance) {
           const std::string &buffer_str = serialized_fheuint;
           std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
           auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
-          auto valueOrError =
-              ::concretelang::clientlib::importTfhersFheUint8(arrayRef);
+          auto valueOrError = ::concretelang::clientlib::importTfhersFheUint8(
+              arrayRef, encryptionKeyId, encryptionVariance);
           if (valueOrError.has_error()) {
             throw std::runtime_error(valueOrError.error().mesg);
           }
