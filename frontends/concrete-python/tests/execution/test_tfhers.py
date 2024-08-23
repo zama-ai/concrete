@@ -34,12 +34,15 @@ def parameterize_partial_dtype(partial_dtype) -> tfhers.TFHERSIntegerType:
     Returns:
         tfhers.TFHERSIntegerType: tfhers type
     """
-    tfhers_params = tfhers.TFHERSParams(
+    tfhers_params = tfhers.CryptoParams(
         909,
         1,
         4096,
         15,
         2,
+        0,
+        2.168404344971009e-19,
+        tfhers.EncryptionKeyChoice.BIG,
     )
     return partial_dtype(tfhers_params)
 

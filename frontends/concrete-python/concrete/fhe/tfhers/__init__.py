@@ -3,8 +3,9 @@ tfhers module to represent, and compute on tfhers integer values.
 """
 
 from .dtypes import (
+    CryptoParams,
+    EncryptionKeyChoice,
     TFHERSIntegerType,
-    TFHERSParams,
     int8,
     int8_2_2,
     int16,
