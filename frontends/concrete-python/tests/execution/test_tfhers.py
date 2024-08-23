@@ -288,7 +288,7 @@ def test_tfhers_integer_eq(lhs, rhs, is_equal):
     """
     Test TFHERSIntegerType equality.
     """
-    assert is_equal == (lhs == rhs)
+    assert is_equal == (parameterize_partial_dtype(lhs) == parameterize_partial_dtype(rhs))
 
 
 @pytest.mark.parametrize(
@@ -309,7 +309,7 @@ def test_tfhers_integer_encode(dtype, value, encoded):
     """
     Test TFHERSIntegerType encode.
     """
-
+    dtype = parameterize_partial_dtype(dtype)
     assert np.array_equal(dtype.encode(value), encoded)
 
 
@@ -329,6 +329,7 @@ def test_tfhers_integer_bad_encode(dtype, value, expected_error, expected_messag
     Test TFHERSIntegerType encode.
     """
 
+    dtype = parameterize_partial_dtype(dtype)
     with pytest.raises(expected_error) as excinfo:
         dtype.encode(value)
 
@@ -354,6 +355,7 @@ def test_tfhers_integer_decode(dtype, encoded, decoded):
     Test TFHERSIntegerType decode.
     """
 
+    dtype = parameterize_partial_dtype(dtype)
     assert np.array_equal(dtype.decode(encoded), decoded)
 
 
@@ -379,6 +381,7 @@ def test_tfhers_integer_bad_decode(dtype, value, expected_error, expected_messag
     Test TFHERSIntegerType decode.
     """
 
+    dtype = parameterize_partial_dtype(dtype)
     with pytest.raises(expected_error) as excinfo:
         dtype.decode(value)
 
@@ -484,6 +487,7 @@ def test_tfhers_integer_bad_init(dtype, value, expected_error, expected_message)
     Test __init__ of TFHERSInteger with bad arguments.
     """
 
+    dtype = parameterize_partial_dtype(dtype)
     with pytest.raises(expected_error) as excinfo:
         tfhers.TFHERSInteger(dtype, value)
 

@@ -32,7 +32,10 @@ def parameterize_partial_dtype(partial_dtype) -> tfhers.TFHERSIntegerType:
 def test_tfhers_encode_bad_type():
     """Test encoding of unsupported type"""
     dtype = parameterize_partial_dtype(tfhers.uint16_2_2)
-    with pytest.raises(TypeError, match=r"can only encode int or ndarray, but got <class 'str'>"):
+    with pytest.raises(
+        TypeError,
+        match=r"can only encode int, np.integer, list or ndarray, but got <class 'str'>",
+    ):
         dtype.encode("bad type")
 
 
@@ -54,7 +57,7 @@ def test_tfhers_bad_decode():
     bad_value = np.random.randint(0, 2**10, size=shape)
     with pytest.raises(
         ValueError,
-        match=r"bad encoding",
+        match=r"expected the last dimension of encoded value to be 4 but it's 10",
     ):
         dtype.decode(bad_value)
 
