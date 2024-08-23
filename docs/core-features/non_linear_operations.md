@@ -1,31 +1,30 @@
 # Non-linear operations
+This document introduces the usages and optimization strategies of non-linear operations in **Concrete**, focusing on comparisons, min/max operations, bitwise operations, and shifts. For a more in-depth explanation on advanced options, refer to the [Table Lookup advanced documentation](table_lookups_advanced.md).
 
-In Concrete, there are basically two types of operations:
-- linear operations, like additions, subtraction and multiplication by an integer, which are very fast
-- and all the rest, which is done by a table lookup (TLU).
+## Overview of non-linear operations
 
-TLU are essential to be able to compile all functions, by keeping the semantic of user's program, but
-they can be slower, depending on the bitwidth of the inputs of the TLU.
+In **Concrete**, there are two types of operations:
+- **Linear operations**: These include additions, subtractions, and multiplications by an integer. They are computationally fast.
+- **Non-linear operations**: These require [Table Lookups (TLUs)](../core-features/table_lookups.md) to maintain the semantic integrity of the user's program. The performance of TLUs is slower and vary depending on the bit width of the inputs.
 
-In this document, we explain briefly, from a user point of view, how it works for non-linear operations as comparisons, min/max, bitwise operations, shifts. In [the TLU advanced documentation](table_lookups_advanced.md), we enter a bit more into the details.
 
 ## Changing bit width in the MLIR or dynamically with a TLU
 
-Often, for binary operations, we need to have equivalent bit width for the two operands: it can be done in two ways. Either directly in the MLIR, or dynamically (i.e., at execution time) with a TLU. Because of these different methods, and the fact that none is stricly better than the other one in the general case, we offer different configurations for the non-linear functions.
+Binary operations often require operands to have matching bit widths. This adjustment can be achieved in two ways: either directly within the MLIR or dynamically at execution time using a TLU. Each method has its own advantages and trade-offs, so Concrete provides multiple configuration options for non-linear functions.
 
-The first method has the advantage to not require an expensive TLU. However, it may have impact in other parts of the program, since the operand of which we change the bit width may be used elsewhere in the program, so it may create more bit widths changes. Also, if ever the modified operands are used in TLUs, the impact may be significative.
+**MLIR adjustment:** This method doesn't require an expensive TLU. However, it may affect other parts of your program if the adjusted operand is used elsewhere, potentially causing more changes.
 
-The second method has the advantage to be very local: it has no impact elsewhere. However, it is costly, since it uses a TLU.
+**Dynamic adjustment with TLU:** This method is more localized and won’t impact other parts of your program, but it’s more expensive due to the cost of using a TLU.
 
-## Generic Principle for the user
+## General guidelines
 
-In the following non-linear operations, we propose a certain number of configurations, using the two methods on the different operands. In general, it is not easy to know in advance which configuration will be the fastest one, but with some Concrete experience. We recommend the users to test and try what are the best configuration depending on their circuits.
+In the following non-linear operations, we propose a certain number of configurations, using the two methods on the different operands. It’s not always clear which option will be the fastest, so we recommend trying out different configurations to see what works best for your circuit.
 
-By running the following programs with `show_mlir=True`, the advanced user may look the MLIR, and see the different uses of TLUs, bit width changes in the MLIR and dynamic change of the bit width. However, for the classical user, it is not critical to understand the different flavours. We would just recommend to try the different configurations and see which one fits the best for your case.
+Note that you have the option to set `show_mlir=True` to view how the MLIR handles TLUs and bit width changes. However, it's not essential to understand these details. So we recommend just testing the configurations and pick the one that performs best for your case.
 
 ## Comparisons
 
-For comparison, there are 7 available methods. The generic principle is
+For comparison, there are 7 available methods. Here's the general principle:
 
 ```python
 import numpy as np
@@ -47,7 +46,7 @@ compiler = fhe.Compiler(f, {"x": "encrypted", "y": "encrypted"})
 circuit = compiler.compile(inputset, configuration, show_mlir=True)
 ```
 
-where `config` is one of
+The `config` can be one of the following:
 - `fhe.ComparisonStrategy.CHUNKED`
 - `fhe.ComparisonStrategy.ONE_TLU_PROMOTED`
 - `fhe.ComparisonStrategy.THREE_TLU_CASTED`
@@ -58,7 +57,7 @@ where `config` is one of
 
 ## Min / Max operations
 
-For min / max operations, there are 3 available methods. The generic principle is
+For min / max operations, there are 3 available methods. Here's the general principle:
 
 ```python
 import numpy as np
@@ -80,14 +79,14 @@ compiler = fhe.Compiler(f, {"x": "encrypted", "y": "encrypted"})
 circuit = compiler.compile(inputset, configuration, show_mlir=True)
 ```
 
-where `config` is one of
+The `config` can be one of the following:
 - `fhe.MinMaxStrategy.CHUNKED` (default)
 - `fhe.MinMaxStrategy.ONE_TLU_PROMOTED`
 - `fhe.MinMaxStrategy.THREE_TLU_CASTED`
 
 ## Bitwise operations
 
-For bit wise operations (typically, AND, OR, XOR), there are 5 available methods. The generic principle is
+For bit wise operations (typically, AND, OR, XOR), there are 5 available methods. Here's the general principle:
 
 ```python
 import numpy as np
@@ -109,7 +108,7 @@ compiler = fhe.Compiler(f, {"x": "encrypted", "y": "encrypted"})
 circuit = compiler.compile(inputset, configuration, show_mlir=True)
 ```
 
-where `config` is one of
+The `config` can be one of the following:
 - `fhe.BitwiseStrategy.CHUNKED`
 - `fhe.BitwiseStrategy.ONE_TLU_PROMOTED`
 - `fhe.BitwiseStrategy.THREE_TLU_CASTED`
@@ -118,7 +117,7 @@ where `config` is one of
 
 ## Shift operations
 
-For shift operations, there are 2 available methods. The generic principle is
+For shift operations, there are 2 available methods. Here's the general principle:
 
 ```python
 import numpy as np
@@ -140,11 +139,11 @@ compiler = fhe.Compiler(f, {"x": "encrypted", "y": "encrypted"})
 circuit = compiler.compile(inputset, configuration, show_mlir=True)
 ```
 
-where `shifts_with_promotion` is either `True` or `False`.
+The `shifts_with_promotion` is either `True` or `False`.
 
 ## Relation with `fhe.multivariate`
 
-Let us just remark that all binary operations described in this document can also be implemented with the `fhe.multivariate` function which is described in [this section](../core-features/extensions.md#fhe.multivariate-function).
+All binary operations described in this document can also be implemented with the `fhe.multivariate` function which is described in [ fhe.multivariate function documentation](../core-features/extensions.md#fhe.multivariate-function). Here's an example:
 
 ```python
 import numpy as np

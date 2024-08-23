@@ -16,7 +16,7 @@ list of available functions is given [in the reference section](../dev/compatibi
 Basically, in the compiled circuit, there will be two kind of operations:
 - levelled operations, which are the additions, subtractions or multiplications by a constant; these
 operations are also called the linear operations
-- table lookup (TLU) operations, which are used to do anything which is not linear.
+- Table Lookup (TLU) operations, which are used to do anything which is not linear.
 
 TLU operations are essential to be able to compile complex functions. We explain their use in
 different sections of the documentation: [direct TLU use](../core-features/table_lookups.md) or

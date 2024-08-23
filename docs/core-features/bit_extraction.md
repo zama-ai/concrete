@@ -1,12 +1,15 @@
 # Bit Extraction
+This document provides an overview of the bit extraction feature in **Concrete**, including usage examples, limitations, and performance considerations. 
 
-Some applications require directly manipulating bits of integers. Concrete provides a bit extraction operation for such applications.
+## Overview
 
-Bit extraction is capable of extracting a slice of bits from an integer. Index 0 corresponds to the lowest significant bit. The cost of this operation is proportional to the highest significant bit index.
+Bit extraction could be useful in some applications that require directly manipulating bits of integers. Bit extraction allows you to extract a specific slice of bits from an integer, where index 0 corresponds to the least significant bit (LSB). The cost of this operation increases with the index of the highest significant bit you wish to extract.
 
 {% hint style="warning" %}
 Bit extraction only works in the `Native` encoding, which is usually selected when all table lookups in the circuit are less than or equal to 8 bits.
 {% endhint %}
+
+## Extracting a specific bit
 
 ```python
 from concrete import fhe
@@ -25,7 +28,8 @@ assert circuit.encrypt_run_decrypt(0b_01100) == (0, 1)
 assert circuit.encrypt_run_decrypt(0b_01101) == (1, 1)
 ```
 
-Slices can be used for indexing `fhe.bits(value)` as well.
+## Extracting multiple bits with slices
+You can use slices for indexing `fhe.bits(value)` :
 
 ```python
 from concrete import fhe
@@ -41,7 +45,7 @@ assert circuit.encrypt_run_decrypt(0b_01101) == 0b_110
 assert circuit.encrypt_run_decrypt(0b_01011) == 0b_101
 ```
 
-Even slices with negative steps are supported!
+Bit extraction supports slices with negative steps:
 
 ```python
 from concrete import fhe
@@ -56,8 +60,8 @@ circuit = f.compile(inputset)
 assert circuit.encrypt_run_decrypt(0b_01101) == 0b_011
 assert circuit.encrypt_run_decrypt(0b_01011) == 0b_101
 ```
-
-Signed integers are supported as well.
+## Bit extraction with signed integers
+Bit extraction supports signed integers:
 
 ```python
 from concrete import fhe
@@ -73,7 +77,8 @@ assert circuit.encrypt_run_decrypt(-14) == 0b_01  # -14 == 0b_10010 (in two's co
 assert circuit.encrypt_run_decrypt(-12) == 0b_10  # -12 == 0b_10100 (in two's complement)
 ```
 
-Lastly, here is a practical use case of bit extraction.
+### Use case example
+Here's a practical example that uses bit extraction to determine if a number is even:
 
 ```python
 import numpy as np
@@ -94,7 +99,7 @@ for value, value_is_even in zip(sample, circuit.encrypt_run_decrypt(sample)):
     print(f"{value} is {'even' if value_is_even else 'odd'}")
 ```
 
-prints
+It prints:
 
 ```
 13 is odd
@@ -105,29 +110,17 @@ prints
 ```
 
 ## Limitations
+- **Negative indexing is not supported:** Bits extraction using negative indices is not supported, such as `fhe.bits(x)[-1]`.
+    - This is because the bit-width of `x` is unknown before inputset evaluation, making it impossible to determine the correct bit to extract.
+- **Reverse slicing requires explicit starting bit:** When extracting bits in reverse order (using a negative step), the start bit must be specified, for example, `fhe.bits(x)[::-1]` is not supported.
+- **Signed integer slicing requires explicit stopping bit**: For signed integers, when using slices, the stop bit must be explicitly provided, for example, `fhe.bits(x)[1:]` is not supported.
+- **Float bit extraction is not supported**: While Concrete supports floats to some extent, bit extraction is not possible on float types.
 
-- Bits cannot be extracted using a negative index.
-  - Which means `fhe.bits(x)[-1]` or `fhe.bits(x)[-4:-1]` is not supported for example.
-  - The reason for this is that we don't know in advance (i.e., before inputset evaluation) how many bits `x` has.
-    - For example, let's say you have `x == 10 == 0b_000...0001010`, and you want to do `fhe.bits(x)[-1]`. If the value is 4-bits (i.e., `0b_1010`), the result needs to be `1`, but if it's 6-bits (i.e., `0b_001010`), the result needs to be `0`. Since we don't know the bit-width of `x` before inputset evaluation, we cannot calculate `fhe.bits(x)[-1]`.
-  
-- When extracting bits using slices in reverse order (i.e., step < 0), the start bit **needs** to be provided explicitly.
-  - Which means `fhe.bits(x)[::-1]` or `fhe.bits(x)[:2:-1]` is not supported for example.
-  - The reason is the same as above.
+## Performance considerations
 
-- When extracting bits of signed values using slices, the stop bit **needs** to be provided explicitly.
-    - Which means `fhe.bits(x)[1:]` or `fhe.bits(x)[1::2]` is not supported for example.
-    - The reason is similar to above.
-      - To explain a bit more, signed integers use [two's complement](https://en.wikipedia.org/wiki/Two%27s_complement#:~:text=Two's%20complement%20is%20the%20most,number%20is%20positive%20or%20negative) representation. In this representation, negative values have their most significant bits set to 1 (e.g., `-1 == 0b_11111`, `-2 == 0b_11110`, `-3 == 0b_11101`). Extracting bits always returns a positive value (e.g., `fhe.bits(-1)[1:3] == 0b_11 == 3`) This means if you were to do `fhe.bits(x)[1:]` where `x == -1`, if `x` is 4 bits, the result would be `0b_111 == 7`, but if `x` is 5 bits the result would be `0b_1111 == 15`. Since we don't know the bit-width of `x` before inputset evaluation, we cannot calculate `fhe.bits(x)[1:]`.
+### A Chain of individual bit extractions
 
-- Bits of floats cannot be extracted.
-  - Floats are partially supported but extracting their bits is not supported at all.
-
-## Performance Considerations
-
-### A Chain of Individual Bit Extractions
-
-**Key Concept**: Extracting a specific bit requires clearing all the preceding lower bits. This involves extracting these previous bits as intermediate values and then subtracting them from the input.
+Extracting a specific bit requires clearing all the preceding lower bits. This involves extracting these previous bits as intermediate values and then subtracting them from the input.
 
 **Implications:**
 
@@ -142,7 +135,7 @@ prints
 
 ### Reuse of Intermediate Extracted Bits
 
-**Key Concept**: Common sub-expression elimination is applied to intermediate extracted bits.
+Common sub-expression elimination is applied to intermediate extracted bits.
 
 **Implications:**
 

@@ -1,14 +1,14 @@
 # Common tricks
 
-As explained in the [Basics of FHE](fhe\_basics.md), the challenge for developers is to adapt their code to fit FHE constraints. In this document we have collected some common examples to illustrate the kind of optimization one can do to get better performance.
+This document introduces several common techniques for optimizing code to fit Fully Homomorphic Encryption (FHE) [constraints](../core-features/fhe_basics.md#pbs-management). The examples provided demonstrate various workarounds and performance optimizations that you can implement while working with the **Concrete** library.
 
 {% hint style="info" %}
 All code snippets provided here are temporary workarounds. In future versions of Concrete, some functions described here could be directly available in a more generic and efficient form. These code snippets are coming from support answers in our [community forum](https://community.zama.ai)
 {% endhint %}
 
-## Minimum/Maximum for several values
+## Minimum/Maximum for multiple values
 
-Concrete supports `np.minimum`/`np.maximum` natively, but not `np.min`/`np.max` yet. To work around it, you can do a series of `np.minimum`/`np.maximum`s:
+Concrete supports `np.minimum`/`np.maximum` natively, but not `np.min`/`np.max` yet. To achieve the functionality, you can do a series of `np.minimum`/`np.maximum`s:
 
 ```python
 import numpy as np
@@ -31,8 +31,7 @@ assert circuit.encrypt_run_decrypt([x1, x2, x3, x4, x5]) == min(x1, x2, x3, x4, 
 ```
 
 ## Retrieving a value within an encrypted array with an encrypted index
-
-This example shows how to deal with an array and an encrypted index. It will create a "selection" array filled with `0` except for the requested index that will be `1`, and sum the products of all array values by this selection array:
+This example demonstrates how to retrieve a value from an array using an encrypted index. The method creates a "selection" array filled with `0`s except for the requested index, which will be `1`. It then sums the products of all array values with this selection array:
 
 ```python
 import numpy as np
@@ -57,7 +56,7 @@ assert circuit.encrypt_run_decrypt(array, index) == array[index]
 
 ## Filter an array with comparison (>)
 
-This example filters an encrypted array with an encrypted condition, here a `greater than` with an encrypted value. It packs all values with a selection bit, resulting from the comparison that allow the unpacking of only the filtered values:
+This example filters an encrypted array with an encrypted condition, in this case a `greater than` comparison with an encrypted value. It packs all values with a selection bit that results from the comparison, allowing the unpacking of only the filtered values:
 
 ```python
 import numpy as np
@@ -88,8 +87,7 @@ assert np.array_equal(circuit.encrypt_run_decrypt(numbers, threshold), list(map(
 ```
 
 ## Matrix Row/Col means
-
-In this example Matrix operation, we are introducing a key concept when using Concrete: trying to maximize the parallelization. Here instead of sequentially summing all values to create a mean value, we split the values in sub-groups, and do the mean of the sub-group means:
+This example introduces a key concept when using **Concrete**: maximizing parallelization. Instead of sequentially summing all values to compute a mean, the values are split into sub-groups, and the mean of these sub-group means is computed:
 
 ```python
 import numpy as np
