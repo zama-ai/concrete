@@ -1,17 +1,20 @@
 # Table lookup
 
 
+This document introduces the concept of Table Lookups (TLUs) in **Concrete**, covers the basic TLU usage, performance considerations, and some basic techniques for optimizing TLUs in encrypted computations. For more advanced TLU usage, refer to the [Table Lookup advanced](table_lookups_advanced.md) section
 
-In TFHE, there exists mainly two operations: the linear operations (additions, subtractions, multiplications by integers) and the rest. And the rest is done with table lookups (TLUs), which means that a lot of things are done with TLU. In this document, we explain briefly, from a user point of view, how TLU can be used. In [the TLU advanced documentation](table_lookups_advanced.md), we enter a bit more into the details.
 
-## Performance
+In TFHE, there exists mainly two operations: the linear operations, such as additions, subtractions, multiplications by integer, and the non-linear operations. Non-linear operations are achieved with Table Lookups (TLUs). 
 
-Before entering into the details on how we can use TLU in Concrete, let us mention the most important parameter for speed here: the smallest the bitwidth of a TLU is, the faster the corresponding FHE operation will be. Which means, in general, the user should try to reduce the size of the inputs to the tables. Also, we propose in the end of this document ways to truncate or round entries, which makes effective inputs smaller and so makes corresponding TLU faster.
+## Performance 
+
+When using TLUs in Concrete, the most crucial factor for speed is the bit-width of the TLU. The smaller the bit width, the faster the corresponding FHE operation. Therefore, you should reduce the size of inputs to the lookup tables whenever possible. At the end of this document, we discuss methods for truncating or rounding entries to decrease the effective input size, further improving TLU performance.
 
 ## Direct TLU
 
-Direct TLU stands for instructions of the form `y = T[i]`, for some table `T` and some index `i`. One can use the `fhe.LookupTable` to define the table values, and then use it on scalars or tensors.
+A direct TLU performs operations in the form of `y = T[i]`, where `T` is a table and `i` is an index. You can define the table using `fhe.LookupTable` and apply it to scalars or tensors.
 
+### Scalar lookup
 ```python
 from concrete import fhe
 
@@ -29,7 +32,7 @@ assert circuit.encrypt_run_decrypt(1) == table[1] == -1
 assert circuit.encrypt_run_decrypt(2) == table[2] == 3
 assert circuit.encrypt_run_decrypt(3) == table[3] == 0
 ```
-
+### Tensor lookup
 ```python
 from concrete import fhe
 import numpy as np
@@ -58,11 +61,11 @@ actual_output = circuit.encrypt_run_decrypt(np.array(sample))
 assert np.array_equal(actual_output, expected_output)
 ```
 
-`LookupTable` mimics array indexing in Python, which means if the lookup variable is negative, the table is looked up from the back.
+The `LookupTable` behaves like Python's array indexing, where negative indices access elements from the end of the table.
 
 ## Multi TLU
 
-Multi TLU stands for instructions of the form `y = T[j][i]`, for some set of tables `T`, some table-index `j` and some index `i`. One can use the `fhe.LookupTable` to define the table values, and then use it on scalars or tensors.
+A multi TLU is used to apply different elements of the input to different tables (e.g., square the first column, cube the second column):
 
 ```python
 from concrete import fhe
@@ -101,8 +104,7 @@ assert np.array_equal(actual_output, expected_output)
 
 ### Transparent TLU
 
-For lot of programs, users will not even need to define their table lookup, it will be done
-automatically by Concrete.
+In many cases, you won't need to define your own TLUs, as Concrete will set them for you.
 
 ```python
 from concrete import fhe
@@ -120,8 +122,7 @@ assert circuit.encrypt_run_decrypt(2) == 4
 assert circuit.encrypt_run_decrypt(3) == 9
 ```
 
-Remark that this kind of TLU is compatible with the TLU options, and in particular, with rounding and
-truncating which are explained below.
+Note that this kind of TLU is compatible with the TLU options, particularly with rounding and truncating which are explained below.
 
 {% hint style="info" %}
 
@@ -129,15 +130,14 @@ truncating which are explained below.
 
 {% endhint %}
 
-### TLU on the most significant bits
+## Optimizing input size
 
-As we said in the beginning of this document, bitsize of the inputs of TLU are critical for the efficiency of the execution: the slower they are, the faster the TLU will be. Thus, we have proposed a few mechanisms to reduce this bitsize: the main one is _rounding_ or _truncating_.
+Reducing the bit size of TLU inputs is essential for execution efficiency, as mentioned in the previous [performance](#performance) section.  One effective method is to replace the table lookup `y = T[i]` by some `y = T'[i']`, where `i'` only has the most significant bits of `i` and `T'` is a much shorter table. This approach can significantly speed up the TLU while maintaining acceptable accuracy in many applications, such as machine learning. 
 
-For lot of use-cases, like for example in Machine Learning, it is possible to replace the table lookup `y = T[i]` by some `y = T'[i']`, where `i'` only has the most significant bits of `i` and `T'` is a much shorter table, and still maintain a good accuracy of the function. The interest of such a method stands in the fact that, since the table `T'` is much smaller, the corresponding TLU will be done much more quickly.
+In this section, we introduce two basic techniques: [truncating](#truncating) or [rounding](#rounding). You can find more in-depth explanation and other advanced techniques of optimization in the [TLU advanced documentation](table_lookups_advanced.md).
 
-There are different flavors of doing this in Concrete. We describe them quickly here, and refer the user to the [TLU advanced documentation](table_lookups_advanced.md) for more explanations.
-
-The first possibility is to set `i'` as the truncation of `i`: here, we just take the most significant bits of `i`. This is done with `fhe.truncate_bit_pattern`.
+### Truncating
+The first option is to set `i'` as the truncation of `i`. In this method, we just take the most significant bits of `i`. This is done with `fhe.truncate_bit_pattern`.
 
 ```python
 from concrete import fhe
@@ -160,8 +160,11 @@ for i in range(16):
 
     assert circuit.encrypt_run_decrypt(i) == rounded_i**2
 ```
+### Rounding
 
-The second possibility is to set `i'` as the rounding of `i`: here, we take the most significant bits of `i`, and increment by 1 if ever the most significant ignored bit is a 1, to round.  This is done with `fhe.round_bit_pattern`. It's however a bit more complicated, since rounding may make us go "out" of the original table. Remark how we enlarged the original table by 1 index.
+The second option is to set `i` as the rounded value of `i`. In this method, we take the most significant bits of `i` and round up by 1 if the most significant ignored bit is 1.  This is done with `fhe.round_bit_pattern`. 
+
+However, this approach can be slightly more complex, as rounding might result in an index that exceeds the original table's bounds. To handle this, we expand the original table by one additional index:
 
 ```python
 from concrete import fhe
@@ -193,8 +196,8 @@ for i in range(16):
         circuit.encrypt_run_decrypt(i) == rounded_i**2
     ), f"Miscomputation {i=} {circuit.encrypt_run_decrypt(i)} {rounded_i**2}"
 ```
-
-Finally, for `fhe.round_bit_pattern`, there exist an `exactness=fhe.Exactness.APPROXIMATE` option, which can make computations even faster, at the price of having a few (minor) differences between cleartext computations and encrypted computations.
+### Approximate rounding
+For further optimizations, the `fhe.round_bit_pattern` function has an `exactness=fhe.Exactness.APPROXIMATE` option, which allows for faster computations at the cost of minor differences between cleartext and encrypted results:
 
 ```python
 from concrete import fhe

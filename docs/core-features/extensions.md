@@ -1,10 +1,11 @@
 # Extensions
 
-**Concrete** supports native Python and NumPy operations as much as possible, but not everything in Python or NumPy is available. Therefore, we provide some extensions ourselves to improve your experience.
+This document introduces some extensions of **Concrete**, including functions for wrapping univariate and multivariate functions, performing convolution and maxpool operations, creating encrypted arrays, and more.
+
 
 ## fhe.univariate(function)
 
-Allows you to wrap any univariate function into a single table lookup:
+Wraps any univariate function into a single table lookup:
 
 ```python
 import numpy as np
@@ -36,19 +37,18 @@ assert np.array_equal(circuit.encrypt_run_decrypt(sample), complex_univariate_fu
 ```
 
 {% hint style="danger" %}
-The wrapped function:
+The wrapped function must follow these criteria:
+- **No side effects**: For example, no modification of global state
+- **Deterministic:** For example, no random number generation.
+- **Shape consistency**: `output.shape` should be the same with `input.shape`
+- **Element-wise mapping**: Each output element must correspond to a single input element, for example. `output[0]` should only depend on `input[0]` of all inputs.
 
-* shouldn't have any side effects (e.g., no modification of global state)
-* should be deterministic (e.g., no random numbers)
-* should have the same output shape as its input (i.e., `output.shape` should be the same with `input.shape`)
-* each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]`)
-
-If any of these constraints are violated, the outcome is undefined.
+Violating these constraints may result in undefined outcome.
 {% endhint %}
 
 ## fhe.multivariate(function)
 
-Allows you to wrap any multivariate function into a table lookup:
+Wraps any multivariate function into a table lookup:
 
 ```python
 import numpy as np
@@ -79,14 +79,14 @@ assert np.array_equal(circuit.encrypt_run_decrypt(*sample), function(*sample))
 ```
 
 {% hint style="danger" %}
-The wrapped function:
+The wrapped functions must follow these criteria:
 
-* shouldn't have any side effects (e.g., no modification of global state)
-* should be deterministic (e.g., no random numbers)
-* should have input shapes which are broadcastable to the output shape (i.e., `input.shape` should be broadcastable to `output.shape` for all inputs)
-* each output element should correspond to a single input element (e.g., `output[0]` should only depend on `input[0]` of all inputs)
+- **No side effects**: For example, avoid modifying global state.
+- **Deterministic**: For example, no random number generation.
+- **Broadcastable shapes**: `input.shape` should be broadcastable to `output.shape` for all inputs.
+- **Element-wise mapping**: Each output element must correspond to a single input element, for example, `output[0]` should only depend on `input[0]` of all inputs.
 
-If any of these constraints are violated, the outcome is undefined.
+Violating these constraints may result in undefined outcome.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -95,7 +95,7 @@ Multivariate functions cannot be called with [rounded](rounding.md) inputs.
 
 ## fhe.conv(...)
 
-Allows you to perform a convolution operation, with the same semantic as [onnx.Conv](https://github.com/onnx/onnx/blob/main/docs/Operators.md#conv):
+Perform a convolution operation, with the same semantic as [onnx.Conv](https://github.com/onnx/onnx/blob/main/docs/Operators.md#conv):
 
 ```python
 import numpy as np
@@ -127,7 +127,7 @@ Only 2D convolutions without padding and with one group are currently supported.
 
 ## fhe.maxpool(...)
 
-Allows you to perform a maxpool operation, with the same semantic as [onnx.MaxPool](https://github.com/onnx/onnx/blob/main/docs/Operators.md#maxpool):
+Perform a maxpool operation, with the same semantic as [onnx.MaxPool](https://github.com/onnx/onnx/blob/main/docs/Operators.md#maxpool):
 
 ```python
 import numpy as np
@@ -157,7 +157,7 @@ Only 2D maxpooling without padding and up to 15-bits is currently supported.
 
 ## fhe.array(...)
 
-Allows you to create encrypted arrays:
+Create encrypted arrays:
 
 ```python
 import numpy as np
@@ -180,7 +180,7 @@ Currently, only scalars can be used to create arrays.
 
 ## fhe.zero()
 
-Allows you to create an encrypted scalar zero:
+Create an encrypted scalar zero:
 
 ```python
 from concrete import fhe
@@ -200,7 +200,7 @@ for x in range(10):
 
 ## fhe.zeros(shape)
 
-Allows you to create an encrypted tensor of zeros:
+Create an encrypted tensor of zeros:
 
 ```python
 from concrete import fhe
@@ -220,7 +220,7 @@ for x in range(10):
 
 ## fhe.one()
 
-Allows you to create an encrypted scalar one:
+Create an encrypted scalar one:
 
 ```python
 from concrete import fhe
@@ -240,7 +240,7 @@ for x in range(10):
 
 ## fhe.ones(shape)
 
-Allows you to create an encrypted tensor of ones:
+Create an encrypted tensor of ones:
 
 ```python
 from concrete import fhe
@@ -260,7 +260,7 @@ for x in range(10):
 
 ## fhe.hint(value, \*\*kwargs)
 
-Allows you to hint properties of a value. Imagine you have this circuit:
+Hint properties of a value. Imagine you have this circuit:
 
 ```python
 from concrete import fhe
@@ -355,7 +355,7 @@ def is_vectors_same(x, y):
 
 ## fhe.relu(value)
 
-Allows you to perform ReLU operation, with the same semantic as `x if x >= 0 else 0`:
+Perform ReLU operation, with the same semantic as `x if x >= 0 else 0`:
 
 ```python
 import numpy as np
@@ -374,25 +374,18 @@ assert circuit.encrypt_run_decrypt(-1) == 0
 assert circuit.encrypt_run_decrypt(-3) == 0
 assert circuit.encrypt_run_decrypt(5) == 5
 ```
+### ReLU Conversion methods
+The ReLU operation can be implemented in two ways:
+- **Single TLU (Table Lookup Unit) on the original bit-width**: Suitable for small bit-widths, as it requires fewer resources.
+- **Multiple TLUs on smaller bit-widths**: Better for large bit-widths, avoiding the high cost of a single large TLU.
 
-ReLU extension can be converted in two different ways:
+### Configuration options
 
-* With a single TLU on the original bit-width.
-* With multiple TLUs on smaller bit-widths.
+The method of conversion is controlled by the `relu_on_bits_threshold: int = 7` option. For example, setting `relu_on_bits_threshold=5` means:
+- Bit-widths from 1 to 4 will use a single TLU.
+- Bit-widths of 5 and above will use multiple TLUs.
 
-For small bit-widths, the first one is better as it'll have a single TLU on a small bit-width. For big bit-widths, the second one is better as it won't have a TLU on a big bit-width.
-
-The decision between the two can be controlled with `relu_on_bits_threshold: int = 7` configuration option:
-
-* `relu_on_bits_threshold=5` means:
-  * 1-bit to 4-bits would be converted using the first way (i.e., using TLU)
-  * 5-bits and more would be converted using the second way (i.e., using bits)
-
-There is another option to customize the implementation `relu_on_bits_chunk_size: int = 2`:
-
-* `relu_on_bits_chunk_size=4` means:
-  * When using the second implementation:
-    * The input would be split to 4-bit chunks using [fhe.bits](bit\_extraction.md), and then the ReLU would be applied to those chunks, which are then combined back.
+Another option to fine-tune the implementation is `relu_on_bits_chunk_size: int = 2`. For example, setting `relu_on_bits_chunk_size=4` means that when using second implementation (using chunks), the input is split to 4-bit chunks using [fhe.bits](bit\_extraction.md), and then the ReLU is applied to those chunks, which are then combined back.
 
 Here is a script showing how execution cost is impacted when changing these values:
 
@@ -483,12 +476,12 @@ The default values of these options are set based on simple circuits. How they a
 {% endhint %}
 
 {% hint style="warning" %}
-Conversion with the second method (i.e., using chunks) only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
+Conversion with the second method (using chunks) only works in `Native` encoding, which is usually selected when all table lookups in the circuit are below or equal to 8 bits.
 {% endhint %}
 
 ## fhe.if\_then\_else(condition, x, y)
 
-Allows you to perform ternary if operation, with the same semantic as `x if condition else y`:
+Perform ternary if operation, with the same semantic as `x if condition else y`:
 
 ```python
 import numpy as np
@@ -520,7 +513,7 @@ assert circuit.encrypt_run_decrypt(0, 3, -5) == -5
 
 ## fhe.identity(value)
 
-Allows you to copy the value:
+Copy the value:
 
 ```python
 import numpy as np
@@ -541,7 +534,7 @@ assert circuit.encrypt_run_decrypt(5) == 5
 ```
 
 {% hint style="info" %}
-Identity extension can be used to clone an input while changing its bit-width. Imagine you have `return x**2, x+100` where `x` is 2-bits. Because of `x+100`, `x` will be assigned 7-bits and `x**2` would be more expensive than it needs to be. If `return x**2, fhe.identity(x)+100` is used instead, `x` will be assigned 2-bits as it should and `fhe.identity(x)` will be assigned 7-bits as necessary.
+The `fhe.identity` extension is useful for cloning an input with a different bit-width.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -549,7 +542,6 @@ Identity extension only works in `Native` encoding, which is usually selected wh
 {% endhint %}
 
 ## fhe.refresh(value)
-
 It is similar to `fhe.identity` but with the extra guarantee that encryption noise is refreshed.
 
 {% hint style="info" %}
@@ -562,7 +554,7 @@ Refresh extension only works in `Native` encoding, which is usually selected whe
 
 ## fhe.inputset(...)
 
-Used for creating a random inputset with the given specifications:
+Create a random inputset with the given specifications:
 
 ```python
 inputset = fhe.inputset(fhe.uint4, fhe.tensor[fhe.int3, 3, 2], lambda index: custom_value(index))

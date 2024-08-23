@@ -1,45 +1,44 @@
 # Cryptography basics
 
-In this section, we remind a bit about what Fully Homomorphic Encryption (FHE) is. Much more complete resources are available on [this webpage](https://github.com/zama-ai/awesome-zama) or [fhe.org](https://fhe.org/resources/).
+This document provides an overview of Fully Homomorphic Encryption (FHE) to get you started with **Concrete**. For more comprehensive resources about FHE, visit [the awesome Zama repo](https://github.com/zama-ai/awesome-zama) or [fhe.org](https://fhe.org/resources/).
 
 ## Operations on encrypted values
 
-The idea of homomorphic encryption is that you can compute on ciphertexts without knowing the messages they encrypt. A scheme is said to be [fully homomorphic](https://en.wikipedia.org/wiki/Homomorphic\_encryption#Fully\_homomorphic\_encryption), if an unlimited number of additions and multiplications are supported ($$x$$ is a plaintext and $$E[x]$$ is the corresponding ciphertext):
+Homomorphic encryption allows computations on ciphertexts without revealing the underlying plaintexts. A scheme is considered [fully homomorphic](https://en.wikipedia.org/wiki/Homomorphic\_encryption#Fully\_homomorphic\_encryption) if it supports an unlimited number of additions and multiplications. 
 
-* homomorphic addition: $$E[x] + E[y] = E[x + y]$$
-* homomorphic multiplication: $$E[x] * E[y] = E[x * y]$$
+Let $$x$$ represent a plaintext and $$E[x]$$ the corresponding ciphertext:
+
+* **Homomorphic addition**: $$E[x] + E[y] = E[x + y]$$
+* **Homomorphic multiplication**: $$E[x] * E[y] = E[x * y]$$
 
 ## Noise and Bootstrap
 
-FHE encrypts data as LWE ciphertexts. These ciphertexts can be visually represented as a bit vector with the encrypted message in the higher-order (yellow) bits as well as a random part (gray), that guarantees the security of the encrypted message, called noise.
+FHE encrypts data as LWE ciphertexts, represented visually as a bit vector. The encrypted message is located in the higher-order (yellow) bits, while the lower-order (gray) bits contain random noise that ensures the security of the ciphertext.
 
 ![](../\_static/basics/Ciphertext.png)
 
-Under the hood, each time you perform an operation on an encrypted value, the noise grows and at a certain point, it may overlap with the message and corrupt its value.
 
-There is a way to decrease the noise of a ciphertext with the **Bootstrap operation**. The bootstrap operation takes as input a noisy ciphertext and generates a new ciphertext encrypting the same message, but with a lower noise. This allows additional operations to be performed on the encrypted message.
+Each operation on an encrypted value increases the noise, and if it becomes too large, it may overlap with the message and corrupt its value.  To reduce the noise of a ciphertext, the **Bootstrap operation** generates a new ciphertext encrypting the same message, but with lower noise. This allows additional operations to be performed on the encrypted message.
 
-A typical FHE program will be made up of a series of operations followed by a Bootstrap, this is then repeated many times.
+In typical FHE programs, operations are followed by a bootstrap, and this sequence repeats multiple times.
 
 ## Probability of Error
 
 The amount of noise in a ciphertext is not as bounded as it may appear in the above illustration. As the errors are drawn randomly from a Gaussian distribution, they can be of varying size. This means that we need to be careful to ensure the noise terms do not affect the message bits. If the error terms do overflow into the message bits, this can cause an incorrect output (failure) when bootstrapping.
 
-The default failure probability in Concrete is set for the whole program and is $$\frac{1}{100000}$$ by default. This means that 1 execution of every 100,000 may result in an incorrect output. To have a lower probability of error, you need to change the cryptographic parameters, likely resulting in worse performance. On the other side of this trade-off, allowing a higher probability of error will likely speed-up operations.
+The noise in a ciphertext isn't strictly bounded, as errors are drawn from a Gaussian distribution and vary in size. If the noise grows too large, it may corrupt the message bits, causing incorrect outputs during bootstrapping.
+
+In Concrete, the default failure probability is set to $$\frac{1}{100000}$$, meaning that 1 in every 100,000 executions may result in an error. Reducing this probability requires adjusting cryptographic parameters, potentially lowering performance. Conversely, allowing a higher probability of error may improve performance.
 
 ## Function evaluation
 
-So far, we only introduced arithmetic operations but a typical program usually also involves functions (maximum, minimum, square root…)
+While we’ve covered arithmetic operations, typical programs also involve functions (for example, maximum, minimum, square root). In [TFHE](../get-started/terminology.md#tfhe), the Bootstrap operation can be enhanced with a [Table Lookup](../get-started/terminology.md#table-lookup-tlu), creating a **Programmable Bootstrap (PBS)**.
 
-During the Bootstrap operation, in TFHE, you could perform a table lookup simultaneously to reduce noise, turning the Bootstrap operation into a Programmable Bootstrap (PBS).
+Concrete uses PBS to evaluate functions homomorphically:
 
-Concrete uses the PBS to support function evaluation:
+* **Homomorphic univariate function evaluation**: $$f(E[x]) = E[f(x)]$$
 
-* homomorphic univariate function evaluation: $$f(E[x]) = E[f(x)]$$
-
-Let's take a simple example. A function (or circuit) that takes a 4 bits input variable and output the maximum value between a clear constant and the encrypted input:
-
-example:
+For example, consider a function (or circuit) that takes a 4 bits input variable and output the maximum value between a clear constant and the encrypted input:
 
 ```python
 import numpy as np
@@ -48,7 +47,7 @@ def encrypted_max(x: uint4):
     return np.maximum(5, x)
 ```
 
-could be turned into a table lookup:
+This function could be turned into a table lookup:
 
 ```python
 def encrypted_max(x: uint4):
@@ -60,10 +59,9 @@ The Lookup table `lut` being applied during the Programmable Bootstrap.
 
 ## PBS management
 
-You should not worry about PBS, they are completely managed by Concrete during the compilation process. Each function evaluation will be turned into a Lookup table and evaluated by a PBS.
+You don't need to manage PBS operations manually, as they are handled automatically by Concrete during the compilation process. Each function evaluation is converted into a lookup table and evaluated via PBS.
 
-See this in action with the previous example, if you dump the MLIR code produced by the frontend, you will see (forget about MLIR syntax, just see the Lookup table value on the 4th line):
-
+For example, if you inspect the MLIR code generated by the frontend, you’ll see the lookup table in the 4th line of the following output:
 ```c++
 module {
   func.func @main(%arg0: !FHE.eint<4>) -> !FHE.eint<4> {
@@ -73,9 +71,8 @@ module {
   }
 }
 ```
+There are 2 things to keep in mind about PBS:
 
-The only thing you should keep in mind is that it adds a constraint on the input type, and that is the reason behind having a maximum bit-width supported in Concrete.
+- **Input type constraints**: PBS operations adds constraints on input type and thus limits the maximum bit-width supported in Concrete.
+- **PBS performance impact**: PBS operations are costly, so minimizing the number of PBS can improve circuit performance. PBS cost also varies with input precision (for example, an 8-bit PBS is faster than a 16-bit PBS). To learn more about optimizing PBS, refer to the [Optimization](../optimization/self.md) section.
 
-Second takeaway is that PBS are the most costly operations in FHE, the less PBS in your circuit the faster it will run. It is an interesting metrics to optimize (you will see that Concrete could give you the number of PBS used in your circuit).
-
-Note also that PBS cost varies with the input variable precision (a circuit with 8 bit PBS will run faster than one with 16 bits PBS).
