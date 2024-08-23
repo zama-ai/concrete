@@ -928,8 +928,7 @@ class Converter:
             [value << (msg_width * i) for value in range(2 ** (msg_width + carry_width))]
             for i in range(num_cts)
         ]
-        # ciphertexts are oganized msb first, and tables are lsb first
-        mapping = np.broadcast_to(np.array(list(reversed(range(num_cts)))), tfhers_int.shape)
+        mapping = np.broadcast_to(np.array(range(num_cts)), tfhers_int.shape)
 
         # intermediate type increase bit_width via TLU but keep the same shape
         interm_type = ctx.tensor(ctx.eint(result_bit_width), tfhers_int.shape)
@@ -984,7 +983,7 @@ class Converter:
         reshaped_native_int = ctx.reshape(native_int, native_int.shape + (1,))
 
         # TODO: remove this when we want to optimize computation so that we don't compute
-        # on empty ciphertexts, based on the bit_width assignment. (e.g. if onlt two lsb
+        # on empty ciphertexts, based on the bit_width assignment. (e.g. if only two lsb
         # ciphertexts are used, then we don't want to extract bits from the remaining ones)
         reshaped_native_int.set_original_bit_width(input_bit_width)
 
@@ -1001,8 +1000,7 @@ class Converter:
             for i in range(num_cts)
         ]
 
-        # we are extracting lsb first so we reverse it so we have msb first
-        result = ctx.concatenate(result_type, extracted_bits[::-1], axis=-1)
+        result = ctx.concatenate(result_type, extracted_bits, axis=-1)
         return ctx.change_partition(result, dest_partition=dtype.params)
 
     # pylint: enable=missing-function-docstring,unused-argument

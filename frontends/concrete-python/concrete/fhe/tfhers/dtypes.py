@@ -115,9 +115,9 @@ class TFHERSIntegerType(Integer):
         msg_width = self.msg_width
         if isinstance(value, (int, np.integer)):
             value_bin = bin(value)[2:].zfill(bit_width)
-            # msb first
+            # lsb first
             return np.array(
-                [int(value_bin[i : i + msg_width], 2) for i in range(0, bit_width, msg_width)]
+                [int(value_bin[i : i + msg_width], 2) for i in range(0, bit_width, msg_width)][::-1]
             )
 
         if isinstance(value, list):  # pragma: no cover
@@ -168,8 +168,8 @@ class TFHERSIntegerType(Integer):
             raise ValueError(msg)
 
         if len(value.shape) == 1:
-            # reversed because it's msb first and we are computing powers lsb first
-            return sum(v << i * msg_width for i, v in enumerate(reversed(value)))
+            # lsb first
+            return sum(v << i * msg_width for i, v in enumerate(value))
 
         cts = value.reshape((-1, expected_ct_shape))
         return np.array([self.decode(ct) for ct in cts]).reshape(value.shape[:-1])
