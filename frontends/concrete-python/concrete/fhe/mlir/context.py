@@ -82,7 +82,7 @@ class Context:
 
     configuration: Configuration
 
-    tfhers_partition: Dict[tfhers.TFHERSParams, str]
+    tfhers_partition: Dict[tfhers.CryptoParams, str]
 
     def __init__(self, context: MlirContext, graph: Graph, configuration: Configuration):
         self.context = context
@@ -3986,7 +3986,7 @@ class Context:
             original_bit_width=1,
         )
 
-    def get_partition_name(self, partition: tfhers.TFHERSParams) -> str:
+    def get_partition_name(self, partition: tfhers.CryptoParams) -> str:
         if partition not in self.tfhers_partition.keys():
             self.tfhers_partition[partition] = f"tfhers_{randint(0, 2**32)}"  # noqa: S311
         return self.tfhers_partition[partition]
@@ -3994,14 +3994,14 @@ class Context:
     def change_partition(
         self,
         x: Conversion,
-        src_partition: Optional[tfhers.TFHERSParams] = None,
-        dest_partition: Optional[tfhers.TFHERSParams] = None,
+        src_partition: Optional[tfhers.CryptoParams] = None,
+        dest_partition: Optional[tfhers.CryptoParams] = None,
     ) -> Conversion:
         assert x.is_encrypted
         # build src and dest attributes
         src = None
         dest = None
-        if isinstance(src_partition, tfhers.TFHERSParams):
+        if isinstance(src_partition, tfhers.CryptoParams):
             name = self.get_partition_name(src_partition)
             src = PartitionAttr.get(
                 self.context,
@@ -4012,7 +4012,7 @@ class Context:
                 src_partition.pbs_base_log,
                 src_partition.pbs_level,
             )
-        if isinstance(dest_partition, tfhers.TFHERSParams):
+        if isinstance(dest_partition, tfhers.CryptoParams):
             name = self.get_partition_name(dest_partition)
             dest = PartitionAttr.get(
                 self.context,

@@ -2,6 +2,7 @@
 Declaration of `TFHERSIntegerType` class.
 """
 
+from enum import Enum
 from functools import partial
 from typing import Any, Union
 
@@ -10,7 +11,14 @@ import numpy as np
 from ..dtypes import Integer
 
 
-class TFHERSParams:
+class EncryptionKeyChoice(Enum):
+    """TFHErs key choice: big or small."""
+
+    BIG = 0
+    SMALL = 1
+
+
+class CryptoParams:
     """Crypto parameters used for a tfhers integer."""
 
     lwe_dimension: int
@@ -18,6 +26,9 @@ class TFHERSParams:
     polynomial_size: int
     pbs_base_log: int
     pbs_level: int
+    lwe_noise_distribution: float
+    glwe_noise_distribution: float
+    encryption_key_choice: EncryptionKeyChoice
 
     def __init__(
         self,
@@ -26,18 +37,39 @@ class TFHERSParams:
         polynomial_size: int,
         pbs_base_log: int,
         pbs_level: int,
+        lwe_noise_distribution: float,
+        glwe_noise_distribution: float,
+        encryption_key_choice: EncryptionKeyChoice,
     ):
         self.lwe_dimension = lwe_dimension
         self.glwe_dimension = glwe_dimension
         self.polynomial_size = polynomial_size
         self.pbs_base_log = pbs_base_log
         self.pbs_level = pbs_level
+        self.lwe_noise_distribution = lwe_noise_distribution
+        self.glwe_noise_distribution = glwe_noise_distribution
+        self.encryption_key_choice = encryption_key_choice
+
+    def encryption_variance(self) -> float:
+        """Get encryption variance based on parameters.
+
+        This will return different values depending on the encryption key choice.
+
+        Returns:
+            float: encryption variance
+        """
+        if self.encryption_key_choice == EncryptionKeyChoice.BIG:
+            return self.glwe_noise_distribution**2
+        assert self.encryption_key_choice == EncryptionKeyChoice.SMALL
+        return self.lwe_noise_distribution**2
 
     def __str__(self) -> str:  # pragma: no cover
         return (
-            f"tfhers_params<lwe_dim={self.lwe_dimension}, glwe_dim={self.glwe_dimension}, "
+            f"crypto_params<lwe_dim={self.lwe_dimension}, glwe_dim={self.glwe_dimension}, "
             f"poly_size={self.polynomial_size}, pbs_base_log={self.pbs_base_log}, "
-            f"pbs_level={self.pbs_level}>"
+            f"pbs_level={self.pbs_level}, lwe_noise_distribution={self.lwe_noise_distribution}, "
+            f"glwe_noise_distribution={self.glwe_noise_distribution}, encryption_key_choice="
+            f"{self.encryption_key_choice.name}>"
         )
 
     def __eq__(self, other: Any) -> bool:  # pragma: no cover
@@ -69,7 +101,7 @@ class TFHERSIntegerType(Integer):
 
     carry_width: int
     msg_width: int
-    params: TFHERSParams
+    params: CryptoParams
 
     def __init__(
         self,
@@ -77,7 +109,7 @@ class TFHERSIntegerType(Integer):
         bit_width: int,
         carry_width: int,
         msg_width: int,
-        params: TFHERSParams,
+        params: CryptoParams,
     ):
         super().__init__(is_signed, bit_width)
         self.carry_width = carry_width
@@ -96,7 +128,7 @@ class TFHERSIntegerType(Integer):
     def __str__(self) -> str:
         return (
             f"tfhers<{('int' if self.is_signed else 'uint')}"
-            f"{self.bit_width}, {self.carry_width}, {self.msg_width}>"
+            f"{self.bit_width}, {self.carry_width}, {self.msg_width}, params={self.params}>"
         )
 
     def encode(self, value: Union[int, np.integer, list, np.ndarray]) -> np.ndarray:

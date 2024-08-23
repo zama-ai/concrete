@@ -44,12 +44,15 @@ def default_tfhers_dtype() -> tfhers.TFHERSIntegerType:
     Returns:
         tfhers.TFHERSIntegerType: default type for testing
     """
-    tfhers_params = tfhers.TFHERSParams(
-        761,
+    tfhers_params = tfhers.CryptoParams(
+        909,
         1,
-        2048,
-        23,
-        1,
+        4096,
+        15,
+        2,
+        0,
+        2.168404344971009e-19,
+        tfhers.EncryptionKeyChoice.BIG,
     )
     return tfhers.int8_2_2(tfhers_params)
 
@@ -167,9 +170,11 @@ def default_tfhers_dtype() -> tfhers.TFHERSIntegerType:
             ),
             [],
             ValueError,
-            "Evaluation of generic 'unknown' node resulted in TFHEInteger(dtype=tfhers<int8, 2, 2>"
-            ", shape=(3,), value=[1 2 3]) of type TFHERSInteger which is not acceptable either "
-            "because of the type or because of overflow",
+            "Evaluation of generic 'unknown' node resulted in TFHEInteger(dtype=tfhers<int8, 2, 2"
+            ", params=crypto_params<lwe_dim=909, glwe_dim=1, poly_size=4096, pbs_base_log=15, "
+            "pbs_level=2, lwe_noise_distribution=0, glwe_noise_distribution=2.168404344971009e-19,"
+            " encryption_key_choice=BIG>>, shape=(3,), value=[1 2 3]) of type TFHERSInteger which "
+            "is not acceptable either because of the type or because of overflow",
             id="TFHERSInteger in a non-input node",
         ),
     ],
