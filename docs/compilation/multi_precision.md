@@ -1,6 +1,11 @@
 # Multi Precision
 
-Each integer in the circuit has a certain bit-width, which is determined by the inputset. These bit-widths can be observed when graphs are printed:
+This document explains the multi-precision option for bit-width assignment for integers. 
+
+The multi-precision option enables the frontend to use the smallest bit-width possible for each operation in Fully Homomorphic Encryption (FHE), improving computation efficiency.
+
+## Bit-width and encoding differences
+Each integer in the circuit has a certain bit-width, which is determined by the input-set. These bit-widths are visible when graphs are printed, for example:
 
 ```
 %0 = x                  # EncryptedScalar<uint3>              ∈ [0, 7]
@@ -11,7 +16,7 @@ return %2                                     ^ these are       ^^^^^^^
                                                 bit-widths      these bounds
 ```
 
-However, it's not possible to add 3-bit and 4-bit numbers together because their encoding is different:
+However, adding integers with different bit-widths (for example, 3-bit and 4-bit numbers) directly isn't possible due to differences in encoding, as shown below:
 
 ```
 D: data
@@ -26,17 +31,18 @@ D2 D1 D0 0 0 0 ... 0 0 0 N N N N
 D3 D2 D1 D0 0 0 0 ... 0 0 0 N N N N
 ```
 
-The result of such an addition is a 5-bit number, which also has a different encoding:
+When you add a 3-bit number and a 4-bit number, the result is a 5-bit number with a different encoding: 
 
 ```
 5-bit number
 ------------
 D4 D3 D2 D1 D0 0 0 0 ... 0 0 0 N N N N
 ```
+## Bit-width assignment with graph processing
+To address these encoding differences, a graph processing step called bit-width assignment is performed. This step updates the graph's bit-widths to ensure compatibility with Fully Homomorphic Encryption (FHE). 
 
-Because of these encoding differences, we perform a graph processing step called bit-width assignment, which takes the graph and updates the bit-widths to be compatible with FHE.
+After this step, the graph might look like this:
 
-After this graph processing step, the graph would look like:
 
 ```
 %0 = x                  # EncryptedScalar<uint5>
@@ -44,10 +50,10 @@ After this graph processing step, the graph would look like:
 %2 = add(%0, %1)        # EncryptedScalar<uint5>
 return %2
 ```
+## Encoding flexibility with Table Lookup
 
-Most operations cannot change the encoding, which means that the input and output bit-widths need to be the same. However, there is an operation which can change the encoding: the table lookup operation.
+Most operations cannot change the encoding, requiring the input and output bit-widths to remain the same. However, the table lookup operation can change the encoding. For example, consider the following graph:
 
-Let's say you have this graph:
 ```
 %0 = x                    # EncryptedScalar<uint2>        ∈ [0, 3]
 %1 = y                    # EncryptedScalar<uint5>        ∈ [0, 31]
@@ -57,7 +63,7 @@ Let's say you have this graph:
 return %4
 ```
 
-This is the graph for `(x**2) + y` where `x` is 2-bits and `y` is 5-bits. If the table lookup operation wasn't able to change the encoding, we'd need to make everything 6-bits. However, since the encoding can be changed, the bit-widths can be assigned like so:
+This graph represents the computation `(x**2) + y` where `x` is 2-bits and `y` is 5-bits. Without the ability to change encodings, all bit-widths would need to be adjusted to 6-bits. However, since the encoding can change, bit-widths are assigned more efficiently:
 
 ```
 %0 = x                    # EncryptedScalar<uint2>        ∈ [0, 3]
@@ -68,6 +74,8 @@ This is the graph for `(x**2) + y` where `x` is 2-bits and `y` is 5-bits. If the
 return %4
 ```
 
-In this case, we kept `x` as 2-bits, but set the table lookup result and `y` to be 6-bits, so that the addition can be performed.
+In this case, `x` remains a 2-bit integer, but the Table Lookup result and `y` are set to 6-bits to allow for the addition.
 
-This style of bit-width assignment is called multi-precision, and it is enabled by default. To disable it and use a single precision across the circuit, you can use the `single_precision=True` configuration option.
+## Enabling and disabling multi-precision
+This approach to bit-width assignment is known as multi-precision and is enabled by default. To disable multi-precision and enforce a single precision across the circuit, use the `single_precision=True` configuration option.
+
