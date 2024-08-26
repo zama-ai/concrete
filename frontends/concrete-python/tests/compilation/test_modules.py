@@ -3,7 +3,6 @@ Tests of everything related to modules.
 """
 
 import inspect
-import re
 import tempfile
 from pathlib import Path
 
@@ -125,13 +124,18 @@ def test_non_composable_message():
         def add(x, y):
             return x + y
 
-    line_of_add = inspect.currentframe().f_lineno - 2
-    expected_message = f"""\
-Program can not be composed: At test_modules.py:{line_of_add}:0: please add `fhe.refresh(...)` to guarantee the function composability.
-The noise of the node 0 is contaminated by noise coming straight from the input (partition: 0, coeff: 2.00).\
-"""
-    with pytest.raises(RuntimeError, match=re.escape(expected_message)):
+    line = inspect.currentframe().f_lineno - 2
+    with pytest.raises(RuntimeError) as excinfo:
         Module.compile({"add": [(0, 0), (3, 3)]})
+
+    assert (
+        str(excinfo.value)
+        == f"""\
+Program can not be composed (see https://docs.zama.ai/concrete/compilation/common_errors#id-8.-unfeasible-noise-constraint): \
+At location test_modules.py:{line}:0:\nThe noise of the node 0 is contaminated by noise coming straight from the input \
+(partition: 0, coeff: 2.00).\
+"""
+    )
 
 
 def test_call_clear_circuits():

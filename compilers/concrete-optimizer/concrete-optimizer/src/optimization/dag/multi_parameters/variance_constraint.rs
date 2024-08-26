@@ -18,8 +18,7 @@ impl fmt::Display for VarianceConstraint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "At location {}:\n{} < (2²)**{} ({}bits partition:{} count:{}, dom={})",
-            self.location,
+            "{} < (2²)**{} ({}bits partition:{} count:{}, dom={})",
             self.variance,
             self.safe_variance_bound.log2().round() / 2.0,
             self.precision,

@@ -21,7 +21,6 @@ use crate::optimization::dag::multi_parameters::feasible::Feasible;
 use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
-use crate::optimization::Err::NoParametersFound;
 
 use super::feasible::Feasibility;
 use super::keys_spec::InstructionKeys;
@@ -1050,7 +1049,14 @@ pub fn optimize(
         fix_point = params.clone();
     }
     if best_params.is_none() {
-        return Err(NoParametersFound);
+        match params.is_feasible {
+            Feasibility::Unfeasible(ref unfeasible_constraint) => {
+                return Err(optimization::Err::UnfeasibleVarianceConstraint(Box::new(
+                    unfeasible_constraint.to_owned(),
+                )));
+            }
+            _ => unreachable!(),
+        }
     }
     let best_params = best_params.unwrap();
     sanity_check(
@@ -1197,7 +1203,9 @@ pub fn optimize_to_circuit_solution(
         {
             return keys_spec::CircuitSolution::from_native_solution(sol, nb_instr);
         }
-        return keys_spec::CircuitSolution::no_solution(NoParametersFound.to_string());
+        return keys_spec::CircuitSolution::no_solution(
+            optimization::Err::NoParametersFound.to_string(),
+        );
     }
     let default_partition = PartitionIndex::FIRST;
     let dag_and_params = optimize(

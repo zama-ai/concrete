@@ -11,7 +11,7 @@ pub enum Location {
 impl Display for Location {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unknown => write!(f, "unknown location"),
+            Self::Unknown => write!(f, "unknown"),
             Self::File(file) => write!(f, "{}", file.file_name().unwrap().to_str().unwrap()),
             Self::Line(file, line) => {
                 write!(f, "{}:{line}", file.file_name().unwrap().to_str().unwrap())
