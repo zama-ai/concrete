@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 from concrete import fhe
-from concrete.fhe.compilation.module import SimulationRt
 
 # pylint: disable=missing-class-docstring, missing-function-docstring, no-self-argument, unused-variable, no-member, unused-argument, function-redefined, expression-not-assigned
 # same disables for ruff:
@@ -325,8 +324,6 @@ def test_compiled_simulation(helpers):
         fhe_simulation=True,
     )
 
-    assert module.client is None
-    assert module.keys is None
     assert module.inc.simulate(5) == 6
     assert module.dec.simulate(5) == 4
 
@@ -615,7 +612,7 @@ def test_simulate_encrypt_run_decrypt(helpers):
 
     # Make sure computation happened in simulation.
     assert isinstance(encrypted_x, int)
-    assert isinstance(module.inc.runtime, SimulationRt)
+    assert module.inc.simulation_runtime.initialized
     assert isinstance(encrypted_result, int)
 
     encrypted_result = module.dec.run(encrypted_result)
@@ -623,7 +620,7 @@ def test_simulate_encrypt_run_decrypt(helpers):
     assert result == 10
 
     # Make sure computation happened in simulation.
-    assert isinstance(module.dec.runtime, SimulationRt)
+    assert module.dec.simulation_runtime.initialized
     assert isinstance(encrypted_result, int)
 
 
@@ -794,3 +791,82 @@ def test_trace_wires_multi_inputs_outputs(helpers):
     assert module.a.decrypt(a_enc) == (12, 8)
     b_enc = module.b.run(*a_enc)
     assert module.b.decrypt(b_enc) == (0, 8)
+
+
+def test_lazy_simulation_execution(helpers):
+
+    @fhe.module()
+    class Module1:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return x + 1 % 20
+
+    module = Module1.compile(
+        {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
+        helpers.configuration().fork(
+            fhe_execution=False,
+            fhe_simulation=False,
+        ),
+    )
+
+    assert not module.execution_runtime.initialized
+    assert not module.simulation_runtime.initialized
+    result = module.inc.encrypt_run_decrypt(10)
+    sim_res = module.inc.simulate(10)
+    assert module.execution_runtime.initialized
+    assert module.simulation_runtime.initialized
+
+    @fhe.module()
+    class Module2:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return x + 1 % 20
+
+    module = Module2.compile(
+        {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
+        helpers.configuration().fork(
+            fhe_execution=True,
+            fhe_simulation=False,
+        ),
+    )
+
+    assert module.execution_runtime.initialized
+    assert not module.simulation_runtime.initialized
+    sim_res = module.inc.simulate(10)
+    assert module.simulation_runtime.initialized
+
+    @fhe.module()
+    class Module3:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return x + 1 % 20
+
+    module = Module3.compile(
+        {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
+        helpers.configuration().fork(
+            fhe_execution=False,
+            fhe_simulation=True,
+        ),
+    )
+
+    assert not module.execution_runtime.initialized
+    assert module.simulation_runtime.initialized
+    result = module.inc.encrypt_run_decrypt(10)
+    assert module.execution_runtime.initialized
+
+    @fhe.module()
+    class Module4:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return x + 1 % 20
+
+    module = Module4.compile(
+        {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
+        helpers.configuration().fork(
+            fhe_execution=True,
+            fhe_simulation=True,
+        ),
+    )
+
+    assert module.execution_runtime.initialized
+    assert module.simulation_runtime.initialized

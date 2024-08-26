@@ -6,7 +6,19 @@ import json
 import os
 import re
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import networkx as nx
 import numpy as np
@@ -19,6 +31,44 @@ from .artifacts import FunctionDebugArtifacts
 from .specs import ClientSpecs
 
 # ruff: noqa: ERA001
+
+T = TypeVar("T")
+
+
+class Lazy(Generic[T]):
+    """
+    A lazyly initialized value.
+
+    Allows to prevent executing a costly initialization if the value is not used afterward.
+    """
+
+    def __init__(self, init: Callable[[], T]) -> None:
+        self._initialized: bool = False
+        self._init: Callable[[], T] = init
+        self._val: Optional[T] = None
+
+    def init(self) -> None:
+        """
+        Force initialization of the value.
+        """
+        if not self._initialized:
+            self._val = self._init()
+            self._initialized = True
+
+    @property
+    def val(self) -> T:
+        """
+        Initializes the value if needed, and returns it.
+        """
+        self.init()
+        return self._val  # type: ignore
+
+    @property
+    def initialized(self) -> bool:
+        """
+        Returns whether the value has been initialized or not.
+        """
+        return self._initialized
 
 
 def inputset(
