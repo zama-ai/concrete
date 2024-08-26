@@ -1,8 +1,8 @@
 # Composing functions with modules
 
-This document explains how to compile Fully Homomorphic Encryption (FHE) modules containing multiple functions using Concrete.
+This document explains how to compile Fully Homomorphic Encryption (FHE) modules containing multiple functions using **Concrete**. 
 
-Deploying a server that contains many compatible functions is important for some use cases. With Concrete, you can compile FHE modules containing as many functions as needed.
+Deploying a server that contains many compatible functions is important for some use cases. With **Concrete**, you can compile FHE modules containing as many functions as needed.
 
 These modules support the composition of different functions, meaning that the encrypted result of one function can be used as the input for another function without needing to decrypt it first. Additionally, a module is [deployed in a single artifact](../guides/deploy.md#deployment-of-modules), making it as simple to use as a single-function project.
 
@@ -23,7 +23,7 @@ class Counter:
         return x - 1 % 20
 ```
 
-Then, you can compile the FHE module `Counter` using the `compile` method. To do that, you need to provide a dictionary of input-sets for every function:
+Then, to compile the `Counter` module, use the `compile` method with a dictionary of input-sets for each function:
 
 ```python
 inputset = list(range(20))
@@ -49,7 +49,7 @@ x_dec = CounterFhe.inc.decrypt(x_enc)
 assert x_dec == 15
 ```
 
-The keyset can be generated beforehand by calling `keygen()` method on the compiled module:
+You can generate the keyset beforehand by calling `keygen()` method on the compiled module:
 
 ```python
 CounterFhe.keygen()
@@ -115,16 +115,15 @@ Encrypting initial values
 |     9     || 144       | 144       | 233       | 233       |
 ```
 
-## Iterations
+## Iterations 
 
-With the previous example, we see that modules allow iteration with cleartext iterands to some extent. Specifically, loops with the following structure are supported:
+Modules support iteration with cleartext iterands to some extent, particularly for loops structured like this:
 
 ```python
 for i in some_cleartext_constant_range:
     # Do something in FHE in the loop body, implemented as an FHE function.
 ```
-
-With this pattern, we can also support unbounded loops or complex dynamic condition, as long as this condition is computed in pure cleartext python. Here is an example that computes the [Collatz sequence](https://en.wikipedia.org/wiki/Collatz_conjecture):
+Unbounded loops or complex dynamic conditions are also supported, as long as these conditions are computed in pure cleartext in Python. The following example computes the [Collatz sequence](https://en.wikipedia.org/wiki/Collatz_conjecture):
 
 ```python
 from concrete import fhe

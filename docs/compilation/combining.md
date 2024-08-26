@@ -1,7 +1,10 @@
 # Combining compiled functions
 
-In various cases, deploying a server that contains many compatible functions is important. By compatible, we mean that the functions will be used together, with outputs of some of them being used as inputs of some other ones, without decryption in the middle. It also encompasses the use of recursive functions.
+This document explains how to combine compiled functions in **Concrete**, focusing on scenarios where multiple functions need to work together seamlessly. The goal is to ensure that outputs from certain functions can be used as inputs for others without decryption, including in recursive functions.
 
-To support this feature in Concrete, we have two ways:
-- using the `composable` flag in the compilation, when there is a unique function. This option is described in [this document](composition.md)
-- using the Concrete modules, when there are several functions, or when there is a unique function for which we want to more precisely detail how outputs are reused as further inputs. This functionality is described in [this document](composing_functions_with_modules.md)
+**Concrete** offers two methods to achieve this:
+
+- **Using the `composable` flag**: This method is suitable when there is a single function. The composable flag allows the function to be compiled in a way that its output can be used as input for subsequent operations. For more details, refer to the [composition documentation](composition.md).
+
+- **Using Concrete modules**: This method is ideal when dealing with multiple functions or when more control is needed over how outputs are reused as inputs. Concrete modules allow you to specify precisely how functions interact. For further information, see the [modules documentation](composing_functions_with_modules.md).
+

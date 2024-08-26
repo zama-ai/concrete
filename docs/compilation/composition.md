@@ -1,7 +1,10 @@
 # Combining compiled functions with the composable flag
 
-A simple way to say that a function `f` should be compiled such that its outputs can be reused as inputs is to use the
-[`composable`](../guides/configure.md#options) configuration setting to `True` when compiling. Doing so, we can then easily compute `f(f(x))` or `f**i(x) = f(f(...(f(x) ..))` for a variable non-encrypted integer `i`, which is typically what happens for recursions.
+This document explains how to combine compiled functions with the `composable` flag in **Concrete**. 
+
+By setting the `composable` flag to `True`, you can compile a function such that its outputs can be reused as inputs. For example, you can then easily compute `f(f(x))` or `f**i(x) = f(f(...(f(x) ..))` for a non-encrypted integer `i` variable, which is usually required for recursions.
+
+Here is an example:
 
 ```python
 from concrete import fhe
@@ -30,7 +33,7 @@ for i in range(10):
     print(f"|     {i}     || {counter_dec:<9} | {counter:<9} |")
 ```
 
-Remark that this option is the equivalent of using the `fhe.AllComposable` policy of [modules](composing_functions_with_modules.md). In particular, the same limitations may occur (see [limitations documentation](composing_functions_with_modules.md#limitations) section).
+Remark that this option is the equivalent to using the `fhe.AllComposable` policy of [modules](composing_functions_with_modules.md). In particular, the same limitations may occur (see [limitations documentation](composing_functions_with_modules.md#limitations) section).
 
 
 
