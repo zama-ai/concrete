@@ -40,6 +40,7 @@ impl TfhersFheIntDescription {
     fn ct_from_lwe(&self, lwe: LweCiphertext<Vec<u64>>) -> Ciphertext {
         Ciphertext::new(
             lwe,
+            // TODO: how to set degree here?
             Degree::new(self.degree),
             // TODO: how to set noise here?
             NoiseLevel::UNKNOWN,

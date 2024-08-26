@@ -255,11 +255,9 @@ def test_tfhers_conversion_one_encrypted_one_native(
     assert is_input_and_output_tfhers(
         circuit,
         dtype.params.polynomial_size,
-        (
-            [
-                0,
-            ]
-        ),
+        [
+            0,
+        ],
         [
             0,
         ],
