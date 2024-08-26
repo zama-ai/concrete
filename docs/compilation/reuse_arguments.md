@@ -1,6 +1,9 @@
 # Reuse Arguments
+This document explains how to reuse encrypted arguments in applications where the same arguments are used repeatedly. 
 
-Encryption can take quite some time, memory, and network bandwidth if encrypted data is to be transported. Some applications use the same argument, or a set of arguments as one of the inputs. In such applications, it doesn't make sense to encrypt and transfer the arguments each time. Instead, arguments can be encrypted separately, and reused:
+Encrypting data can be resource-intensive, especially when the same argument or set of arguments is used multiple times. In such cases, it’s inefficient to encrypt and transfer the arguments repeatedly. Instead, you can encrypt the arguments separately and reuse them as needed. By encrypting the arguments once and reusing them, you can optimize performance by reducing encryption time, memory usage, and network bandwidth.
+
+Here is an example:
 
 ```python
 from concrete import fhe
@@ -23,9 +26,12 @@ for sample_x in range(3, 6):
 
     assert result == sample_x + sample_y
 ```
-
-If you have multiple arguments, the `encrypt` method would return a `tuple`, and if you specify `None` as one of the arguments, `None` is placed at the same location in the resulting `tuple` (e.g., `circuit.encrypt(a, None, b, c, None)` would return `(encrypted_a, None, encrypted_b, encrypted_c, None)`). Each value returned by `encrypt` can be stored and reused anytime.
+Note when you use `encrypt` method:
+- If you have multiple arguments, the `encrypt` method would return a `tuple`.
+- If you specify `None` as one of the arguments, `None` is placed at the same location in the resulting `tuple`. 
+    - For example, `circuit.encrypt(a, None, b, c, None)` returns `(encrypted_a, None, encrypted_b, encrypted_c, None)`.
+- Each value returned by `encrypt` can be stored and reused anytime.
 
 {% hint style="warning" %}
-The ordering of the arguments must be kept consistent! Encrypting an `x` and using it as a `y` could result in undefined behavior.
+The order of arguments must be consistent when encrypting and using them. Encrypting an `x` and using it as a `y` could result in undefined behavior.
 {% endhint %}
