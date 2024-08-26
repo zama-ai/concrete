@@ -23,7 +23,7 @@ from .composition import CompositionRule
 from .configuration import Configuration
 from .keys import Keys
 from .server import Server
-from .utils import validate_input_args
+from .utils import Lazy, validate_input_args
 from .value import Value
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -51,7 +51,8 @@ class FheFunction:
     Fhe function class, allowing to run or simulate one function of an fhe module.
     """
 
-    runtime: Union[ExecutionRt, SimulationRt]
+    execution_runtime: Lazy[ExecutionRt]
+    simulation_runtime: Lazy[SimulationRt]
     graph: Graph
     name: str
     configuration: Configuration
@@ -59,12 +60,14 @@ class FheFunction:
     def __init__(
         self,
         name: str,
-        runtime: Union[ExecutionRt, SimulationRt],
+        execution_runtime: Lazy[ExecutionRt],
+        simulation_runtime: Lazy[SimulationRt],
         graph: Graph,
         configuration: Configuration,
     ):
         self.name = name
-        self.runtime = runtime
+        self.execution_runtime = execution_runtime
+        self.simulation_runtime = simulation_runtime
         self.graph = graph
         self.configuration = configuration
 
@@ -132,14 +135,13 @@ class FheFunction:
             Any:
                 result of the simulation
         """
-        assert isinstance(self.runtime, SimulationRt)
 
         ordered_validated_args = validate_input_args(
-            self.runtime.server.client_specs, *args, function_name=self.name
+            self.simulation_runtime.val.server.client_specs, *args, function_name=self.name
         )
 
         exporter = SimulatedValueExporter.new(
-            self.runtime.server.client_specs.client_parameters, self.name
+            self.simulation_runtime.val.server.client_specs.client_parameters, self.name
         )
         exported = [
             (
@@ -154,12 +156,12 @@ class FheFunction:
             for position, arg in enumerate(ordered_validated_args)
         ]
 
-        results = self.runtime.server.run(*exported, function_name=self.name)
+        results = self.simulation_runtime.val.server.run(*exported, function_name=self.name)
         if not isinstance(results, tuple):
             results = (results,)
 
         decrypter = SimulatedValueDecrypter.new(
-            self.runtime.server.client_specs.client_parameters, self.name
+            self.simulation_runtime.val.server.client_specs.client_parameters, self.name
         )
         decrypted = tuple(
             decrypter.decrypt(position, result.inner) for position, result in enumerate(results)
@@ -186,8 +188,7 @@ class FheFunction:
         if self.configuration.simulate_encrypt_run_decrypt:
             return args if len(args) != 1 else args[0]  # type: ignore
 
-        assert isinstance(self.runtime, ExecutionRt)
-        return self.runtime.client.encrypt(*args, function_name=self.name)
+        return self.execution_runtime.val.client.encrypt(*args, function_name=self.name)
 
     def run(
         self,
@@ -208,9 +209,10 @@ class FheFunction:
         if self.configuration.simulate_encrypt_run_decrypt:
             return self.simulate(*args)
 
-        assert isinstance(self.runtime, ExecutionRt)
-        return self.runtime.server.run(
-            *args, evaluation_keys=self.runtime.client.evaluation_keys, function_name=self.name
+        return self.execution_runtime.val.server.run(
+            *args,
+            evaluation_keys=self.execution_runtime.val.client.evaluation_keys,
+            function_name=self.name,
         )
 
     def decrypt(
@@ -232,8 +234,7 @@ class FheFunction:
         if self.configuration.simulate_encrypt_run_decrypt:
             return results if len(results) != 1 else results[0]  # type: ignore
 
-        assert isinstance(self.runtime, ExecutionRt)
-        return self.runtime.client.decrypt(*results, function_name=self.name)
+        return self.execution_runtime.val.client.decrypt(*results, function_name=self.name)
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """
@@ -254,14 +255,14 @@ class FheFunction:
         """
         Get size of the inputs of the function.
         """
-        return self.runtime.server.size_of_inputs(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.size_of_inputs(self.name)  # pragma: no cover
 
     @property
     def size_of_outputs(self) -> int:
         """
         Get size of the outputs of the function.
         """
-        return self.runtime.server.size_of_outputs(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.size_of_outputs(self.name)  # pragma: no cover
 
     # Programmable Bootstrap Statistics
 
@@ -270,14 +271,16 @@ class FheFunction:
         """
         Get the number of programmable bootstraps in the function.
         """
-        return self.runtime.server.programmable_bootstrap_count(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.programmable_bootstrap_count(
+            self.name
+        )  # pragma: no cover
 
     @property
     def programmable_bootstrap_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of programmable bootstraps per bit width in the function.
         """
-        return self.runtime.server.programmable_bootstrap_count_per_parameter(
+        return self.execution_runtime.val.server.programmable_bootstrap_count_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -286,7 +289,7 @@ class FheFunction:
         """
         Get the number of programmable bootstraps per tag in the function.
         """
-        return self.runtime.server.programmable_bootstrap_count_per_tag(
+        return self.execution_runtime.val.server.programmable_bootstrap_count_per_tag(
             self.name
         )  # pragma: no cover
 
@@ -295,9 +298,9 @@ class FheFunction:
         """
         Get the number of programmable bootstraps per tag per bit width in the function.
         """
-        return self.runtime.server.programmable_bootstrap_count_per_tag_per_parameter(
-            self.name
-        )  # pragma: no cover
+        server = self.execution_runtime.val.server
+        return server.programmable_bootstrap_count_per_tag_per_parameter(self.name)
+        # pragma: no cover
 
     # Key Switch Statistics
 
@@ -306,28 +309,32 @@ class FheFunction:
         """
         Get the number of key switches in the function.
         """
-        return self.runtime.server.key_switch_count(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.key_switch_count(self.name)  # pragma: no cover
 
     @property
     def key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of key switches per parameter in the function.
         """
-        return self.runtime.server.key_switch_count_per_parameter(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.key_switch_count_per_parameter(
+            self.name
+        )  # pragma: no cover
 
     @property
     def key_switch_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of key switches per tag in the function.
         """
-        return self.runtime.server.key_switch_count_per_tag(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.key_switch_count_per_tag(
+            self.name
+        )  # pragma: no cover
 
     @property
     def key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of key switches per tag per parameter in the function.
         """
-        return self.runtime.server.key_switch_count_per_tag_per_parameter(
+        return self.execution_runtime.val.server.key_switch_count_per_tag_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -338,14 +345,16 @@ class FheFunction:
         """
         Get the number of packing key switches in the function.
         """
-        return self.runtime.server.packing_key_switch_count(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.packing_key_switch_count(
+            self.name
+        )  # pragma: no cover
 
     @property
     def packing_key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the function.
         """
-        return self.runtime.server.packing_key_switch_count_per_parameter(
+        return self.execution_runtime.val.server.packing_key_switch_count_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -354,14 +363,16 @@ class FheFunction:
         """
         Get the number of packing key switches per tag in the function.
         """
-        return self.runtime.server.packing_key_switch_count_per_tag(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.packing_key_switch_count_per_tag(
+            self.name
+        )  # pragma: no cover
 
     @property
     def packing_key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the function.
         """
-        return self.runtime.server.packing_key_switch_count_per_tag_per_parameter(
+        return self.execution_runtime.val.server.packing_key_switch_count_per_tag_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -372,28 +383,32 @@ class FheFunction:
         """
         Get the number of clear additions in the function.
         """
-        return self.runtime.server.clear_addition_count(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.clear_addition_count(self.name)  # pragma: no cover
 
     @property
     def clear_addition_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the function.
         """
-        return self.runtime.server.clear_addition_count_per_parameter(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.clear_addition_count_per_parameter(
+            self.name
+        )  # pragma: no cover
 
     @property
     def clear_addition_count_per_tag(self) -> Dict[str, int]:
         """
         Get the number of clear additions per tag in the function.
         """
-        return self.runtime.server.clear_addition_count_per_tag(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.clear_addition_count_per_tag(
+            self.name
+        )  # pragma: no cover
 
     @property
     def clear_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the function.
         """
-        return self.runtime.server.clear_addition_count_per_tag_per_parameter(
+        return self.execution_runtime.val.server.clear_addition_count_per_tag_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -404,14 +419,16 @@ class FheFunction:
         """
         Get the number of encrypted additions in the function.
         """
-        return self.runtime.server.encrypted_addition_count(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.encrypted_addition_count(
+            self.name
+        )  # pragma: no cover
 
     @property
     def encrypted_addition_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the function.
         """
-        return self.runtime.server.encrypted_addition_count_per_parameter(
+        return self.execution_runtime.val.server.encrypted_addition_count_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -420,14 +437,16 @@ class FheFunction:
         """
         Get the number of encrypted additions per tag in the function.
         """
-        return self.runtime.server.encrypted_addition_count_per_tag(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.encrypted_addition_count_per_tag(
+            self.name
+        )  # pragma: no cover
 
     @property
     def encrypted_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the function.
         """
-        return self.runtime.server.encrypted_addition_count_per_tag_per_parameter(
+        return self.execution_runtime.val.server.encrypted_addition_count_per_tag_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -438,14 +457,16 @@ class FheFunction:
         """
         Get the number of clear multiplications in the function.
         """
-        return self.runtime.server.clear_multiplication_count(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.clear_multiplication_count(
+            self.name
+        )  # pragma: no cover
 
     @property
     def clear_multiplication_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of clear multiplications per parameter in the function.
         """
-        return self.runtime.server.clear_multiplication_count_per_parameter(
+        return self.execution_runtime.val.server.clear_multiplication_count_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -454,16 +475,18 @@ class FheFunction:
         """
         Get the number of clear multiplications per tag in the function.
         """
-        return self.runtime.server.clear_multiplication_count_per_tag(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.clear_multiplication_count_per_tag(
+            self.name
+        )  # pragma: no cover
 
     @property
     def clear_multiplication_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the function.
         """
-        return self.runtime.server.clear_multiplication_count_per_tag_per_parameter(
-            self.name
-        )  # pragma: no cover
+        server = self.execution_runtime.val.server
+        return server.clear_multiplication_count_per_tag_per_parameter(self.name)
+        # pragma: no cover
 
     # Encrypted Negation Statistics
 
@@ -472,14 +495,16 @@ class FheFunction:
         """
         Get the number of encrypted negations in the function.
         """
-        return self.runtime.server.encrypted_negation_count(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.encrypted_negation_count(
+            self.name
+        )  # pragma: no cover
 
     @property
     def encrypted_negation_count_per_parameter(self) -> Dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the function.
         """
-        return self.runtime.server.encrypted_negation_count_per_parameter(
+        return self.execution_runtime.val.server.encrypted_negation_count_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -488,14 +513,16 @@ class FheFunction:
         """
         Get the number of encrypted negations per tag in the function.
         """
-        return self.runtime.server.encrypted_negation_count_per_tag(self.name)  # pragma: no cover
+        return self.execution_runtime.val.server.encrypted_negation_count_per_tag(
+            self.name
+        )  # pragma: no cover
 
     @property
     def encrypted_negation_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the function.
         """
-        return self.runtime.server.encrypted_negation_count_per_tag_per_parameter(
+        return self.execution_runtime.val.server.encrypted_negation_count_per_tag_per_parameter(
             self.name
         )  # pragma: no cover
 
@@ -548,7 +575,8 @@ class FheModule:
     graphs: Dict[str, Graph]
     mlir_module: MlirModule
     compilation_context: CompilationContext
-    runtime: Union[ExecutionRt, SimulationRt]
+    execution_runtime: Lazy[ExecutionRt]
+    simulation_runtime: Lazy[SimulationRt]
 
     def __init__(
         self,
@@ -558,37 +586,43 @@ class FheModule:
         configuration: Optional[Configuration] = None,
         composition_rules: Optional[Iterable[CompositionRule]] = None,
     ):
-        assert configuration and (configuration.fhe_simulation or configuration.fhe_execution)
-
+        assert configuration
         self.configuration = configuration if configuration is not None else Configuration()
         self.graphs = graphs
         self.mlir_module = mlir
         self.compilation_context = compilation_context
 
-        if self.configuration.fhe_simulation:
-            server = Server.create(
+        def init_simulation():
+            simulation_server = Server.create(
                 self.mlir_module,
-                self.configuration,
+                self.configuration.fork(fhe_simulation=True),
                 is_simulated=True,
                 compilation_context=self.compilation_context,
             )
-            self.runtime = SimulationRt(server)
-        else:
-            server = Server.create(
+            return SimulationRt(simulation_server)
+
+        self.simulation_runtime = Lazy(init_simulation)
+        if configuration.fhe_simulation:
+            self.simulation_runtime.init()
+
+        def init_execution():
+            execution_server = Server.create(
                 self.mlir_module,
-                self.configuration,
+                self.configuration.fork(fhe_simulation=False),
                 compilation_context=self.compilation_context,
                 composition_rules=composition_rules,
             )
-
             keyset_cache_directory = None
             if self.configuration.use_insecure_key_cache:
                 assert_that(self.configuration.enable_unsafe_features)
                 assert_that(self.configuration.insecure_key_cache_location is not None)
                 keyset_cache_directory = self.configuration.insecure_key_cache_location
+            execution_client = Client(execution_server.client_specs, keyset_cache_directory)
+            return ExecutionRt(execution_client, execution_server)
 
-            client = Client(server.client_specs, keyset_cache_directory)
-            self.runtime = ExecutionRt(client, server)
+        self.execution_runtime = Lazy(init_execution)
+        if configuration.fhe_execution:
+            self.execution_runtime.init()
 
     @property
     def mlir(self) -> str:
@@ -600,21 +634,18 @@ class FheModule:
         return str(self.mlir_module).strip()
 
     @property
-    def keys(self) -> Optional[Keys]:
+    def keys(self) -> Keys:
         """
         Get the keys of the module.
         """
-        if isinstance(self.runtime, ExecutionRt):
-            return self.runtime.client.keys
-        return None
+        return self.execution_runtime.val.client.keys
 
     @keys.setter
     def keys(self, new_keys: Keys):
         """
         Set the keys of the module.
         """
-        if isinstance(self.runtime, ExecutionRt):
-            self.runtime.client.keys = new_keys
+        self.execution_runtime.val.client.keys = new_keys
 
     def keygen(
         self, force: bool = False, seed: Optional[int] = None, encryption_seed: Optional[int] = None
@@ -632,56 +663,58 @@ class FheModule:
             encryption_seed (Optional[int], default = None):
                 seed for encryption randomness
         """
-        if isinstance(self.runtime, ExecutionRt):
-            self.runtime.client.keygen(force, seed, encryption_seed)
+        self.execution_runtime.val.client.keygen(force, seed, encryption_seed)
 
     def cleanup(self):
         """
         Cleanup the temporary library output directory.
         """
-        self.runtime.server.cleanup()
+        if self.execution_runtime.initialized:
+            self.execution_runtime.val.server.cleanup()
+        if self.simulation_runtime.initialized:
+            self.simulation_runtime.val.server.cleanup()
 
     @property
     def size_of_secret_keys(self) -> int:
         """
         Get size of the secret keys of the module.
         """
-        return self.runtime.server.size_of_secret_keys  # pragma: no cover
+        return self.execution_runtime.val.server.size_of_secret_keys  # pragma: no cover
 
     @property
     def size_of_bootstrap_keys(self) -> int:
         """
         Get size of the bootstrap keys of the module.
         """
-        return self.runtime.server.size_of_bootstrap_keys  # pragma: no cover
+        return self.execution_runtime.val.server.size_of_bootstrap_keys  # pragma: no cover
 
     @property
     def size_of_keyswitch_keys(self) -> int:
         """
         Get size of the key switch keys of the module.
         """
-        return self.runtime.server.size_of_keyswitch_keys  # pragma: no cover
+        return self.execution_runtime.val.server.size_of_keyswitch_keys  # pragma: no cover
 
     @property
     def p_error(self) -> int:
         """
         Get probability of error for each simple TLU (on a scalar).
         """
-        return self.runtime.server.p_error  # pragma: no cover
+        return self.execution_runtime.val.server.p_error  # pragma: no cover
 
     @property
     def global_p_error(self) -> int:
         """
         Get the probability of having at least one simple TLU error during the entire execution.
         """
-        return self.runtime.server.global_p_error  # pragma: no cover
+        return self.execution_runtime.val.server.global_p_error  # pragma: no cover
 
     @property
     def complexity(self) -> float:
         """
         Get complexity of the module.
         """
-        return self.runtime.server.complexity  # pragma: no cover
+        return self.execution_runtime.val.server.complexity  # pragma: no cover
 
     @property
     def statistics(self) -> Dict:
@@ -707,28 +740,38 @@ class FheModule:
         Return a dictionnary containing all the functions of the module.
         """
         return {
-            name: FheFunction(name, self.runtime, self.graphs[name], self.configuration)
+            name: FheFunction(
+                name,
+                self.execution_runtime,
+                self.simulation_runtime,
+                self.graphs[name],
+                self.configuration,
+            )
             for name in self.graphs.keys()
         }
 
     @property
     def server(self) -> Server:
         """
-        Get the server object tied to the module.
+        Get the execution server object tied to the module.
         """
-        return self.runtime.server
+        return self.execution_runtime.val.server
 
     @property
     def client(self) -> Optional[Client]:
         """
-        Returns the client object tied to the module if not in simulation mode.
+        Returns the execution client object tied to the module.
         """
-        if isinstance(self.runtime, ExecutionRt):
-            return self.runtime.client
-        return None
+        return self.execution_runtime.val.client
 
     def __getattr__(self, item):
         if item not in list(self.graphs.keys()):
             error = f"No attribute {item}"
             raise AttributeError(error)
-        return FheFunction(item, self.runtime, self.graphs[item], self.configuration)
+        return FheFunction(
+            item,
+            self.execution_runtime,
+            self.simulation_runtime,
+            self.graphs[item],
+            self.configuration,
+        )

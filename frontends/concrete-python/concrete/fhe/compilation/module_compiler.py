@@ -36,7 +36,7 @@ from .artifacts import FunctionDebugArtifacts, ModuleDebugArtifacts
 from .compiler import EncryptionStatus
 from .composition import CompositionClause, CompositionPolicy, CompositionRule
 from .configuration import Configuration
-from .module import ExecutionRt, FheModule
+from .module import FheModule
 from .utils import fuse, get_terminal_size
 
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
@@ -833,9 +833,7 @@ class ModuleCompiler:
                         list(filter(None, [f.graph for f in self.functions.values()]))
                     ),
                 )
-                if isinstance(output.runtime, ExecutionRt):
-                    client_parameters = output.runtime.client.specs.client_parameters
-                    module_artifacts.add_client_parameters(client_parameters.serialize())
+                module_artifacts.add_execution_runtime(output.execution_runtime)
 
             dbg.debug_statistics(output)
 

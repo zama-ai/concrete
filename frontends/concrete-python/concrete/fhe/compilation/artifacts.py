@@ -7,9 +7,13 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Union
 
 from ..representation import Graph
+
+if TYPE_CHECKING:
+    from .module import ExecutionRt
+    from .utils import Lazy
 
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
 
@@ -83,7 +87,7 @@ class ModuleDebugArtifacts:
 
     output_directory: Path
     mlir_to_compile: Optional[str]
-    client_parameters: Optional[bytes]
+    _execution_runtime: Optional["Lazy[ExecutionRt]"]
     functions: Dict[str, FunctionDebugArtifacts]
 
     def __init__(
@@ -93,7 +97,7 @@ class ModuleDebugArtifacts:
     ):
         self.output_directory = Path(output_directory)
         self.mlir_to_compile = None
-        self.client_parameters = None
+        self._execution_runtime = None
         self.functions = (
             {name: FunctionDebugArtifacts() for name in function_names} if function_names else {}
         )
@@ -108,15 +112,28 @@ class ModuleDebugArtifacts:
         """
         self.mlir_to_compile = mlir
 
-    def add_client_parameters(self, client_parameters: bytes):
+    def add_execution_runtime(self, execution_runtime: "Lazy[ExecutionRt]"):
         """
-        Add client parameters used.
+        Add the (lazy) execution runtime to get the client parameters if needed.
 
         Args:
-            client_parameters (bytes): client parameters
+            execution_runtime (Lazy[ExecutionRt]):
+                The lazily initialized execution runtime.
         """
 
-        self.client_parameters = client_parameters
+        self._execution_runtime = execution_runtime
+
+    @property
+    def client_parameters(self) -> Optional[bytes]:
+        """
+        The client parameters associated with the execution runtime.
+        """
+
+        return (
+            self._execution_runtime.val.client.specs.client_parameters.serialize()
+            if self._execution_runtime is not None
+            else None
+        )
 
     def export(self):
         """
@@ -217,9 +234,11 @@ class DebugArtifacts:
     """
 
     module_artifacts: ModuleDebugArtifacts
+    _client_parameters: Optional[bytes]
 
     def __init__(self, output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY):
         self.module_artifacts = ModuleDebugArtifacts(["main"], output_directory)
+        self._client_parameters = None
 
     def add_source_code(self, function: Union[str, Callable]):
         """
@@ -280,13 +299,19 @@ class DebugArtifacts:
             client_parameters (bytes): client parameters
         """
 
-        self.module_artifacts.add_client_parameters(client_parameters)
+        self._client_parameters = client_parameters
 
     def export(self):
         """
         Export the collected information to `self.output_directory`.
         """
 
+        # This is a quick fix before we refactor compiler and module_compiler
+        # to use the same abstraction.
+        class _ModuleDebugArtifacts(ModuleDebugArtifacts):
+            client_parameters = self._client_parameters
+
+        self.module_artifacts.__class__ = _ModuleDebugArtifacts
         self.module_artifacts.export()
 
     @property
