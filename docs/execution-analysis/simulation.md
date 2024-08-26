@@ -1,5 +1,5 @@
 # Simulation
-This document explains how to use simulation to speed up the homomorphic execution during development, enabling faster prototyping while accounting for the inherent probability of errors in Fully Homomorphic Encryption (FHE) execution. 
+This document explains how to use simulation to speed up the development, enabling faster prototyping while accounting for the inherent probability of errors in Fully Homomorphic Encryption (FHE) execution. 
 
 ## Using simulation for faster prototyping
 During development, the speed of homomorphic execution can be a blocker for fast prototyping. Although you can directly call the function you want to compile, this approach does not fully replicate FHE execution, which involves a certain probability of error (see [Exactness](../core-features/table\_lookups.md#table-lookup-exactness)).
@@ -32,10 +32,6 @@ After the simulation runs, it prints the following results:
 [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
 [1, 4, 9, 16, 16, 36, 49, 64, 81, 100]
 ```
-
-{% hint style="warning" %}
-Some operations are not yet supported in simulation, resulting in compilation failures. In such cases, you can revert to graph execution using `circuit.graph(...)` instead of `circuit.simulate(...)`. While this method doesn't simulate FHE, it evaluates the computation graph, allowing you to simulate the operations without FHE-related errors.
-{% endhint %}
 
 ## Overflow detection in simulation
 
