@@ -1,45 +1,40 @@
 # Debug
 
-In this section, you will learn how to debug the compilation process easily and find help in the case that you cannot resolve your issue.
+This document provides guidance on debugging the compilation process.
 
 ## Compiler debug and verbose modes
 
-There are two [configuration](../guides/configure.md) options that you can use to understand what's happening under the hood during the compilation process.
+Two [configuration](../guides/configure.md) options are available to help you understand the compilation process:
 
-* **compiler\_verbose\_mode** will print the passes applied by the compiler and let you see the transformations done by the compiler. Also, in the case of a crash, it could narrow down the crash location.
-* **compiler\_debug\_mode** is a lot more detailed version of the verbose mode. This is even better for crashes.
+* **compiler\_verbose\_mode**: Prints the compiler passes and shows the transformations applied. It can help identify the crash location if a crash occurs.
+* **compiler\_debug\_mode**: A more detailed version of the verbose mode, providing additional information, particularly useful for diagnosing crashes.
 
 {% hint style="warning" %}
-These flags might not work as expected in Jupyter notebooks as they output to stderr directly from C++.
+These flags might not work as expected in Jupyter notebooks as they output to `stderr` directly from C++.
 {% endhint %}
 
 ## Debug artifacts
 
-**Concrete** has an artifact system to simplify the process of debugging issues.
+**Concrete** includes an artifact system that simplifies the debugging process by automatically or manually exporting detailed information during compilation failures.
 
-### Automatic export.
-
-In case of compilation failures, artifacts are exported automatically to the `.artifacts` directory under the working directory. Let's intentionally create a compilation failure to show what is exported.
+### Automatic export
+When a compilation fails, artifacts are automatically exported to the `.artifacts` directory in the working directory. Here's an example of what gets exported when a function fails to compile:
 
 ```python
 def f(x):
     return np.sin(x)
 ```
 
-This function fails to compile because **Concrete** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. If you go to the `.artifacts` directory under the working directory, you'll see the following files:
+This function fails to compile because **Concrete** does not support floating-point outputs. When you try to compile it, an exception will be raised and the artifacts will be exported automatically. The following files will be generated in the `.artifacts` directory:
 
-#### environment.txt
-
-This file contains information about your setup (i.e., your operating system and python version).
+- **`environment.txt`**: Information about your system setup, including the operating system and Python version.
 
 ```
 Linux-5.12.13-arch1-2-x86_64-with-glibc2.29 #1 SMP PREEMPT Fri, 25 Jun 2021 22:56:51 +0000
 Python 3.8.10
 ```
 
-#### requirements.txt
-
-This file contains information about Python packages and their versions installed on your system.
+- **`requirements.txt`**: The installed Python packages and their versions.
 
 ```
 astroid==2.15.0
@@ -51,26 +46,20 @@ wrapt==1.15.0
 zipp==3.15.0
 ```
 
-#### function.txt
-
-This file contains information about the function you tried to compile.
+- **`function.txt`**: The code of the function that failed to compile.
 
 ```
 def f(x):
     return np.sin(x)
 ```
 
-#### parameters.txt
-
-This file contains information about the encryption status of the parameters of the function you tried to compile.
+- **`parameters.txt`**: Information about the encryption status function's parameters.
 
 ```
 x :: encrypted
 ```
 
-#### 1.initial.graph.txt
-
-This file contains the textual representation of the initial computation graph right after tracing.
+- **`1.initial.graph.txt`**: The textual representation of the initial computation graph right after tracing.
 
 ```
 %0 = x              # EncryptedScalar<uint3>
@@ -78,9 +67,7 @@ This file contains the textual representation of the initial computation graph r
 return %1
 ```
 
-#### 2.final.graph.txt
-
-This file contains the textual representation of the final computation graph right before MLIR conversion.
+- **`final.graph.txt`**: The textual representation of the final computation graph right before MLIR conversion.
 
 ```
 %0 = x              # EncryptedScalar<uint3>
@@ -88,9 +75,7 @@ This file contains the textual representation of the final computation graph rig
 return %1
 ```
 
-#### traceback.txt
-
-This file contains information about the error that was received.
+- **`traceback.txt`**: Details of the error occurred.
 
 ```
 Traceback (most recent call last):
@@ -113,9 +98,9 @@ RuntimeError: Function you are trying to compile cannot be converted to MLIR
 return %1
 ```
 
-### Manual exports.
+### Manual exports
 
-Manual exports are mostly used for visualization. They can be very useful for demonstrations. Here is how to perform one:
+Manual exports are mostly used for visualization and demonstrations. Here is how to perform one:
 
 ```python
 from concrete import fhe
@@ -133,11 +118,9 @@ circuit = f.compile(inputset, artifacts=artifacts)
 artifacts.export()
 ```
 
-If you go to the `/tmp/custom/export/path` directory, you'll see the following files:
+After running the code, you will find the following files under `/tmp/custom/export/path` directory: 
 
-#### 1.initial.graph.txt
-
-This file contains the textual representation of the initial computation graph right after tracing.
+- **`1.initial.graph.txt`**: The textual representation of the initial computation graph right after tracing.
 
 ```
 %0 = x                             # EncryptedScalar<uint1>
@@ -152,9 +135,7 @@ This file contains the textual representation of the initial computation graph r
 return %8
 ```
 
-#### 2.after-fusing.graph.txt
-
-This file contains the textual representation of the intermediate computation graph after fusing.
+- **`2.after-fusing.graph.txt`**: The textual representation of the intermediate computation graph after fusing.
 
 ```
 %0 = x                       # EncryptedScalar<uint1>
@@ -177,9 +158,7 @@ Subgraphs:
         return %6
 ```
 
-#### 3.final.graph.txt
-
-This file contains the textual representation of the final computation graph right before MLIR conversion.
+- **`3.final.graph.txt`**: The textual representation of the final computation graph right before MLIR conversion.
 
 ```
 %0 = x                       # EncryptedScalar<uint3>        ∈ [0, 7]
@@ -202,9 +181,7 @@ Subgraphs:
         return %6
 ```
 
-#### mlir.txt
-
-This file contains information about the MLIR of the function which was compiled using the provided inputset.
+- **`mlir.txt`**: Information about the MLIR of the function which was compiled using the provided input-set.
 
 ```
 module {
@@ -218,9 +195,7 @@ module {
 }
 ```
 
-#### client\_parameters.json
-
-This file contains information about the client parameters chosen by **Concrete**.
+- **`client\_parameters.json`**: Information about the client parameters chosen by **Concrete**.
 
 ```
 {
@@ -300,17 +275,17 @@ You can seek help with your issue by asking a question directly in the [communit
 
 ## Submitting an issue
 
-If you cannot find a solution in the community forum, or if you have found a bug in the library, you could create an issue in our GitHub repository.
+If you cannot find a solution in the community forum, or if you have found a bug in the library, you could [create an issue](https://github.com/zama-ai/concrete/issues/new/choose) in our GitHub repository.
 
-In case of a bug, try to:
+For [bug reports](https://github.com/zama-ai/concrete/issues/new?assignees=&labels=bug%2C+triage&projects=&template=bug_report.md), try to:
 
-* minimize randomness;
-* minimize your function as much as possible while keeping the bug - this will help to fix the bug faster;
-* include your inputset in the issue;
-* include reproduction steps in the issue;
-* include debug artifacts in the issue.
+* Avoid randomness to ensure reproductibility of the bug
+* Minimize your function while keeping the bug to expedite the fix
+* Include your input-set in the issue
+* Provide clear reproduction steps
+* Include debug artifacts in the issue
 
-In case of a feature request, try to:
+For [feature requests](https://github.com/zama-ai/concrete/issues/new?assignees=&labels=feature&projects=&template=features.md), try to:
 
-* give a minimal example of the desired behavior;
-* explain your use case.
+* Give a minimal example of the desired behavior
+* Explain your use case
