@@ -32,7 +32,7 @@ This document explains the most common errors and provides solutions to fix them
 **Possible solutions**:
 - Try to simplify your circuit.
 - Use smaller weights.
-- Add intermediate PBS to reduce the noise, with identity function `fhe.univariate(lambda x: x)`.
+- Add intermediate PBS to reduce the noise, with identity function `fhe.refresh(lambda x: x)`.
 
 ## 4. Too long inputs for table looup
 
@@ -77,5 +77,22 @@ This document explains the most common errors and provides solutions to fix them
 - Change your program.
 - Consider using tricks to replace ternary-if, as `c ? t : f = f + c * (t-f)`.
 
+## 8. Unfeasible noise constraint
 
+**Error message**: `Unfeasible noise constraint encountered`
 
+**Cause**: The optimizer can't find cryptographic parameters for the circuit that are both secure and correct.
+
+**Possible solutions**:
+- Try to simplify your circuit.
+- Use smaller weights.
+- Add intermediate PBS to reduce the noise, with identity function `fhe.refresh(x)`.
+
+## 9. Non composable circuit
+
+**Error message**: `Program can not be composed`
+
+**Cause**: Some circuit outputs are contaminated by unrefreshed input noise.
+
+**Possible solutions**:
+- Add intermediate PBS to refresh the noise with `fhe.refresh(x)`.
