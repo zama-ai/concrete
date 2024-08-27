@@ -258,6 +258,28 @@ for x in range(10):
     assert np.array_equal(circuit.encrypt_run_decrypt(x), np.array([[x, x, x], [x, x, x]]) + 1)
 ```
 
+## fhe.constant(value)
+
+Allows you to create an encrypted constant of a given value.
+
+```python
+from concrete import fhe
+import numpy as np
+
+@fhe.compiler({"x": "encrypted", "a":"clear"})
+def f(x, a):
+    z = fhe.constant(a)
+    return x + z
+
+inputset = range(10)
+circuit = f.compile(inputset)
+
+for x in range(10):
+    assert circuit.encrypt_run_decrypt(x, 5) == x + 5
+```
+
+This extension is also compatible with constant arrays.
+
 ## fhe.hint(value, \*\*kwargs)
 
 Hint properties of a value. Imagine you have this circuit:

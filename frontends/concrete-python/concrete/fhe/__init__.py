@@ -52,6 +52,7 @@ from .extensions import (
     LookupTable,
     array,
     bits,
+    constant,
     conv,
     hint,
     identity,
