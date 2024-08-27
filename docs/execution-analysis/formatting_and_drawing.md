@@ -1,8 +1,9 @@
 # Formatting and drawing
+This document explains how to format and draw a compiled circuit in Python. 
 
 ## Formatting
 
-You can convert your compiled circuit into its textual representation by converting it to string:
+To convert your compiled circuit into its textual representation, use the `str` function:
 
 ```python
 str(circuit)
@@ -15,24 +16,24 @@ print(circuit)
 ```
 
 {% hint style="warning" %}
-Formatting is just for debugging purposes. It's not possible to create the circuit back from its textual representation. See [How to Deploy](../guides/deploy.md) if that's your goal.
+Formatting is designed for debugging purpose only. It's not possible to create the circuit back from its textual representation. See [How to Deploy](../guides/deploy.md) if that's your goal.
 {% endhint %}
 
 ## Drawing
 
 {% hint style="danger" %}
-Drawing functionality requires the installation of the package with the full feature set. See the [Installation](../get-started/installing.md) section to learn how to do that.
+Drawing functionality requires the installation of the package with the full feature set. See the [Installation](../get-started/installing.md) section for instructions.
 {% endhint %}
 
-You can use the `draw` method of your compiled circuit to draw it:
+To draw your compiled circuit, use the `draw` method:
 
 ```python
 drawing = circuit.draw()
 ```
 
-This method will draw the circuit on a temporary PNG file and return the path to this file.
+This method draws the circuit, saves it as a temporary PNG file and returns the file path.
 
-You can show the drawing in a Jupyter notebook, like this:
+You can display the drawing in a Jupyter notebook:
 
 ```python
 from PIL import Image
@@ -41,17 +42,17 @@ drawing.show()
 drawing.close()
 ```
 
-Or, you can use the `show` option of the `draw` method to show the drawing with `matplotlib`.
+Alternatively, you can use the `show` option of the `draw` method to display the drawing with `matplotlib`:
 
 ```python
 circuit.draw(show=True)
 ```
 
 {% hint style="danger" %}
-Beware that this will clear the matplotlib plots you have.
+Using this option will clear any existing matplotlib plots.
 {% endhint %}
 
-Lastly, you can save the drawing to a specific path:
+Lastly, to save the drawing to a specific path, use the `save_to` option:
 
 ```python
 destination = "/tmp/path/of/your/choice.png"
