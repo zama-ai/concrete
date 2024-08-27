@@ -1,10 +1,11 @@
 # Manage Keys
+This document explains how to manage keys when using **Concrete**, introducing the key management API for generating, reusing, and securely handling keys.
 
-**Concrete** generates keys for you implicitly when they are needed and if they have not already been generated. This is useful for development, but it's not flexible **(or secure!)** for production. Explicit key management API is introduced to be used in such cases to easily generate and re-use keys.
+**Concrete** generates keys implicitly when needed. While this is convenient for development, it's not ideal for the production environment. The explicit key management API is available for you to easily generate and reuse keys as needed.
 
 ## Definition
 
-Let's start by defining a circuit:
+Let's start by defining a circuit with the following example:
 
 ```python
 from concrete import fhe
@@ -17,21 +18,21 @@ inputset = range(10)
 circuit = f.compile(inputset)
 ```
 
-Circuits have a property called `keys` of type `fhe.Keys`, which has several utility functions dedicated to key management!
+Circuits have a `keys` property of type `fhe.Keys`, which includes several utilities for key management.
 
 ## Generation
 
-To explicitly generate keys for a circuit, you can use:
+To explicitly generate keys for a circuit, use:
 
 ```python
 circuit.keys.generate()
 ```
 
 {% hint style="info" %}
-Generated keys are stored in memory upon generation, unencrypted.
+Generated keys are stored in memory and remain unencrypted.
 {% endhint %}
 
-And it's possible to set a custom seed for reproducibility:
+You can also set a custom seed for reproducibility:
 
 ```python
 circuit.keys.generate(seed=420)
@@ -43,19 +44,20 @@ Do not specify the seed manually in a production environment!
 
 ## Serialization
 
-To serialize keys, say to send it across the network:
+To serialize keys, for tasks such as sending them across a network, use:
+
 
 ```python
 serialized_keys: bytes = circuit.keys.serialize()
 ```
 
 {% hint style="warning" %}
-Keys are not serialized in encrypted form! Please make sure you keep them in a safe environment, or encrypt them manually after serialization.
+Keys are not serialized in encrypted form. Please make sure you keep them in a safe environment, or encrypt them manually after serialization.
 {% endhint %}
 
 ## Deserialization
 
-To deserialize the keys back, after receiving serialized keys:
+To deserialize the keys back after receiving serialized keys, use:
 
 ```python
 keys: fhe.Keys = fhe.Keys.deserialize(serialized_keys)
@@ -75,19 +77,19 @@ If assigned keys are generated for a different circuit, an exception will be rai
 
 ## Saving
 
-You can also use the filesystem to store the keys directly, without needing to deal with serialization and file management yourself:
+You can also use the filesystem to store the keys directly, without managing serialization and file management manually:
 
 ```python
 circuit.keys.save("/path/to/keys")
 ```
 
 {% hint style="warning" %}
-Keys are not saved encrypted! Please make sure you store them in a safe environment, or encrypt them manually after saving.
+Keys are not saved in encrypted form. Please make sure you store them in a safe environment, or encrypt them manually after saving.
 {% endhint %}
 
 ## Loading
 
-After keys are saved to disk, you can load them back via:
+After saving keys to disk, you can load them back using:
 
 ```python
 circuit.keys.load("/path/to/keys")
@@ -95,7 +97,7 @@ circuit.keys.load("/path/to/keys")
 
 ## Automatic Management
 
-If you want to generate keys in the first run and reuse the keys in consecutive runs:
+If you want to generate keys in the first run and reuse the keys in consecutive runs, use:
 
 ```python
 circuit.keys.load_if_exists_generate_and_save_otherwise("/path/to/keys")
