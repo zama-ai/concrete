@@ -524,9 +524,8 @@ def test_tfhers_conversion_without_multi(function, parameters, parameter_strateg
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
 
-    # Only valid when running in multi
-    if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
-        return
+    conf = helpers.configuration()
+    conf.parameter_selection_strategy = parameter_strategy
 
     dtype = parameterize_partial_dtype(tfhers.uint16_2_2)
 
@@ -540,7 +539,7 @@ def test_tfhers_conversion_without_multi(function, parameters, parameter_strateg
         for inpt in helpers.generate_inputset(parameters)
     ]
     with pytest.raises(RuntimeError, match=f"Can't use tfhers integers with {parameter_strategy}"):
-        compiler.compile(inputset, helpers.configuration())
+        compiler.compile(inputset, conf)
 
 
 def test_tfhers_circuit_eval():
