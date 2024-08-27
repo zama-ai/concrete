@@ -6,6 +6,7 @@ from numpy import where as if_then_else
 
 from .array import array
 from .bits import bits
+from .constant import constant
 from .convolution import conv
 from .hint import hint
 from .identity import identity, refresh
