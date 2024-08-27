@@ -1,15 +1,18 @@
 # Statistics
+This document provides an overview of how to analyze compiled circuits and extract statistical data for performance evaluation in **Concrete**. These statistics help identify bottlenecks and compare circuits.
 
-Concrete analyzes all compiled circuits and calculates some statistics. These statistics can be used to find bottlenecks and compare circuits. Statistics are calculated in terms of basic operations. There are 6 basic operations in Concrete:
+## Basic operations
+Concrete calculates statistics based on the following six basic operations:
 
-* **clear addition:** x + y where x is encrypted and y is clear
-* **encrypted addition:** x + y where both x and y are encrypted
-* **clear multiplication:** x \* y where x is encrypted and y is clear
-* **encrypted negation:** -x where x is encrypted
-* **key switch:** building block for table lookups
-* **packing key switch:** building block for table lookups
-* **programmable bootstrapping:** building block for table lookups
+* **Clear addition:** `x + y` where `x` is encrypted and `y` is clear
+* **Encrypted addition:** `x + y` where both `x` and `y` are encrypted
+* **Clear multiplication:** `x * y` where `x` is encrypted and `y` is clear
+* **Encrypted negation:** `-x` where `x` is encrypted
+* **Key switch:** A building block for table lookups
+* **Packing key switch:** A building block for table lookups
+* **Programmable bootstrapping:** A building block for table lookups
 
+## Displaying statistics
 You can print all statistics using the `show_statistics` configuration option:
 
 ```python
@@ -67,9 +70,9 @@ Each of these properties can be directly accessed on the circuit (e.g., `circuit
 
 ## Tags
 
-Circuit analysis also considers [tags](../core-features/tagging.md)!
+You can also use tags to analyze specific sections of your circuit. See more detailed explanation in [tags documentation](../core-features/tagging.md).
 
-Imagine you have a neural network with 10 layers, each of them tagged. You can easily see the number of additions and multiplications required for matrix multiplications per layer:
+Imagine you have a neural network with 10 layers, each of them tagged, you can easily see the number of additions and multiplications required for matrix multiplications per layer:
 
 ```
 Statistics

@@ -1,6 +1,7 @@
 # Progressbar
+This document introduces the progressbar feature that provides visual feedback on the execution progress of large circuits, which can take considerable time to execute. 
 
-Big circuits can take a long time to execute, and waiting for execution to finish without having any indication of its progress can be frustrating. For this reason, progressbar feature is introduced:
+The following Python code demonstrates how to enable and use the progressbar:
 
 ```python
 import time
@@ -88,14 +89,14 @@ axs[1].axis("off")
 plt.show()
 ```
 
-When you run this code, you will see a progressbar like:
+When you run this code, you will see a progressbar like this one:
 ```
 Evaluation:  10% |█████.............................................|  10% (scaling.r)
 ^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^
 Title        Progressbar                                                   Tag
 ```
 
-And as the circuit progresses, this progressbar would fill:
+As the execution proceeds, the progress bar updates:
 ```
 Evaluation:  30% |███████████████...................................|  30% (scaling.g)
 ```
@@ -104,7 +105,7 @@ Evaluation:  50% |████████████████████�
 ```
 
 {% hint style="info" %}
-It is not a uniform progressbar. For example, when the progressbar shows 50%, this does not mean that half of the execution is performed in terms of seconds. Instead, it means that half of the nodes in the graph have been calculated. Since different node types can take a different amount of time, this should not be used to get an ETA.
+The progress bar does not measure time. When it shows 50%, it indicates that half of the nodes in the computation graph have been processed, not that half of the time has elapsed. The duration of processing different node types may vary, so the progress bar should not be used to estimate the remaining time.
 {% endhint %}
 
 Once the progressbar fills and execution completes, you will see the following figure:
