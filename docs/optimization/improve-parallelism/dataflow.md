@@ -1,8 +1,8 @@
 ### Enabling dataflow parallelism
 
-This guide teaches what data parallelism is and how it can improve the execution time of Concrete circuits.
+This guide explains dataflow parallelism and how it can improve the execution time of **Concrete** circuits.
 
-Dataflow parallelism is a great feature, especially when the circuit is doing a lot of scalar operations.
+Dataflow parallelism is particularly useful when the circuit performs computations that are neither completely independent (such as loop/doall parallelism) nor fully dependent (e.g. sequential, non-parallelizable code). In such cases dataflow tasks can execute as soon as their inputs are available and thus minimizing over-synchronization.
 
 Without dataflow parallelism, circuit is executed operation by operation, like an imperative language. If the operations themselves are not tensorized, loop parallelism would not be utilized and the entire execution would happen in a single thread. Dataflow parallelism changes this by analyzing the operations and their dependencies within the circuit to determine what can be done in parallel and what cannot. Then it distributes the tasks that can be done in parallel to different threads.
 
@@ -47,14 +47,14 @@ for dataflow_parallelize in [False, True]:
         print(f"   with dataflow parallelize -> {np.mean(timings):.03f}s")
 ```
 
-prints:
+This prints:
 
 ```
 without dataflow parallelize -> 0.609s
    with dataflow parallelize -> 0.414s
 ```
 
-and the reason for that is:
+The reason for that is:
 
 ```
 // this is the generated MLIR for the circuit

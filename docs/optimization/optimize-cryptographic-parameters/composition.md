@@ -2,7 +2,7 @@
 
 This guide explains how to optimize cryptographic parameters by specifying composition when using [modules](../../compilation/composing_functions_with_modules.md).
 
-When using [modules](../../compilation/composing_functions_with_modules.md) make sure to specify [composition](../../compilation/composing_functions_with_modules.md#optimizing-runtimes-with-composition-policies) so that the compiler can select more optimal parameters based on how the functions in the module would be used.
+When using [modules](../../compilation/composing_functions_with_modules.md), make sure to specify [composition](../../compilation/composing_functions_with_modules.md#optimizing-runtimes-with-composition-policies) so that the compiler can select more optimal parameters based on how the functions in the module would be used.
 
 For example:
 
@@ -55,11 +55,11 @@ with_composition = PowerWithComposition.compile(
 print(f"   with composition -> {int(with_composition.complexity):>10_} complexity")
 ```
 
-prints:
+This prints:
 
 ```
 without composition -> 185_863_835 complexity
    with composition -> 135_871_612 complexity
 ```
 
-which means specifying composition resulted in ~35% improvement to complexity for computing `cube(square(x))`.
+It means that specifying composition resulted in ~35% improvement to complexity for computing `cube(square(x))`.

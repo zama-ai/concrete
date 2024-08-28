@@ -1,6 +1,6 @@
 ### Adjusting table lookup error probability
 
-This guide teaches how setting `p_error` configuration option can affect the performance of Concrete circuits.
+This guide explains how setting `p_error` configuration option can affect the performance of **Concrete** circuits.
 
 Adjusting table lookup error probability is discussed extensively in [Table lookup exactness](../../core-features/table_lookups_advanced.md#table-lookup-exactness) section. The idea is to sacrifice exactness to gain performance.
 
@@ -20,7 +20,7 @@ for p_error in [(1 / 1_000_000), (1 / 100_000), (1 / 10_000), (1 / 1_000), (1 / 
     print(f"p_error of {p_error:.6f} -> {int(circuit.complexity):_} complexity")
 ```
 
-prints:
+This prints:
 
 ```
 p_error of 0.000001 -> 294_773_524 complexity

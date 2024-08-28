@@ -1,6 +1,6 @@
 ### Tensorizing operations
 
-This guide teaches what tensorization is and how it can improve the execution time of Concrete circuits.
+This guide explains tensorization and how it can improve the execution time of **Concrete** circuits.
 
 Tensors should be used instead of scalars when possible to maximize loop parallelism.
 
@@ -43,7 +43,7 @@ for tensorize in [False, True]:
         print(f"   with tensorization -> {np.mean(timings):.03f}s")
 ```
 
-prints:
+This prints:
 
 ```
 without tensorization -> 0.214s
