@@ -27,9 +27,9 @@ pip install concrete-python[full]
 
 {% hint style="info" %}
 <!-- markdown-link-check-disable -->
-Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding --index-url https://pypi.zama.ai/cpu.
+Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding --extra-index-url https://pypi.zama.ai/cpu.
 
-In particular, wheels with **GPU support** are not on PyPI. You can install it from our package index by adding --index-url https://pypi.zama.ai/gpu, more information on GPU wheels [here](https://docs.zama.ai/concrete/execution-analysis/gpu_acceleration).
+In particular, wheels with **GPU support** are not on PyPI. You can install it from our package index by adding --extra-index-url https://pypi.zama.ai/gpu, more information on GPU wheels [here](https://docs.zama.ai/concrete/execution-analysis/gpu_acceleration).
 <!-- markdown-link-check-enable -->
 {% endhint %}
 
