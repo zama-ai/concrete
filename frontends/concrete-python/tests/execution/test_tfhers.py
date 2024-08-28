@@ -3,6 +3,8 @@ Tests execution of tfhers conversion operations.
 """
 
 import json
+import os
+import tempfile
 from typing import List
 
 import numpy as np
@@ -226,7 +228,7 @@ def test_tfhers_conversion_binary_encrypted(
         ),
     ],
 )
-def test_tfhers_conversion_one_encrypted_one_native(
+def test_tfhers_conversion_one_tfhers_one_native(
     function, parameters, dtype: tfhers.TFHERSIntegerType, helpers
 ):
     """
@@ -268,6 +270,369 @@ def test_tfhers_conversion_one_encrypted_one_native(
     encoded_result = circuit.encrypt_run_decrypt(*encoded_sample)
 
     assert (dtype.decode(encoded_result) == function(*sample)).all()
+
+
+def lut_add_lut(x, y):
+    """lut add lut compute"""
+    lut = fhe.LookupTable(list(range(256)))
+    x = lut[x]
+    y = lut[y]
+    return lut[x + y]
+
+
+TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
+    False,
+    bit_width=8,
+    carry_width=3,
+    msg_width=2,
+    params=tfhers.CryptoParams(
+        lwe_dimension=909,
+        glwe_dimension=1,
+        polynomial_size=4096,
+        pbs_base_log=15,
+        pbs_level=2,
+        lwe_noise_distribution=0,
+        glwe_noise_distribution=2.168404344971009e-19,
+        encryption_key_choice=tfhers.EncryptionKeyChoice.BIG,
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "function, parameters, dtype",
+    [
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7], "status": "encrypted"},
+                "y": {"range": [0, 2**7], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x + y",
+        ),
+        pytest.param(
+            lambda x, y: x - y,
+            {
+                "x": {"range": [2**4, 2**7], "status": "encrypted"},
+                "y": {"range": [0, 2**4], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x - y",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 2**3], "status": "encrypted"},
+                "y": {"range": [0, 2**3], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x * y",
+        ),
+        pytest.param(
+            lut_add_lut,
+            {
+                "x": {"range": [0, 2**7], "status": "encrypted"},
+                "y": {"range": [0, 2**7], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="lut_add_lut",
+        ),
+    ],
+)
+def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
+    function, parameters, dtype: tfhers.TFHERSIntegerType, helpers
+):
+    """
+    Test different operations wrapped by tfhers conversion (2 tfhers inputs).
+
+    Encryption/decryption are done in Rust using TFHErs, while Keygen is done in Concrete.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+
+    # Only valid when running in multi
+    if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
+        return
+
+    compiler = fhe.Compiler(
+        lambda x, y: binary_tfhers(x, y, function, dtype),
+        parameter_encryption_statuses,
+    )
+
+    inputset = [
+        tuple(tfhers.TFHERSInteger(dtype, arg) for arg in inpt)
+        for inpt in helpers.generate_inputset(parameters)
+    ]
+    circuit = compiler.compile(inputset, helpers.configuration())
+
+    assert is_input_and_output_tfhers(
+        circuit,
+        dtype.params.polynomial_size,
+        [0, 1],
+        [
+            0,
+        ],
+    )
+
+    sample = helpers.generate_sample(parameters)
+
+    ###### Full Concrete Execution ################################################
+    concrete_encoded_sample = (dtype.encode(v) for v in sample)
+    concrete_encoded_result = circuit.encrypt_run_decrypt(*concrete_encoded_sample)
+    assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
+
+    ###### TFHErs Encryption ######################################################
+    tfhers_context = tfhers.new_context(circuit, dtype, dtype, func_name="main")
+
+    # serialize key
+    _, key_path = tempfile.mkstemp()
+    serialized_key = tfhers_context.serialize_input_secret_key(input_idx=0)
+    with open(key_path, "wb") as f:
+        f.write(serialized_key)
+
+    # encrypt inputs
+    ct1, ct2 = sample
+    _, ct1_path = tempfile.mkstemp()
+    _, ct2_path = tempfile.mkstemp()
+
+    tfhers_utils = (
+        f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
+    )
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct1} -c {ct1_path} -g {key_path}") == 0
+    )
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct2} -c {ct2_path} -g {key_path}") == 0
+    )
+
+    # import ciphertexts and run
+    cts = []
+    with open(ct1_path, "rb") as f:
+        buff = f.read()
+        cts.append(tfhers_context.import_value(buff, 0))
+    with open(ct2_path, "rb") as f:
+        buff = f.read()
+        cts.append(tfhers_context.import_value(buff, 1))
+    os.remove(ct1_path)
+    os.remove(ct2_path)
+
+    tfhers_encrypted_result = circuit.run(*cts)
+
+    # concrete decryption should work
+    decrypted = circuit.decrypt(tfhers_encrypted_result)
+    assert (dtype.decode(decrypted) == function(*sample)).all()  # type: ignore
+
+    # tfhers decryption
+    buff = tfhers_context.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
+    _, ct_out_path = tempfile.mkstemp()
+    _, pt_path = tempfile.mkstemp()
+    with open(ct_out_path, "wb") as f:
+        f.write(buff)
+
+    assert (
+        os.system(
+            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} -g {key_path} -p {pt_path}"
+        )
+        == 0
+    )
+
+    with open(pt_path, "r") as f:
+        result = int(f.read())
+
+    # close remaining tempfiles
+    os.remove(key_path)
+    os.remove(ct_out_path)
+    os.remove(pt_path)
+
+    assert result == function(*sample)
+
+
+@pytest.mark.parametrize(
+    "function, parameters, dtype",
+    [
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7], "status": "encrypted"},
+                "y": {"range": [0, 2**7], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x + y",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7], "status": "encrypted"},
+                "y": {"range": [0, 2**7], "status": "clear"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x + clear(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [2**6, 2**7 - 1], "status": "encrypted"},
+                "y": {"range": [2**6, 2**7 - 1], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x + y big values",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [2**6, 2**7 - 1], "status": "encrypted"},
+                "y": {"range": [2**6, 2**7 - 1], "status": "clear"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x + clear(y) big values",
+        ),
+        pytest.param(
+            lambda x, y: x - y,
+            {
+                "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**4], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x - y",
+        ),
+        pytest.param(
+            lambda x, y: x - y,
+            {
+                "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**4], "status": "clear"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x - clear(y)",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 2**3], "status": "encrypted"},
+                "y": {"range": [0, 2**3], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x * y",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 2**3], "status": "encrypted"},
+                "y": {"range": [0, 2**3], "status": "clear"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="x * clear(y)",
+        ),
+        pytest.param(
+            lut_add_lut,
+            {
+                "x": {"range": [0, 2**7], "status": "encrypted"},
+                "y": {"range": [0, 2**7], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="lut_add_lut(x , y)",
+        ),
+    ],
+)
+def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
+    function, parameters, dtype: tfhers.TFHERSIntegerType, helpers
+):
+    """
+    Test different operations wrapped by tfhers conversion (1 tfhers, 1 native).
+
+    Encryption/decryption are done in Rust using TFHErs, while Keygen is done in Concrete.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+
+    # Only valid when running in multi
+    if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
+        return
+
+    compiler = fhe.Compiler(
+        lambda x, y: one_tfhers_one_native(x, y, function, dtype),
+        parameter_encryption_statuses,
+    )
+
+    inputset = [
+        (tfhers.TFHERSInteger(dtype, inpt[0]), inpt[1])
+        for inpt in helpers.generate_inputset(parameters)
+    ]
+    circuit = compiler.compile(inputset, helpers.configuration())
+
+    assert is_input_and_output_tfhers(
+        circuit,
+        dtype.params.polynomial_size,
+        [
+            0,
+        ],
+        [
+            0,
+        ],
+    )
+
+    sample = helpers.generate_sample(parameters)
+
+    ###### Full Concrete Execution ################################################
+    concrete_encoded_result = circuit.encrypt_run_decrypt(dtype.encode(sample[0]), sample[1])
+    assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
+
+    ###### TFHErs Encryption ######################################################
+    tfhers_context = tfhers.new_context(circuit, dtype, dtype, func_name="main")
+
+    # serialize key
+    _, key_path = tempfile.mkstemp()
+    serialized_key = tfhers_context.serialize_input_secret_key(input_idx=0)
+    with open(key_path, "wb") as f:
+        f.write(serialized_key)
+
+    # encrypt first input
+    ct1, _ = sample
+    _, ct1_path = tempfile.mkstemp()
+
+    tfhers_utils = (
+        f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
+    )
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct1} -c {ct1_path} -g {key_path}") == 0
+    )
+
+    # import first ciphertexts and encrypt second with concrete
+    with open(ct1_path, "rb") as f:
+        buff = f.read()
+        tfhers_ct = tfhers_context.import_value(buff, 0)
+    os.remove(ct1_path)
+
+    _, native_ct = circuit.encrypt(None, sample[1])  # type: ignore
+
+    tfhers_encrypted_result = circuit.run(tfhers_ct, native_ct)
+
+    # concrete decryption should work
+    decrypted = circuit.decrypt(tfhers_encrypted_result)
+    assert (dtype.decode(decrypted) == function(*sample)).all()  # type: ignore
+
+    # tfhers decryption
+    buff = tfhers_context.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
+    _, ct_out_path = tempfile.mkstemp()
+    _, pt_path = tempfile.mkstemp()
+    with open(ct_out_path, "wb") as f:
+        f.write(buff)
+
+    assert (
+        os.system(
+            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} -g {key_path} -p {pt_path}"
+        )
+        == 0
+    )
+
+    with open(pt_path, "r") as f:
+        result = int(f.read())
+
+    # close remaining tempfiles
+    os.remove(key_path)
+    os.remove(ct_out_path)
+    os.remove(pt_path)
+
+    assert result == function(*sample)
 
 
 @pytest.mark.parametrize(
