@@ -1,7 +1,5 @@
 # Compatibility
 
-## Supported operations
-
 This document lists the operations you can use inside the function that you are compiling.
 
 {% hint style="info" %}
