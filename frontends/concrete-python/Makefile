@@ -14,6 +14,7 @@ endif
 COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
 BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
 RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
+TFHERS_UTILS_DIRECTORY ?= $(PWD)/tests/tfhers-utils/
 
 CONCRETE_VERSION?="" # empty mean latest
 # E.g. to use a previous version: `make CONCRETE_VERSION="<2.7.0" venv`
@@ -62,16 +63,20 @@ licenses:
 # Testing
 # =======
 
+tfhers-utils:
+	cd ${TFHERS_UTILS_DIRECTORY}
+	make build
+
 pytest: pytest-default
 
-pytest-default:
+pytest-default: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \
 		${COVERAGE_OPT} \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-pytest-single:
+pytest-single: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	# test single precision, mono params
 	pytest tests -svv -n auto \
@@ -80,7 +85,7 @@ pytest-single:
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-pytest-multi:
+pytest-multi: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	# test multi precision, multi params
 	pytest tests -svv -n auto \
@@ -90,7 +95,7 @@ pytest-multi:
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-pytest-gpu:
+pytest-gpu: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	# test single precision
 	pytest tests -svv -n0 --use_gpu \
