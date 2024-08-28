@@ -10,7 +10,7 @@ This version is not available on [pypi.org](https://pypi.org/project/concrete-py
 
 To use GPU acceleration, install the GPU/CUDA wheel from our [Zama public PyPI repository](https://pypi.zama.ai) using the following command:
 
-`pip install concrete-python  --index-url https://pypi.zama.ai/gpu`.
+`pip install concrete-python  --extra-index-url https://pypi.zama.ai/gpu`.
 
 After installing the GPU/CUDA wheel, you must [configure](../guides/configure.md) the FHE program compilation to enable GPU offloading using the `use_gpu` option.
 
