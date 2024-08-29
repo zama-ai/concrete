@@ -413,6 +413,8 @@ int64_t concrete_cpu_tfhers_uint8_to_lwe_array(const uint8_t *serialized_data_pt
                                                size_t serialized_data_len,
                                                uint64_t *lwe_vec_buffer);
 
+size_t concrete_cpu_tfhers_unknown_noise_level(void);
+
 void simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(const uint64_t *lwe_list_in,
                                                                               uint64_t *lwe_list_out,
                                                                               size_t ct_in_count,
