@@ -44,7 +44,7 @@ jobs:
   build-linux-x86:
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
@@ -137,7 +137,7 @@ jobs:
   build-macos:
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
 
     runs-on: ${{ matrix.runs-on }}
@@ -297,7 +297,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
       - uses: actions-rust-lang/setup-rust-toolchain@11df97af8e8102fd60b60a77dfbf58d40cd843b8 # v1.10.1
@@ -349,7 +349,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.runs-on }}
     steps:
