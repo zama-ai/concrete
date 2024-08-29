@@ -152,6 +152,15 @@ class TfhersFheIntDescription(WrapperCpp):
     def noise_level(self, noise_level: int):
         self.cpp().noise_level = noise_level
 
+    @staticmethod
+    def get_unknown_noise_level() -> int:
+        """Get unknow noise level value.
+
+        Returns:
+            int: unknown noise level value
+        """
+        return _TfhersFheIntDescription.UNKNOWN_NOISE_LEVEL()
+
     @property
     def ks_first(self) -> bool:
         """Keyswitch placement relative to the bootsrap in a PBS"""

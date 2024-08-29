@@ -38,12 +38,23 @@ impl TfhersFheIntDescription {
 
     /// Create a `Ciphertext` from the lwe and `self` metadata
     fn ct_from_lwe(&self, lwe: LweCiphertext<Vec<u64>>) -> Ciphertext {
+        // all this if/else due to the fact that we can't construct a NoiseLevel (not public)
+        let noise_level = if self.noise_level == NoiseLevel::ZERO.get() {
+            NoiseLevel::ZERO
+        } else if self.noise_level == NoiseLevel::NOMINAL.get() {
+            NoiseLevel::NOMINAL
+        } else if self.noise_level == NoiseLevel::MAX.get() {
+            NoiseLevel::MAX
+        } else if self.noise_level == NoiseLevel::UNKNOWN.get() {
+            NoiseLevel::UNKNOWN
+        } else {
+            panic!("invalid noise level value");
+        };
+
         Ciphertext::new(
             lwe,
-            // TODO: how to set degree here?
             Degree::new(self.degree),
-            // TODO: how to set noise here?
-            NoiseLevel::UNKNOWN,
+            noise_level,
             MessageModulus(self.message_modulus),
             CarryModulus(self.carry_modulus),
             if self.ks_first {
@@ -53,6 +64,11 @@ impl TfhersFheIntDescription {
             },
         )
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_tfhers_unknown_noise_level() -> usize {
+    NoiseLevel::UNKNOWN.get()
 }
 
 #[no_mangle]
@@ -141,6 +157,17 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_uint8(
     fheuint_desc: TfhersFheIntDescription,
 ) -> usize {
     nounwind(|| {
+        // we want to trigger a PBS on TFHErs side
+        assert!(
+            fheuint_desc.noise_level == NoiseLevel::UNKNOWN.get(),
+            "noise_level must be unknown"
+        );
+        // we want to use the max degree as we don't track it on Concrete side
+        assert!(
+            fheuint_desc.degree == fheuint_desc.message_modulus - 1,
+            "degree must be the max value (msg_modulus - 1)"
+        );
+
         let lwe_size = fheuint_desc.lwe_size;
         let n_cts = fheuint_desc.n_cts;
         // construct fheuint from LWEs

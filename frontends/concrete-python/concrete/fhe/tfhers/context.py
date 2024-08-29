@@ -120,9 +120,11 @@ class Context:
         lwe_size = params.polynomial_size + 1
         n_cts = bit_width // output_type.msg_width
         ks_first = params.encryption_key_choice is EncryptionKeyChoice.BIG
-        # TODO: how to set degree and noise_level
-        degree: int = 0
-        noise_level: int = 0
+        # maximum value using message bits as we don't use carry bits here
+        degree = message_modulus - 1
+        # this should imply running a PBS on TFHErs side
+        noise_level = TfhersFheIntDescription.get_unknown_noise_level()
+
         fheint_desc = TfhersFheIntDescription.new(
             bit_width,
             signed,

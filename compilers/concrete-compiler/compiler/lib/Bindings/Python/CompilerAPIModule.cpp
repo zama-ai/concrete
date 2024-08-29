@@ -783,6 +783,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
         desc.ks_first = ks_first;
         return desc;
       }))
+      .def_static("UNKNOWN_NOISE_LEVEL",
+                  [] { return concrete_cpu_tfhers_unknown_noise_level(); })
       .def_property(
           "width", [](TfhersFheIntDescription &desc) { return desc.width; },
           [](TfhersFheIntDescription &desc, size_t width) {
