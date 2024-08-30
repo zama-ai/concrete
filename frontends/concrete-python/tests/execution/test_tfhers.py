@@ -382,11 +382,11 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
 
     ###### TFHErs Encryption ######################################################
-    tfhers_context = tfhers.new_context(circuit, dtype, dtype, func_name="main")
+    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="main")
 
     # serialize key
     _, key_path = tempfile.mkstemp()
-    serialized_key = tfhers_context.serialize_input_secret_key(input_idx=0)
+    serialized_key = tfhers_bridge.serialize_input_secret_key(input_idx=0)
     with open(key_path, "wb") as f:
         f.write(serialized_key)
 
@@ -409,10 +409,10 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     cts = []
     with open(ct1_path, "rb") as f:
         buff = f.read()
-        cts.append(tfhers_context.import_value(buff, 0))
+        cts.append(tfhers_bridge.import_value(buff, 0))
     with open(ct2_path, "rb") as f:
         buff = f.read()
-        cts.append(tfhers_context.import_value(buff, 1))
+        cts.append(tfhers_bridge.import_value(buff, 1))
     os.remove(ct1_path)
     os.remove(ct2_path)
 
@@ -423,7 +423,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     assert (dtype.decode(decrypted) == function(*sample)).all()  # type: ignore
 
     # tfhers decryption
-    buff = tfhers_context.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
+    buff = tfhers_bridge.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
     _, ct_out_path = tempfile.mkstemp()
     _, pt_path = tempfile.mkstemp()
     with open(ct_out_path, "wb") as f:
@@ -577,11 +577,11 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
 
     ###### TFHErs Encryption ######################################################
-    tfhers_context = tfhers.new_context(circuit, dtype, dtype, func_name="main")
+    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="main")
 
     # serialize key
     _, key_path = tempfile.mkstemp()
-    serialized_key = tfhers_context.serialize_input_secret_key(input_idx=0)
+    serialized_key = tfhers_bridge.serialize_input_secret_key(input_idx=0)
     with open(key_path, "wb") as f:
         f.write(serialized_key)
 
@@ -599,7 +599,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     # import first ciphertexts and encrypt second with concrete
     with open(ct1_path, "rb") as f:
         buff = f.read()
-        tfhers_ct = tfhers_context.import_value(buff, 0)
+        tfhers_ct = tfhers_bridge.import_value(buff, 0)
     os.remove(ct1_path)
 
     _, native_ct = circuit.encrypt(None, sample[1])  # type: ignore
@@ -611,7 +611,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     assert (dtype.decode(decrypted) == function(*sample)).all()  # type: ignore
 
     # tfhers decryption
-    buff = tfhers_context.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
+    buff = tfhers_bridge.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
     _, ct_out_path = tempfile.mkstemp()
     _, pt_path = tempfile.mkstemp()
     with open(ct_out_path, "wb") as f:

@@ -1,5 +1,5 @@
 """
-Declaration of `tfhers.Context` class.
+Declaration of `tfhers.Bridge` class.
 """
 
 from typing import List, Optional, Union
@@ -11,8 +11,8 @@ from concrete import fhe
 from .dtypes import EncryptionKeyChoice, TFHERSIntegerType
 
 
-class Context:
-    """TFHErs Context extend a Circuit with TFHErs functionalities."""
+class Bridge:
+    """TFHErs Bridge extend a Circuit with TFHErs functionalities."""
 
     circuit: "fhe.Circuit"
     input_types: Union[List[Optional[TFHERSIntegerType]], Optional[TFHERSIntegerType]]
@@ -183,13 +183,13 @@ class Context:
         # pylint: enable=protected-access
 
 
-def new_context(
+def new_bridge(
     circuit: "fhe.Circuit",
     input_types: Union[List[Optional[TFHERSIntegerType]], Optional[TFHERSIntegerType]],
     output_types: Union[List[Optional[TFHERSIntegerType]], Optional[TFHERSIntegerType]],
     func_name: str = "main",
-) -> Context:
-    """Create a TFHErs context from a circuit.
+) -> Bridge:
+    """Create a TFHErs bridge from a circuit.
 
     Args:
         circuit (Circuit): compiled circuit
@@ -202,6 +202,6 @@ def new_context(
         func_name (str, optional): name of the function to use. Defaults to "main".
 
     Returns:
-        Context: TFHErs context
+        Bridge: TFHErs bridge
     """
-    return Context(circuit, input_types, output_types, func_name)
+    return Bridge(circuit, input_types, output_types, func_name)
