@@ -1,5 +1,7 @@
 # Tagging
 
+This document explains the concept of tagging, which is a debugging tool to make a link between the user's Python code and the Concrete MLIR circuits. Such a link can be useful when an issue is raised by the compiler on some MLIR, to know which Python code it corresponds to.
+
 When you have big circuits, keeping track of which node corresponds to which part of your code becomes difficult. A tagging system can simplify such situations:
 
 ```python

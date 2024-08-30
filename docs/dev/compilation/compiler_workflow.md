@@ -1,5 +1,7 @@
 # Compilation
 
+This document explains the different passes happening in the compilation process, from the Concrete Python frontend to the Concrete MLIR compiler.
+
 There are two main entry points to the Concrete Compiler. The first is to use the Concrete Python frontend. The second is to use the Compiler directly, which takes [MLIR](https://mlir.llvm.org/) as input. Concrete Python is more high level and uses the Compiler under the hood.
 
 Compilation begins in the **frontend** with tracing to get an easy-to-manipulate representation of the function. We call this representation a `Computation Graph`, which is a Directed Acyclic Graph (DAG) containing nodes representing computations done in the function. Working with graphs is useful because they have been studied extensively and there are a lot of available algorithms to manipulate them. Internally, we use [networkx](https://networkx.org), which is an excellent graph library for Python.

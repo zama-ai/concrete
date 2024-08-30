@@ -1,5 +1,7 @@
 # Security
 
+This document describes some security concepts around FHE that can help you generate parameters that are both secure and correct.
+
 ## Parameter Curves
 
 To select secure cryptographic parameters for usage in Concrete, we utilize the [Lattice-Estimator](https://github.com/malb/lattice-estimator). In particular, we use the following workflow:

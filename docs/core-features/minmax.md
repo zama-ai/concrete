@@ -1,5 +1,7 @@
 # Min/Max Operations
 
+This document explains how to compute minimum and maximum between values in Concrete, covering different strategies to make computations faster, depending on the strategy.
+
 Finding the minimum or maximum of two numbers is not a native operation in Concrete, so it needs to be implemented using existing native operations (i.e., additions, clear multiplications, negations, table lookups). Concrete offers two different implementations for this.
 
 ## Chunked

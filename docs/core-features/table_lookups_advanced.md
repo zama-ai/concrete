@@ -1,5 +1,7 @@
 # Table lookups (advanced)
 
+This document details the management of Table Lookups(TLU) within Concrete for advanced usage. For a simpler guide, refer to the [Table Lookup Basics](table_lookups.md).
+
 One of the most common operations in **Concrete** are `Table Lookups` (TLUs). All operations except addition, subtraction, multiplication with non-encrypted values, tensor manipulation operations, and a few operations built with those primitive operations (e.g. matmul, conv) are converted to Table Lookups under the hood.
 
 Table Lookups are very flexible. They allow Concrete to support many operations, but they are expensive. The exact cost depends on many variables (hardware used, error probability, etc.), but they are always much more expensive compared to other operations. You should try to avoid them as much as possible. It's not always possible to avoid them completely, but you might remove the number of TLUs or replace some of them with other primitive operations.

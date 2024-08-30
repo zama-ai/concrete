@@ -1,6 +1,6 @@
 # Fusing
 
-Fusing is the act of combining multiple nodes into a single node, which is converted to a table lookup.
+This document describes the concept of fusing, which is the act of combining multiple nodes into a single node, which is converted to a Table Lookup.
 
 ## How is it done?
 
