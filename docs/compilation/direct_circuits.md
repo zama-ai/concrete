@@ -1,5 +1,7 @@
 # Direct circuits
 
+This document explains the concept of direct circuits in Concrete, which is another way to compile circuit without having to give a proper inputset.
+
 {% hint style="warning" %}
 Direct circuits are still experimental. It is very easy to make mistakes (e.g., due to no overflow checks or type coercion) while using direct circuits, so utilize them with care.
 {% endhint %}

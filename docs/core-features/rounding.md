@@ -1,5 +1,7 @@
 # Rounding
 
+This document details the concept of rounding, and how it is used in Concrete to make some FHE computations especially faster.
+
 Table lookups have a strict constraint on the number of bits they support. This can be limiting, especially if you don't need exact precision. As well as this, using larger bit-widths leads to slower table lookups.
 
 To overcome these issues, rounded table lookups are introduced. This operation provides a way to round the least significant bits of a large integer and then apply the table lookup on the resulting (smaller) value.

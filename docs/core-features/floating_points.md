@@ -1,6 +1,8 @@
 # Floating Points
 
-**Concrete** partly supports floating points. There is no support for floating point inputs or outputs. However, there is support for intermediate values to be floating points (under certain constraints).
+This document describes how floating points are treated and manipulated in Concrete.
+
+**Concrete** partly supports floating points. There is no support for floating point inputs or outputs. However, there is support for intermediate values to be floating points (under certain constraints). Also, we note that one can use an equivalent of fixed points in Concrete, as described in [our tutorial](../../frontends/concrete-python/examples/floating_point/floating_point.ipynb).
 
 ## Floating points as intermediate values
 

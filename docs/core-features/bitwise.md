@@ -1,5 +1,7 @@
 # Bitwise Operations
 
+This document describes how comparisons are managed in Concrete, typically "AND", "OR", and so on. It covers different strategies to make the FHE computations faster, depending on the context.
+
 Bitwise operations are not native operations in Concrete, so they need to be implemented using existing native operations (i.e., additions, clear multiplications, negations, table lookups). Concrete offers two different implementations for performing bitwise operations.
 
 ## Chunked

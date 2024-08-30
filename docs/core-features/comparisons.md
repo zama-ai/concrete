@@ -1,5 +1,7 @@
 # Comparisons
 
+This document describes how comparisons are managed in Concrete, typically 'equal', 'greater than', and so on.  It covers different strategies to make the FHE computations faster, depending on the context.
+
 Comparisons are not native operations in Concrete, so they need to be implemented using existing native operations (i.e., additions, clear multiplications, negations, table lookups). Concrete offers three different implementations for performing comparisons.
 
 ## Chunked
