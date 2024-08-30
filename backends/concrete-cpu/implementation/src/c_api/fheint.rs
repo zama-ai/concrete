@@ -64,6 +64,14 @@ impl TfhersFheIntDescription {
             },
         )
     }
+
+    /// Get DataKind
+    fn data_kind(&self) -> tfhe::integer::ciphertext::DataKind {
+        match self.is_signed {
+            true => tfhe::integer::ciphertext::DataKind::Signed(self.width),
+            false => tfhe::integer::ciphertext::DataKind::Unsigned(self.width),
+        }
+    }
 }
 
 #[no_mangle]
@@ -193,10 +201,7 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_uint8(
             );
             blocks.push(fheuint_desc.ct_from_lwe(lwe_ct));
         }
-        let fheuint = match FheUint8::from_expanded_blocks(
-            blocks,
-            tfhe::integer::ciphertext::DataKind::Unsigned(4),
-        ) {
+        let fheuint = match FheUint8::from_expanded_blocks(blocks, fheuint_desc.data_kind()) {
             Ok(value) => value,
             Err(_) => {
                 return 0;
