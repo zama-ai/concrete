@@ -222,11 +222,14 @@ class TfhersExporter:
         return bytes(_export_tfhers_fheuint8(value.cpp(), info.cpp()))
 
     @staticmethod
-    def import_fheuint8(buffer: bytes, keyid: int, variance: float) -> Value:
+    def import_fheuint8(
+        buffer: bytes, info: TfhersFheIntDescription, keyid: int, variance: float
+    ) -> Value:
         """Unserialize and convert from TFHErs to Concrete value.
 
         Args:
             buffer (bytes): serialized fheuint8
+            info (TfhersFheIntDescription): description of the TFHErs integer to import
             keyid (int): id of the key used for encryption
             variance (float): variance used for encryption
 
@@ -238,8 +241,12 @@ class TfhersExporter:
         """
         if not isinstance(buffer, bytes):
             raise TypeError(f"buffer must be of type bytes, not {type(buffer)}")
+        if not isinstance(info, TfhersFheIntDescription):
+            raise TypeError(
+                f"info must be of type TfhersFheIntDescription, not {type(info)}"
+            )
         if not isinstance(keyid, int):
             raise TypeError(f"keyid must be of type int, not {type(keyid)}")
         if not isinstance(variance, float):
             raise TypeError(f"variance must be of type float, not {type(variance)}")
-        return Value.wrap(_import_tfhers_fheuint8(buffer, keyid, variance))
+        return Value.wrap(_import_tfhers_fheuint8(buffer, info.cpp(), keyid, variance))
