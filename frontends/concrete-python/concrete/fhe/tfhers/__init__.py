@@ -2,7 +2,7 @@
 tfhers module to represent, and compute on tfhers integer values.
 """
 
-from .context import new_context
+from .context import new_bridge
 from .dtypes import (
     CryptoParams,
     EncryptionKeyChoice,
