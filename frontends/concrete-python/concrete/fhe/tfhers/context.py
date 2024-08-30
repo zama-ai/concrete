@@ -67,6 +67,37 @@ class Context:
             raise ValueError(msg)
         return input_type.params.encryption_variance()
 
+    @staticmethod
+    def _description_from_type(
+        tfhers_int_type: TFHERSIntegerType,
+    ) -> TfhersFheIntDescription:
+        """Construct a TFHErs integer description based on type."""
+
+        bit_width = tfhers_int_type.bit_width
+        signed = tfhers_int_type.is_signed
+        params = tfhers_int_type.params
+        message_modulus = 2**tfhers_int_type.msg_width
+        carry_modulus = 2**tfhers_int_type.carry_width
+        lwe_size = params.polynomial_size + 1
+        n_cts = bit_width // tfhers_int_type.msg_width
+        ks_first = params.encryption_key_choice is EncryptionKeyChoice.BIG
+        # maximum value using message bits as we don't use carry bits here
+        degree = message_modulus - 1
+        # this should imply running a PBS on TFHErs side
+        noise_level = TfhersFheIntDescription.get_unknown_noise_level()
+
+        return TfhersFheIntDescription.new(
+            bit_width,
+            signed,
+            message_modulus,
+            carry_modulus,
+            degree,
+            lwe_size,
+            n_cts,
+            noise_level,
+            ks_first,
+        )
+
     def import_value(self, buffer: bytes, input_idx: int) -> "fhe.Value":
         """Import a serialized TFHErs integer as a Value.
 
@@ -82,13 +113,17 @@ class Context:
             msg = "input at 'input_idx' is not a TFHErs value"
             raise ValueError(msg)
 
+        fheint_desc = self._description_from_type(input_type)
+
         bit_width = input_type.bit_width
         signed = input_type.is_signed
         if bit_width == 8:
             if not signed:
                 keyid = self._input_keyid(input_idx)
                 variance = self._input_variance(input_idx)
-                return fhe.Value(TfhersExporter.import_fheuint8(buffer, keyid, variance))
+                return fhe.Value(
+                    TfhersExporter.import_fheuint8(buffer, fheint_desc, keyid, variance)
+                )
 
         msg = (
             f"importing {'signed' if signed else 'unsigned'} integers of {bit_width}bits is not"
@@ -111,32 +146,10 @@ class Context:
             msg = "output at 'output_idx' is not a TFHErs value"
             raise ValueError(msg)
 
-        # construct a TFHErs integer description based on type
+        fheint_desc = self._description_from_type(output_type)
+
         bit_width = output_type.bit_width
         signed = output_type.is_signed
-        params = output_type.params
-        message_modulus = 2**output_type.msg_width
-        carry_modulus = 2**output_type.carry_width
-        lwe_size = params.polynomial_size + 1
-        n_cts = bit_width // output_type.msg_width
-        ks_first = params.encryption_key_choice is EncryptionKeyChoice.BIG
-        # maximum value using message bits as we don't use carry bits here
-        degree = message_modulus - 1
-        # this should imply running a PBS on TFHErs side
-        noise_level = TfhersFheIntDescription.get_unknown_noise_level()
-
-        fheint_desc = TfhersFheIntDescription.new(
-            bit_width,
-            signed,
-            message_modulus,
-            carry_modulus,
-            degree,
-            lwe_size,
-            n_cts,
-            noise_level,
-            ks_first,
-        )
-
         if bit_width == 8:
             if not signed:
                 return TfhersExporter.export_fheuint8(value.inner, fheint_desc)

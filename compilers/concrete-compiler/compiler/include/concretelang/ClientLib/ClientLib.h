@@ -36,7 +36,8 @@ namespace clientlib {
 
 Result<TransportValue>
 importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
-                     uint32_t encryptionKeyId, double encryptionVariance);
+                     TfhersFheIntDescription desc, uint32_t encryptionKeyId,
+                     double encryptionVariance);
 Result<std::vector<uint8_t>> exportTfhersFheUint8(TransportValue value,
                                                   TfhersFheIntDescription info);
 Result<TfhersFheIntDescription>

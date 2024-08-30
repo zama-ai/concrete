@@ -141,13 +141,14 @@ getTfhersFheUint8Description(llvm::ArrayRef<uint8_t> serializedFheUint8) {
 
 Result<TransportValue>
 importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
-                     uint32_t encryptionKeyId, double encryptionVariance) {
-  auto fheUintInfoOrError = getTfhersFheUint8Description(serializedFheUint8);
-  if (fheUintInfoOrError.has_error()) {
-    return fheUintInfoOrError.error();
+                     TfhersFheIntDescription desc, uint32_t encryptionKeyId,
+                     double encryptionVariance) {
+  if (desc.width != 8 || desc.is_signed == true) {
+    return StringError(
+        "trying to import FheUint8 but description doesn't match this type");
   }
-  auto fheUintDesc = fheUintInfoOrError.value();
-  auto dims = std::vector({fheUintDesc.n_cts, fheUintDesc.lwe_size});
+
+  auto dims = std::vector({desc.n_cts, desc.lwe_size});
   auto outputTensor = Tensor<uint64_t>::fromDimensions(dims);
   auto err = concrete_cpu_tfhers_uint8_to_lwe_array(serializedFheUint8.data(),
                                                     serializedFheUint8.size(),
@@ -160,12 +161,12 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
   auto lwe = value.asBuilder().initTypeInfo().initLweCiphertext();
   lwe.setIntegerPrecision(64);
   // dimensions
-  lwe.initAbstractShape().setDimensions({(uint32_t)fheUintDesc.n_cts});
+  lwe.initAbstractShape().setDimensions({(uint32_t)desc.n_cts});
   lwe.initConcreteShape().setDimensions(
-      {(uint32_t)fheUintDesc.n_cts, (uint32_t)fheUintDesc.lwe_size});
+      {(uint32_t)desc.n_cts, (uint32_t)desc.lwe_size});
   // encryption
   auto encryption = lwe.initEncryption();
-  encryption.setLweDimension((uint32_t)fheUintDesc.lwe_size - 1);
+  encryption.setLweDimension((uint32_t)desc.lwe_size - 1);
   encryption.initModulus().initMod().initNative();
   encryption.setKeyId(encryptionKeyId);
   encryption.setVariance(encryptionVariance);
@@ -173,8 +174,7 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
   auto encoding = lwe.initEncoding();
   auto integer = encoding.initInteger();
   integer.setIsSigned(false);
-  integer.setWidth(
-      std::log2(fheUintDesc.message_modulus * fheUintDesc.carry_modulus));
+  integer.setWidth(std::log2(desc.message_modulus * desc.carry_modulus));
   integer.initMode().initNative();
 
   return value;
@@ -182,6 +182,11 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
 
 Result<std::vector<uint8_t>>
 exportTfhersFheUint8(TransportValue value, TfhersFheIntDescription desc) {
+  if (desc.width != 8 || desc.is_signed == true) {
+    return StringError(
+        "trying to export FheUint8 but description doesn't match this type");
+  }
+
   auto fheuint = Value::fromRawTransportValue(value);
   if (fheuint.isScalar()) {
     return StringError("expected a tensor, but value is a scalar");
