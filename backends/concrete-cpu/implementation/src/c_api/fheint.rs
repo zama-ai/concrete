@@ -6,7 +6,7 @@ use tfhe::integer::ciphertext::Expandable;
 use tfhe::integer::IntegerCiphertext;
 use tfhe::shortint::parameters::{Degree, NoiseLevel};
 use tfhe::shortint::{CarryModulus, Ciphertext, MessageModulus};
-use tfhe::FheUint8;
+use tfhe::{FheUint128, FheUint8};
 
 #[repr(C)]
 pub struct TfhersFheIntDescription {
@@ -147,6 +147,19 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_to_lwe_array(
         }
         0
     })
+}
+
+#[no_mangle]
+pub extern "C" fn concrete_cpu_tfhers_fheint_buffer_size_u64(
+    lwe_size: usize,
+    n_cts: usize,
+) -> usize {
+    // all FheUint should have the same size, but we use a big one to be safe
+    let meta_fheuint = core::mem::size_of::<FheUint128>();
+    let meta_ct = core::mem::size_of::<Ciphertext>();
+
+    // FheUint[metadata, ciphertexts[ciphertext[metadata, lwe_buffer] * n_cts]]
+    meta_fheuint + (meta_ct + lwe_size * 8/*u64*/) * n_cts
 }
 
 #[no_mangle]

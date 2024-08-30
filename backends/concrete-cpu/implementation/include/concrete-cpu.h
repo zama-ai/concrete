@@ -406,6 +406,8 @@ size_t concrete_cpu_serialize_glwe_secret_key_u64(const uint64_t *glwe_sk,
                                                   uint8_t *out_buffer,
                                                   size_t out_buffer_len);
 
+size_t concrete_cpu_tfhers_fheint_buffer_size_u64(size_t lwe_size, size_t n_cts);
+
 struct TfhersFheIntDescription concrete_cpu_tfhers_uint8_description(const uint8_t *serialized_data_ptr,
                                                                      size_t serialized_data_len);
 

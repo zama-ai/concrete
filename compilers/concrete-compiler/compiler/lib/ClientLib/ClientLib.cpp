@@ -190,11 +190,10 @@ exportTfhersFheUint8(TransportValue value, TfhersFheIntDescription desc) {
   if (!tensorOrError.has_value()) {
     return StringError("couldn't get tensor from value");
   }
+  size_t buffer_size =
+      concrete_cpu_tfhers_fheint_buffer_size_u64(desc.lwe_size, desc.n_cts);
+  std::vector<uint8_t> buffer(buffer_size, 0);
   auto flat_data = tensorOrError.value().values;
-  // we estimate the required buffer size for the fheuint serialization.
-  // constants were chosen experimentally and should be larger than enough
-  std::vector<uint8_t> buffer;
-  buffer.resize(desc.lwe_size * 8 * (desc.n_cts + 70) + 1024, 0);
   auto size = concrete_cpu_lwe_array_to_tfhers_uint8(
       flat_data.data(), buffer.data(), buffer.size(), desc);
   if (size == 0) {
