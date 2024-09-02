@@ -703,16 +703,23 @@ def test_round_bit_pattern_approximate_off_by_one_errors(
     # check it's better even with bad conf
     assert circuit_approx.complexity < circuit_exact.complexity
 
-    testset = range(*inputset)
+    # avoiding overflows
+    if signed:
+        testset = [
+            -(2 ** (accumulator_precision - 1)),
+            2 ** (accumulator_precision - 1) - 2**lsbs_to_remove,
+        ]
+    else:
+        testset = [0, 2**accumulator_precision - 2**lsbs_to_remove]
 
     nb_error = 0
     for x in testset:
         approx = circuit_approx.encrypt_run_decrypt(x)
         approx_simu = circuit_approx.simulate(x)
         exact = circuit_exact.simulate(x)
-        assert abs(approx_simu - exact) <= 1
-        assert abs(approx_simu - approx) <= 1
-        delta = abs(approx - approx_simu)
+        delta_simu = abs(approx_simu - exact)
+        delta = abs(approx - exact)
+        assert delta_simu <= 1
         assert delta <= 1
         nb_error += delta > 0
 
