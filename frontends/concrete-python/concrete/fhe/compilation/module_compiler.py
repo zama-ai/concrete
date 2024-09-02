@@ -464,12 +464,15 @@ class Wire(NamedTuple):
         )
 
 
-class Wired(NamedTuple):
+class Wired:
     """
     Composition policy which allows the forwarding of certain outputs to certain inputs.
     """
 
-    wires: Set[Wire] = set()
+    wires: Set[Wire]
+
+    def __init__(self, wires: Optional[Set[Wire]] = None):
+        self.wires = wires if wires else set()
 
     def get_rules_iter(self, _) -> Iterable[CompositionRule]:
         """

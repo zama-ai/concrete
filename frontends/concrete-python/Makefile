@@ -178,7 +178,12 @@ pylint:
 
 ruff:
 	eval $(shell make silent_cp_activate)
-	ruff concrete/ examples/ scripts/ tests/ benchmarks/
+
+	ruff check concrete/
+	ruff check examples/
+	ruff check scripts/
+	ruff check tests/
+	ruff check benchmarks/
 
 check-links:
 	@# Check that no links target the main branch, some internal repositories (Concrete ML or Concrete) or our internal GitBook

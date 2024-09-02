@@ -163,8 +163,10 @@ class ModuleDebugArtifacts:
                 # wrapt                         1.12.1
                 # zipp                          3.5.0
 
-                pip_process = subprocess.run(
-                    ["pip", "--disable-pip-version-check", "list"],
+                # S603 `subprocess` call: check for execution of untrusted input
+                # S607 Starting a process with a partial executable path
+                pip_process = subprocess.run(  # noqa: S603
+                    ["pip", "--disable-pip-version-check", "list"],  # noqa: S607
                     stdout=subprocess.PIPE,
                     check=True,
                 )

@@ -4,7 +4,7 @@ Declaration of `Tracer` class.
 
 import inspect
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import networkx as nx
 import numpy as np
@@ -216,7 +216,7 @@ class Tracer:
         computation = Node.constant(value)
         return Tracer(computation, [])
 
-    SUPPORTED_NUMPY_OPERATORS: Set[Any] = {
+    SUPPORTED_NUMPY_OPERATORS: ClassVar[Set[Any]] = {
         np.abs,
         np.absolute,
         np.add,
@@ -318,7 +318,7 @@ class Tracer:
         np.zeros_like,
     }
 
-    SUPPORTED_KWARGS: Dict[Any, Set[str]] = {
+    SUPPORTED_KWARGS: ClassVar[Dict[Any, Set[str]]] = {
         np.around: {
             "decimals",
         },

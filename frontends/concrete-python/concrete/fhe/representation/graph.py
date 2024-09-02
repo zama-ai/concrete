@@ -454,7 +454,10 @@ class Graph:
                 bounds += "∈ ["
 
                 lower, upper = node.bounds
-                assert type(lower) == type(upper)  # pylint: disable=unidiomatic-typecheck
+
+                # pylint: disable=unidiomatic-typecheck
+                assert type(lower) == type(upper)  # noqa: E721
+                # pylint: enable=unidiomatic-typecheck
 
                 if isinstance(lower, (float, np.float32, np.float64)):
                     bounds += f"{round(lower, 6)}, {round(upper, 6)}"

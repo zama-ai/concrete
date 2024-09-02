@@ -293,7 +293,7 @@ print()
 
 # Check
 assert all(
-    [all(simulated_matches[i] == executed_matches[i]) for i in range(6)]
+    all(simulated_matches[i] == executed_matches[i]) for i in range(6)
 ), "Error in FHE computation"
 
 # Some information about the complexity of the computations
