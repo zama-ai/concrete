@@ -32,11 +32,7 @@ def is_web_link(target: str) -> bool:
     Returns:
         bool
     """
-    if target.startswith("http://"):
-        return True
-    if target.startswith("https://"):
-        return True
-    return False
+    return target.startswith("http://") or target.startswith("https://")
 
 
 def is_mailto_link(target: str) -> bool:
@@ -48,9 +44,7 @@ def is_mailto_link(target: str) -> bool:
     Returns:
         bool
     """
-    if "mailto:" in target:
-        return True
-    return False
+    return "mailto:" in target
 
 
 def contains_header(ast, header) -> bool:

@@ -23,10 +23,7 @@ class ClientSpecs:
         self.client_parameters = client_parameters
 
     def __eq__(self, other: Any):  # pragma: no cover
-        if self.client_parameters.serialize() != other.client_parameters.serialize():
-            return False
-
-        return True
+        return self.client_parameters.serialize() == other.client_parameters.serialize()
 
     def serialize(self) -> bytes:
         """

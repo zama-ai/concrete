@@ -396,65 +396,65 @@ class AdditionalConstraints:
     # Operations
     # ==========
 
-    add = {
+    add = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    array = {
+    array = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    assign_dynamic = {
+    assign_dynamic = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    assign_static = {
+    assign_static = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    bitwise_and = {
+    bitwise_and = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    bitwise_or = {
+    bitwise_or = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    bitwise_xor = {
+    bitwise_xor = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    broadcast_to = {
+    broadcast_to = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    concatenate = {
+    concatenate = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    conv1d = {
+    conv1d = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    conv2d = {
+    conv2d = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    conv3d = {
+    conv3d = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    copy = {
+    copy = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    dot = {
+    dot = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             inputs_share_precision,
             inputs_require_one_more_bit,
@@ -464,51 +464,51 @@ class AdditionalConstraints:
         },
     }
 
-    equal = {
+    equal = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    expand_dims = {
+    expand_dims = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    greater = {
+    greater = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    greater_equal = {
+    greater_equal = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    index_static = {
+    index_static = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    left_shift = {
+    left_shift = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    less = {
+    less = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    less_equal = {
+    less_equal = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    matmul = {
+    matmul = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             inputs_share_precision,
             inputs_require_one_more_bit,
@@ -518,34 +518,34 @@ class AdditionalConstraints:
         },
     }
 
-    maximum = {
+    maximum = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             min_max,
         },
     }
 
-    maxpool1d = {
+    maxpool1d = {  # noqa: RUF012
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
     }
 
-    maxpool2d = {
+    maxpool2d = {  # noqa: RUF012
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
     }
 
-    maxpool3d = {
+    maxpool3d = {  # noqa: RUF012
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
     }
 
-    minimum = {
+    minimum = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             min_max,
         },
     }
 
-    multiply = {
+    multiply = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             inputs_share_precision,
             inputs_require_one_more_bit,
@@ -555,48 +555,48 @@ class AdditionalConstraints:
         },
     }
 
-    negative = {
+    negative = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    not_equal = {
+    not_equal = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    reshape = {
+    reshape = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    right_shift = {
+    right_shift = {  # noqa: RUF012
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    round_bit_pattern = {
+    round_bit_pattern = {  # noqa: RUF012
         has_overflow_protection: {
             inputs_and_output_share_precision,
         },
     }
 
-    subtract = {
+    subtract = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    sum = {
+    sum = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    squeeze = {
+    squeeze = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    transpose = {
+    transpose = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }
 
-    truncate_bit_pattern = {
+    truncate_bit_pattern = {  # noqa: RUF012
         inputs_and_output_share_precision,
     }

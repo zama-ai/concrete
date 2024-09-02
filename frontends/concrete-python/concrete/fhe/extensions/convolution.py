@@ -480,7 +480,7 @@ def _trace_conv(
         "conv2d": _evaluate_conv2d,
         "conv3d": _evaluate_conv3d,
     }
-    eval_func = conv_eval_funcs.get(conv_func, None)
+    eval_func = conv_eval_funcs.get(conv_func)
     assert_that(
         eval_func is not None,
         f"expected conv_func to be one of {list(conv_eval_funcs.keys())}, but got {conv_func}",
@@ -658,7 +658,7 @@ def _evaluate_conv(
         "conv3d": torch.conv3d,
     }
 
-    torch_conv_func = conv_funcs.get(conv_func, None)
+    torch_conv_func = conv_funcs.get(conv_func)
     assert_that(
         torch_conv_func is not None,
         f"expected conv_func to be one of {list(conv_funcs.keys())}, but got {conv_func}",

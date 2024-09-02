@@ -20,8 +20,11 @@ from concrete import fhe
 def is_git_diff(path: Union[None, Path, str]) -> bool:
     """Check if there is a diff in a repository."""
     path = path if path is not None else "."
-    completed_process = subprocess.run(
-        ["git", "diff", "HEAD"], capture_output=True, cwd=path, check=True
+
+    # S603 `subprocess` call: check for execution of untrusted input
+    # S607 Starting a process with a partial executable path
+    completed_process = subprocess.run(  # noqa: S603
+        ["git", "diff", "HEAD"], capture_output=True, cwd=path, check=True  # noqa: S607
     )
     if completed_process.stderr:
         message = f"Check git diff raised an error:\n {completed_process.stderr.decode()}"
@@ -32,8 +35,14 @@ def is_git_diff(path: Union[None, Path, str]) -> bool:
 def get_git_branch(path: Union[None, Path, str]) -> str:
     """Get git branch of repository."""
     path = path if path is not None else "."
-    completed_process = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, cwd=path, check=True
+
+    # S603 `subprocess` call: check for execution of untrusted input
+    # S607 Starting a process with a partial executable path
+    completed_process = subprocess.run(  # noqa: S603
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],  # noqa: S607
+        capture_output=True,
+        cwd=path,
+        check=True,
     )
     if completed_process.stderr:
         message = "Check git branch raised an error:\n" f"{completed_process.stderr.decode()}"
@@ -44,8 +53,11 @@ def get_git_branch(path: Union[None, Path, str]) -> str:
 def get_git_hash(path: Union[None, Path, str]) -> str:
     """Get git hash of repository."""
     path = path if path is not None else "."
-    completed_process = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, cwd=path, check=True
+
+    # S603 `subprocess` call: check for execution of untrusted input
+    # S607 Starting a process with a partial executable path
+    completed_process = subprocess.run(  # noqa: S603
+        ["git", "rev-parse", "HEAD"], capture_output=True, cwd=path, check=True  # noqa: S607
     )
     if completed_process.stderr:
         message = "Check git hash raised an error:\n" f"{completed_process.stderr.decode()}"
@@ -56,10 +68,13 @@ def get_git_hash(path: Union[None, Path, str]) -> str:
 def get_git_hash_date(hash_str: str, path: Union[None, Path, str]) -> str:
     """Get repository git hash date."""
     path = path if path is not None else "."
+
+    # S603 `subprocess` call: check for execution of untrusted input
+    # S607 Starting a process with a partial executable path
     # We get the author date (%ai) and not the commit date (%ci)
     # for more details please refer to https://git-scm.com/docs/git-show
-    completed_process = subprocess.run(
-        ["git", "show", "-s", "--date=iso-strict", "--format=%ai", hash_str],
+    completed_process = subprocess.run(  # noqa: S603
+        ["git", "show", "-s", "--date=iso-strict", "--format=%ai", hash_str],  # noqa: S607
         capture_output=True,
         cwd=path,
         check=True,

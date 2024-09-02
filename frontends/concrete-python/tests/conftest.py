@@ -181,7 +181,7 @@ class Helpers:
         """
 
         return {
-            parameter: details["status"] if "status" in details else "encrypted"
+            parameter: details.get("status", "encrypted")
             for parameter, details in parameters.items()
         }
 

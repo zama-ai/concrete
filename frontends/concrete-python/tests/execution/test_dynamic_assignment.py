@@ -417,10 +417,8 @@ def test_dynamic_assignment(dtype, index, value_status, value, helpers):
     processed_index = list(index)
 
     def f(tensor, *args, value):
-        cursor = 0
-        for position in dynamic_index_positions:
+        for cursor, position in enumerate(dynamic_index_positions):
             processed_index[position] = args[cursor]
-            cursor += 1
 
         tensor[tuple(processed_index)] = value
         return tensor

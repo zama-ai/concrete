@@ -33,7 +33,6 @@ from mlir._mlir_libs._concretelang._compiler import (
     KeyType,
     OptimizerMultiParameterStrategy,
     OptimizerStrategy,
-    Encoding,
     PrimitiveOperation,
 )
 from mlir.ir import Module as MlirModule
