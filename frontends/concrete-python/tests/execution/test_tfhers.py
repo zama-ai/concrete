@@ -436,7 +436,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
         == 0
     )
 
-    with open(pt_path, "r") as f:
+    with open(pt_path, "r", encoding="utf-8") as f:
         result = int(f.read())
 
     # close remaining tempfiles
@@ -624,7 +624,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
         == 0
     )
 
-    with open(pt_path, "r") as f:
+    with open(pt_path, "r", encoding="utf-8") as f:
         result = int(f.read())
 
     # close remaining tempfiles
