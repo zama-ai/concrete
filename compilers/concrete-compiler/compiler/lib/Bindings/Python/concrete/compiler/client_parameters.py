@@ -12,6 +12,7 @@ from mlir._mlir_libs._concretelang._compiler import (
 
 # pylint: enable=no-name-in-module,import-error
 
+from .lwe_secret_key import LweSecretKeyParam
 from .wrapper import WrapperCpp
 
 
@@ -37,7 +38,23 @@ class ClientParameters(WrapperCpp):
             )
         super().__init__(client_parameters)
 
-    def input_keyid_at(self, input_idx: int, circuit_name: str) -> int:
+    def lwe_secret_key_param_at(self, key_id: int) -> LweSecretKeyParam:
+        """Get the parameters of a selected LWE secret key.
+
+        Args:
+            key_id (int): keyid to get parameters from
+
+        Raises:
+            TypeError: if arguments aren't of expected types
+
+        Returns:
+            LweSecretKeyParam: LWE secret key parameters
+        """
+        if not isinstance(key_id, int):
+            raise TypeError(f"key_id must be of type int, not {type(key_id)}")
+        return LweSecretKeyParam.wrap(self.cpp().lwe_secret_key_param_at(key_id))
+
+    def input_keyid_at(self, input_idx: int, circuit_name: str = "main") -> int:
         """Get the keyid of a selected encrypted input in a given circuit.
 
         Args:

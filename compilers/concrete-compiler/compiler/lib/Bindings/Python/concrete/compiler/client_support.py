@@ -2,7 +2,7 @@
 #  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
 
 """Client support."""
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 import numpy as np
 
 # pylint: disable=no-name-in-module,import-error
@@ -16,6 +16,7 @@ from .key_set_cache import KeySetCache
 from .client_parameters import ClientParameters
 from .public_arguments import PublicArguments
 from .lambda_argument import LambdaArgument
+from .lwe_secret_key import LweSecretKey
 from .wrapper import WrapperCpp
 from .utils import ACCEPTED_INTS, ACCEPTED_NUMPY_UINTS, ACCEPTED_TYPES
 
@@ -62,17 +63,21 @@ class ClientSupport(WrapperCpp):
         keyset_cache: Optional[KeySetCache] = None,
         secret_seed: Optional[int] = None,
         encryption_seed: Optional[int] = None,
+        initial_lwe_secret_keys: Optional[Dict[int, LweSecretKey]] = None,
     ) -> KeySet:
         """Generate a key set according to the client parameters.
 
         If the cache is set, and include equivalent keys as specified by the client parameters,
         the keyset is loaded, otherwise, a new keyset is generated and saved in the cache.
+        If keygen is required, it will first initialize the secret keys provided, if any.
 
         Args:
             client_parameters (ClientParameters): client parameters specification
             keyset_cache (Optional[KeySetCache], optional): keyset cache. Defaults to None.
             secret_seed (Optional[int]): secret seed, must be a positive 128 bits integer
             encryption_seed (Optional[int]): encryption seed, must be a positive 128 bits integer
+            initial_lwe_secret_keys (Optional[Dict[int, LweSecretKey]]): keys to init the keyset
+                with before keygen. It maps keyid to secret key
 
         Raises:
             TypeError: if client_parameters is not of type ClientParameters
@@ -99,6 +104,11 @@ class ClientSupport(WrapperCpp):
                 f"keyset_cache must be None or of type KeySetCache, not {type(keyset_cache)}"
             )
 
+        if initial_lwe_secret_keys is not None:
+            intial_sks = {i: sk.cpp() for i, sk in initial_lwe_secret_keys.items()}
+        else:
+            intial_sks = {}
+
         cpp_cache = None if keyset_cache is None else keyset_cache.cpp()
         return KeySet.wrap(
             _ClientSupport.key_set(
@@ -108,6 +118,7 @@ class ClientSupport(WrapperCpp):
                 secret_seed_lsb,
                 encryption_seed_msb,
                 encryption_seed_lsb,
+                intial_sks,
             ),
         )
 
