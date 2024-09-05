@@ -879,3 +879,76 @@ def test_lazy_simulation_execution(helpers):
 
     assert module.execution_runtime.initialized
     assert module.simulation_runtime.initialized
+
+
+def test_all_composable_with_clears(helpers):
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted", "y": "clear"})
+        def inc(x, y):
+            return (x + y + 1) % 20
+
+    module = Module.compile(
+        {
+            "inc": [
+                (np.random.randint(1, 20, size=()), np.random.randint(1, 20, size=()))
+                for _ in range(100)
+            ]
+        },
+        helpers.configuration().fork(),
+    )
+
+
+def test_wired_with_invalid_wire(helpers):
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted", "y": "clear"})
+        def inc(x, y):
+            return (x + y + 1) % 20
+
+        composition = fhe.Wired(
+            {
+                fhe.Wire(fhe.Output(inc, 0), fhe.Input(inc, 0)),
+                fhe.Wire(fhe.Output(inc, 0), fhe.Input(inc, 1)),  # Faulty one
+            }
+        )
+
+    with pytest.raises(
+        Exception, match="Invalid composition rule encountered: Input 0 of inc is not encrypted"
+    ):
+        module = Module.compile(
+            {
+                "inc": [
+                    (np.random.randint(1, 20, size=()), np.random.randint(1, 20, size=()))
+                    for _ in range(100)
+                ]
+            },
+            helpers.configuration().fork(),
+        )
+
+
+def test_wired_with_all_encrypted_inputs(helpers):
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted", "y": "clear"})
+        def inc(x, y):
+            return (x + y + 1) % 20
+
+        composition = fhe.Wired(
+            {
+                fhe.Wire(fhe.Output(inc, 0), fhe.AllInputs(inc)),
+            }
+        )
+
+    module = Module.compile(
+        {
+            "inc": [
+                (np.random.randint(1, 20, size=()), np.random.randint(1, 20, size=()))
+                for _ in range(100)
+            ]
+        },
+        helpers.configuration().fork(),
+    )
