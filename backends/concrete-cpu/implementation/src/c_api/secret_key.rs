@@ -242,6 +242,23 @@ pub unsafe extern "C" fn concrete_cpu_serialize_glwe_secret_key_u64(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_unserialize_glwe_secret_key_u64(
+    buffer: *const u8,
+    buffer_len: usize,
+    glwe_sk: *mut u64,
+    glwe_sk_size: usize,
+) -> usize {
+    let serialized_data = slice::from_raw_parts(buffer, buffer_len);
+    let sk: GlweSecretKey<Vec<u64>> = bincode::deserialize_from(serialized_data).unwrap();
+    assert!(sk.glwe_dimension().0 == 1);
+    let container = sk.into_container();
+    assert!(container.len() <= glwe_sk_size);
+    let glwe_sk_slice = slice::from_raw_parts_mut(glwe_sk, glwe_sk_size);
+    glwe_sk_slice.copy_from_slice(container.as_slice());
+    container.len()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_decrypt_glwe_ciphertext_u64(
     glwe_sk: *const u64,
     output: *mut u64,
