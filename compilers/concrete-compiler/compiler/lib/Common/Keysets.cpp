@@ -103,9 +103,20 @@ Message<concreteprotocol::ServerKeyset> ServerKeyset::toProto() const {
 }
 
 Keyset::Keyset(const Message<concreteprotocol::KeysetInfo> &info,
-               SecretCSPRNG &secretCsprng, EncryptionCSPRNG &encryptionCsprng) {
+               SecretCSPRNG &secretCsprng, EncryptionCSPRNG &encryptionCsprng,
+               std::map<uint32_t, LweSecretKey> lweSecretKeys) {
   for (auto keyInfo : info.asReader().getLweSecretKeys()) {
-    client.lweSecretKeys.push_back(LweSecretKey(keyInfo, secretCsprng));
+    if (lweSecretKeys.count(keyInfo.getId())) {
+      // use provided key
+      auto lweSk = lweSecretKeys.at(keyInfo.getId());
+      assert(keyInfo.toString().flatten() ==
+                 lweSk.getInfo().asReader().toString().flatten() &&
+             "provided key info doesn't match expected ones");
+      client.lweSecretKeys.push_back(lweSk);
+    } else {
+      // generate new key
+      client.lweSecretKeys.push_back(LweSecretKey(keyInfo, secretCsprng));
+    }
   }
   for (auto keyInfo : info.asReader().getLweBootstrapKeys()) {
     server.lweBootstrapKeys.push_back(LweBootstrapKey(
@@ -321,12 +332,29 @@ KeysetCache::KeysetCache(std::string backingDirectoryPath) {
 
 Result<Keyset>
 KeysetCache::getKeyset(const Message<concreteprotocol::KeysetInfo> &keysetInfo,
-                       __uint128_t secret_seed, __uint128_t encryption_seed) {
+                       __uint128_t secret_seed, __uint128_t encryption_seed,
+                       std::map<uint32_t, LweSecretKey> lweSecretKeys) {
   std::string hashString = keysetInfo.asReader().toString().flatten().cStr() +
                            std::to_string((uint64_t)secret_seed) +
                            std::to_string((uint64_t)(secret_seed >> 64)) +
                            std::to_string((uint64_t)encryption_seed) +
                            std::to_string((uint64_t)(encryption_seed >> 64));
+
+  // hash initial keys if any
+  if (lweSecretKeys.size()) {
+    hashString += "InitSKsSig:";
+    for (auto sk : lweSecretKeys) {
+      // key info
+      hashString += sk.second.getInfo().asReader().toString().flatten().cStr();
+      // key buffer
+      std::vector<uint64_t> buffer = sk.second.getBuffer();
+      size_t hash = std::hash<std::string_view>{}(
+          {reinterpret_cast<const char *>(buffer.data()),
+           buffer.size() * sizeof(uint64_t)});
+      hashString += std::to_string(hash);
+      hashString += ",";
+    }
+  }
 
   size_t hash = std::hash<std::string>{}(hashString);
 #ifdef CONCRETELANG_GENERATE_UNSECURE_SECRET_KEYS
@@ -382,7 +410,7 @@ KeysetCache::getKeyset(const Message<concreteprotocol::KeysetInfo> &keysetInfo,
 
   auto encryptionCsprng = csprng::EncryptionCSPRNG(encryption_seed);
   auto secretCsprng = csprng::SecretCSPRNG(secret_seed);
-  Keyset keyset(keysetInfo, secretCsprng, encryptionCsprng);
+  Keyset keyset(keysetInfo, secretCsprng, encryptionCsprng, lweSecretKeys);
 
   OUTCOME_TRYV(saveKeys(keyset, folderPath));
 

@@ -11,6 +11,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keys.h"
 #include <functional>
+#include <map>
 #include <memory>
 #include <stdlib.h>
 #include <string>
@@ -51,10 +52,22 @@ struct Keyset {
 
   Keyset(){};
 
-  /// Generates a fresh keyset from infos.
+  /// @brief Generates a keyset from infos.
+  ///
+  /// This can be a fresh keyset if no key is specified in `lweSecretKeys`.
+  /// Otherwise those keys are set first, then the rest of the key will be
+  /// generated.
+  ///
+  /// @param info
+  /// @param secretCsprng
+  /// @param encryptionCsprng
+  /// @param lweSecretKeys secret keys to initialize the keyset with
   Keyset(const Message<concreteprotocol::KeysetInfo> &info,
          concretelang::csprng::SecretCSPRNG &secretCsprng,
-         csprng::EncryptionCSPRNG &encryptionCsprng);
+         csprng::EncryptionCSPRNG &encryptionCsprng,
+         std::map<uint32_t, LweSecretKey> lweSecretKeys =
+             std::map<uint32_t, LweSecretKey>());
+
   Keyset(ServerKeyset server, ClientKeyset client)
       : server(server), client(client) {}
 
@@ -71,7 +84,9 @@ public:
 
   Result<Keyset>
   getKeyset(const Message<concreteprotocol::KeysetInfo> &keysetInfo,
-            __uint128_t secret_seed, __uint128_t encryption_seed);
+            __uint128_t secret_seed, __uint128_t encryption_seed,
+            std::map<uint32_t, LweSecretKey> lweSecretKeys =
+                std::map<uint32_t, LweSecretKey>());
 
 private:
   KeysetCache() = default;
