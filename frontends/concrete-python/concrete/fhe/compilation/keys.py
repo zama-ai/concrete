@@ -6,9 +6,9 @@ Declaration of `Keys` class.
 
 import pathlib
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
-from concrete.compiler import ClientSupport, EvaluationKeys, KeySet, KeySetCache
+from concrete.compiler import ClientSupport, EvaluationKeys, KeySet, KeySetCache, LweSecretKey
 
 from .specs import ClientSpecs
 
@@ -56,6 +56,7 @@ class Keys:
         force: bool = False,
         seed: Optional[int] = None,
         encryption_seed: Optional[int] = None,
+        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
     ):
         """
         Generate new keys.
@@ -69,6 +70,9 @@ class Keys:
 
             encryption_seed (Optional[int], default = None):
                 seed for encryption randomness
+
+            initial_keys (Optional[Dict[int, LweSecretKey]] = None):
+                initial keys to set before keygen
         """
 
         if self._keyset is None or force:
@@ -80,6 +84,7 @@ class Keys:
                 self._keyset_cache,
                 seed,
                 encryption_seed,
+                initial_keys,
             )
 
     def save(self, location: Union[str, Path]):

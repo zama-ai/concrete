@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import CompilationContext, Parameter
+from concrete.compiler import CompilationContext, LweSecretKey, Parameter
 from mlir.ir import Module as MlirModule
 
 from ..representation import Graph
@@ -125,7 +125,11 @@ class Circuit:
         self._module.keys = new_keys
 
     def keygen(
-        self, force: bool = False, seed: Optional[int] = None, encryption_seed: Optional[int] = None
+        self,
+        force: bool = False,
+        seed: Optional[int] = None,
+        encryption_seed: Optional[int] = None,
+        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
     ):
         """
         Generate keys required for homomorphic evaluation.
@@ -139,8 +143,11 @@ class Circuit:
 
             encryption_seed (Optional[int], default = None):
                 seed for encryption randomness
+
+            initial_keys (Optional[Dict[int, LweSecretKey]] = None):
+                initial keys to set before keygen
         """
-        self._module.keygen(force=force, seed=seed, encryption_seed=encryption_seed)
+        self._module.keygen(force=force, seed=seed, encryption_seed=encryption_seed, initial_keys)
 
     def encrypt(
         self,
@@ -308,7 +315,9 @@ class Circuit:
         return self._function.programmable_bootstrap_count_per_tag  # pragma: no cover
 
     @property
-    def programmable_bootstrap_count_per_tag_per_parameter(self) -> Dict[str, Dict[int, int]]:
+    def programmable_bootstrap_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[int, int]]:
         """
         Get the number of programmable bootstraps per tag per bit width in the circuit.
         """
@@ -368,7 +377,9 @@ class Circuit:
         return self._function.packing_key_switch_count_per_tag  # pragma: no cover
 
     @property
-    def packing_key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def packing_key_switch_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the circuit.
         """
@@ -398,7 +409,9 @@ class Circuit:
         return self._function.clear_addition_count_per_tag  # pragma: no cover
 
     @property
-    def clear_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def clear_addition_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the circuit.
         """
@@ -428,7 +441,9 @@ class Circuit:
         return self._function.encrypted_addition_count_per_tag  # pragma: no cover
 
     @property
-    def encrypted_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def encrypted_addition_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the circuit.
         """
@@ -458,7 +473,9 @@ class Circuit:
         return self._function.clear_multiplication_count_per_tag  # pragma: no cover
 
     @property
-    def clear_multiplication_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def clear_multiplication_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the circuit.
         """
@@ -488,7 +505,9 @@ class Circuit:
         return self._function.encrypted_negation_count_per_tag  # pragma: no cover
 
     @property
-    def encrypted_negation_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def encrypted_negation_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the circuit.
         """
