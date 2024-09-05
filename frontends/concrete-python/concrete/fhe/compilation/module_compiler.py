@@ -325,7 +325,7 @@ class NotComposable:
     Composition policy that does not allow the forwarding of any output to any input.
     """
 
-    def get_rules_iter(self, _funcs: List[FunctionDef]) -> Iterable[CompositionRule]:
+    def get_rules_iter(self, _) -> Iterable[CompositionRule]:
         """
         Return an iterator over composition rules.
         """
@@ -341,18 +341,17 @@ class AllComposable:
         """
         Return an iterator over composition rules.
         """
-        outputs = chain(
-            *[
-                map(CompositionClause.create, zip(repeat(f.name), range(len(f.output_nodes))))
-                for f in funcs
-            ]
-        )
-        inputs = chain(
-            *[
-                map(CompositionClause.create, zip(repeat(f.name), range(len(f.input_nodes))))
-                for f in funcs
-            ]
-        )
+        outputs = []
+        for f in funcs:
+            for pos, node in f.output_nodes.items():
+                if node.output.is_encrypted:
+                    outputs.append(CompositionClause.create((f.name, pos)))
+        inputs = []
+        for f in funcs:
+            for pos, node in f.input_nodes.items():
+                if node.output.is_encrypted:
+                    inputs.append(CompositionClause.create((f.name, pos)))
+
         return map(CompositionRule.create, product(outputs, inputs))
 
 
@@ -397,7 +396,7 @@ class Output(NamedTuple):
 
 class AllOutputs(NamedTuple):
     """
-    All the outputs of a given function of a module.
+    All the encrypted outputs of a given function of a module.
     """
 
     func: FunctionDef
@@ -407,6 +406,7 @@ class AllOutputs(NamedTuple):
         Return an iterator over the possible outputs of the wire output.
         """
         assert self.func.graph  # pragma: no cover
+        # No need to filter since only encrypted outputs are valid.
         return map(  # pragma: no cover
             CompositionClause.create,
             zip(repeat(self.func.name), range(self.func.graph.outputs_count)),
@@ -430,7 +430,7 @@ class Input(NamedTuple):
 
 class AllInputs(NamedTuple):
     """
-    All the inputs of a given function of a module.
+    All the encrypted inputs of a given function of a module.
     """
 
     func: FunctionDef
@@ -440,10 +440,11 @@ class AllInputs(NamedTuple):
         Return an iterator over the possible inputs of the wire input.
         """
         assert self.func.graph  # pragma: no cover
-        return map(  # pragma: no cover
-            CompositionClause.create,
-            zip(repeat(self.func.name), range(self.func.graph.inputs_count)),
-        )
+        output = []
+        for i in range(self.func.graph.inputs_count):
+            if self.func.graph.input_nodes[i].output.is_encrypted:
+                output.append(CompositionClause.create((self.func.name, i)))
+        return output
 
 
 class Wire(NamedTuple):
@@ -474,11 +475,27 @@ class Wired:
     def __init__(self, wires: Optional[Set[Wire]] = None):
         self.wires = wires if wires else set()
 
-    def get_rules_iter(self, _) -> Iterable[CompositionRule]:
+    def get_rules_iter(self, funcs: List[Graph]) -> Iterable[CompositionRule]:
         """
         Return an iterator over composition rules.
         """
-        return chain(*[w.get_rules_iter(_) for w in self.wires])
+        funcsd = {f.name: f for f in funcs}
+        rules = list(chain(*[w.get_rules_iter(funcs) for w in self.wires]))
+
+        # We check that the given rules are legit (they concern only encrypted values)
+        for rule in rules:
+            if (
+                not funcsd[rule.from_.func].output_nodes[rule.from_.pos].output.is_encrypted
+            ):  # pragma: no cover
+                message = f"Invalid composition rule encountered: \
+Output {rule.from_.pos} of {rule.from_.func} is not encrypted"
+                raise RuntimeError(message)
+            if not funcsd[rule.to.func].input_nodes[rule.to.pos].output.is_encrypted:
+                message = f"Invalid composition rule encountered: \
+Input {rule.from_.pos} of {rule.from_.func} is not encrypted"
+                raise RuntimeError(message)
+
+        return rules
 
 
 class DebugManager:
