@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
 import numpy as np
 from concrete.compiler import (
     CompilationContext,
+    LweSecretKey,
     Parameter,
     SimulatedValueDecrypter,
     SimulatedValueExporter,
@@ -137,7 +138,9 @@ class FheFunction:
         """
 
         ordered_validated_args = validate_input_args(
-            self.simulation_runtime.val.server.client_specs, *args, function_name=self.name
+            self.simulation_runtime.val.server.client_specs,
+            *args,
+            function_name=self.name,
         )
 
         exporter = SimulatedValueExporter.new(
@@ -292,7 +295,9 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def programmable_bootstrap_count_per_tag_per_parameter(self) -> Dict[str, Dict[int, int]]:
+    def programmable_bootstrap_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[int, int]]:
         """
         Get the number of programmable bootstraps per tag per bit width in the function.
         """
@@ -366,7 +371,9 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def packing_key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def packing_key_switch_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the function.
         """
@@ -402,7 +409,9 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def clear_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def clear_addition_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the function.
         """
@@ -440,7 +449,9 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def encrypted_addition_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def encrypted_addition_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the function.
         """
@@ -478,7 +489,9 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def clear_multiplication_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def clear_multiplication_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the function.
         """
@@ -516,7 +529,9 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def encrypted_negation_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def encrypted_negation_count_per_tag_per_parameter(
+        self,
+    ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the function.
         """
@@ -646,7 +661,11 @@ class FheModule:
         self.execution_runtime.val.client.keys = new_keys
 
     def keygen(
-        self, force: bool = False, seed: Optional[int] = None, encryption_seed: Optional[int] = None
+        self,
+        force: bool = False,
+        seed: Optional[int] = None,
+        encryption_seed: Optional[int] = None,
+        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
     ):
         """
         Generate keys required for homomorphic evaluation.
@@ -660,8 +679,11 @@ class FheModule:
 
             encryption_seed (Optional[int], default = None):
                 seed for encryption randomness
+
+            initial_keys (Optional[Dict[int, LweSecretKey]] = None):
+                initial keys to set before keygen
         """
-        self.execution_runtime.val.client.keygen(force, seed, encryption_seed)
+        self.execution_runtime.val.client.keygen(force, seed, encryption_seed, initial_keys)
 
     def cleanup(self):
         """

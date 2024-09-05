@@ -7,10 +7,10 @@ Declaration of `Client` class.
 import shutil
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import EvaluationKeys, ValueDecrypter, ValueExporter
+from concrete.compiler import EvaluationKeys, LweSecretKey, ValueDecrypter, ValueExporter
 
 from .keys import Keys
 from .specs import ClientSpecs
@@ -99,7 +99,11 @@ class Client:
         self._keys = new_keys
 
     def keygen(
-        self, force: bool = False, seed: Optional[int] = None, encryption_seed: Optional[int] = None
+        self,
+        force: bool = False,
+        seed: Optional[int] = None,
+        encryption_seed: Optional[int] = None,
+        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
     ):
         """
         Generate keys required for homomorphic evaluation.
@@ -113,9 +117,17 @@ class Client:
 
             encryption_seed (Optional[int], default = None):
                 seed for encryption randomness
+
+            initial_keys (Optional[Dict[int, LweSecretKey]] = None):
+                initial keys to set before keygen
         """
 
-        self.keys.generate(force=force, seed=seed, encryption_seed=encryption_seed)
+        self.keys.generate(
+            force=force,
+            seed=seed,
+            encryption_seed=encryption_seed,
+            initial_keys=initial_keys,
+        )
 
     def encrypt(
         self,

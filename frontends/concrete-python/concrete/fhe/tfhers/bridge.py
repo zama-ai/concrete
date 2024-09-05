@@ -2,9 +2,9 @@
 Declaration of `tfhers.Bridge` class.
 """
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
-from concrete.compiler import TfhersExporter, TfhersFheIntDescription
+from concrete.compiler import LweSecretKey, TfhersExporter, TfhersFheIntDescription
 
 from concrete import fhe
 
@@ -177,10 +177,61 @@ class Bridge:
         glwe_dim = input_type.params.glwe_dimension
         poly_size = input_type.params.polynomial_size
         # pylint: disable=protected-access
-        return self.circuit.client.keys._keyset.serialize_lwe_secret_key_as_glwe(  # type: ignore
-            keyid, glwe_dim, poly_size
-        )
+        secret_key = self.circuit.client.keys._keyset.get_lwe_secret_key(keyid)  # type: ignore
         # pylint: enable=protected-access
+        return secret_key.serialize_as_glwe(glwe_dim, poly_size)
+
+    def keygen_with_initial_keys(
+        self,
+        input_idx_to_key_buffer: Dict[int, bytes],
+        force: bool = False,
+        seed: Optional[int] = None,
+        encryption_seed: Optional[int] = None,
+    ):
+        """Generate keys using an initial set of secret keys.
+
+        Args:
+            force (bool, default = False):
+                whether to generate new keys even if keys are already generated
+
+            seed (Optional[int], default = None):
+                seed for private keys randomness
+
+            encryption_seed (Optional[int], default = None):
+                seed for encryption randomness
+
+            input_idx_to_key_buffer (Dict[int, bytes]): initial keys to set before keygen
+
+        Raises:
+            RuntimeError: if failed to deserialize the key
+        """
+        client_specs = self.circuit.keys.client_specs
+        assert isinstance(client_specs, fhe.ClientSpecs)
+
+        initial_keys: Dict[int, LweSecretKey] = {}
+        for input_idx in input_idx_to_key_buffer:
+            key_id = self._input_keyid(input_idx)
+            # no need to deserialize the same key again
+            if key_id in initial_keys:  # pragma: no cover
+                continue
+
+            key_buffer = input_idx_to_key_buffer[input_idx]
+            param = client_specs.client_parameters.lwe_secret_key_param_at(key_id)
+            try:
+                initial_keys[key_id] = LweSecretKey.deserialize_from_glwe(key_buffer, param)
+            except Exception as e:  # pragma: no cover
+                msg = (
+                    f"failed deserializing key for input with index {input_idx}. Make sure the key"
+                    " is for the right input"
+                )
+                raise RuntimeError(msg) from e
+
+        self.circuit.keygen(
+            force=force,
+            seed=seed,
+            encryption_seed=encryption_seed,
+            initial_keys=initial_keys,
+        )
 
 
 def new_bridge(
