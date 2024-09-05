@@ -490,6 +490,7 @@ def fancy_indexing(
         resulting_type,
         x.result,
         indices.result,
+        original_bit_width=x.original_bit_width,
     )
 
 
@@ -640,6 +641,7 @@ def indexing(
         MlirDenseI64ArrayAttr.get(static_offsets),
         MlirDenseI64ArrayAttr.get(static_sizes),
         MlirDenseI64ArrayAttr.get(static_strides),
+        original_bit_width=x.original_bit_width,
     )
 
     reassociaton = []
@@ -669,4 +671,5 @@ def indexing(
                 for indices in reassociaton
             ],
         ),
+        original_bit_width=x.original_bit_width,
     )

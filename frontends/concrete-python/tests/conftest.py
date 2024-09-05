@@ -318,6 +318,10 @@ class Helpers:
                 if i == retries - 1:
                     message = f"""
 
+    Sample
+    ===============
+    {sample}
+
     Expected Output
     ===============
     {expected}

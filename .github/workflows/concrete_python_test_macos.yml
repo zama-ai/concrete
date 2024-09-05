@@ -113,9 +113,11 @@ jobs:
           
           find .testenv/lib/python3.10/site-packages -not \( -path .testenv/lib/python3.10/site-packages/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib
 
+          cp -R $GITHUB_WORKSPACE/frontends/concrete-python/examples ./examples
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
+          
           cp $GITHUB_WORKSPACE/frontends/concrete-python/Makefile .
-          KEY_CACHE_DIRECTORY=./KeySetCache PYTEST_MARKERS="not dataflow and not graphviz" make pytest
+          KEY_CACHE_DIRECTORY=./KeySetCache PYTEST_MARKERS="not dataflow and not graphviz" make pytest-macos
 
       - name: Cleanup host
         if: success() || failure()

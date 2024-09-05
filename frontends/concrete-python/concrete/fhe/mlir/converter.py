@@ -326,6 +326,12 @@ class Converter:
         assert len(preds) == 2
         return ctx.add(ctx.typeof(node), preds[0], preds[1])
 
+    def amax(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        return self.max(ctx, node, preds)
+
+    def amin(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        return self.min(ctx, node, preds)
+
     def array(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) > 0
         return ctx.array(ctx.typeof(node), elements=preds)
@@ -530,6 +536,20 @@ class Converter:
         assert len(preds) == 2
         return ctx.matmul(ctx.typeof(node), preds[0], preds[1])
 
+    def max(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+
+        if all(pred.is_encrypted for pred in preds):
+            return ctx.min_max(
+                ctx.typeof(node),
+                preds[0],
+                axes=node.properties["kwargs"].get("axis", ()),
+                keep_dims=node.properties["kwargs"].get("keepdims", False),
+                operation="max",
+            )
+
+        return self.tlu(ctx, node, preds)
+
     def maximum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
 
@@ -555,6 +575,20 @@ class Converter:
     def maxpool3d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         ctx.error({node: "3-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
+
+    def min(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+        assert len(preds) == 1
+
+        if all(pred.is_encrypted for pred in preds):
+            return ctx.min_max(
+                ctx.typeof(node),
+                preds[0],
+                axes=node.properties["kwargs"].get("axis", ()),
+                keep_dims=node.properties["kwargs"].get("keepdims", False),
+                operation="min",
+            )
+
+        return self.tlu(ctx, node, preds)
 
     def minimum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2

@@ -19,7 +19,7 @@ def ast_iterator(root):
     while nodes:
         current_node = nodes.pop(0)
         yield current_node
-        if hasattr(current_node, "children"):
+        if hasattr(current_node, "children") and current_node.children is not None:
             nodes += current_node.children
 
 

@@ -2,7 +2,7 @@
 Declaration of various functions and constants related to MLIR conversion.
 """
 
-# pylint: disable=import-error
+# pylint: disable=import-error,no-name-in-module
 
 from collections import defaultdict, deque
 from copy import deepcopy
@@ -26,7 +26,7 @@ from ..dtypes import Integer
 from ..internal.utils import assert_that
 from ..representation import Node, Operation
 
-# pylint: enable=import-error
+# pylint: enable=import-error,no-name-in-module
 
 
 class HashableNdarray:
