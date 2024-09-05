@@ -156,8 +156,8 @@ std::string library_get_program_info_path(LibrarySupport_Py support) {
 std::unique_ptr<concretelang::clientlib::KeySet>
 key_set(concretelang::clientlib::ClientParameters clientParameters,
         std::optional<concretelang::clientlib::KeySetCache> cache,
-        uint64_t secretSeedMsb, uint64_t secretSeedLsb, uint64_t encSeedMsb,
-        uint64_t encSeedLsb) {
+        std::map<uint32_t, LweSecretKey> lweSecretKeys, uint64_t secretSeedMsb,
+        uint64_t secretSeedLsb, uint64_t encSeedMsb, uint64_t encSeedLsb) {
   auto secretSeed = (((__uint128_t)secretSeedMsb) << 64) | secretSeedLsb;
   auto encryptionSeed = (((__uint128_t)encSeedMsb) << 64) | encSeedLsb;
 
@@ -165,14 +165,14 @@ key_set(concretelang::clientlib::ClientParameters clientParameters,
     GET_OR_THROW_RESULT(Keyset keyset,
                         (*cache).keysetCache.getKeyset(
                             clientParameters.programInfo.asReader().getKeyset(),
-                            secretSeed, encryptionSeed));
+                            secretSeed, encryptionSeed, lweSecretKeys));
     concretelang::clientlib::KeySet output{keyset};
     return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
   } else {
     concretelang::csprng::SecretCSPRNG secCsprng(secretSeed);
     concretelang::csprng::EncryptionCSPRNG encCsprng(encryptionSeed);
     auto keyset = Keyset(clientParameters.programInfo.asReader().getKeyset(),
-                         secCsprng, encCsprng);
+                         secCsprng, encCsprng, lweSecretKeys);
     concretelang::clientlib::KeySet output{keyset};
     return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
   }
@@ -669,7 +669,7 @@ lambdaArgument lambdaArgumentFromSignedScalar(int64_t scalar) {
 concreteprotocol::LweCiphertextEncryptionInfo::Reader
 clientParametersInputEncryptionAt(
     ::concretelang::clientlib::ClientParameters &clientParameters,
-    size_t inputId, std::string circuitName) {
+    size_t inputIdx, std::string circuitName) {
   auto reader = clientParameters.programInfo.asReader();
   if (!reader.hasCircuits()) {
     throw std::runtime_error("can't get keyid: no circuit info");
@@ -682,11 +682,11 @@ clientParametersInputEncryptionAt(
         throw std::runtime_error("can't get keyid: no input");
       }
       auto inputs = circuit.getInputs();
-      if (inputId >= inputs.size()) {
+      if (inputIdx >= inputs.size()) {
         throw std::runtime_error(
-            "can't get keyid: inputId bigger than number of inputs");
+            "can't get keyid: inputIdx bigger than number of inputs");
       }
-      auto input = inputs[inputId];
+      auto input = inputs[inputIdx];
       if (!input.hasTypeInfo()) {
         throw std::runtime_error("can't get keyid: input don't have typeInfo");
       }
@@ -1149,20 +1149,24 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](::concretelang::clientlib::ClientParameters clientParameters,
              ::concretelang::clientlib::KeySetCache *cache,
              uint64_t secretSeedMsb, uint64_t secretSeedLsb,
-             uint64_t encSeedMsb, uint64_t encSeedLsb) {
+             uint64_t encSeedMsb, uint64_t encSeedLsb,
+             std::map<uint32_t, LweSecretKey> initialLweSecretKeys) {
             SignalGuard signalGuard;
             auto optCache =
                 cache == nullptr
                     ? std::nullopt
                     : std::optional<::concretelang::clientlib::KeySetCache>(
                           *cache);
-            return key_set(clientParameters, optCache, secretSeedMsb,
-                           secretSeedLsb, encSeedMsb, encSeedLsb);
+            return key_set(clientParameters, optCache, initialLweSecretKeys,
+                           secretSeedMsb, secretSeedLsb, encSeedMsb,
+                           encSeedLsb);
           },
           pybind11::arg().none(false), pybind11::arg().none(true),
           pybind11::arg("secretSeedMsb") = 0,
           pybind11::arg("secretSeedLsb") = 0, pybind11::arg("encSeedMsb") = 0,
-          pybind11::arg("encSeedLsb") = 0)
+          pybind11::arg("encSeedLsb") = 0,
+          pybind11::arg("initialLweSecretKeys") =
+              std::map<uint32_t, LweSecretKey>())
       .def_static(
           "encrypt_arguments",
           [](::concretelang::clientlib::ClientParameters clientParameters,
@@ -1296,18 +1300,26 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return pybind11::bytes(
                  clientParametersSerialize(clientParameters));
            })
+      .def("lwe_secret_key_param_at",
+           [](::concretelang::clientlib::ClientParameters &clientParameters,
+              size_t keyId) {
+             if (keyId >= clientParameters.secretKeys.size()) {
+               throw std::runtime_error("keyId bigger than the number of keys");
+             }
+             return clientParameters.secretKeys[keyId];
+           })
       .def("input_keyid_at",
            [](::concretelang::clientlib::ClientParameters &clientParameters,
-              size_t inputId, std::string circuitName) {
+              size_t inputIdx, std::string circuitName) {
              auto encryption = clientParametersInputEncryptionAt(
-                 clientParameters, inputId, circuitName);
+                 clientParameters, inputIdx, circuitName);
              return encryption.getKeyId();
            })
       .def("input_variance_at",
            [](::concretelang::clientlib::ClientParameters &clientParameters,
-              size_t inputId, std::string circuitName) {
+              size_t inputIdx, std::string circuitName) {
              auto encryption = clientParametersInputEncryptionAt(
-                 clientParameters, inputId, circuitName);
+                 clientParameters, inputIdx, circuitName);
              return encryption.getVariance();
            })
       .def("function_list",
@@ -1373,27 +1385,27 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "packing_keyswitch_keys",
           &::concretelang::clientlib::ClientParameters::packingKeyswitchKeys);
 
-  pybind11::class_<::concretelang::clientlib::KeySet>(m, "KeySet")
-      .def_static("deserialize",
-                  [](const pybind11::bytes &buffer) {
-                    std::unique_ptr<::concretelang::clientlib::KeySet> result =
-                        keySetUnserialize(buffer);
-                    return result;
-                  })
-      .def("serialize",
-           [](::concretelang::clientlib::KeySet &keySet) {
-             return pybind11::bytes(keySetSerialize(keySet));
-           })
-      .def("serialize_lwe_secret_key_as_glwe",
-           [](::concretelang::clientlib::KeySet &keySet, size_t keyIndex,
-              size_t glwe_dimension, size_t polynomial_size) {
-             auto secretKeys = keySet.keyset.client.lweSecretKeys;
-             if (keyIndex >= secretKeys.size()) {
-               throw std::runtime_error(
-                   "keyIndex is bigger than the number of keys");
-             }
-             auto secretKey = secretKeys[keyIndex];
-             auto skBuffer = secretKey.getBuffer();
+  pybind11::class_<LweSecretKey>(m, "LweSecretKey")
+      .def_static(
+          "deserialize_from_glwe",
+          [](pybind11::bytes buffer,
+             ::concretelang::clientlib::LweSecretKeyParam &params) {
+            std::string buffer_str = buffer;
+            auto lwe_dim = params.info.asReader().getParams().getLweDimension();
+            auto glwe_sk_size = concrete_cpu_lwe_secret_key_size_u64(lwe_dim);
+            std::vector<uint64_t> glwe_sk(glwe_sk_size);
+            auto key_size = concrete_cpu_unserialize_glwe_secret_key_u64(
+                (uint8_t *)buffer_str.data(), buffer_str.size(), glwe_sk.data(),
+                glwe_sk.size());
+            glwe_sk.resize(key_size);
+            return LweSecretKey(
+                std::make_shared<std::vector<uint64_t>>(std::move(glwe_sk)),
+                params.info);
+          })
+      .def("serialize_as_glwe",
+           [](LweSecretKey &lweSk, size_t glwe_dimension,
+              size_t polynomial_size) {
+             auto skBuffer = lweSk.getBuffer();
              auto buffer_size = concrete_cpu_glwe_secret_key_buffer_size_u64(
                  glwe_dimension, polynomial_size);
              std::vector<uint8_t> buffer(buffer_size, 0);
@@ -1405,6 +1417,30 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              }
              auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
              return bytes;
+           })
+      .def_property_readonly("param", [](LweSecretKey &lweSk) {
+        return ::concretelang::clientlib::LweSecretKeyParam{lweSk.getInfo()};
+      });
+
+  pybind11::class_<::concretelang::clientlib::KeySet>(m, "KeySet")
+      .def_static("deserialize",
+                  [](const pybind11::bytes &buffer) {
+                    std::unique_ptr<::concretelang::clientlib::KeySet> result =
+                        keySetUnserialize(buffer);
+                    return result;
+                  })
+      .def("serialize",
+           [](::concretelang::clientlib::KeySet &keySet) {
+             return pybind11::bytes(keySetSerialize(keySet));
+           })
+      .def("get_lwe_secret_key",
+           [](::concretelang::clientlib::KeySet &keySet, size_t keyIndex) {
+             auto secretKeys = keySet.keyset.client.lweSecretKeys;
+             if (keyIndex >= secretKeys.size()) {
+               throw std::runtime_error(
+                   "keyIndex is bigger than the number of keys");
+             }
+             return secretKeys[keyIndex];
            })
       .def("get_evaluation_keys",
            [](::concretelang::clientlib::KeySet &keySet) {

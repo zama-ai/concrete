@@ -32,6 +32,7 @@ from .library_compilation_result import LibraryCompilationResult
 from .library_lambda import LibraryLambda
 from .client_support import ClientSupport
 from .library_support import LibrarySupport
+from .lwe_secret_key import LweSecretKey, LweSecretKeyParam
 from .evaluation_keys import EvaluationKeys
 from .tfhers_int import (
     TfhersExporter,
