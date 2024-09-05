@@ -351,7 +351,7 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
-    def min_max(self, node: Node, preds: List[Node]):
+    def minimum_maximum(self, node: Node, preds: List[Node]):
         assert len(preds) == 2
 
         x = preds[0]
@@ -392,69 +392,83 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
+    def min_max(self, node: Node, preds: List[Node]):
+        assert len(preds) == 1
+        self.minimum_maximum(node, [preds[0], preds[0]])
+
     # ==========
     # Operations
     # ==========
 
-    add = {  # noqa: RUF012
+    add = {
         inputs_and_output_share_precision,
     }
 
-    array = {  # noqa: RUF012
+    amax = {
+        min_max,
         inputs_and_output_share_precision,
     }
 
-    assign_dynamic = {  # noqa: RUF012
+    amin = {
+        min_max,
         inputs_and_output_share_precision,
     }
 
-    assign_static = {  # noqa: RUF012
+    array = {
         inputs_and_output_share_precision,
     }
 
-    bitwise_and = {  # noqa: RUF012
+    assign_dynamic = {
+        inputs_and_output_share_precision,
+    }
+
+    assign_static = {
+        inputs_and_output_share_precision,
+    }
+
+    bitwise_and = {
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    bitwise_or = {  # noqa: RUF012
+    bitwise_or = {
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    bitwise_xor = {  # noqa: RUF012
+    bitwise_xor = {
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    broadcast_to = {  # noqa: RUF012
+    broadcast_to = {
         inputs_and_output_share_precision,
     }
 
-    concatenate = {  # noqa: RUF012
+    concatenate = {
         inputs_and_output_share_precision,
     }
 
-    conv1d = {  # noqa: RUF012
+    conv1d = {
         inputs_and_output_share_precision,
     }
 
-    conv2d = {  # noqa: RUF012
+    conv2d = {
         inputs_and_output_share_precision,
     }
 
-    conv3d = {  # noqa: RUF012
+    conv3d = {
         inputs_and_output_share_precision,
     }
 
-    copy = {  # noqa: RUF012
+    copy = {
         inputs_and_output_share_precision,
     }
 
-    dot = {  # noqa: RUF012
+    dot = {
         all_inputs_are_encrypted: {
             inputs_share_precision,
             inputs_require_one_more_bit,
@@ -464,51 +478,51 @@ class AdditionalConstraints:
         },
     }
 
-    equal = {  # noqa: RUF012
+    equal = {
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    expand_dims = {  # noqa: RUF012
+    expand_dims = {
         inputs_and_output_share_precision,
     }
 
-    greater = {  # noqa: RUF012
+    greater = {
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    greater_equal = {  # noqa: RUF012
+    greater_equal = {
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    index_static = {  # noqa: RUF012
+    index_static = {
         inputs_and_output_share_precision,
     }
 
-    left_shift = {  # noqa: RUF012
+    left_shift = {
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    less = {  # noqa: RUF012
+    less = {
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    less_equal = {  # noqa: RUF012
+    less_equal = {
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    matmul = {  # noqa: RUF012
+    matmul = {
         all_inputs_are_encrypted: {
             inputs_share_precision,
             inputs_require_one_more_bit,
@@ -518,34 +532,44 @@ class AdditionalConstraints:
         },
     }
 
-    maximum = {  # noqa: RUF012
+    max = {
+        min_max,
+        inputs_and_output_share_precision,
+    }
+
+    maximum = {
         all_inputs_are_encrypted: {
-            min_max,
+            minimum_maximum,
         },
     }
 
-    maxpool1d = {  # noqa: RUF012
+    maxpool1d = {
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
     }
 
-    maxpool2d = {  # noqa: RUF012
+    maxpool2d = {
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
     }
 
-    maxpool3d = {  # noqa: RUF012
+    maxpool3d = {
         inputs_and_output_share_precision,
         inputs_require_one_more_bit,
     }
 
-    minimum = {  # noqa: RUF012
+    min = {
+        min_max,
+        inputs_and_output_share_precision,
+    }
+
+    minimum = {
         all_inputs_are_encrypted: {
-            min_max,
+            minimum_maximum,
         },
     }
 
-    multiply = {  # noqa: RUF012
+    multiply = {
         all_inputs_are_encrypted: {
             inputs_share_precision,
             inputs_require_one_more_bit,
@@ -555,48 +579,48 @@ class AdditionalConstraints:
         },
     }
 
-    negative = {  # noqa: RUF012
+    negative = {
         inputs_and_output_share_precision,
     }
 
-    not_equal = {  # noqa: RUF012
+    not_equal = {
         all_inputs_are_encrypted: {
             comparison,
         },
     }
 
-    reshape = {  # noqa: RUF012
+    reshape = {
         inputs_and_output_share_precision,
     }
 
-    right_shift = {  # noqa: RUF012
+    right_shift = {
         all_inputs_are_encrypted: {
             bitwise,
         },
     }
 
-    round_bit_pattern = {  # noqa: RUF012
+    round_bit_pattern = {
         has_overflow_protection: {
             inputs_and_output_share_precision,
         },
     }
 
-    subtract = {  # noqa: RUF012
+    subtract = {
         inputs_and_output_share_precision,
     }
 
-    sum = {  # noqa: RUF012
+    sum = {
         inputs_and_output_share_precision,
     }
 
-    squeeze = {  # noqa: RUF012
+    squeeze = {
         inputs_and_output_share_precision,
     }
 
-    transpose = {  # noqa: RUF012
+    transpose = {
         inputs_and_output_share_precision,
     }
 
-    truncate_bit_pattern = {  # noqa: RUF012
+    truncate_bit_pattern = {
         inputs_and_output_share_precision,
     }

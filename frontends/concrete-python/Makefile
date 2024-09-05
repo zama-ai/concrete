@@ -1,20 +1,20 @@
 PYTHON=python
 PIP=$(PYTHON) -m pip
 
+COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
+BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
+TFHERS_UTILS_DIRECTORY ?= $(PWD)/tests/tfhers-utils/
+
 OS=undefined
 COVERAGE_OPT=""
 ifeq ($(shell uname), Linux)
 	OS=linux
 	COVERAGE_OPT="--cov=concrete.fhe --cov-fail-under=100 --cov-report=term-missing:skip-covered"
+	RUNTIME_LIBRARY?=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 else ifeq ($(shell uname), Darwin)
 	OS=darwin
+	RUNTIME_LIBRARY?=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.dylib
 endif
-
-
-COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
-BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
-RUNTIME_LIBRARY?=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
-TFHERS_UTILS_DIRECTORY ?= $(PWD)/tests/tfhers-utils/
 
 CONCRETE_VERSION?="" # empty mean latest
 # E.g. to use a previous version: `make CONCRETE_VERSION="<2.7.0" venv`
@@ -73,6 +73,11 @@ pytest-default: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \
 		${COVERAGE_OPT} \
+		--key-cache "${KEY_CACHE_DIRECTORY}" \
+		-m "${PYTEST_MARKERS}"
+
+pytest-macos:
+	pytest tests -svv -n auto \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 

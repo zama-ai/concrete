@@ -705,18 +705,27 @@ class Graph:
                 bounds of each node in the `Graph`
         """
 
-        for node in self.graph.nodes():
+        for node in self.query_nodes(ordered=True):
             if node in bounds:
                 min_bound = bounds[node]["min"]
                 max_bound = bounds[node]["max"]
 
-                node.bounds = (min_bound, max_bound)
+                node.bounds = (min_bound, max_bound)  # type: ignore
 
                 new_value = deepcopy(node.output)
 
                 if isinstance(min_bound, (np.integer, int)):
                     assert isinstance(new_value.dtype, Integer)
                     new_value.dtype.update_to_represent(np.array([min_bound, max_bound]))
+
+                    if node.operation == Operation.Generic and node.properties["name"] in {
+                        "amin",
+                        "amax",
+                        "min",
+                        "max",
+                    }:
+                        assert isinstance(node.inputs[0].dtype, Integer)
+                        new_value.dtype.is_signed = node.inputs[0].dtype.is_signed
                 else:
                     new_value.dtype = {
                         np.bool_: UnsignedInteger(1),

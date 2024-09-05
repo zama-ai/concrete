@@ -6,30 +6,6 @@ This document introduces several common techniques for optimizing code to fit Fu
 All code snippets provided here are temporary workarounds. In future versions of Concrete, some functions described here could be directly available in a more generic and efficient form. These code snippets are coming from support answers in our [community forum](https://community.zama.ai)
 {% endhint %}
 
-## Minimum/Maximum for multiple values
-
-Concrete supports `np.minimum`/`np.maximum` natively, but not `np.min`/`np.max` yet. To achieve the functionality, you can do a series of `np.minimum`/`np.maximum`s:
-
-```python
-import numpy as np
-from concrete import fhe
-
-@fhe.compiler({"args": "encrypted"})
-def fhe_min(args):
-    remaining = list(args)
-    while len(remaining) > 1:
-        a = remaining.pop()
-        b = remaining.pop()
-        remaining.insert(0, np.minimum(a, b))
-    return remaining[0]
-
-inputset = [np.random.randint(0, 16, size=5) for _ in range(50)]
-circuit = fhe_min.compile(inputset, min_max_strategy_preference=fhe.MinMaxStrategy.ONE_TLU_PROMOTED)
-
-x1, x2, x3, x4, x5 = np.random.randint(0, 16, size=5)
-assert circuit.encrypt_run_decrypt([x1, x2, x3, x4, x5]) == min(x1, x2, x3, x4, x5)
-```
-
 ## Retrieving a value within an encrypted array with an encrypted index
 This example demonstrates how to retrieve a value from an array using an encrypted index. The method creates a "selection" array filled with `0`s except for the requested index, which will be `1`. It then sums the products of all array values with this selection array:
 

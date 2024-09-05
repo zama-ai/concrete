@@ -2,7 +2,7 @@
 Declaration of `ConversionType` and `Conversion` classes.
 """
 
-# pylint: disable=import-error,
+# pylint: disable=import-error,no-name-in-module
 
 import re
 from typing import Optional, Tuple
@@ -12,7 +12,7 @@ from mlir.ir import Type as MlirType
 
 from ..representation import Node
 
-# pylint: enable=import-error
+# pylint: enable=import-error,no-name-in-module
 
 
 SCALAR_INT_SEARCH_REGEX = re.compile(r"^i([0-9]+)$")

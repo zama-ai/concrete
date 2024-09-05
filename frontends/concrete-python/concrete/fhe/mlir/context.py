@@ -2197,7 +2197,11 @@ class Context:
         if cached_conversion is None:
             cached_conversion = Conversion(
                 self.converting,
-                arith.ConstantOp(resulting_type, attribute, loc=self.location()),
+                arith.ConstantOp(  # pylint: disable=too-many-function-args
+                    resulting_type,
+                    attribute,
+                    loc=self.location(),
+                ),
             )
 
             try:
@@ -2812,6 +2816,25 @@ class Context:
         )
 
         return self.to_signedness(result, of=resulting_type)
+
+    def min_max(
+        self,
+        resulting_type: ConversionType,
+        x: Conversion,
+        axes: Union[int, np.integer, Sequence[Union[int, np.integer]]] = (),
+        keep_dims: bool = False,
+        *,
+        operation: str,
+    ):
+        # This import needs to happen here to avoid circular imports.
+
+        # pylint: disable=import-outside-toplevel
+
+        from .operations.min_max import min_max
+
+        return min_max(self, resulting_type, x, axes, keep_dims, operation=operation)
+
+        # pylint: enable=import-outside-toplevel
 
     def minimum(
         self,
@@ -3988,7 +4011,7 @@ class Context:
 
     def get_partition_name(self, partition: tfhers.CryptoParams) -> str:
         if partition not in self.tfhers_partition.keys():
-            self.tfhers_partition[partition] = f"tfhers_{randint(0, 2**32)}"  # noqa: S311
+            self.tfhers_partition[partition] = f"tfhers_{randint(0, 2 ** 32)}"  # noqa: S311
         return self.tfhers_partition[partition]
 
     def change_partition(

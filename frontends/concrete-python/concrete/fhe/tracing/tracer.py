@@ -281,7 +281,9 @@ class Tracer:
         np.logical_or,
         np.logical_xor,
         np.matmul,
+        np.max,
         np.maximum,
+        np.min,
         np.minimum,
         np.mod,
         np.multiply,
@@ -330,6 +332,14 @@ class Tracer:
         },
         np.expand_dims: {
             "axis",
+        },
+        np.max: {
+            "axis",
+            "keepdims",
+        },
+        np.min: {
+            "axis",
+            "keepdims",
         },
         np.ones_like: {
             "dtype",
@@ -471,6 +481,12 @@ class Tracer:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
                 kwargs["shape"] = args[1]
+        elif func in {np.min, np.max}:
+            sanitized_args = [self.sanitize(args[0])]
+            for i, keyword in enumerate(["axis", "out", "keepdims", "initial", "where"]):
+                position = i + 1
+                if len(args) > position:
+                    kwargs[keyword] = args[position]
         elif func is np.reshape:
             sanitized_args = [self.sanitize(args[0])]
             if len(args) > 1:
