@@ -13,7 +13,7 @@ endif
 
 COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
 BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
-RUNTIME_LIBRARY=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
+RUNTIME_LIBRARY?=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 TFHERS_UTILS_DIRECTORY ?= $(PWD)/tests/tfhers-utils/
 
 CONCRETE_VERSION?="" # empty mean latest
