@@ -12,7 +12,6 @@
 #include "capnp/compat/json.h"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Error.h"
-#include "concretelang/Common/Keysets.h"
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Conversion/Passes.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
@@ -44,7 +43,6 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 
-using concretelang::keysets::Keyset;
 namespace encodings = mlir::concretelang::encodings;
 namespace optimizer = mlir::concretelang::optimizer;
 
