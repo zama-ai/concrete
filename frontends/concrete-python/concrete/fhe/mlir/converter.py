@@ -538,17 +538,13 @@ class Converter:
 
     def max(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-
-        if all(pred.is_encrypted for pred in preds):
-            return ctx.min_max(
-                ctx.typeof(node),
-                preds[0],
-                axes=node.properties["kwargs"].get("axis", ()),
-                keep_dims=node.properties["kwargs"].get("keepdims", False),
-                operation="max",
-            )
-
-        return self.tlu(ctx, node, preds)
+        return ctx.min_max(
+            ctx.typeof(node),
+            preds[0],
+            axes=node.properties["kwargs"].get("axis", ()),
+            keep_dims=node.properties["kwargs"].get("keepdims", False),
+            operation="max",
+        )
 
     def maximum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2
@@ -578,17 +574,13 @@ class Converter:
 
     def min(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-
-        if all(pred.is_encrypted for pred in preds):
-            return ctx.min_max(
-                ctx.typeof(node),
-                preds[0],
-                axes=node.properties["kwargs"].get("axis", ()),
-                keep_dims=node.properties["kwargs"].get("keepdims", False),
-                operation="min",
-            )
-
-        return self.tlu(ctx, node, preds)
+        return ctx.min_max(
+            ctx.typeof(node),
+            preds[0],
+            axes=node.properties["kwargs"].get("axis", ()),
+            keep_dims=node.properties["kwargs"].get("keepdims", False),
+            operation="min",
+        )
 
     def minimum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 2

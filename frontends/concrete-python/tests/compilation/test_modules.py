@@ -252,6 +252,9 @@ def test_compile():
         module.cleanup()
         assert set(artifacts.functions.keys()) == {"inc", "dec"}
 
+        assert repr(module.inc) == "FheFunction(name=inc)"
+        assert repr(module.dec) == "FheFunction(name=dec)"
+
 
 def test_compiled_wrong_attribute():
     """
@@ -330,6 +333,8 @@ def test_compiled_simulation(helpers):
 
     assert module.inc.simulate(5) == 6
     assert module.dec.simulate(5) == 4
+
+    module.cleanup()
 
 
 @pytest.mark.graphviz

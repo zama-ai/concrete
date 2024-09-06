@@ -179,7 +179,7 @@ def min_max(
 
         # get the representation of the mock
         def __repr__(self) -> str:
-            return f"{self.indices}"
+            return f"{self.indices}"  # pragma: no cover
 
         # combine the indices of the mock with another mock into a new mock
         def combine(self, other: "Mock") -> "Mock":

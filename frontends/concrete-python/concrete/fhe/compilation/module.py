@@ -121,7 +121,7 @@ class FheFunction:
         return self.graph.format()
 
     def __repr__(self) -> str:
-        return f"FheFunction({self.name=})"
+        return f"FheFunction(name={self.name})"
 
     def simulate(self, *args: Any) -> Any:
         """

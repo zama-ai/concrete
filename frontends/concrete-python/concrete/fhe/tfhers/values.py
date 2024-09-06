@@ -27,7 +27,7 @@ class TFHERSInteger:
             except Exception as e:  # pylint: disable=broad-except
                 msg = f"got error while trying to convert list value into a numpy array: {e}"
                 raise ValueError(msg) from e
-            if value.dtype == np.dtype("O"):
+            if value.dtype == np.dtype("O"):  # pragma: no cover
                 msg = "malformed value array"
                 raise ValueError(msg)
 

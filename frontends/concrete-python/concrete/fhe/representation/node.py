@@ -377,6 +377,9 @@ class Node:
             if name not in KWARGS_IGNORED_IN_FORMATTING
         )
 
+        if name in {"amin", "amax"}:
+            name = name[1:]
+
         return f"{name}({', '.join(args)})"
 
     def label(self) -> str:

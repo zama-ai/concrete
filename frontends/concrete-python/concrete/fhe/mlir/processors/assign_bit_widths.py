@@ -357,9 +357,6 @@ class AdditionalConstraints:
         x = preds[0]
         y = preds[1]
 
-        assert x.output.is_encrypted
-        assert y.output.is_encrypted
-
         assert isinstance(x.output.dtype, Integer)
         assert isinstance(y.output.dtype, Integer)
         assert isinstance(node.output.dtype, Integer)
