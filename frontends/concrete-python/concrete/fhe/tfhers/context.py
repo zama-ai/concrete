@@ -41,7 +41,7 @@ class Bridge:
             Optional[TFHERSIntegerType]: input type. None means a non-tfhers type
         """
         if isinstance(self.input_types, list):
-            return self.input_types[input_idx]
+            return self.input_types[input_idx]  # pragma: no cover
         return self.input_types
 
     def _output_type(self, output_idx: int) -> Optional[TFHERSIntegerType]:
@@ -54,7 +54,7 @@ class Bridge:
             Optional[TFHERSIntegerType]: output type. None means a non-tfhers type
         """
         if isinstance(self.output_types, list):
-            return self.output_types[output_idx]
+            return self.output_types[output_idx]  # pragma: no cover
         return self.output_types
 
     def _input_keyid(self, input_idx: int) -> int:
@@ -125,11 +125,11 @@ class Bridge:
                     TfhersExporter.import_fheuint8(buffer, fheint_desc, keyid, variance)
                 )
 
-        msg = (
+        msg = (  # pragma: no cover
             f"importing {'signed' if signed else 'unsigned'} integers of {bit_width}bits is not"
             " yet supported"
         )
-        raise NotImplementedError(msg)
+        raise NotImplementedError(msg)  # pragma: no cover
 
     def export_value(self, value: "fhe.Value", output_idx: int) -> bytes:
         """Export a value as a serialized TFHErs integer.
@@ -154,11 +154,11 @@ class Bridge:
             if not signed:
                 return TfhersExporter.export_fheuint8(value.inner, fheint_desc)
 
-        msg = (
+        msg = (  # pragma: no cover
             f"exporting value to {'signed' if signed else 'unsigned'} integers of {bit_width}bits"
             " is not yet supported"
         )
-        raise NotImplementedError(msg)
+        raise NotImplementedError(msg)  # pragma: no cover
 
     def serialize_input_secret_key(self, input_idx: int) -> bytes:
         """Serialize secret key used for a specific input.

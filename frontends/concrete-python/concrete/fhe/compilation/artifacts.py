@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Union
 
 from ..representation import Graph
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .module import ExecutionRt
     from .utils import Lazy
 

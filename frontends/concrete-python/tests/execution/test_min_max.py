@@ -12,7 +12,7 @@ from concrete.fhe.dtypes import Integer
 from concrete.fhe.values import ValueDescription
 
 cases = []
-for operation in [("max", lambda x: np.max(x)), ("min", lambda x: np.min(x))]:
+for operation in ["max", "min"]:
     for bit_width in range(1, 5):
         for is_signed in [False, True]:
             for shape in [(), (4,), (3, 3)]:
@@ -135,19 +135,25 @@ def test_min_max(
     Test np.min/np.max on encrypted values.
     """
 
-    name, function = operation
-
     dtype = Integer(is_signed=is_signed, bit_width=bit_width)
     description = ValueDescription(dtype, shape=shape, is_encrypted=True)
 
     print()
     print()
     print(
-        f"np.{name}({description}, axis={axis}, keepdims={keepdims})"
+        f"np.{operation}({description}, axis={axis}, keepdims={keepdims})"
         + (f" {{{strategy}}}" if strategy is not None else "")
     )
     print()
     print()
+
+    assert operation in {"min", "max"}
+
+    def function(x):
+        if operation == "min":
+            return np.min(x, axis=axis, keepdims=keepdims)
+        else:
+            return np.max(x, axis=axis, keepdims=keepdims)
 
     parameter_encryption_statuses = {"x": "encrypted"}
     configuration = helpers.configuration()

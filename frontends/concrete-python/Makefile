@@ -6,10 +6,8 @@ BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_package
 TFHERS_UTILS_DIRECTORY ?= $(PWD)/tests/tfhers-utils/
 
 OS=undefined
-COVERAGE_OPT=""
 ifeq ($(shell uname), Linux)
 	OS=linux
-	COVERAGE_OPT="--cov=concrete.fhe --cov-fail-under=100 --cov-report=term-missing:skip-covered"
 	RUNTIME_LIBRARY?=${COMPILER_BUILD_DIRECTORY}/lib/libConcretelangRuntime.so
 else ifeq ($(shell uname), Darwin)
 	OS=darwin
@@ -72,7 +70,9 @@ pytest: pytest-default
 pytest-default: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \
-		${COVERAGE_OPT} \
+		--cov=concrete.fhe \
+		--cov-fail-under=100 \
+		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
@@ -96,7 +96,9 @@ pytest-multi: tfhers-utils
 	pytest tests -svv -n auto \
 		--precision=multi \
 		--strategy=multi \
-		${COVERAGE_OPT} \
+		--cov=concrete.fhe \
+		--cov-fail-under=100 \
+		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
@@ -110,7 +112,9 @@ pytest-gpu: tfhers-utils
 	# test multi precision
 	pytest tests -svv -n0 --use_gpu \
 		--precision=multi \
-		${COVERAGE_OPT} \
+		--cov=concrete.fhe \
+		--cov-fail-under=100 \
+		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 

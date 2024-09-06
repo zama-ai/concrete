@@ -995,6 +995,14 @@ def issue650(x):
             {},
             id="(x ** 3, x + 100)",
         ),
+        pytest.param(
+            lambda x: np.min(x, 0),
+            {
+                "x": {"range": [0, 10], "status": "encrypted", "shape": (2, 2)},
+            },
+            {},
+            id="np.min(x, 0)",
+        ),
     ],
 )
 def test_others(function, parameters, configuration_overrides, helpers):

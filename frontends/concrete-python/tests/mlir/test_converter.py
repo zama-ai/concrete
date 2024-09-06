@@ -1090,6 +1090,23 @@ return %3
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: np.min(x),
+            {"x": "clear"},
+            fhe.inputset(fhe.tensor[fhe.uint3, 3, 2]),  # type: ignore
+            RuntimeError,
+            """
+
+Function you are trying to compile cannot be compiled
+
+%0 = x              # ClearTensor<uint3, shape=(3, 2)>        ∈ [0, 7]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ value is clear
+%1 = min(%0)        # ClearScalar<uint3>                      ∈ [0, 4]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ but computing min of clear values is not supported
+return %1
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_bad_convert(
