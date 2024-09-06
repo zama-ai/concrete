@@ -17,6 +17,7 @@
 * [SHA1 with Modules](../../frontends/concrete-python/examples/sha1/README.md)
 * [Levenshtein distance with Modules](../../frontends/concrete-python/examples/levenshtein_distance/README.md)
 * [Inventory Matching System](../../frontends/concrete-python/examples/prime-match/README.md)
+* [Private Information Retrieval](../../frontends/concrete-python/examples/pir/README.md)
 
 #### Blog tutorials
 
