@@ -81,7 +81,7 @@ jobs:
           make BINDINGS_PYTHON_ENABLED=OFF ML_BENCH_SUBSET_ID=${{ inputs.matrix_item }} run-mlbench-subset
 
       - name: Upload raw results artifact
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: ${{ github.sha }}_raw
           path: compiler/benchmarks_results.json
@@ -100,7 +100,7 @@ jobs:
           --bench-date "${{ env.BENCH_DATE }}"
 
       - name: Upload parsed results artifact
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: ${{ github.sha }}
           path: ${{ env.RESULTS_FILENAME }}
