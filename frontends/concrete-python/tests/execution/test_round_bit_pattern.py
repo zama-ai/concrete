@@ -711,9 +711,8 @@ def test_round_bit_pattern_approximate_off_by_one_errors(
         approx_simu = circuit_approx.simulate(x)
         exact = circuit_exact.simulate(x)
         assert abs(approx_simu - exact) <= 1
-        assert abs(approx_simu - approx) <= 1
-        delta = abs(approx - approx_simu)
-        assert delta <= 1
+        assert abs(approx - exact) <= 1
+        delta = abs(approx - exact)
         nb_error += delta > 0
 
     nb_transitions = 2 ** (accumulator_precision - reduced_precision)
