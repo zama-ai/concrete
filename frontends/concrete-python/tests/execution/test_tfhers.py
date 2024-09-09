@@ -304,8 +304,8 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
         pytest.param(
             lambda x, y: x + y,
             {
-                "x": {"range": [0, 2**7], "status": "encrypted"},
-                "y": {"range": [0, 2**7], "status": "encrypted"},
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
             },
             TFHERS_INT_8_3_2_4096,
             id="x + y",
@@ -313,8 +313,8 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
         pytest.param(
             lambda x, y: x - y,
             {
-                "x": {"range": [2**4, 2**7], "status": "encrypted"},
-                "y": {"range": [0, 2**4], "status": "encrypted"},
+                "x": {"range": [2**4, 2**7 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**4 - 1], "status": "encrypted"},
             },
             TFHERS_INT_8_3_2_4096,
             id="x - y",
@@ -322,8 +322,8 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
         pytest.param(
             lambda x, y: x * y,
             {
-                "x": {"range": [0, 2**3], "status": "encrypted"},
-                "y": {"range": [0, 2**3], "status": "encrypted"},
+                "x": {"range": [0, 2**3 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**3 - 1], "status": "encrypted"},
             },
             TFHERS_INT_8_3_2_4096,
             id="x * y",
@@ -331,8 +331,8 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
         pytest.param(
             lut_add_lut,
             {
-                "x": {"range": [0, 2**7], "status": "encrypted"},
-                "y": {"range": [0, 2**7], "status": "encrypted"},
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
             },
             TFHERS_INT_8_3_2_4096,
             id="lut_add_lut",
@@ -390,19 +390,50 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     with open(key_path, "wb") as f:
         f.write(serialized_key)
 
-    # encrypt inputs
     ct1, ct2 = sample
     _, ct1_path = tempfile.mkstemp()
     _, ct2_path = tempfile.mkstemp()
+    _, ct_one_path = tempfile.mkstemp()
+    _, client_key_path = tempfile.mkstemp()
+    _, server_key_path = tempfile.mkstemp()
 
     tfhers_utils = (
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
+
+    # keygen starting from Concrete's secret key
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct1} -c {ct1_path} -g {key_path}") == 0
+        os.system(
+            f"{tfhers_utils} keygen --glwe-sk {key_path} -c {client_key_path} -s {server_key_path}"
+        )
+        == 0
+    )
+
+    # encrypt inputs and incremnt them by one in TFHErs
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key -v 1 -c {ct_one_path} -l {client_key_path}")
+        == 0
+    )
+    sample = [s + 1 for s in sample]
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} -l {client_key_path}")
+        == 0
     )
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct2} -c {ct2_path} -g {key_path}") == 0
+        os.system(f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} -l {client_key_path}")
+        == 0
+    )
+    assert (
+        os.system(
+            f"{tfhers_utils} add -c {ct1_path} {ct_one_path} -s {server_key_path} -o {ct1_path}"
+        )
+        == 0
+    )
+    assert (
+        os.system(
+            f"{tfhers_utils} add -c {ct2_path} {ct_one_path} -s {server_key_path} -o {ct2_path}"
+        )
+        == 0
     )
 
     # import ciphertexts and run
@@ -443,6 +474,9 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     os.remove(key_path)
     os.remove(ct_out_path)
     os.remove(pt_path)
+    os.remove(ct_one_path)
+    os.remove(client_key_path)
+    os.remove(server_key_path)
 
     assert result == function(*sample)
 
@@ -592,9 +626,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     tfhers_utils = (
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
-    assert (
-        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct1} -c {ct1_path} -g {key_path}") == 0
-    )
+    assert os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} -g {key_path}") == 0
 
     # import first ciphertexts and encrypt second with concrete
     with open(ct1_path, "rb") as f:
@@ -732,7 +764,9 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     )
 
     assert (
-        os.system(f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} -g {sk_path}")
+        os.system(
+            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-glwe-sk {sk_path}"
+        )
         == 0
     )
 
@@ -760,12 +794,8 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     tfhers_utils = (
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
-    assert (
-        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct1} -c {ct1_path} -g {sk_path}") == 0
-    )
-    assert (
-        os.system(f"{tfhers_utils} encrypt-with-key" f" -v {ct2} -c {ct2_path} -g {sk_path}") == 0
-    )
+    assert os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} -g {sk_path}") == 0
+    assert os.system(f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} -g {sk_path}") == 0
 
     # import ciphertexts and run
     cts = []
@@ -990,7 +1020,9 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     )
 
     assert (
-        os.system(f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} -g {sk_path}")
+        os.system(
+            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-glwe-sk {sk_path}"
+        )
         == 0
     )
 
