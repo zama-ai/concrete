@@ -8,13 +8,13 @@ edition = "2021"
 bincode = "1.3.3"
 clap = { version = "4.5.16", features = ["derive"] }
 
-tfhe = { version = "0.7.1", features = ["integer"] }
+tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7", features = ["integer"] }
 
 [target.x86_64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.7.1", features = ["integer", "x86_64-unix"] }
+tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7", features = ["integer", "x86_64-unix"] }
 
 [target.aarch64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.7.1", features = ["integer", "aarch64-unix"] }
+tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7", features = ["integer", "aarch64-unix"] }
 
 [target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { version = "0.7.1", features = ["integer", "x86_64"] }
+tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7", features = ["integer", "x86_64"] }

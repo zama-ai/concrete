@@ -4,33 +4,27 @@ use core::panic;
 use std::fs;
 use std::io::Cursor;
 use std::path::Path;
-use tfhe::core_crypto::prelude::{GlweSecretKey, LweSecretKey};
-use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice, ShortintParameterSet};
-use tfhe::{generate_keys, integer, set_server_key, ClientKey, FheUint8, ServerKey};
+use tfhe::core_crypto::prelude::GlweSecretKey;
+use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice};
+use tfhe::{generate_keys, set_server_key, ClientKey, FheUint8, ServerKey};
 use tfhe::{prelude::*, ConfigBuilder};
 
 const BLOCK_PARAMS: ClassicPBSParameters = tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS;
 
-fn load_client_key_from_glwe(glwe_sk_path: &String) -> ClientKey {
+fn load_glwe_sk(glwe_sk_path: &String) -> GlweSecretKey<Vec<u64>> {
     let path_sk: &Path = Path::new(glwe_sk_path);
     let serialized_sk = fs::read(path_sk).unwrap();
     let mut serialized_data = Cursor::new(serialized_sk);
-    let sk: GlweSecretKey<Vec<u64>> = bincode::deserialize_from(&mut serialized_data).unwrap();
+    bincode::deserialize_from(&mut serialized_data).unwrap()
+}
 
-    let classic_pbsparameters = BLOCK_PARAMS;
-    let shortint_params = ShortintParameterSet::new_pbs_param_set(
-        tfhe::shortint::PBSParameters::PBS(classic_pbsparameters),
-    );
-    let client_key = ClientKey::from_raw_parts(
-        integer::ClientKey::from_raw_parts(tfhe::shortint::ClientKey::from_raw_parts(
-            sk,
-            LweSecretKey::new_empty_key(0, classic_pbsparameters.lwe_dimension),
-            shortint_params,
-        )),
-        None,
-        None,
-        None,
-    );
+fn load_client_key_from_glwe(glwe_sk_path: &String) -> ClientKey {
+    let glwe_sk = load_glwe_sk(glwe_sk_path);
+    let lwe_sk = glwe_sk.into_lwe_secret_key();
+
+    let shortint_key =
+        tfhe::shortint::ClientKey::try_from_lwe_encryption_key(lwe_sk, BLOCK_PARAMS).unwrap();
+    let client_key = ClientKey::from_raw_parts(shortint_key.into(), None, None);
     client_key
 }
 
@@ -109,32 +103,59 @@ fn sum(cts_paths: Vec<&String>, out_ct_path: &String) -> Result<(), Box<dyn std:
     Ok(())
 }
 
+fn write_keys(
+    client_key_path: &String,
+    server_key_path: &String,
+    output_glwe_path: &String,
+    client_key: Option<ClientKey>,
+    server_key: Option<ServerKey>,
+    glwe_secret_key: Option<GlweSecretKey<Vec<u64>>>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(ck) = client_key {
+        let mut serialized_client_key = Vec::new();
+        bincode::serialize_into(&mut serialized_client_key, &ck)?;
+        let path_client_key: &Path = Path::new(client_key_path);
+        fs::write(path_client_key, serialized_client_key).unwrap();
+    }
+
+    if let Some(sk) = server_key {
+        let mut serialized_server_key = Vec::new();
+        bincode::serialize_into(&mut serialized_server_key, &sk)?;
+        let path_server_key: &Path = Path::new(server_key_path);
+        fs::write(path_server_key, serialized_server_key).unwrap();
+    }
+
+    if let Some(gk) = glwe_secret_key {
+        let mut serialized_glwe_key = Vec::new();
+        bincode::serialize_into(&mut serialized_glwe_key, &gk)?;
+        let path_glwe_key: &Path = Path::new(output_glwe_path);
+        fs::write(path_glwe_key, serialized_glwe_key).unwrap();
+    }
+
+    Ok(())
+}
+
 fn keygen(
     client_key_path: &String,
     server_key_path: &String,
     output_glwe_path: &String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let config = ConfigBuilder::with_custom_parameters(BLOCK_PARAMS, None).build();
+    let config = ConfigBuilder::with_custom_parameters(BLOCK_PARAMS).build();
 
     let (client_key, server_key) = generate_keys(config);
-    let (integer_ck, _, _, _) = client_key.clone().into_raw_parts();
+    let (integer_ck, _, _) = client_key.clone().into_raw_parts();
     let shortint_ck = integer_ck.into_raw_parts();
     assert!(BLOCK_PARAMS.encryption_key_choice == EncryptionKeyChoice::Big);
     let (glwe_secret_key, _, _) = shortint_ck.into_raw_parts();
 
-    let mut serialized_client_key = Vec::new();
-    let mut serialized_server_key = Vec::new();
-    let mut serialized_glwe_key = Vec::new();
-    bincode::serialize_into(&mut serialized_client_key, &client_key)?;
-    bincode::serialize_into(&mut serialized_server_key, &server_key)?;
-    bincode::serialize_into(&mut serialized_glwe_key, &glwe_secret_key)?;
-
-    let path_client_key: &Path = Path::new(client_key_path);
-    let path_server_key: &Path = Path::new(server_key_path);
-    let path_glwe_key: &Path = Path::new(output_glwe_path);
-    fs::write(path_client_key, serialized_client_key).unwrap();
-    fs::write(path_server_key, serialized_server_key).unwrap();
-    fs::write(path_glwe_key, serialized_glwe_key).unwrap();
+    write_keys(
+        client_key_path,
+        server_key_path,
+        output_glwe_path,
+        Some(client_key),
+        Some(server_key),
+        Some(glwe_secret_key),
+    )?;
     Ok(())
 }
 
@@ -268,21 +289,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .short_flag('k')
                 .long_flag("keygen")
                 .about("Generate client and server key.")
-                // TODO: generate from a glwe sk
-                // .arg(
-                //     Arg::new("glwe-sk")
-                //         .long("glwe-sk")
-                //         .short('g')
-                //         .conflicts_with("client-key")
-                //         .help("glwe key path")
-                //         .action(ArgAction::Set)
-                //         .required(true)
-                //         .num_args(1),
-                // )
+                .arg(
+                    Arg::new("glwe-sk")
+                        .long("glwe-sk")
+                        .help("glwe key path to use for keygen")
+                        .action(ArgAction::Set)
+                        .required(false)
+                        .num_args(1),
+                )
                 .arg(
                     Arg::new("output-glwe-sk")
                         .long("output-glwe-sk")
-                        .short('g')
                         .default_value("output-glwe-sk")
                         .help("output glwe key path")
                         .action(ArgAction::Set)
@@ -354,7 +371,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let server_key_path = keygen_mtches.get_one::<String>("server-key").unwrap();
             let output_glwe_path = keygen_mtches.get_one::<String>("output-glwe-sk").unwrap();
 
-            keygen(client_key_path, server_key_path, output_glwe_path)
+            // we keygen based on an initial secret key if provided, otherwise we keygen from scratch
+            if let Some(glwe_sk_path) = keygen_mtches.get_one::<String>("glwe-sk") {
+                let client_key = load_client_key_from_glwe(glwe_sk_path);
+                let server_key = client_key.generate_server_key();
+                let glwe_secret_key = load_glwe_sk(glwe_sk_path);
+                write_keys(
+                    client_key_path,
+                    server_key_path,
+                    output_glwe_path,
+                    Some(client_key),
+                    Some(server_key),
+                    Some(glwe_secret_key),
+                )
+            } else {
+                keygen(client_key_path, server_key_path, output_glwe_path)
+            }
         }
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachable
     }
