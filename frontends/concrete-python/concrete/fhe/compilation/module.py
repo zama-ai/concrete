@@ -166,12 +166,10 @@ class FheFunction:
         decrypted = tuple(
             decrypter.decrypt(position, result.inner) for position, result in enumerate(results)
         )
-
         return decrypted if len(decrypted) != 1 else decrypted[0]
 
     def encrypt(
-        self,
-        *args: Optional[Union[int, np.ndarray, List]],
+        self, *args: Optional[Union[int, np.ndarray, List]]
     ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
@@ -693,6 +691,7 @@ class FheModule:
         """
         Get size of the key switch keys of the module.
         """
+
         return self.execution_runtime.val.server.size_of_keyswitch_keys  # pragma: no cover
 
     @property
@@ -758,11 +757,25 @@ class FheModule:
         return self.execution_runtime.val.server
 
     @property
-    def client(self) -> Optional[Client]:
+    def client(self) -> Client:
         """
         Returns the execution client object tied to the module.
         """
         return self.execution_runtime.val.client
+
+    @property
+    def simulator(self) -> Server:
+        """
+        Returns the simulation server object tied to the module.
+        """
+        return self.simulation_runtime.val.server
+
+    @property
+    def function_count(self) -> int:
+        """
+        Returns the number of functions in the module.
+        """
+        return len(self.graphs)
 
     def __getattr__(self, item):
         if item not in list(self.graphs.keys()):

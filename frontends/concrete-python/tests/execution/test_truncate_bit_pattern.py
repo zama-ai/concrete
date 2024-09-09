@@ -250,7 +250,7 @@ def test_truncate_bit_pattern_identity(helpers, pytestconfig):
         """
 
 module {
-  func.func @main(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
+  func.func @function(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
     %0 = "FHE.lsb"(%arg0) : (!FHE.esint<7>) -> !FHE.esint<7>
     %1 = "FHE.sub_eint"(%arg0, %0) : (!FHE.esint<7>, !FHE.esint<7>) -> !FHE.esint<7>
     %2 = "FHE.reinterpret_precision"(%1) : (!FHE.esint<7>) -> !FHE.esint<6>
@@ -267,7 +267,7 @@ module {
         else """
 
 module {
-  func.func @main(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
+  func.func @function(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
     %0 = "FHE.lsb"(%arg0) : (!FHE.esint<7>) -> !FHE.esint<7>
     %1 = "FHE.sub_eint"(%arg0, %0) : (!FHE.esint<7>, !FHE.esint<7>) -> !FHE.esint<7>
     %2 = "FHE.reinterpret_precision"(%1) : (!FHE.esint<7>) -> !FHE.esint<6>

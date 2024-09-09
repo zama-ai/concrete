@@ -1310,6 +1310,15 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                  clientParameters, inputId, circuitName);
              return encryption.getVariance();
            })
+      .def("function_list",
+           [](::concretelang::clientlib::ClientParameters &clientParameters) {
+             std::vector<std::string> result;
+             for (auto circuit :
+                  clientParameters.programInfo.asReader().getCircuits()) {
+               result.push_back(circuit.getName());
+             }
+             return result;
+           })
       .def("output_signs",
            [](::concretelang::clientlib::ClientParameters &clientParameters) {
              std::vector<bool> result;

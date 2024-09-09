@@ -187,7 +187,7 @@ def new_bridge(
     circuit: "fhe.Circuit",
     input_types: Union[List[Optional[TFHERSIntegerType]], Optional[TFHERSIntegerType]],
     output_types: Union[List[Optional[TFHERSIntegerType]], Optional[TFHERSIntegerType]],
-    func_name: str = "main",
+    func_name,
 ) -> Bridge:
     """Create a TFHErs bridge from a circuit.
 
@@ -199,7 +199,7 @@ def new_bridge(
         output_types (Union[List[Optional[TFHERSIntegerType]], Optional[TFHERSIntegerType]]): lists
             should map every output to a type, while a single element is general for all outputs.
             None means a non-tfhers type
-        func_name (str, optional): name of the function to use. Defaults to "main".
+        func_name (str): name of the function to use.
 
     Returns:
         Bridge: TFHErs bridge

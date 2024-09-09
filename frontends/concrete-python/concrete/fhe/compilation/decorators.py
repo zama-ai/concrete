@@ -12,9 +12,11 @@ from ..tracing.typing import ScalarAnnotation
 from ..values import ValueDescription
 from .artifacts import DebugArtifacts
 from .circuit import Circuit
-from .compiler import Compiler, EncryptionStatus
+from .compiler import Compiler
 from .configuration import Configuration
-from .module_compiler import AllComposable, CompositionPolicy, FunctionDef, ModuleCompiler
+from .module_compiler import CompositionPolicy, FunctionDef, ModuleCompiler
+from .status import EncryptionStatus
+from .wiring import AllComposable
 
 
 def circuit(
@@ -151,7 +153,9 @@ class Compilable:
                 compiled circuit
         """
 
-        return self.compiler.compile(inputset, configuration, artifacts, **kwargs)
+        return self.compiler.compile(
+            inputset if inputset is not None else [], configuration, artifacts, **kwargs
+        )
 
     def reset(self):
         """

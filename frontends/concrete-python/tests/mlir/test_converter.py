@@ -1143,7 +1143,7 @@ def test_converter_bad_convert(
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<6> {
     %0 = "FHE.mul_eint"(%arg0, %arg1) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<6>
     return %0 : !FHE.eint<6>
   }
@@ -1161,7 +1161,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>, %arg1: tensor<3x2x!FHE.eint<4>>) -> tensor<3x2x!FHE.eint<6>> {
+  func.func @"<lambda>"(%arg0: tensor<3x2x!FHE.eint<4>>, %arg1: tensor<3x2x!FHE.eint<4>>) -> tensor<3x2x!FHE.eint<6>> {
     %0 = "FHELinalg.mul_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<4>>, tensor<3x2x!FHE.eint<4>>) -> tensor<3x2x!FHE.eint<6>>
     return %0 : tensor<3x2x!FHE.eint<6>>
   }
@@ -1179,7 +1179,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x!FHE.eint<4>>, %arg1: tensor<2x!FHE.eint<4>>) -> !FHE.eint<7> {
+  func.func @"<lambda>"(%arg0: tensor<2x!FHE.eint<4>>, %arg1: tensor<2x!FHE.eint<4>>) -> !FHE.eint<7> {
     %0 = "FHELinalg.dot_eint_eint"(%arg0, %arg1) : (tensor<2x!FHE.eint<4>>, tensor<2x!FHE.eint<4>>) -> !FHE.eint<7>
     return %0 : !FHE.eint<7>
   }
@@ -1197,7 +1197,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<3x2x!FHE.eint<4>>, %arg1: tensor<2x4x!FHE.eint<4>>) -> tensor<3x4x!FHE.eint<7>> {
+  func.func @"<lambda>"(%arg0: tensor<3x2x!FHE.eint<4>>, %arg1: tensor<2x4x!FHE.eint<4>>) -> tensor<3x4x!FHE.eint<7>> {
     %0 = "FHELinalg.matmul_eint_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<4>>, tensor<2x4x!FHE.eint<4>>) -> tensor<3x4x!FHE.eint<7>>
     return %0 : tensor<3x4x!FHE.eint<7>>
   }
@@ -1215,7 +1215,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<10x!FHE.eint<4>>, %arg1: tensor<10x!FHE.eint<4>>) -> !FHE.eint<1> {
+  func.func @"<lambda>"(%arg0: tensor<10x!FHE.eint<4>>, %arg1: tensor<10x!FHE.eint<4>>) -> !FHE.eint<1> {
     %0 = "FHELinalg.to_signed"(%arg0) : (tensor<10x!FHE.eint<4>>) -> tensor<10x!FHE.esint<4>>
     %1 = "FHELinalg.to_signed"(%arg1) : (tensor<10x!FHE.eint<4>>) -> tensor<10x!FHE.esint<4>>
     %2 = "FHELinalg.sub_eint"(%0, %1) : (tensor<10x!FHE.esint<4>>, tensor<10x!FHE.esint<4>>) -> tensor<10x!FHE.esint<4>>
@@ -1242,7 +1242,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x!FHE.eint<2>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
+  func.func @"<lambda>"(%arg0: tensor<2x!FHE.eint<2>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
     %c2_i3 = arith.constant 2 : i3
     %cst = arith.constant dense<[0, 1, 4, 9]> : tensor<4xi64>
     %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<2x!FHE.eint<2>>, tensor<4xi64>) -> tensor<2x!FHE.eint<6>>
@@ -1263,7 +1263,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+  func.func @"<lambda>"(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
     %c2_i3 = arith.constant 2 : i3
     %c8_i8 = arith.constant 8 : i8
     %0 = "FHE.mul_eint_int"(%arg0, %c8_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
@@ -1289,7 +1289,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+  func.func @"<lambda>"(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
     %c2_i3 = arith.constant 2 : i3
     %c12_i8 = arith.constant 12 : i8
     %0 = "FHE.sub_eint_int"(%arg0, %c12_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
@@ -1317,7 +1317,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<3>> {
+  func.func @"<lambda>"(%arg0: tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<3>> {
     %c12_i5 = arith.constant 12 : i5
     %from_elements = tensor.from_elements %c12_i5 : tensor<1xi5>
     %0 = "FHELinalg.sub_eint_int"(%arg0, %from_elements) : (tensor<2x!FHE.eint<4>>, tensor<1xi5>) -> tensor<2x!FHE.eint<4>>
@@ -1345,7 +1345,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+  func.func @"<lambda>"(%arg0: !FHE.eint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
     %c2_i3 = arith.constant 2 : i3
     %c4_i8 = arith.constant 4 : i8
     %0 = "FHE.mul_eint_int"(%arg0, %c4_i8) : (!FHE.eint<7>, i8) -> !FHE.eint<7>
@@ -1371,7 +1371,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<3>> {
+  func.func @"<lambda>"(%arg0: tensor<2x!FHE.eint<4>>) -> tensor<2x!FHE.eint<3>> {
     %c12_i5 = arith.constant 12 : i5
     %from_elements = tensor.from_elements %c12_i5 : tensor<1xi5>
     %0 = "FHELinalg.sub_eint_int"(%arg0, %from_elements) : (tensor<2x!FHE.eint<4>>, tensor<1xi5>) -> tensor<2x!FHE.eint<4>>
@@ -1399,7 +1399,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x!FHE.eint<5>>) -> tensor<2x!FHE.eint<3>> {
+  func.func @"<lambda>"(%arg0: tensor<2x!FHE.eint<5>>) -> tensor<2x!FHE.eint<3>> {
     %cst = arith.constant dense<[0, 1]> : tensor<2xindex>
     %cst_0 = arith.constant dense<[[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15], [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10]]> : tensor<2x32xi64>
     %0 = "FHELinalg.apply_mapped_lookup_table"(%arg0, %cst_0, %cst) : (tensor<2x!FHE.eint<5>>, tensor<2x32xi64>, tensor<2xindex>) -> tensor<2x!FHE.eint<3>>
@@ -1420,7 +1420,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<8>) -> (!FHE.eint<5>, !FHE.eint<8>) {
+  func.func @"<lambda>"(%arg0: !FHE.eint<8>) -> (!FHE.eint<5>, !FHE.eint<8>) {
     %c2_i3 = arith.constant 2 : i3
     %c4_i9 = arith.constant 4 : i9
     %0 = "FHE.mul_eint_int"(%arg0, %c4_i9) : (!FHE.eint<8>, i9) -> !FHE.eint<8>
@@ -1444,7 +1444,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.esint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+  func.func @"<lambda>"(%arg0: !FHE.esint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
     %c2_i3 = arith.constant 2 : i3
     %c4_i8 = arith.constant 4 : i8
     %0 = "FHE.mul_eint_int"(%arg0, %c4_i8) : (!FHE.esint<7>, i8) -> !FHE.esint<7>
@@ -1471,7 +1471,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.esint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
+  func.func @"<lambda>"(%arg0: !FHE.esint<7>) -> (!FHE.eint<8>, !FHE.eint<7>) {
     %c2_i3 = arith.constant 2 : i3
     %c13_i8 = arith.constant 13 : i8
     %0 = "FHE.add_eint_int"(%arg0, %c13_i8) : (!FHE.esint<7>, i8) -> !FHE.esint<7>
@@ -1500,7 +1500,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.esint<8>) -> (!FHE.esint<5>, !FHE.eint<8>) {
+  func.func @"<lambda>"(%arg0: !FHE.esint<8>) -> (!FHE.esint<5>, !FHE.eint<8>) {
     %c2_i3 = arith.constant 2 : i3
     %c4_i9 = arith.constant 4 : i9
     %0 = "FHE.mul_eint_int"(%arg0, %c4_i9) : (!FHE.esint<8>, i9) -> !FHE.esint<8>
@@ -1527,7 +1527,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
     %c3_i3 = arith.constant 3 : i3
     %c2_i7 = arith.constant 2 : i7
     %0 = "FHE.mul_eint_int"(%arg0, %c2_i7) : (!FHE.eint<6>, i7) -> !FHE.eint<6>
@@ -1552,7 +1552,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
     %c3_i3 = arith.constant 3 : i3
     %cst = arith.constant dense<[0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 20, 20, 20, 21]> : tensor<64xi64>
     %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<6>, tensor<64xi64>) -> !FHE.eint<6>
@@ -1574,7 +1574,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
     %c3_i3 = arith.constant 3 : i3
     %c2_i7 = arith.constant 2 : i7
     %0 = "FHE.mul_eint_int"(%arg0, %c2_i7) : (!FHE.eint<6>, i7) -> !FHE.eint<6>
@@ -1599,7 +1599,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
     %c3_i3 = arith.constant 3 : i3
     %c2_i7 = arith.constant 2 : i7
     %0 = "FHE.mul_eint_int"(%arg0, %c2_i7) : (!FHE.eint<6>, i7) -> !FHE.eint<6>
@@ -1624,7 +1624,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
     %c3_i3 = arith.constant 3 : i3
     %cst = arith.constant dense<[0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 20, 20, 20, 21]> : tensor<64xi64>
     %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<6>, tensor<64xi64>) -> !FHE.eint<6>
@@ -1646,7 +1646,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<6>) -> !FHE.eint<6> {
     %c3_i3 = arith.constant 3 : i3
     %cst = arith.constant dense<[0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 20, 20, 20, 21]> : tensor<64xi64>
     %0 = "FHE.apply_lookup_table"(%arg0, %cst) : (!FHE.eint<6>, tensor<64xi64>) -> !FHE.eint<6>
@@ -1669,7 +1669,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i4) -> !FHE.eint<4> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i4) -> !FHE.eint<4> {
     %0 = arith.index_cast %arg1 : i4 to index
     %extracted = tensor.extract %arg0[%0] : tensor<8x!FHE.eint<4>>
     return %extracted : !FHE.eint<4>
@@ -1690,7 +1690,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i5) -> !FHE.eint<4> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i5) -> !FHE.eint<4> {
     %c8_i5 = arith.constant 8 : i5
     %c0_i5 = arith.constant 0 : i5
     %0 = arith.cmpi slt, %arg1, %c0_i5 : i5
@@ -1720,7 +1720,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i4) -> !FHE.eint<4> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i4) -> !FHE.eint<4> {
     %c8_i5 = arith.constant 8 : i5
     %0 = arith.extsi %arg1 : i4 to i5
     %1 = arith.cmpi sge, %0, %c8_i5 : i5
@@ -1752,7 +1752,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i5) -> !FHE.eint<4> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: i5) -> !FHE.eint<4> {
     %c8_i5 = arith.constant 8 : i5
     %c0_i5 = arith.constant 0 : i5
     %0 = arith.cmpi slt, %arg1, %c0_i5 : i5
@@ -1790,7 +1790,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi4>) -> tensor<3x2x!FHE.eint<4>> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi4>) -> tensor<3x2x!FHE.eint<4>> {
     %0 = arith.index_cast %arg1 : tensor<3x2xi4> to tensor<3x2xindex>
     %1 = "FHELinalg.fancy_index"(%arg0, %0) : (tensor<8x!FHE.eint<4>>, tensor<3x2xindex>) -> tensor<3x2x!FHE.eint<4>>
     return %1 : tensor<3x2x!FHE.eint<4>>
@@ -1811,7 +1811,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi5>) -> tensor<3x2x!FHE.eint<4>> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi5>) -> tensor<3x2x!FHE.eint<4>> {
     %c8_i5 = arith.constant 8 : i5
     %generated = tensor.generate  {
     ^bb0(%arg2: index, %arg3: index):
@@ -1846,7 +1846,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi4>) -> tensor<3x2x!FHE.eint<4>> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi4>) -> tensor<3x2x!FHE.eint<4>> {
     %c8_i5 = arith.constant 8 : i5
     %0 = arith.extsi %arg1 : tensor<3x2xi4> to tensor<3x2xi5>
     %c0 = arith.constant 0 : index
@@ -1889,7 +1889,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi5>) -> tensor<3x2x!FHE.eint<4>> {
+  func.func @"<lambda>"(%arg0: tensor<8x!FHE.eint<4>>, %arg1: tensor<3x2xi5>) -> tensor<3x2x!FHE.eint<4>> {
     %c8_i5 = arith.constant 8 : i5
     %generated = tensor.generate  {
     ^bb0(%arg2: index, %arg3: index):
@@ -1930,7 +1930,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<102x70x104x!FHE.eint<6>>) -> tensor<102x70x104x!FHE.eint<5>> {
+  func.func @"<lambda>"(%arg0: tensor<102x70x104x!FHE.eint<6>>) -> tensor<102x70x104x!FHE.eint<5>> {
     %c2_i3 = arith.constant 2 : i3
     %cst = arith.constant dense<[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 31]> : tensor<64xi64>
     %0 = "FHELinalg.apply_lookup_table"(%arg0, %cst) : (tensor<102x70x104x!FHE.eint<6>>, tensor<64xi64>) -> tensor<102x70x104x!FHE.eint<5>>
@@ -1949,7 +1949,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<3x!FHE.eint<8>>) -> !FHE.eint<8> {
+  func.func @"<lambda>"(%arg0: tensor<3x!FHE.eint<8>>) -> !FHE.eint<8> {
     %cst = arith.constant dense<[1, 0, 2]> : tensor<3xi3>
     %0 = "FHELinalg.dot_eint_int"(%arg0, %cst) : (tensor<3x!FHE.eint<8>>, tensor<3xi3>) -> !FHE.eint<8>
     return %0 : !FHE.eint<8>
@@ -1967,7 +1967,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x2x!FHE.eint<8>>) -> tensor<2x2x!FHE.eint<8>> {
+  func.func @"<lambda>"(%arg0: tensor<2x2x!FHE.eint<8>>) -> tensor<2x2x!FHE.eint<8>> {
     %cst = arith.constant dense<[[1, 0], [2, 3]]> : tensor<2x2xi3>
     %0 = "FHELinalg.matmul_eint_int"(%arg0, %cst) : (tensor<2x2x!FHE.eint<8>>, tensor<2x2xi3>) -> tensor<2x2x!FHE.eint<8>>
     return %0 : tensor<2x2x!FHE.eint<8>>
@@ -2016,7 +2016,7 @@ def test_converter_convert_multi_precision(
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<6>) -> !FHE.eint<6> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<6>, %arg1: !FHE.eint<6>) -> !FHE.eint<6> {
     %0 = "FHE.mul_eint"(%arg0, %arg1) : (!FHE.eint<6>, !FHE.eint<6>) -> !FHE.eint<6>
     return %0 : !FHE.eint<6>
   }
@@ -2033,7 +2033,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<3x2x!FHE.eint<6>>, %arg1: tensor<3x2x!FHE.eint<6>>) -> tensor<3x2x!FHE.eint<6>> {
+  func.func @"<lambda>"(%arg0: tensor<3x2x!FHE.eint<6>>, %arg1: tensor<3x2x!FHE.eint<6>>) -> tensor<3x2x!FHE.eint<6>> {
     %0 = "FHELinalg.mul_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<6>>, tensor<3x2x!FHE.eint<6>>) -> tensor<3x2x!FHE.eint<6>>
     return %0 : tensor<3x2x!FHE.eint<6>>
   }
@@ -2050,7 +2050,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2x!FHE.eint<7>>) -> !FHE.eint<7> {
+  func.func @"<lambda>"(%arg0: tensor<2x!FHE.eint<7>>, %arg1: tensor<2x!FHE.eint<7>>) -> !FHE.eint<7> {
     %0 = "FHELinalg.dot_eint_eint"(%arg0, %arg1) : (tensor<2x!FHE.eint<7>>, tensor<2x!FHE.eint<7>>) -> !FHE.eint<7>
     return %0 : !FHE.eint<7>
   }
@@ -2067,7 +2067,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<3x2x!FHE.eint<7>>, %arg1: tensor<2x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
+  func.func @"<lambda>"(%arg0: tensor<3x2x!FHE.eint<7>>, %arg1: tensor<2x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>> {
     %0 = "FHELinalg.matmul_eint_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<7>>, tensor<2x4x!FHE.eint<7>>) -> tensor<3x4x!FHE.eint<7>>
     return %0 : tensor<3x4x!FHE.eint<7>>
   }
@@ -2084,7 +2084,7 @@ module {
             """
 
 module {
-  func.func @main(%arg0: tensor<2x!FHE.eint<6>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
+  func.func @"<lambda>"(%arg0: tensor<2x!FHE.eint<6>>, %arg1: !FHE.eint<6>) -> tensor<2x!FHE.eint<6>> {
     %c2_i3 = arith.constant 2 : i3
     %c16_i7 = arith.constant 16 : i7
     %from_elements = tensor.from_elements %c16_i7 : tensor<1xi7>
@@ -2134,7 +2134,7 @@ def test_converter_convert_single_precision(function, parameters, expected_mlir,
             """
 
 module {
-  func.func @main(%arg0: !FHE.eint<9>, %arg1: !FHE.eint<9>) -> !FHE.eint<9> {
+  func.func @"<lambda>"(%arg0: !FHE.eint<9>, %arg1: !FHE.eint<9>) -> !FHE.eint<9> {
     %0 = "FHE.mul_eint"(%arg0, %arg1) : (!FHE.eint<9>, !FHE.eint<9>) -> !FHE.eint<9>
     return %0 : !FHE.eint<9>
   }
@@ -2197,7 +2197,7 @@ def test_converter_process_multi_precision(function, parameters, expected_graph,
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    GraphConverter(configuration).process({"main": graph})
+    GraphConverter(configuration).process({"<lambda>": graph})
     for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]
@@ -2239,7 +2239,7 @@ def test_converter_process_single_precision(function, parameters, expected_graph
     inputset = helpers.generate_inputset(parameters)
     graph = compiler.trace(inputset, configuration)
 
-    GraphConverter(configuration).process({"main": graph})
+    GraphConverter(configuration).process({"<lambda>": graph})
     for node in graph.query_nodes():
         if "original_bit_width" in node.properties:
             del node.properties["original_bit_width"]

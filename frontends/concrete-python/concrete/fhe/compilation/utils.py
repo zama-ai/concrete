@@ -7,6 +7,7 @@ import os
 import re
 from copy import deepcopy
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -27,8 +28,10 @@ from ..dtypes import Float, Integer, SignedInteger, UnsignedInteger
 from ..representation import Graph, Node, Operation
 from ..tracing import ScalarAnnotation
 from ..values import ValueDescription
-from .artifacts import FunctionDebugArtifacts
 from .specs import ClientSpecs
+
+if TYPE_CHECKING:
+    from .artifacts import FunctionDebugArtifacts  # pragma: no cover
 
 # ruff: noqa: ERA001
 
@@ -118,7 +121,7 @@ def inputset(
 def validate_input_args(
     client_specs: ClientSpecs,
     *args: Optional[Union[int, np.ndarray, List]],
-    function_name: str = "main",
+    function_name: str,
 ) -> List[Optional[Union[int, np.ndarray]]]:
     """Validate input arguments.
 
@@ -214,7 +217,7 @@ def validate_input_args(
     return ordered_sanitized_args
 
 
-def fuse(graph: Graph, artifacts: Optional[FunctionDebugArtifacts] = None):
+def fuse(graph: Graph, artifacts: Optional["FunctionDebugArtifacts"] = None):
     """
     Fuse appropriate subgraphs in a graph to a single Operation.Generic node.
 
@@ -817,7 +820,7 @@ def convert_subgraph_to_subgraph_node(
     original_tag = terminal_node.tag
     original_created_at = terminal_node.created_at
 
-    subgraph = Graph(nx_subgraph, {0: subgraph_variable_input_node}, {0: terminal_node})
+    subgraph = Graph(nx_subgraph, {0: subgraph_variable_input_node}, {0: terminal_node}, graph.name)
     subgraph_node = Node.generic(
         "subgraph",
         deepcopy(subgraph_variable_input_node.inputs),

@@ -382,7 +382,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
 
     ###### TFHErs Encryption ######################################################
-    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="main")
+    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="<lambda>")
 
     # serialize key
     _, key_path = tempfile.mkstemp()
@@ -577,7 +577,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
 
     ###### TFHErs Encryption ######################################################
-    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="main")
+    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="<lambda>")
 
     # serialize key
     _, key_path = tempfile.mkstemp()

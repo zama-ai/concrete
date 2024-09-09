@@ -10,12 +10,221 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Union
 
 from ..representation import Graph
+from .configuration import Configuration
+from .utils import get_terminal_size
 
 if TYPE_CHECKING:  # pragma: no cover
     from .module import ExecutionRt
     from .utils import Lazy
 
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
+
+
+class DebugManager:
+    """
+    A debug manager, allowing streamlined debugging.
+    """
+
+    configuration: Configuration
+    begin_call: Callable
+
+    def __init__(self, config: Configuration):
+        self.configuration = config
+        is_first = [True]
+
+        def begin_call():
+            if is_first[0]:
+                print()
+                is_first[0] = False
+
+        self.begin_call = begin_call
+
+    def debug_table(self, title: str, activate: bool = True):
+        """
+        Return a context manager that prints a table around what is printed inside the scope.
+        """
+
+        # pylint: disable=missing-class-docstring
+        class DebugTableCm:
+            def __init__(self, title):
+                self.title = title
+                self.columns = get_terminal_size()
+
+            def __enter__(self):
+                print(f"{self.title}")
+                print("-" * self.columns)
+
+            def __exit__(self, _exc_type, _exc_value, _exc_tb):
+                print("-" * self.columns)
+                print()
+
+        class EmptyCm:
+            def __enter__(self):
+                pass
+
+            def __exit__(self, _exc_type, _exc_value, _exc_tb):
+                pass
+
+        if activate:
+            self.begin_call()
+            return DebugTableCm(title)
+        return EmptyCm()
+
+    def show_graph(self) -> bool:
+        """
+        Tell if the configuration involves showing graph.
+        """
+
+        return (
+            self.configuration.show_graph
+            if self.configuration.show_graph is not None
+            else self.configuration.verbose
+        )
+
+    def show_bit_width_constraints(self) -> bool:
+        """
+        Tell if the configuration involves showing bitwidth constraints.
+        """
+
+        return (
+            self.configuration.show_bit_width_constraints
+            if self.configuration.show_bit_width_constraints is not None
+            else self.configuration.verbose
+        )
+
+    def show_bit_width_assignments(self) -> bool:
+        """
+        Tell if the configuration involves showing bitwidth assignments.
+        """
+
+        return (
+            self.configuration.show_bit_width_assignments
+            if self.configuration.show_bit_width_assignments is not None
+            else self.configuration.verbose
+        )
+
+    def show_assigned_graph(self) -> bool:
+        """
+        Tell if the configuration involves showing assigned graph.
+        """
+
+        return (
+            self.configuration.show_assigned_graph
+            if self.configuration.show_assigned_graph is not None
+            else self.configuration.verbose
+        )
+
+    def show_mlir(self) -> bool:
+        """
+        Tell if the configuration involves showing mlir.
+        """
+
+        return (
+            self.configuration.show_mlir
+            if self.configuration.show_mlir is not None
+            else self.configuration.verbose
+        )
+
+    def show_optimizer(self) -> bool:
+        """
+        Tell if the configuration involves showing optimizer.
+        """
+
+        return (
+            self.configuration.show_optimizer
+            if self.configuration.show_optimizer is not None
+            else self.configuration.verbose
+        )
+
+    def show_statistics(self) -> bool:
+        """
+        Tell if the configuration involves showing statistics.
+        """
+
+        return (
+            self.configuration.show_statistics
+            if self.configuration.show_statistics is not None
+            else self.configuration.verbose
+        )
+
+    def debug_computation_graph(self, name, function_graph):
+        """
+        Print computation graph if configuration tells so.
+        """
+
+        if (
+            self.show_graph()
+            or self.show_bit_width_constraints()
+            or self.show_bit_width_assignments()
+            or self.show_assigned_graph()
+            or self.show_mlir()
+            or self.show_optimizer()
+            or self.show_statistics()
+        ):
+            if self.show_graph():
+                with self.debug_table(f"Computation Graph for {name}"):
+                    print(function_graph.format())
+
+    def debug_bit_width_constaints(self, name, function_graph):
+        """
+        Print bitwidth constraints if configuration tells so.
+        """
+
+        if self.show_bit_width_constraints():
+            with self.debug_table(f"Bit-Width Constraints for {name}"):
+                print(function_graph.format_bit_width_constraints())
+
+    def debug_bit_width_assignments(self, name, function_graph):
+        """
+        Print bitwidth assignments if configuration tells so.
+        """
+
+        if self.show_bit_width_assignments():
+            with self.debug_table(f"Bit-Width Assignments for {name}"):
+                print(function_graph.format_bit_width_assignments())
+
+    def debug_assigned_graph(self, name, function_graph):
+        """
+        Print assigned graphs if configuration tells so.
+        """
+
+        if self.show_assigned_graph():
+            with self.debug_table(f"Bit-Width Assigned Computation Graph for {name}"):
+                print(function_graph.format(show_assigned_bit_widths=True))
+
+    def debug_mlir(self, mlir_str):
+        """
+        Print mlir if configuration tells so.
+        """
+
+        if self.show_mlir():
+            with self.debug_table("MLIR"):
+                print(mlir_str)
+
+    def debug_statistics(self, module):
+        """
+        Print statistics if configuration tells so.
+        """
+
+        if self.show_statistics():
+
+            def pretty(d, indent=0):  # pragma: no cover
+                if indent > 0:
+                    print("{")
+
+                for key, value in d.items():
+                    if isinstance(value, dict) and len(value) == 0:
+                        continue
+                    print("    " * indent + str(key) + ": ", end="")
+                    if isinstance(value, dict):
+                        pretty(value, indent + 1)
+                    else:
+                        print(value)
+                if indent > 0:
+                    print("    " * (indent - 1) + "}")
+
+            with self.debug_table("Statistics"):
+                pretty(module.statistics)
 
 
 class FunctionDebugArtifacts:
@@ -236,88 +445,18 @@ class DebugArtifacts:
     """
 
     module_artifacts: ModuleDebugArtifacts
-    _client_parameters: Optional[bytes]
 
     def __init__(self, output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY):
-        self.module_artifacts = ModuleDebugArtifacts(["main"], output_directory)
-        self._client_parameters = None
-
-    def add_source_code(self, function: Union[str, Callable]):
-        """
-        Add source code of the function being compiled.
-
-        Args:
-            function (Union[str, Callable]):
-                either the source code of the function or the function itself
-        """
-        self.module_artifacts.functions["main"].add_source_code(function)
-
-    def add_parameter_encryption_status(self, name: str, encryption_status: str):
-        """
-        Add parameter encryption status of a parameter of the function being compiled.
-
-        Args:
-            name (str):
-                name of the parameter
-
-            encryption_status (str):
-                encryption status of the parameter
-        """
-
-        self.module_artifacts.functions["main"].add_parameter_encryption_status(
-            name, encryption_status
-        )
-
-    def add_graph(self, name: str, graph: Graph):
-        """
-        Add a representation of the function being compiled.
-
-        Args:
-            name (str):
-                name of the graph (e.g., initial, optimized, final)
-
-            graph (Graph):
-                a representation of the function being compiled
-        """
-
-        self.module_artifacts.functions["main"].add_graph(name, graph)
-
-    def add_mlir_to_compile(self, mlir: str):
-        """
-        Add textual representation of the resulting MLIR.
-
-        Args:
-            mlir (str):
-                textual representation of the resulting MLIR
-        """
-
-        self.module_artifacts.add_mlir_to_compile(mlir)
-
-    def add_client_parameters(self, client_parameters: bytes):
-        """
-        Add client parameters used.
-
-        Args:
-            client_parameters (bytes): client parameters
-        """
-
-        self._client_parameters = client_parameters
+        self.module_artifacts = ModuleDebugArtifacts([], output_directory)
 
     def export(self):
         """
         Export the collected information to `self.output_directory`.
         """
-
-        # This is a quick fix before we refactor compiler and module_compiler
-        # to use the same abstraction.
-        class _ModuleDebugArtifacts(ModuleDebugArtifacts):
-            client_parameters = self._client_parameters
-
-        self.module_artifacts.__class__ = _ModuleDebugArtifacts
         self.module_artifacts.export()
 
     @property
-    def output_directory(self) -> Path:
+    def output_directory(self) -> Path:  # pragma: no cover
         """
         Return the directory to export artifacts to.
         """

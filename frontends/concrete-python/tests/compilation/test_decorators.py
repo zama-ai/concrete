@@ -28,42 +28,12 @@ def test_compiler_call_and_compile(helpers):
     helpers.check_execution(circuit, function, sample)
 
 
-def test_compiler_verbose_trace(helpers, capsys, monkeypatch):
-    """
-    Test `trace` method of `compiler` decorator with verbose flag.
-    """
-
-    monkeypatch.setattr("concrete.fhe.compilation.compiler.get_terminal_size", lambda: 80)
-
-    configuration = helpers.configuration()
-    artifacts = fhe.DebugArtifacts()
-
-    @fhe.compiler({"x": "encrypted"})
-    def function(x):
-        return x + 42
-
-    inputset = range(10)
-    graph = function.trace(inputset, configuration, artifacts, show_graph=True)
-
-    captured = capsys.readouterr()
-    assert captured.out.strip() == (
-        f"""
-
-Computation Graph
-------------------------------------------------------------------
-{graph.format()}
-------------------------------------------------------------------
-
-        """.strip()
-    )
-
-
 def test_compiler_verbose_compile(helpers, capsys, monkeypatch):
     """
     Test `compile` method of `compiler` decorator with verbose flag.
     """
 
-    monkeypatch.setattr("concrete.fhe.compilation.compiler.get_terminal_size", lambda: 80)
+    monkeypatch.setattr("concrete.fhe.compilation.artifacts.get_terminal_size", lambda: 80)
 
     configuration = helpers.configuration()
     artifacts = fhe.DebugArtifacts()
@@ -76,42 +46,44 @@ def test_compiler_verbose_compile(helpers, capsys, monkeypatch):
     circuit = function.compile(inputset, configuration, artifacts, verbose=True)
 
     captured = capsys.readouterr()
+
     assert captured.out.strip().startswith(
         f"""
 
-Computation Graph
+
+Computation Graph for function
 --------------------------------------------------------------------------------
 {circuit.graph.format()}
---------------------------------------------------------------------------------
-
-Bit-Width Constraints
---------------------------------------------------------------------------------
-%0:
-    main.%0 >= 4
-%1:
-    main.%1 >= 6
-%2:
-    main.%2 >= 6
-    main.%0 == main.%1
-    main.%1 == main.%2
---------------------------------------------------------------------------------
-
-Bit-Width Assignments
---------------------------------------------------------------------------------
- main.%0 = 6
- main.%1 = 6
- main.%2 = 6
-main.max = 6
---------------------------------------------------------------------------------
-
-Bit-Width Assigned Computation Graph
---------------------------------------------------------------------------------
-{circuit.graph.format(show_assigned_bit_widths=True)}
 --------------------------------------------------------------------------------
 
 MLIR
 --------------------------------------------------------------------------------
 {artifacts.mlir_to_compile}
+--------------------------------------------------------------------------------
+
+Bit-Width Constraints for function
+--------------------------------------------------------------------------------
+%0:
+    function.%0 >= 4
+%1:
+    function.%1 >= 6
+%2:
+    function.%2 >= 6
+    function.%0 == function.%1
+    function.%1 == function.%2
+--------------------------------------------------------------------------------
+
+Bit-Width Assignments for function
+--------------------------------------------------------------------------------
+ function.%0 = 6
+ function.%1 = 6
+ function.%2 = 6
+function.max = 6
+--------------------------------------------------------------------------------
+
+Bit-Width Assigned Computation Graph for function
+--------------------------------------------------------------------------------
+{circuit.graph.format(show_assigned_bit_widths=True)}
 --------------------------------------------------------------------------------
 
 Optimizer
@@ -325,7 +297,7 @@ def test_compiler_reset(helpers):
         """
 
 module {
-  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+  func.func @compiler(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
     %0 = "FHE.add_eint"(%arg0, %arg1) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
     return %0 : !FHE.eint<4>
   }
@@ -343,7 +315,7 @@ module {
         """
 
 module {
-  func.func @main(%arg0: !FHE.eint<11>, %arg1: !FHE.eint<11>) -> !FHE.eint<11> {
+  func.func @compiler(%arg0: !FHE.eint<11>, %arg1: !FHE.eint<11>) -> !FHE.eint<11> {
     %0 = "FHE.add_eint"(%arg0, %arg1) : (!FHE.eint<11>, !FHE.eint<11>) -> !FHE.eint<11>
     return %0 : !FHE.eint<11>
   }
@@ -361,7 +333,7 @@ module {
         """
 
 module {
-  func.func @main(%arg0: tensor<3x2x!FHE.eint<3>>, %arg1: tensor<2x!FHE.eint<3>>) -> tensor<3x2x!FHE.eint<3>> {
+  func.func @compiler(%arg0: tensor<3x2x!FHE.eint<3>>, %arg1: tensor<2x!FHE.eint<3>>) -> tensor<3x2x!FHE.eint<3>> {
     %0 = "FHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<3>>, tensor<2x!FHE.eint<3>>) -> tensor<3x2x!FHE.eint<3>>
     return %0 : tensor<3x2x!FHE.eint<3>>
   }

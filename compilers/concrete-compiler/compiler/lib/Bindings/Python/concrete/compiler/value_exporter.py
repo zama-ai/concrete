@@ -42,7 +42,7 @@ class ValueExporter(WrapperCpp):
     @staticmethod
     # pylint: disable=arguments-differ
     def new(
-        keyset: KeySet, client_parameters: ClientParameters, circuit_name: str = "main"
+        keyset: KeySet, client_parameters: ClientParameters, circuit_name: str
     ) -> "ValueExporter":
         """
         Create a value exporter.

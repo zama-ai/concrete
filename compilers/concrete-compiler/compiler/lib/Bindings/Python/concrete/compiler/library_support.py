@@ -236,7 +236,7 @@ class LibrarySupport(WrapperCpp):
         self,
         library_compilation_result: LibraryCompilationResult,
         simulation: bool,
-        circuit_name: str = "main",
+        circuit_name: str,
     ) -> LibraryLambda:
         """Load the server lambda for a given circuit from the library compilation result.
 

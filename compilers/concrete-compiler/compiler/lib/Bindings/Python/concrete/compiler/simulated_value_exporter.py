@@ -41,7 +41,7 @@ class SimulatedValueExporter(WrapperCpp):
     @staticmethod
     # pylint: disable=arguments-differ
     def new(
-        client_parameters: ClientParameters, circuitName: str = "main"
+        client_parameters: ClientParameters, circuitName: str
     ) -> "SimulatedValueExporter":
         """
         Create a value exporter.

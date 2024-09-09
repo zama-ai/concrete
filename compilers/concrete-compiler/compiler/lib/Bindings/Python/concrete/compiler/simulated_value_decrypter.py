@@ -41,7 +41,7 @@ class SimulatedValueDecrypter(WrapperCpp):
 
     @staticmethod
     # pylint: disable=arguments-differ
-    def new(client_parameters: ClientParameters, circuit_name: str = "main"):
+    def new(client_parameters: ClientParameters, circuit_name: str):
         """
         Create a value decrypter.
         """

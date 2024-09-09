@@ -6,23 +6,8 @@ Declaration of `MultiCompiler` class.
 
 import inspect
 import traceback
-from copy import deepcopy
-from itertools import chain, product, repeat
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    Protocol,
-    Set,
-    Tuple,
-    Union,
-    runtime_checkable,
-)
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 from concrete.compiler import CompilationContext
@@ -32,12 +17,13 @@ from ..mlir import GraphConverter
 from ..representation import Graph
 from ..tracing import Tracer
 from ..values import ValueDescription
-from .artifacts import FunctionDebugArtifacts, ModuleDebugArtifacts
-from .compiler import EncryptionStatus
-from .composition import CompositionClause, CompositionPolicy, CompositionRule
+from .artifacts import DebugManager, FunctionDebugArtifacts, ModuleDebugArtifacts
+from .composition import CompositionPolicy
 from .configuration import Configuration
 from .module import FheModule
-from .utils import fuse, get_terminal_size
+from .status import EncryptionStatus
+from .utils import fuse
+from .wiring import Input, Output, TracedOutput, Wire, Wired, WireTracingContextManager
 
 DEFAULT_OUTPUT_DIRECTORY: Path = Path(".artifacts")
 
@@ -49,13 +35,14 @@ class FunctionDef:
     An object representing the definition of a function as used in an fhe module.
     """
 
-    name: str
     function: Callable
     parameter_encryption_statuses: Dict[str, EncryptionStatus]
     inputset: List[Any]
     graph: Optional[Graph]
-    _parameter_values: Dict[str, ValueDescription]
     location: str
+
+    _is_direct: bool
+    _parameter_values: Dict[str, ValueDescription]
     _trace_wires: Optional[Set["Wire"]]
 
     def __init__(
@@ -112,12 +99,17 @@ class FunctionDef:
         }
         self.inputset = []
         self.graph = None
-        self.name = function.__name__
+        self._is_direct = False
         self._parameter_values = {}
         self.location = (
             f"{self.function.__code__.co_filename}:{self.function.__code__.co_firstlineno}"
         )
         self._trace_wires = None
+
+    @property
+    def name(self) -> str:
+        """Return the name of the function."""
+        return self.function.__name__
 
     def trace(
         self,
@@ -151,7 +143,7 @@ class FunctionDef:
             )
         }
 
-        self.graph = Tracer.trace(self.function, parameters, name=self.name, location=self.location)
+        self.graph = Tracer.trace(self.function, parameters, location=self.location)
         if artifacts is not None:
             artifacts.add_graph("initial", self.graph)
 
@@ -180,6 +172,21 @@ class FunctionDef:
             artifacts (FunctionDebugArtifacts):
                 artifact object to store informations in
         """
+
+        if self._is_direct:
+            self.graph = Tracer.trace(
+                self.function,
+                self._parameter_values,
+                is_direct=True,
+                location=self.location,
+            )
+            artifacts.add_graph("initial", self.graph)  # pragma: no cover
+            fuse(
+                self.graph,
+                artifacts,
+            )
+            artifacts.add_graph("final", self.graph)  # pragma: no cover
+            return
 
         if inputset is not None:
             previous_inputset_length = len(self.inputset)
@@ -320,424 +327,6 @@ class FunctionDef:
         return output[0] if len(output) == 1 else output
 
 
-class NotComposable:
-    """
-    Composition policy that does not allow the forwarding of any output to any input.
-    """
-
-    def get_rules_iter(self, _) -> Iterable[CompositionRule]:
-        """
-        Return an iterator over composition rules.
-        """
-        return []  # pragma: no cover
-
-
-class AllComposable:
-    """
-    Composition policy that allows to forward any output of the module to any of its input.
-    """
-
-    def get_rules_iter(self, funcs: List[Graph]) -> Iterable[CompositionRule]:
-        """
-        Return an iterator over composition rules.
-        """
-        outputs = []
-        for f in funcs:
-            for pos, node in f.output_nodes.items():
-                if node.output.is_encrypted:
-                    outputs.append(CompositionClause.create((f.name, pos)))
-        inputs = []
-        for f in funcs:
-            for pos, node in f.input_nodes.items():
-                if node.output.is_encrypted:
-                    inputs.append(CompositionClause.create((f.name, pos)))
-
-        return map(CompositionRule.create, product(outputs, inputs))
-
-
-@runtime_checkable
-class WireOutput(Protocol):
-    """
-    A protocol for wire outputs.
-    """
-
-    def get_outputs_iter(self) -> Iterable[CompositionClause]:
-        """
-        Return an iterator over the possible outputs of the wire output.
-        """
-
-
-@runtime_checkable
-class WireInput(Protocol):
-    """
-    A protocol for wire inputs.
-    """
-
-    def get_inputs_iter(self) -> Iterable[CompositionClause]:
-        """
-        Return an iterator over the possible inputs of the wire input.
-        """
-
-
-class Output(NamedTuple):
-    """
-    The output of a given function of a module.
-    """
-
-    func: FunctionDef
-    pos: int
-
-    def get_outputs_iter(self) -> Iterable[CompositionClause]:
-        """
-        Return an iterator over the possible outputs of the wire output.
-        """
-        return [CompositionClause(self.func.name, self.pos)]
-
-
-class AllOutputs(NamedTuple):
-    """
-    All the encrypted outputs of a given function of a module.
-    """
-
-    func: FunctionDef
-
-    def get_outputs_iter(self) -> Iterable[CompositionClause]:
-        """
-        Return an iterator over the possible outputs of the wire output.
-        """
-        assert self.func.graph  # pragma: no cover
-        # No need to filter since only encrypted outputs are valid.
-        return map(  # pragma: no cover
-            CompositionClause.create,
-            zip(repeat(self.func.name), range(self.func.graph.outputs_count)),
-        )
-
-
-class Input(NamedTuple):
-    """
-    The input of a given function of a module.
-    """
-
-    func: FunctionDef
-    pos: int
-
-    def get_inputs_iter(self) -> Iterable[CompositionClause]:
-        """
-        Return an iterator over the possible inputs of the wire input.
-        """
-        return [CompositionClause(self.func.name, self.pos)]
-
-
-class AllInputs(NamedTuple):
-    """
-    All the encrypted inputs of a given function of a module.
-    """
-
-    func: FunctionDef
-
-    def get_inputs_iter(self) -> Iterable[CompositionClause]:
-        """
-        Return an iterator over the possible inputs of the wire input.
-        """
-        assert self.func.graph  # pragma: no cover
-        output = []
-        for i in range(self.func.graph.inputs_count):
-            if self.func.graph.input_nodes[i].output.is_encrypted:
-                output.append(CompositionClause.create((self.func.name, i)))
-        return output
-
-
-class Wire(NamedTuple):
-    """
-    A forwarding rule between an output and an input.
-    """
-
-    output: WireOutput
-    input: WireInput
-
-    def get_rules_iter(self, _) -> Iterable[CompositionRule]:
-        """
-        Return an iterator over composition rules.
-        """
-        return map(
-            CompositionRule.create,
-            product(self.output.get_outputs_iter(), self.input.get_inputs_iter()),
-        )
-
-
-class Wired:
-    """
-    Composition policy which allows the forwarding of certain outputs to certain inputs.
-    """
-
-    wires: Set[Wire]
-
-    def __init__(self, wires: Optional[Set[Wire]] = None):
-        self.wires = wires if wires else set()
-
-    def get_rules_iter(self, funcs: List[Graph]) -> Iterable[CompositionRule]:
-        """
-        Return an iterator over composition rules.
-        """
-        funcsd = {f.name: f for f in funcs}
-        rules = list(chain(*[w.get_rules_iter(funcs) for w in self.wires]))
-
-        # We check that the given rules are legit (they concern only encrypted values)
-        for rule in rules:
-            if (
-                not funcsd[rule.from_.func].output_nodes[rule.from_.pos].output.is_encrypted
-            ):  # pragma: no cover
-                message = f"Invalid composition rule encountered: \
-Output {rule.from_.pos} of {rule.from_.func} is not encrypted"
-                raise RuntimeError(message)
-            if not funcsd[rule.to.func].input_nodes[rule.to.pos].output.is_encrypted:
-                message = f"Invalid composition rule encountered: \
-Input {rule.from_.pos} of {rule.from_.func} is not encrypted"
-                raise RuntimeError(message)
-
-        return rules
-
-
-class DebugManager:
-    """
-    A debug manager, allowing streamlined debugging.
-    """
-
-    configuration: Configuration
-    begin_call: Callable
-
-    def __init__(self, config: Configuration):
-        self.configuration = config
-        is_first = [True]
-
-        def begin_call():
-            if is_first[0]:
-                print()
-                is_first[0] = False
-
-        self.begin_call = begin_call
-
-    def debug_table(self, title: str, activate: bool = True):
-        """
-        Return a context manager that prints a table around what is printed inside the scope.
-        """
-
-        # pylint: disable=missing-class-docstring
-        class DebugTableCm:
-            def __init__(self, title):
-                self.title = title
-                self.columns = get_terminal_size()
-
-            def __enter__(self):
-                print(f"{self.title}")
-                print("-" * self.columns)
-
-            def __exit__(self, _exc_type, _exc_value, _exc_tb):
-                print("-" * self.columns)
-                print()
-
-        class EmptyCm:
-            def __enter__(self):
-                pass
-
-            def __exit__(self, _exc_type, _exc_value, _exc_tb):
-                pass
-
-        if activate:
-            self.begin_call()
-            return DebugTableCm(title)
-        return EmptyCm()
-
-    def show_graph(self) -> bool:
-        """
-        Tell if the configuration involves showing graph.
-        """
-
-        return (
-            self.configuration.show_graph
-            if self.configuration.show_graph is not None
-            else self.configuration.verbose
-        )
-
-    def show_bit_width_constraints(self) -> bool:
-        """
-        Tell if the configuration involves showing bitwidth constraints.
-        """
-
-        return (
-            self.configuration.show_bit_width_constraints
-            if self.configuration.show_bit_width_constraints is not None
-            else self.configuration.verbose
-        )
-
-    def show_bit_width_assignments(self) -> bool:
-        """
-        Tell if the configuration involves showing bitwidth assignments.
-        """
-
-        return (
-            self.configuration.show_bit_width_assignments
-            if self.configuration.show_bit_width_assignments is not None
-            else self.configuration.verbose
-        )
-
-    def show_assigned_graph(self) -> bool:
-        """
-        Tell if the configuration involves showing assigned graph.
-        """
-
-        return (
-            self.configuration.show_assigned_graph
-            if self.configuration.show_assigned_graph is not None
-            else self.configuration.verbose
-        )
-
-    def show_mlir(self) -> bool:
-        """
-        Tell if the configuration involves showing mlir.
-        """
-
-        return (
-            self.configuration.show_mlir
-            if self.configuration.show_mlir is not None
-            else self.configuration.verbose
-        )
-
-    def show_optimizer(self) -> bool:
-        """
-        Tell if the configuration involves showing optimizer.
-        """
-
-        return (
-            self.configuration.show_optimizer
-            if self.configuration.show_optimizer is not None
-            else self.configuration.verbose
-        )
-
-    def show_statistics(self) -> bool:
-        """
-        Tell if the configuration involves showing statistics.
-        """
-
-        return (
-            self.configuration.show_statistics
-            if self.configuration.show_statistics is not None
-            else self.configuration.verbose
-        )
-
-    def debug_computation_graph(self, name, function_graph):
-        """
-        Print computation graph if configuration tells so.
-        """
-
-        if (
-            self.show_graph()
-            or self.show_bit_width_constraints()
-            or self.show_bit_width_assignments()
-            or self.show_assigned_graph()
-            or self.show_mlir()
-            or self.show_optimizer()
-            or self.show_statistics()
-        ):
-            if self.show_graph():
-                with self.debug_table(f"Computation Graph for {name}"):
-                    print(function_graph.format())
-
-    def debug_bit_width_constaints(self, name, function_graph):
-        """
-        Print bitwidth constraints if configuration tells so.
-        """
-
-        if self.show_bit_width_constraints():
-            with self.debug_table(f"Bit-Width Constraints for {name}"):
-                print(function_graph.format_bit_width_constraints())
-
-    def debug_bit_width_assignments(self, name, function_graph):
-        """
-        Print bitwidth assignments if configuration tells so.
-        """
-
-        if self.show_bit_width_assignments():
-            with self.debug_table(f"Bit-Width Assignments for {name}"):
-                print(function_graph.format_bit_width_assignments())
-
-    def debug_assigned_graph(self, name, function_graph):
-        """
-        Print assigned graphs if configuration tells so.
-        """
-
-        if self.show_assigned_graph():
-            with self.debug_table(f"Bit-Width Assigned Computation Graph for {name}"):
-                print(function_graph.format(show_assigned_bit_widths=True))
-
-    def debug_mlir(self, mlir_str):
-        """
-        Print mlir if configuration tells so.
-        """
-
-        if self.show_mlir():
-            with self.debug_table("MLIR"):
-                print(mlir_str)
-
-    def debug_statistics(self, module):
-        """
-        Print statistics if configuration tells so.
-        """
-
-        if self.show_statistics():
-
-            def pretty(d, indent=0):  # pragma: no cover
-                if indent > 0:
-                    print("{")
-
-                for key, value in d.items():
-                    if isinstance(value, dict) and len(value) == 0:
-                        continue
-                    print("    " * indent + str(key) + ": ", end="")
-                    if isinstance(value, dict):
-                        pretty(value, indent + 1)
-                    else:
-                        print(value)
-                if indent > 0:
-                    print("    " * (indent - 1) + "}")
-
-            with self.debug_table("Statistics"):
-                pretty(module.statistics)
-
-
-class TracedOutput(NamedTuple):
-    """
-    A wrapper type used to trace wiring.
-
-    Allows to tag an output value coming from an other module function, and binds it with
-    information about its origin.
-    """
-
-    output_info: Output
-    returned_value: Any
-
-
-class WireTracingContextManager:
-    """
-    A context manager returned by the `wire_pipeline` method.
-
-    Activates wire tracing and yields an inputset that can be iterated on for tracing.
-    """
-
-    def __init__(self, module, inputset):
-        self.module = module
-        self.inputset = inputset
-
-    def __enter__(self):
-        for func in self.module.functions.values():
-            func._trace_wires = self.module.composition.wires
-        return self.inputset
-
-    def __exit__(self, _exc_type, _exc_value, _exc_tb):
-        for func in self.module.functions.values():
-            func._trace_wires = None
-
-
 class ModuleCompiler:
     """
     Compiler class for multiple functions, to glue the compilation pipeline.
@@ -766,7 +355,9 @@ class ModuleCompiler:
 
     def compile(
         self,
-        inputsets: Optional[Dict[str, Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]] = None,
+        inputsets: Optional[
+            Dict[str, Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]]
+        ] = None,
         configuration: Optional[Configuration] = None,
         module_artifacts: Optional[ModuleDebugArtifacts] = None,
         **kwargs,
@@ -793,7 +384,6 @@ class ModuleCompiler:
         """
 
         configuration = configuration if configuration is not None else self.default_configuration
-        configuration = deepcopy(configuration)
         if len(kwargs) != 0:
             configuration = configuration.fork(**kwargs)
 

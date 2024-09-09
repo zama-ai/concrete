@@ -37,13 +37,12 @@ class ClientParameters(WrapperCpp):
             )
         super().__init__(client_parameters)
 
-    def input_keyid_at(self, input_idx: int, circuit_name: str = "main") -> int:
+    def input_keyid_at(self, input_idx: int, circuit_name: str) -> int:
         """Get the keyid of a selected encrypted input in a given circuit.
 
         Args:
             input_idx (int): index of the input in the circuit.
-            circuit_name (str, optional): name of the circuit containing the desired input.
-                Defaults to "main".
+            circuit_name (str): name of the circuit containing the desired input.
 
         Raises:
             TypeError: if arguments aren't of expected types
@@ -59,13 +58,12 @@ class ClientParameters(WrapperCpp):
             )
         return self.cpp().input_keyid_at(input_idx, circuit_name)
 
-    def input_variance_at(self, input_idx: int, circuit_name: str = "main") -> float:
+    def input_variance_at(self, input_idx: int, circuit_name: str) -> float:
         """Get the variance of a selected encrypted input in a given circuit.
 
         Args:
             input_idx (int): index of the input in the circuit.
-            circuit_name (str, optional): name of the circuit containing the desired input.
-                Defaults to "main".
+            circuit_name (str): name of the circuit containing the desired input.
 
         Raises:
             TypeError: if arguments aren't of expected types
@@ -96,6 +94,14 @@ class ClientParameters(WrapperCpp):
             List[bool]: list of booleans to indicate whether the outputs are signed or not
         """
         return self.cpp().output_signs()
+
+    def function_list(self) -> List[str]:
+        """Return the list of function names.
+
+        Returns:
+            List[str]: list of the names of the functions.
+        """
+        return self.cpp().function_list()
 
     def serialize(self) -> bytes:
         """Serialize the ClientParameters.

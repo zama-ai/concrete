@@ -35,13 +35,13 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "environment.txt").exists()
         assert (tmpdir / "requirements.txt").exists()
 
-        assert (tmpdir / "main.txt").exists()
-        assert (tmpdir / "main.parameters.txt").exists()
+        assert (tmpdir / "f.txt").exists()
+        assert (tmpdir / "f.parameters.txt").exists()
 
-        assert (tmpdir / "main.1.initial.graph.txt").exists()
-        assert (tmpdir / "main.2.after-fusing.graph.txt").exists()
-        assert (tmpdir / "main.3.after-fusing.graph.txt").exists()
-        assert (tmpdir / "main.4.final.graph.txt").exists()
+        assert (tmpdir / "f.1.initial.graph.txt").exists()
+        assert (tmpdir / "f.2.after-fusing.graph.txt").exists()
+        assert (tmpdir / "f.3.after-fusing.graph.txt").exists()
+        assert (tmpdir / "f.4.final.graph.txt").exists()
 
         assert (tmpdir / "mlir.txt").exists()
         assert (tmpdir / "client_parameters.json").exists()
@@ -51,13 +51,13 @@ def test_artifacts_export(helpers):
         assert (tmpdir / "environment.txt").exists()
         assert (tmpdir / "requirements.txt").exists()
 
-        assert (tmpdir / "main.txt").exists()
-        assert (tmpdir / "main.parameters.txt").exists()
+        assert (tmpdir / "f.txt").exists()
+        assert (tmpdir / "f.parameters.txt").exists()
 
-        assert (tmpdir / "main.1.initial.graph.txt").exists()
-        assert (tmpdir / "main.2.after-fusing.graph.txt").exists()
-        assert (tmpdir / "main.3.after-fusing.graph.txt").exists()
-        assert (tmpdir / "main.4.final.graph.txt").exists()
+        assert (tmpdir / "f.1.initial.graph.txt").exists()
+        assert (tmpdir / "f.2.after-fusing.graph.txt").exists()
+        assert (tmpdir / "f.3.after-fusing.graph.txt").exists()
+        assert (tmpdir / "f.4.final.graph.txt").exists()
 
         assert (tmpdir / "mlir.txt").exists()
         assert (tmpdir / "client_parameters.json").exists()

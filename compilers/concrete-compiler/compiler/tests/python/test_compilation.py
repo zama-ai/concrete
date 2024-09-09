@@ -24,7 +24,7 @@ def assert_result(result, expected_result):
         assert np.all(result == expected_result)
 
 
-def run(engine, args, compilation_result, keyset_cache, circuit_name="main"):
+def run(engine, args, compilation_result, keyset_cache, circuit_name):
     """Execute engine on the given arguments.
 
     Perform required loading, encryption, execution, and decryption."""
@@ -219,7 +219,7 @@ def test_lib_compile_reload_and_run(mlir_input, args, expected_result, keyset_ca
     # Here don't save compilation result, reload
     engine.compile(mlir_input)
     compilation_result = engine.reload()
-    result = run(engine, args, compilation_result, keyset_cache)
+    result = run(engine, args, compilation_result, keyset_cache, "main")
     # Check result
     assert_result(result, expected_result)
     shutil.rmtree(artifact_dir)
@@ -398,7 +398,7 @@ def test_compile_and_run_invalid_arg_number(mlir_input, args, keyset_cache):
 
 def test_crt_decomposition_feedback():
     mlir = """
-    
+
 func.func @main(%arg0: !FHE.eint<16>) -> !FHE.eint<16> {
     %tlu = arith.constant dense<60000> : tensor<65536xi64>
     %1 = "FHE.apply_lookup_table"(%arg0, %tlu): (!FHE.eint<16>, tensor<65536xi64>) -> (!FHE.eint<16>)

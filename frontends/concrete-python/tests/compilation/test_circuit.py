@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from concrete.compiler import CompilationContext
+from mlir.ir import Module as MlirModule
 
 from concrete import fhe
 from concrete.fhe import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, Value
@@ -89,6 +91,8 @@ def test_circuit_feedback(helpers):
     assert isinstance(circuit.size_of_outputs, int)
     assert isinstance(circuit.p_error, float)
     assert isinstance(circuit.global_p_error, float)
+    assert isinstance(circuit.mlir_module, MlirModule)
+    assert isinstance(circuit.compilation_context, CompilationContext)
 
     assert isinstance(circuit.memory_usage_per_location, dict)
     assert all(
@@ -836,5 +840,4 @@ def test_simulate_encrypt_run_decrypt(helpers):
     assert isinstance(encrypted_x, int)
     assert isinstance(encrypted_y, int)
     assert hasattr(circuit, "simulator")
-    assert not hasattr(circuit, "server")
     assert isinstance(encrypted_result, int)
