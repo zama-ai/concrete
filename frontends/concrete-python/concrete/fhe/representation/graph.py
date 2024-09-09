@@ -49,8 +49,8 @@ class Graph:
         graph: nx.MultiDiGraph,
         input_nodes: Dict[int, Node],
         output_nodes: Dict[int, Node],
+        name: str,
         is_direct: bool = False,
-        name: str = "main",
         location: str = "",
     ):
         self.graph = graph
@@ -1057,4 +1057,4 @@ class MultiGraphProcessor(GraphProcessor):
         """
         Process a single graph.
         """
-        return self.apply_many({"main": graph})  # pragma: no cover
+        return self.apply_many({graph.name: graph})  # pragma: no cover

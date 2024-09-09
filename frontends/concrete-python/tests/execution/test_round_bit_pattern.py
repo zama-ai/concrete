@@ -263,7 +263,7 @@ def test_round_bit_pattern_no_overflow_protection(helpers):
         """
 
 module {
-  func.func @main(%arg0: !FHE.esint<7>) -> !FHE.eint<11> {
+  func.func @function(%arg0: !FHE.esint<7>) -> !FHE.eint<11> {
     %0 = "FHE.round"(%arg0) : (!FHE.esint<7>) -> !FHE.esint<5>
     %c2_i3 = arith.constant 2 : i3
     %cst = arith.constant dense<[0, 16, 64, 144, 256, 400, 576, 784, 1024, 1296, 1600, 1936, 2304, 2704, 3136, 3600, 4096, 3600, 3136, 2704, 2304, 1936, 1600, 1296, 1024, 784, 576, 400, 256, 144, 64, 16]> : tensor<32xi64>
@@ -277,7 +277,7 @@ module {
         else """
 
 module {
-  func.func @main(%arg0: !FHE.esint<11>) -> !FHE.eint<11> {
+  func.func @function(%arg0: !FHE.esint<11>) -> !FHE.eint<11> {
     %c16_i12 = arith.constant 16 : i12
     %0 = "FHE.mul_eint_int"(%arg0, %c16_i12) : (!FHE.esint<11>, i12) -> !FHE.esint<11>
     %1 = "FHE.round"(%0) : (!FHE.esint<11>) -> !FHE.esint<5>
@@ -312,7 +312,7 @@ def test_round_bit_pattern_identity(helpers):
         """
 
 module {
-  func.func @main(%arg0: !FHE.esint<6>) -> !FHE.esint<7> {
+  func.func @function(%arg0: !FHE.esint<6>) -> !FHE.esint<7> {
     %0 = "FHE.round"(%arg0) : (!FHE.esint<6>) -> !FHE.esint<4>
     %cst = arith.constant dense<[0, 4, 8, 12, 16, 20, 24, 28, -32, -28, -24, -20, -16, -12, -8, -4]> : tensor<16xi64>
     %1 = "FHE.apply_lookup_table"(%0, %cst) : (!FHE.esint<4>, tensor<16xi64>) -> !FHE.esint<7>
@@ -326,7 +326,7 @@ module {
         else """
 
 module {
-  func.func @main(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
+  func.func @function(%arg0: !FHE.esint<7>) -> !FHE.esint<7> {
     %c2_i8 = arith.constant 2 : i8
     %0 = "FHE.mul_eint_int"(%arg0, %c2_i8) : (!FHE.esint<7>, i8) -> !FHE.esint<7>
     %1 = "FHE.round"(%0) : (!FHE.esint<7>) -> !FHE.esint<4>

@@ -116,7 +116,7 @@ class ClientSupport(WrapperCpp):
         client_parameters: ClientParameters,
         keyset: KeySet,
         args: List[Union[int, np.ndarray]],
-        circuit_name: str = "main",
+        circuit_name: str,
     ) -> PublicArguments:
         """Prepare arguments for encrypted computation.
 
@@ -172,7 +172,7 @@ class ClientSupport(WrapperCpp):
         client_parameters: ClientParameters,
         keyset: KeySet,
         public_result: PublicResult,
-        circuit_name: str = "main",
+        circuit_name: str,
     ) -> Union[int, np.ndarray]:
         """Decrypt a public result using the keyset.
 

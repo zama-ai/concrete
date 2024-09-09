@@ -5,7 +5,7 @@ Glue the compilation process together.
 from .artifacts import DebugArtifacts, FunctionDebugArtifacts, ModuleDebugArtifacts
 from .circuit import Circuit
 from .client import Client
-from .compiler import Compiler, EncryptionStatus
+from .compiler import Compiler
 from .composition import CompositionClause, CompositionPolicy, CompositionRule
 from .configuration import (
     DEFAULT_GLOBAL_P_ERROR,
@@ -22,19 +22,10 @@ from .configuration import (
 )
 from .keys import Keys
 from .module import FheFunction, FheModule
-from .module_compiler import (
-    AllComposable,
-    AllInputs,
-    AllOutputs,
-    FunctionDef,
-    Input,
-    ModuleCompiler,
-    NotComposable,
-    Output,
-    Wire,
-    Wired,
-)
+from .module_compiler import FunctionDef, ModuleCompiler
 from .server import Server
 from .specs import ClientSpecs
-from .utils import inputset
+from .status import EncryptionStatus
+from .utils import get_terminal_size, inputset
 from .value import Value
+from .wiring import AllComposable, AllInputs, AllOutputs, Input, NotComposable, Output, Wire, Wired

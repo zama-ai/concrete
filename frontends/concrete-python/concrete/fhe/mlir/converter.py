@@ -145,7 +145,6 @@ class Converter:
         self,
         graph: Graph,
         mlir_context: MlirContext,
-        name: str = "main",
     ) -> MlirModule:
         """
         Convert a computation graph to MLIR.
@@ -157,15 +156,13 @@ class Converter:
             mlir_context (MlirContext):
                 MLIR Context to use for module generation
 
-            name (str):
-                name of the function to convert
 
         Return:
             MlirModule:
                 In-memory MLIR module corresponding to the graph
         """
 
-        return self.convert_many({name: graph}, mlir_context)
+        return self.convert_many({graph.name: graph}, mlir_context)
 
     @staticmethod
     def stdout_with_ansi_support() -> bool:

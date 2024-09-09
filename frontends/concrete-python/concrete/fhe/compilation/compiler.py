@@ -4,39 +4,22 @@ Declaration of `Compiler` class.
 
 # pylint: disable=import-error,no-name-in-module
 
-import inspect
-import os
-import traceback
-from copy import deepcopy
-from enum import Enum, unique
-from itertools import product, repeat
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import CompilationContext
 
-from ..extensions import AutoRounder, AutoTruncator
-from ..mlir import GraphConverter
 from ..representation import Graph
-from ..tracing import Tracer
 from ..values import ValueDescription
-from .artifacts import DebugArtifacts
+from .artifacts import DebugArtifacts, FunctionDebugArtifacts, ModuleDebugArtifacts
 from .circuit import Circuit
-from .composition import CompositionClause, CompositionRule
+from .composition import CompositionPolicy
 from .configuration import Configuration
-from .utils import fuse, get_terminal_size
+from .module_compiler import FunctionDef, ModuleCompiler
+from .status import EncryptionStatus
+from .wiring import AllComposable, NotComposable, TracedOutput
 
 # pylint: enable=import-error,no-name-in-module
-
-
-@unique
-class EncryptionStatus(str, Enum):
-    """
-    EncryptionStatus enum, to represent encryption status of parameters.
-    """
-
-    CLEAR = "clear"
-    ENCRYPTED = "encrypted"
 
 
 class Compiler:
@@ -44,20 +27,8 @@ class Compiler:
     Compiler class, to glue the compilation pipeline.
     """
 
-    function: Callable
-    parameter_encryption_statuses: Dict[str, EncryptionStatus]
-
-    configuration: Configuration
-    artifacts: Optional[DebugArtifacts]
-    location: str
-
-    inputset: List[Any]
-    graph: Optional[Graph]
-
-    compilation_context: CompilationContext
-
-    _is_direct: bool
-    _parameter_values: Dict[str, ValueDescription]
+    _module_compiler: ModuleCompiler
+    _function_name: str
 
     @staticmethod
     def assemble(
@@ -97,81 +68,38 @@ class Compiler:
                 name: "encrypted" if value.is_encrypted else "clear"
                 for name, value in parameter_values.items()
             },
+            composition=(
+                AllComposable()
+                if (configuration.composable if configuration is not None else False)
+                else NotComposable()
+            ),
         )
 
         # pylint: disable=protected-access
-        compiler._is_direct = True
-        compiler._parameter_values = parameter_values
+        compiler._func_def._is_direct = True
+        compiler._func_def._parameter_values = parameter_values
         # pylint: enable=protected-access
 
-        return compiler.compile(None, configuration, artifacts, **kwargs)
+        return compiler.compile([], configuration, artifacts, **kwargs)
 
     def __init__(
         self,
         function: Callable,
         parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]],
+        composition: Optional[Union[NotComposable, AllComposable]] = None,
     ):
-        signature = inspect.signature(function)
-
-        missing_args = list(signature.parameters)
-        for arg in parameter_encryption_statuses.keys():
-            if arg in signature.parameters:
-                missing_args.remove(arg)
-
-        if len(missing_args) != 0:
-            parameter_str = repr(missing_args[0])
-            for arg in missing_args[1:-1]:
-                parameter_str += f", {repr(arg)}"
-            if len(missing_args) != 1:
-                parameter_str += f" and {repr(missing_args[-1])}"
-
-            message = (
-                f"Encryption status{'es' if len(missing_args) > 1 else ''} "
-                f"of parameter{'s' if len(missing_args) > 1 else ''} "
-                f"{parameter_str} of function '{function.__name__}' "
-                f"{'are' if len(missing_args) > 1 else 'is'} not provided"
-            )
-            raise ValueError(message)
-
-        additional_args = list(parameter_encryption_statuses)
-        for arg in signature.parameters.keys():
-            if arg in parameter_encryption_statuses:
-                additional_args.remove(arg)
-
-        if len(additional_args) != 0:
-            parameter_str = repr(additional_args[0])
-            for arg in additional_args[1:-1]:
-                parameter_str += f", {repr(arg)}"
-            if len(additional_args) != 1:
-                parameter_str += f" and {repr(additional_args[-1])}"
-
-            message = (
-                f"Encryption status{'es' if len(additional_args) > 1 else ''} "
-                f"of {parameter_str} {'are' if len(additional_args) > 1 else 'is'} provided but "
-                f"{'they are' if len(additional_args) > 1 else 'it is'} not a parameter "
-                f"of function '{function.__name__}'"
-            )
-            raise ValueError(message)
-
-        self.function = function  # type: ignore
-        self.parameter_encryption_statuses = {
-            param: EncryptionStatus(status.lower())
-            for param, status in parameter_encryption_statuses.items()
-        }
-
-        self.configuration = Configuration()
-        self.artifacts = None
-
-        self.inputset = []
-        self.graph = None
-
-        self.compilation_context = CompilationContext.new()
-
-        self._is_direct = False
-        self._parameter_values = {}
-        self.location = (
-            f"{self.function.__code__.co_filename}:{self.function.__code__.co_firstlineno}"
+        if composition is None:
+            composition = NotComposable()
+        assert isinstance(composition, CompositionPolicy)
+        func = FunctionDef(
+            function=function, parameter_encryption_statuses=parameter_encryption_statuses
         )
+        self._module_compiler = ModuleCompiler([func], composition)
+        self._function_name = function.__name__
+
+    @property
+    def _func_def(self) -> FunctionDef:
+        return getattr(self._module_compiler, self._function_name)
 
     def __call__(
         self,
@@ -182,138 +110,10 @@ class Compiler:
         np.integer,
         np.floating,
         np.ndarray,
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+        TracedOutput,
+        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, TracedOutput], ...],
     ]:
-        if len(kwargs) != 0:
-            message = f"Calling function '{self.function.__name__}' with kwargs is not supported"
-            raise RuntimeError(message)
-
-        sample = args[0] if len(args) == 1 else args
-
-        if self.graph is None:
-            self._trace(sample)
-            assert self.graph is not None
-
-        self.inputset.append(sample)
-        return self.graph(*args)
-
-    def _trace(self, sample: Union[Any, Tuple[Any, ...]]):
-        """
-        Trace the function and fuse the resulting graph with a sample input.
-
-        Args:
-            sample (Union[Any, Tuple[Any, ...]]):
-                sample to use for tracing
-        """
-
-        if self.artifacts is not None:
-            self.artifacts.add_source_code(self.function)
-            for param, encryption_status in self.parameter_encryption_statuses.items():
-                self.artifacts.add_parameter_encryption_status(param, encryption_status)
-
-        parameters = {
-            param: ValueDescription.of(arg, is_encrypted=(status == EncryptionStatus.ENCRYPTED))
-            for arg, (param, status) in zip(
-                (
-                    sample
-                    if len(self.parameter_encryption_statuses) > 1 or isinstance(sample, tuple)
-                    else (sample,)
-                ),
-                self.parameter_encryption_statuses.items(),
-            )
-        }
-
-        self.graph = Tracer.trace(self.function, parameters, location=self.location)
-        if self.artifacts is not None:
-            self.artifacts.add_graph("initial", self.graph)
-        fuse(
-            self.graph,
-            (self.artifacts.module_artifacts.functions["main"] if self.artifacts else None),
-        )
-
-    def _evaluate(
-        self,
-        action: str,
-        inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]],
-    ):
-        """
-        Trace, fuse, measure bounds, and update values in the resulting graph in one go.
-
-        Args:
-            action (str):
-                action being performed (e.g., "trace", "compile")
-
-            inputset (Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]):
-                optional inputset to extend accumulated inputset before bounds measurement
-        """
-
-        if self._is_direct:
-            self.graph = Tracer.trace(
-                self.function, self._parameter_values, is_direct=True, location=self.location
-            )
-            if self.artifacts is not None:
-                self.artifacts.add_graph("initial", self.graph)  # pragma: no cover
-
-            fuse(
-                self.graph,
-                (self.artifacts.module_artifacts.functions["main"] if self.artifacts else None),
-            )
-
-            if self.artifacts is not None:
-                self.artifacts.add_graph("final", self.graph)  # pragma: no cover
-
-            return
-
-        if inputset is not None:
-            previous_inputset_length = len(self.inputset)
-            for index, sample in enumerate(iter(inputset)):
-                self.inputset.append(sample)
-
-                if not isinstance(sample, tuple):
-                    sample = (sample,)
-
-                if len(sample) != len(self.parameter_encryption_statuses):
-                    self.inputset = self.inputset[:previous_inputset_length]
-
-                    expected = (
-                        "a single value"
-                        if len(self.parameter_encryption_statuses) == 1
-                        else f"a tuple of {len(self.parameter_encryption_statuses)} values"
-                    )
-                    actual = (
-                        "a single value" if len(sample) == 1 else f"a tuple of {len(sample)} values"
-                    )
-
-                    message = (
-                        f"Input #{index} of your inputset is not well formed "
-                        f"(expected {expected} got {actual})"
-                    )
-                    raise ValueError(message)
-
-        if self.configuration.auto_adjust_rounders:
-            AutoRounder.adjust(self.function, self.inputset)
-
-        if self.configuration.auto_adjust_truncators:
-            AutoTruncator.adjust(self.function, self.inputset)
-
-        if self.graph is None:
-            try:
-                first_sample = next(iter(self.inputset))
-            except StopIteration as error:
-                message = (
-                    f"{action} function '{self.function.__name__}' "
-                    f"without an inputset is not supported"
-                )
-                raise RuntimeError(message) from error
-
-            self._trace(first_sample)
-            assert self.graph is not None
-
-        bounds = self.graph.measure_bounds(self.inputset)
-        self.graph.update_with_bounds(bounds)
-
-        if self.artifacts is not None:
-            self.artifacts.add_graph("final", self.graph)
+        return self._func_def(*args, **kwargs)
 
     def trace(
         self,
@@ -342,78 +142,22 @@ class Compiler:
             Graph:
                 computation graph representing the function prior to MLIR conversion
         """
-
-        old_configuration = deepcopy(self.configuration)
-        old_artifacts = deepcopy(self.artifacts)
-
-        if configuration is not None:
-            self.configuration = configuration
-
-        if len(kwargs) != 0:
-            self.configuration = self.configuration.fork(**kwargs)
-
-        self.artifacts = (
-            artifacts
+        art = (
+            artifacts.module_artifacts.functions.get(self._function_name, FunctionDebugArtifacts())
             if artifacts is not None
-            else (
-                DebugArtifacts()
-                if self.configuration.dump_artifacts_on_unexpected_failures
-                else None
-            )
+            else FunctionDebugArtifacts()
         )
+        conf = (
+            configuration
+            if configuration is not None
+            else self._module_compiler.default_configuration
+        )
+        if len(kwargs) != 0:
+            conf = conf.fork(**kwargs)
 
-        try:
-            self._evaluate("Tracing", inputset)
-            assert self.graph is not None
-
-            if self.configuration.verbose or self.configuration.show_graph:
-                graph = self.graph.format()
-                longest_line = max(len(line) for line in graph.split("\n"))
-
-                try:  # pragma: no cover
-                    # this branch cannot be covered
-                    # because `os.get_terminal_size()`
-                    # raises an exception during tests
-
-                    columns, _ = os.get_terminal_size()
-                    if columns == 0:  # noqa: SIM108
-                        columns = min(longest_line, 80)
-                    else:
-                        columns = min(longest_line, columns)
-                except OSError:  # pragma: no cover
-                    columns = min(longest_line, 80)
-
-                print()
-
-                print("Computation Graph")
-                print("-" * columns)
-                print(graph)
-                print("-" * columns)
-
-                print()
-
-            return self.graph
-
-        except Exception:  # pragma: no cover
-            # this branch is reserved for unexpected issues and hence it shouldn't be tested
-            # if it could be tested, we would have fixed the underlying issue
-
-            # if the user desires so,
-            # we need to export all the information we have about the compilation
-
-            if self.configuration.dump_artifacts_on_unexpected_failures:
-                assert self.artifacts is not None
-                self.artifacts.export()
-
-                traceback_path = self.artifacts.output_directory.joinpath("traceback.txt")
-                with open(traceback_path, "w", encoding="utf-8") as f:
-                    f.write(traceback.format_exc())
-
-            raise
-
-        finally:
-            self.configuration = old_configuration
-            self.artifacts = old_artifacts
+        self._func_def.evaluate("Tracing", inputset, conf, art)
+        assert self._func_def.graph is not None
+        return self._func_def.graph
 
     # pylint: disable=too-many-branches,too-many-statements
 
@@ -445,240 +189,21 @@ class Compiler:
                 compiled circuit
         """
 
-        old_configuration = deepcopy(self.configuration)
-        old_artifacts = deepcopy(self.artifacts)
-
-        if configuration is not None:
-            self.configuration = configuration
-
-        if len(kwargs) != 0:
-            self.configuration = self.configuration.fork(**kwargs)
-
-        self.artifacts = (
-            artifacts
-            if artifacts is not None
-            else (
-                DebugArtifacts()
-                if self.configuration.dump_artifacts_on_unexpected_failures
-                else None
-            )
+        art = artifacts.module_artifacts if artifacts is not None else ModuleDebugArtifacts()
+        conf = (
+            configuration
+            if configuration is not None
+            else self._module_compiler.default_configuration
         )
+        if len(kwargs) != 0:
+            conf = conf.fork(**kwargs)
 
-        try:
-            self._evaluate("Compiling", inputset)
-            assert self.graph is not None
-
-            show_graph = (
-                self.configuration.show_graph
-                if self.configuration.show_graph is not None
-                else self.configuration.verbose
-            )
-            show_bit_width_constraints = (
-                self.configuration.show_bit_width_constraints
-                if self.configuration.show_bit_width_constraints is not None
-                else self.configuration.verbose
-            )
-            show_bit_width_assignments = (
-                self.configuration.show_bit_width_assignments
-                if self.configuration.show_bit_width_assignments is not None
-                else self.configuration.verbose
-            )
-            show_assigned_graph = (
-                self.configuration.show_assigned_graph
-                if self.configuration.show_assigned_graph is not None
-                else self.configuration.verbose
-            )
-            show_mlir = (
-                self.configuration.show_mlir
-                if self.configuration.show_mlir is not None
-                else self.configuration.verbose
-            )
-            show_optimizer = (
-                self.configuration.show_optimizer
-                if self.configuration.show_optimizer is not None
-                else self.configuration.verbose
-            )
-            show_statistics = (
-                self.configuration.show_statistics
-                if self.configuration.show_statistics is not None
-                else self.configuration.verbose
-            )
-
-            columns = get_terminal_size()
-            is_first = True
-
-            if (
-                show_graph
-                or show_bit_width_constraints
-                or show_bit_width_assignments
-                or show_assigned_graph
-                or show_mlir
-                or show_optimizer
-                or show_statistics
-            ):
-                if show_graph:
-                    if is_first:  # pragma: no cover
-                        print()
-                        is_first = False
-
-                    print("Computation Graph")
-                    print("-" * columns)
-                    print(self.graph.format())
-                    print("-" * columns)
-
-                    print()
-
-            # We generate the composition rules if needed:
-            composition_rules = []
-            if self.configuration.composable:
-                compo_froms = map(
-                    CompositionClause.create,
-                    zip(repeat(self.graph.name), range(len(self.graph.output_nodes))),
-                )
-                compo_tos = map(
-                    CompositionClause.create,
-                    zip(repeat(self.graph.name), range(len(self.graph.input_nodes))),
-                )
-                composition_rules = list(
-                    map(CompositionRule.create, product(compo_froms, compo_tos))
-                )
-
-            # in-memory MLIR module
-            mlir_context = self.compilation_context.mlir_context()
-            mlir_module = GraphConverter(self.configuration, composition_rules).convert(
-                self.graph, mlir_context
-            )
-            # textual representation of the MLIR module
-            mlir_str = str(mlir_module).strip()
-            if self.artifacts is not None:
-                self.artifacts.add_mlir_to_compile(mlir_str)
-
-            if show_bit_width_constraints:
-                if is_first:  # pragma: no cover
-                    print()
-                    is_first = False
-
-                print("Bit-Width Constraints")
-                print("-" * columns)
-                print(self.graph.format_bit_width_constraints())
-                print("-" * columns)
-
-                print()
-
-            if show_bit_width_assignments:
-                if is_first:  # pragma: no cover
-                    print()
-                    is_first = False
-
-                print("Bit-Width Assignments")
-                print("-" * columns)
-                print(self.graph.format_bit_width_assignments())
-                print("-" * columns)
-
-                print()
-
-            if show_assigned_graph:
-                if is_first:  # pragma: no cover
-                    print()
-                    is_first = False
-
-                print("Bit-Width Assigned Computation Graph")
-                print("-" * columns)
-                print(self.graph.format(show_assigned_bit_widths=True))
-                print("-" * columns)
-
-                print()
-
-            if show_mlir:
-                if is_first:  # pragma: no cover
-                    print()
-                    is_first = False
-
-                print("MLIR")
-                print("-" * columns)
-                print(mlir_str)
-                print("-" * columns)
-
-                print()
-
-            if show_optimizer:
-                if is_first:  # pragma: no cover
-                    print()
-                    is_first = False
-
-                print("Optimizer")
-                print("-" * columns)
-
-            circuit = Circuit(
-                self.graph,
-                mlir_module,
-                self.compilation_context,
-                self.configuration,
-                composition_rules,
-            )
-
-            if hasattr(circuit, "client"):
-                client_parameters = circuit.client.specs.client_parameters
-                if self.artifacts is not None:
-                    self.artifacts.add_client_parameters(client_parameters.serialize())
-
-            if show_optimizer:
-                print("-" * columns)
-                print()
-
-            if show_statistics:
-                if is_first:  # pragma: no cover
-                    print()
-
-                print("Statistics")
-                print("-" * columns)
-
-                def pretty(d, indent=0):  # pragma: no cover
-                    if indent > 0:
-                        print("{")
-
-                    for key, value in d.items():
-                        if isinstance(value, dict) and len(value) == 0:
-                            continue
-
-                        print("    " * indent + str(key) + ": ", end="")
-
-                        if isinstance(value, dict):
-                            pretty(value, indent + 1)
-                        else:
-                            print(value)
-
-                    if indent > 0:
-                        print("    " * (indent - 1) + "}")
-
-                pretty(circuit.statistics)
-
-                print("-" * columns)
-
-                print()
-
-        except Exception:  # pragma: no cover
-            # this branch is reserved for unexpected issues and hence it shouldn't be tested
-            # if it could be tested, we would have fixed the underlying issue
-
-            # if the user desires so,
-            # we need to export all the information we have about the compilation
-
-            if self.configuration.dump_artifacts_on_unexpected_failures:
-                assert self.artifacts is not None
-                self.artifacts.export()
-
-                traceback_path = self.artifacts.output_directory.joinpath("traceback.txt")
-                with open(traceback_path, "w", encoding="utf-8") as f:
-                    f.write(traceback.format_exc())
-
-            raise
-
-        finally:
-            self.configuration = old_configuration
-            self.artifacts = old_artifacts
-
-        return circuit
+        if conf.composable:
+            self._module_compiler.composition = AllComposable()
+        fhe_module = self._module_compiler.compile(
+            {self._function_name: inputset}, configuration=conf, module_artifacts=art
+        )
+        return Circuit(fhe_module)
 
     # pylint: enable=too-many-branches,too-many-statements
 
@@ -686,5 +211,6 @@ class Compiler:
         """
         Reset the compiler so that another compilation with another inputset can be performed.
         """
-        fresh_compiler = Compiler(self.function, self.parameter_encryption_statuses)
+        fdef = self._module_compiler.functions[self._function_name]
+        fresh_compiler = Compiler(fdef.function, fdef.parameter_encryption_statuses)
         self.__dict__.update(fresh_compiler.__dict__)

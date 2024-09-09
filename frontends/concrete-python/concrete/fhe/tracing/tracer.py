@@ -38,7 +38,6 @@ class Tracer:
         function: Callable,
         parameters: Dict[str, ValueDescription],
         is_direct: bool = False,
-        name: str = "main",
         location: str = "",
     ) -> Graph:
         """
@@ -54,9 +53,6 @@ class Tracer:
 
             is_direct (bool, default = False):
                 whether the tracing is done on actual parameters or placeholders
-
-            name (str, default = "main"):
-                the name of the function being traced
 
         Returns:
             Graph:
@@ -169,7 +165,9 @@ class Tracer:
             output_idx: tracer.computation for output_idx, tracer in enumerate(output_tracers)
         }
 
-        return Graph(graph, input_nodes, output_nodes, is_direct, name, location=location)
+        return Graph(
+            graph, input_nodes, output_nodes, function.__name__, is_direct, location=location
+        )
 
         # pylint: enable=too-many-statements
 

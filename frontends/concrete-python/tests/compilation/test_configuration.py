@@ -222,39 +222,39 @@ def test_configuration_bad_fork(kwargs, expected_error, expected_message):
             """
 
 %0:
-    main.%0 >= 3
+    <lambda>.%0 >= 3
 %1:
-    main.%1 >= 7
+    <lambda>.%1 >= 7
 %2:
-    main.%2 >= 2
+    <lambda>.%2 >= 2
 %3:
-    main.%3 >= 5
+    <lambda>.%3 >= 5
 %4:
-    main.%4 >= 8
-    main.%3 == main.%1
-    main.%1 == main.%4
+    <lambda>.%4 >= 8
+    <lambda>.%3 == <lambda>.%1
+    <lambda>.%1 == <lambda>.%4
 
             """,
             (
                 """
 
- main.%0 = 3
- main.%1 = 8
- main.%2 = 2
- main.%3 = 8
- main.%4 = 8
-main.max = 8
+ <lambda>.%0 = 3
+ <lambda>.%1 = 8
+ <lambda>.%2 = 2
+ <lambda>.%3 = 8
+ <lambda>.%4 = 8
+<lambda>.max = 8
 
             """
                 if USE_MULTI_PRECISION
                 else """
 
- main.%0 = 8
- main.%1 = 8
- main.%2 = 8
- main.%3 = 8
- main.%4 = 8
-main.max = 8
+ <lambda>.%0 = 8
+ <lambda>.%1 = 8
+ <lambda>.%2 = 8
+ <lambda>.%3 = 8
+ <lambda>.%4 = 8
+<lambda>.max = 8
 
             """
             ),
@@ -275,7 +275,7 @@ def test_configuration_show_bit_width_constraints_and_assignment(
     Test compiling with configuration where show_bit_width_(constraints/assignments)=True.
     """
 
-    monkeypatch.setattr("concrete.fhe.compilation.compiler.get_terminal_size", lambda: 80)
+    monkeypatch.setattr("concrete.fhe.compilation.artifacts.get_terminal_size", lambda: 80)
 
     configuration = helpers.configuration()
     compiler = fhe.Compiler(function, encryption_status)
@@ -289,12 +289,12 @@ def test_configuration_show_bit_width_constraints_and_assignment(
         captured.out.strip(),
         f"""
 
-Bit-Width Constraints
+Bit-Width Constraints for <lambda>
 --------------------------------------------------------------------------------
 {expected_bit_width_constraints.lstrip(os.linesep).rstrip()}
 --------------------------------------------------------------------------------
 
-Bit-Width Assignments
+Bit-Width Assignments for <lambda>
 --------------------------------------------------------------------------------
 {expected_bit_width_assignment.lstrip(os.linesep).rstrip()}
 --------------------------------------------------------------------------------

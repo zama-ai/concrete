@@ -120,7 +120,7 @@ class Client:
     def encrypt(
         self,
         *args: Optional[Union[int, np.ndarray, List]],
-        function_name: str = "main",
+        function_name: Optional[str] = None,
     ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
@@ -135,6 +135,15 @@ class Client:
             Optional[Union[Value, Tuple[Optional[Value], ...]]]:
                 encrypted argument(s) for evaluation
         """
+
+        if function_name is None:
+            functions = self.specs.client_parameters.function_list()
+            if len(functions) == 1:
+                function_name = functions[0]
+            else:  # pragma: no cover
+                msg = "The client contains more than one functions. \
+Provide a `function_name` keyword argument to disambiguate."
+                raise TypeError(msg)
 
         ordered_sanitized_args = validate_input_args(self.specs, *args, function_name=function_name)
 
@@ -160,7 +169,7 @@ class Client:
     def decrypt(
         self,
         *results: Union[Value, Tuple[Value, ...]],
-        function_name: str = "main",
+        function_name: Optional[str] = None,
     ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
@@ -175,6 +184,15 @@ class Client:
             Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
                 decrypted result(s) of evaluation
         """
+
+        if function_name is None:
+            functions = self.specs.client_parameters.function_list()
+            if len(functions) == 1:
+                function_name = functions[0]
+            else:  # pragma: no cover
+                msg = "The client contains more than one functions. \
+Provide a `function_name` keyword argument to disambiguate."
+                raise TypeError(msg)
 
         flattened_results: List[Value] = []
         for result in results:

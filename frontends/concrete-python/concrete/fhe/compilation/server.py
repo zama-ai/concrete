@@ -401,7 +401,7 @@ class Server:
         self,
         *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
         evaluation_keys: Optional[EvaluationKeys] = None,
-        function_name: str = "main",
+        function_name: Optional[str] = None,
     ) -> Union[Value, Tuple[Value, ...]]:
         """
         Evaluate.
@@ -420,6 +420,15 @@ class Server:
             Union[Value, Tuple[Value, ...]]:
                 result(s) of evaluation
         """
+
+        if function_name is None:
+            functions = self.client_specs.client_parameters.function_list()
+            if len(functions) == 1:
+                function_name = functions[0]
+            else:  # pragma: no cover
+                msg = "The client contains more than one functions. \
+Provide a `function_name` keyword argument to disambiguate."
+                raise TypeError(msg)
 
         if evaluation_keys is None and not self.is_simulated:
             message = "Expected evaluation keys to be provided when not in simulation mode"
@@ -527,19 +536,19 @@ class Server:
         """
         return self._compilation_feedback.complexity
 
-    def memory_usage_per_location(self, function: str = "main") -> Dict[str, int]:
+    def memory_usage_per_location(self, function: str) -> Dict[str, int]:
         """
         Get the memory usage of operations per location.
         """
         return self._compilation_feedback.circuit(function).memory_usage_per_location
 
-    def size_of_inputs(self, function: str = "main") -> int:
+    def size_of_inputs(self, function: str) -> int:
         """
         Get size of the inputs of the compiled program.
         """
         return self._compilation_feedback.circuit(function).total_inputs_size
 
-    def size_of_outputs(self, function: str = "main") -> int:
+    def size_of_outputs(self, function: str) -> int:
         """
         Get size of the outputs of the compiled program.
         """
@@ -547,7 +556,7 @@ class Server:
 
     # Programmable Bootstrap Statistics
 
-    def programmable_bootstrap_count(self, function: str = "main") -> int:
+    def programmable_bootstrap_count(self, function: str) -> int:
         """
         Get the number of programmable bootstraps in the compiled program.
         """
@@ -555,9 +564,7 @@ class Server:
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
         )
 
-    def programmable_bootstrap_count_per_parameter(
-        self, function: str = "main"
-    ) -> Dict[Parameter, int]:
+    def programmable_bootstrap_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
         """
         Get the number of programmable bootstraps per parameter in the compiled program.
         """
@@ -567,7 +574,7 @@ class Server:
             client_parameters=self.client_specs.client_parameters,
         )
 
-    def programmable_bootstrap_count_per_tag(self, function: str = "main") -> Dict[str, int]:
+    def programmable_bootstrap_count_per_tag(self, function: str) -> Dict[str, int]:
         """
         Get the number of programmable bootstraps per tag in the compiled program.
         """
@@ -576,7 +583,7 @@ class Server:
         )
 
     def programmable_bootstrap_count_per_tag_per_parameter(
-        self, function: str = "main"
+        self, function: str
     ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of programmable bootstraps per tag per parameter in the compiled program.
@@ -589,7 +596,7 @@ class Server:
 
     # Key Switch Statistics
 
-    def key_switch_count(self, function: str = "main") -> int:
+    def key_switch_count(self, function: str) -> int:
         """
         Get the number of key switches in the compiled program.
         """
@@ -597,7 +604,7 @@ class Server:
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
         )
 
-    def key_switch_count_per_parameter(self, function: str = "main") -> Dict[Parameter, int]:
+    def key_switch_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
         """
         Get the number of key switches per parameter in the compiled program.
         """
@@ -607,7 +614,7 @@ class Server:
             client_parameters=self.client_specs.client_parameters,
         )
 
-    def key_switch_count_per_tag(self, function: str = "main") -> Dict[str, int]:
+    def key_switch_count_per_tag(self, function: str) -> Dict[str, int]:
         """
         Get the number of key switches per tag in the compiled program.
         """
@@ -616,7 +623,7 @@ class Server:
         )
 
     def key_switch_count_per_tag_per_parameter(
-        self, function: str = "main"
+        self, function: str
     ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of key switches per tag per parameter in the compiled program.
@@ -629,7 +636,7 @@ class Server:
 
     # Packing Key Switch Statistics
 
-    def packing_key_switch_count(self, function: str = "main") -> int:
+    def packing_key_switch_count(self, function: str) -> int:
         """
         Get the number of packing key switches in the compiled program.
         """
@@ -637,9 +644,7 @@ class Server:
             operations={PrimitiveOperation.WOP_PBS}
         )
 
-    def packing_key_switch_count_per_parameter(
-        self, function: str = "main"
-    ) -> Dict[Parameter, int]:
+    def packing_key_switch_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the compiled program.
         """
@@ -649,7 +654,7 @@ class Server:
             client_parameters=self.client_specs.client_parameters,
         )
 
-    def packing_key_switch_count_per_tag(self, function: str = "main") -> Dict[str, int]:
+    def packing_key_switch_count_per_tag(self, function: str) -> Dict[str, int]:
         """
         Get the number of packing key switches per tag in the compiled program.
         """
@@ -658,7 +663,7 @@ class Server:
         )
 
     def packing_key_switch_count_per_tag_per_parameter(
-        self, function: str = "main"
+        self, function: str
     ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the compiled program.
@@ -671,7 +676,7 @@ class Server:
 
     # Clear Addition Statistics
 
-    def clear_addition_count(self, function: str = "main") -> int:
+    def clear_addition_count(self, function: str) -> int:
         """
         Get the number of clear additions in the compiled program.
         """
@@ -679,7 +684,7 @@ class Server:
             operations={PrimitiveOperation.CLEAR_ADDITION}
         )
 
-    def clear_addition_count_per_parameter(self, function: str = "main") -> Dict[Parameter, int]:
+    def clear_addition_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the compiled program.
         """
@@ -689,7 +694,7 @@ class Server:
             client_parameters=self.client_specs.client_parameters,
         )
 
-    def clear_addition_count_per_tag(self, function: str = "main") -> Dict[str, int]:
+    def clear_addition_count_per_tag(self, function: str) -> Dict[str, int]:
         """
         Get the number of clear additions per tag in the compiled program.
         """
@@ -698,7 +703,7 @@ class Server:
         )
 
     def clear_addition_count_per_tag_per_parameter(
-        self, function: str = "main"
+        self, function: str
     ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the compiled program.
@@ -711,7 +716,7 @@ class Server:
 
     # Encrypted Addition Statistics
 
-    def encrypted_addition_count(self, function: str = "main") -> int:
+    def encrypted_addition_count(self, function: str) -> int:
         """
         Get the number of encrypted additions in the compiled program.
         """
@@ -719,9 +724,7 @@ class Server:
             operations={PrimitiveOperation.ENCRYPTED_ADDITION}
         )
 
-    def encrypted_addition_count_per_parameter(
-        self, function: str = "main"
-    ) -> Dict[Parameter, int]:
+    def encrypted_addition_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the compiled program.
         """
@@ -731,7 +734,7 @@ class Server:
             client_parameters=self.client_specs.client_parameters,
         )
 
-    def encrypted_addition_count_per_tag(self, function: str = "main") -> Dict[str, int]:
+    def encrypted_addition_count_per_tag(self, function: str) -> Dict[str, int]:
         """
         Get the number of encrypted additions per tag in the compiled program.
         """
@@ -740,7 +743,7 @@ class Server:
         )
 
     def encrypted_addition_count_per_tag_per_parameter(
-        self, function: str = "main"
+        self, function: str
     ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the compiled program.
@@ -753,7 +756,7 @@ class Server:
 
     # Clear Multiplication Statistics
 
-    def clear_multiplication_count(self, function: str = "main") -> int:
+    def clear_multiplication_count(self, function: str) -> int:
         """
         Get the number of clear multiplications in the compiled program.
         """
@@ -761,9 +764,7 @@ class Server:
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
         )
 
-    def clear_multiplication_count_per_parameter(
-        self, function: str = "main"
-    ) -> Dict[Parameter, int]:
+    def clear_multiplication_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
         """
         Get the number of clear multiplications per parameter in the compiled program.
         """
@@ -773,7 +774,7 @@ class Server:
             client_parameters=self.client_specs.client_parameters,
         )
 
-    def clear_multiplication_count_per_tag(self, function: str = "main") -> Dict[str, int]:
+    def clear_multiplication_count_per_tag(self, function: str) -> Dict[str, int]:
         """
         Get the number of clear multiplications per tag in the compiled program.
         """
@@ -782,7 +783,7 @@ class Server:
         )
 
     def clear_multiplication_count_per_tag_per_parameter(
-        self, function: str = "main"
+        self, function: str
     ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the compiled program.
@@ -795,7 +796,7 @@ class Server:
 
     # Encrypted Negation Statistics
 
-    def encrypted_negation_count(self, function: str = "main") -> int:
+    def encrypted_negation_count(self, function: str) -> int:
         """
         Get the number of encrypted negations in the compiled program.
         """
@@ -803,9 +804,7 @@ class Server:
             operations={PrimitiveOperation.ENCRYPTED_NEGATION}
         )
 
-    def encrypted_negation_count_per_parameter(
-        self, function: str = "main"
-    ) -> Dict[Parameter, int]:
+    def encrypted_negation_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the compiled program.
         """
@@ -815,7 +814,7 @@ class Server:
             client_parameters=self.client_specs.client_parameters,
         )
 
-    def encrypted_negation_count_per_tag(self, function: str = "main") -> Dict[str, int]:
+    def encrypted_negation_count_per_tag(self, function: str) -> Dict[str, int]:
         """
         Get the number of encrypted negations per tag in the compiled program.
         """
@@ -824,7 +823,7 @@ class Server:
         )
 
     def encrypted_negation_count_per_tag_per_parameter(
-        self, function: str = "main"
+        self, function: str
     ) -> Dict[str, Dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the compiled program.
@@ -834,52 +833,3 @@ class Server:
             key_types={KeyType.SECRET},
             client_parameters=self.client_specs.client_parameters,
         )
-
-    # All Statistics
-
-    @property
-    def statistics(self) -> Dict:
-        """
-        Get all statistics of the compiled program.
-        """
-        attributes = [
-            "size_of_inputs",
-            "size_of_outputs",
-            "programmable_bootstrap_count",
-            "programmable_bootstrap_count_per_parameter",
-            "programmable_bootstrap_count_per_tag",
-            "programmable_bootstrap_count_per_tag_per_parameter",
-            "key_switch_count",
-            "key_switch_count_per_parameter",
-            "key_switch_count_per_tag",
-            "key_switch_count_per_tag_per_parameter",
-            "packing_key_switch_count",
-            "packing_key_switch_count_per_parameter",
-            "packing_key_switch_count_per_tag",
-            "packing_key_switch_count_per_tag_per_parameter",
-            "clear_addition_count",
-            "clear_addition_count_per_parameter",
-            "clear_addition_count_per_tag",
-            "clear_addition_count_per_tag_per_parameter",
-            "encrypted_addition_count",
-            "encrypted_addition_count_per_parameter",
-            "encrypted_addition_count_per_tag",
-            "encrypted_addition_count_per_tag_per_parameter",
-            "clear_multiplication_count",
-            "clear_multiplication_count_per_parameter",
-            "clear_multiplication_count_per_tag",
-            "clear_multiplication_count_per_tag_per_parameter",
-            "encrypted_negation_count",
-            "encrypted_negation_count_per_parameter",
-            "encrypted_negation_count_per_tag",
-            "encrypted_negation_count_per_tag_per_parameter",
-            "memory_usage_per_location",
-        ]
-        output = {attribute: getattr(self, attribute)() for attribute in attributes}
-        output["size_of_secret_keys"] = self.size_of_secret_keys
-        output["size_of_bootstrap_keys"] = self.size_of_bootstrap_keys
-        output["size_of_keyswitch_keys"] = self.size_of_keyswitch_keys
-        output["p_error"] = self.p_error
-        output["global_p_error"] = self.global_p_error
-        output["complexity"] = self.complexity
-        return output
