@@ -6,7 +6,7 @@ use std::io::Cursor;
 use std::path::Path;
 use tfhe::core_crypto::prelude::{GlweSecretKey, LweSecretKey};
 use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice, ShortintParameterSet};
-use tfhe::{generate_keys, integer, ClientKey, FheUint8};
+use tfhe::{generate_keys, integer, set_server_key, ClientKey, FheUint8, ServerKey};
 use tfhe::{prelude::*, ConfigBuilder};
 
 const BLOCK_PARAMS: ClassicPBSParameters = tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS;
@@ -34,12 +34,26 @@ fn load_client_key_from_glwe(glwe_sk_path: &String) -> ClientKey {
     client_key
 }
 
+fn set_server_key_from_file(server_key_path: &String) {
+    let serialized_sk = fs::read(Path::new(server_key_path)).unwrap();
+    let mut serialized_data = Cursor::new(serialized_sk);
+    let sk: ServerKey = bincode::deserialize_from(&mut serialized_data).unwrap();
+    set_server_key(sk);
+}
+
 fn load_client_key(client_path: &String) -> ClientKey {
     let path_key: &Path = Path::new(client_path);
     let serialized_key = fs::read(path_key).unwrap();
     let mut serialized_data = Cursor::new(serialized_key);
     let client_key: ClientKey = bincode::deserialize_from(&mut serialized_data).unwrap();
     client_key
+}
+
+fn serialize_fheuint8(fheuint: FheUint8, ciphertext_path: &String) {
+    let mut serialized_ct = Vec::new();
+    bincode::serialize_into(&mut serialized_ct, &fheuint).unwrap();
+    let path_ct: &Path = Path::new(ciphertext_path);
+    fs::write(path_ct, serialized_ct).unwrap();
 }
 
 fn encrypt_with_key(
@@ -49,12 +63,16 @@ fn encrypt_with_key(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let ct = FheUint8::encrypt(value, &client_key);
 
-    let mut serialized_ct = Vec::new();
-    bincode::serialize_into(&mut serialized_ct, &ct)?;
-    let path_ct: &Path = Path::new(ciphertext_path);
-    fs::write(path_ct, serialized_ct).unwrap();
+    serialize_fheuint8(ct, ciphertext_path);
 
     Ok(())
+}
+
+fn deserialize_fheuint8(path: &String) -> FheUint8 {
+    let path_fheuint: &Path = Path::new(path);
+    let serialized_fheuint = fs::read(path_fheuint).unwrap();
+    let mut serialized_data = Cursor::new(serialized_fheuint);
+    bincode::deserialize_from(&mut serialized_data).unwrap()
 }
 
 fn decrypt_with_key(
@@ -62,10 +80,7 @@ fn decrypt_with_key(
     ciphertext_path: &String,
     plaintext_path: Option<&String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let path_fheuint: &Path = Path::new(ciphertext_path);
-    let serialized_fheuint = fs::read(path_fheuint)?;
-    let mut serialized_data = Cursor::new(serialized_fheuint);
-    let fheuint: FheUint8 = bincode::deserialize_from(&mut serialized_data)?;
+    let fheuint = deserialize_fheuint8(ciphertext_path);
 
     let result: u8 = fheuint.decrypt(&client_key);
 
@@ -75,6 +90,21 @@ fn decrypt_with_key(
     } else {
         println!("result: {}", result);
     }
+
+    Ok(())
+}
+
+fn sum(cts_paths: Vec<&String>, out_ct_path: &String) -> Result<(), Box<dyn std::error::Error>> {
+    if cts_paths.len() == 0 {
+        panic!("can't call sum with 0 ciphertexts");
+    }
+    let mut acc = deserialize_fheuint8(cts_paths[0]);
+    for ct_path in cts_paths[1..].iter() {
+        let fheuint = deserialize_fheuint8(ct_path);
+        acc += fheuint;
+    }
+
+    serialize_fheuint8(acc, out_ct_path);
 
     Ok(())
 }
@@ -125,7 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("value to encrypt")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("ciphertext")
@@ -134,7 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("ciphertext path to write to after encryption")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("client-key")
@@ -144,7 +174,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("client key path")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("glwe-sk")
@@ -154,7 +184,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("glwe key path")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1..),
+                        .num_args(1),
                 ),
         )
         .subcommand(
@@ -169,7 +199,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("ciphertext path to decrypt")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("plaintext")
@@ -177,7 +207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .short('p')
                         .help("output plaintext path")
                         .action(ArgAction::Set)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("client-key")
@@ -187,7 +217,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("client key path")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("glwe-sk")
@@ -197,7 +227,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .help("glwe key path")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1..),
+                        .num_args(1),
+                ),
+        )
+        .subcommand(
+            Command::new("add")
+                .short_flag('a')
+                .long_flag("add")
+                .about("Compute an addition of multiple ciphertexts.")
+                .arg(
+                    Arg::new("server-key")
+                        .short('s')
+                        .long("server-key")
+                        .help("server key path")
+                        .required(true)
+                        .action(ArgAction::Set)
+                        .num_args(1),
+                )
+                .arg(
+                    Arg::new("ciphertexts")
+                        .short('c')
+                        .long("cts")
+                        .help("ciphertexts to add")
+                        .action(ArgAction::Append)
+                        .required(true)
+                        .num_args(2..),
+                )
+                .arg(
+                    Arg::new("output-ciphertext")
+                        .long("output-ct")
+                        .short('o')
+                        .help("output ciphertext path")
+                        .action(ArgAction::Set)
+                        .required(true)
+                        .num_args(1),
                 ),
         )
         .subcommand(
@@ -214,7 +277,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 //         .help("glwe key path")
                 //         .action(ArgAction::Set)
                 //         .required(true)
-                //         .num_args(1..),
+                //         .num_args(1),
                 // )
                 .arg(
                     Arg::new("output-glwe-sk")
@@ -223,7 +286,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .default_value("output-glwe-sk")
                         .help("output glwe key path")
                         .action(ArgAction::Set)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("client-key")
@@ -232,7 +295,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .long("client-key")
                         .help("output client key path")
                         .action(ArgAction::Set)
-                        .num_args(1..),
+                        .num_args(1),
                 )
                 .arg(
                     Arg::new("server-key")
@@ -241,7 +304,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .long("server-key")
                         .help("output server key path")
                         .action(ArgAction::Set)
-                        .num_args(1..),
+                        .num_args(1),
                 ),
         )
         .get_matches();
@@ -276,6 +339,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 panic!("no key specified");
             }
             decrypt_with_key(client_key, ciphertext_path, plaintext_path)
+        }
+        Some(("add", add_mtches)) => {
+            let server_key_path = add_mtches.get_one::<String>("server-key").unwrap();
+            let cts_path = add_mtches.get_many::<String>("ciphertexts").unwrap();
+            let output_ct_path = add_mtches.get_one::<String>("output-ciphertext").unwrap();
+
+            set_server_key_from_file(server_key_path);
+
+            sum(cts_path.collect(), output_ct_path)
         }
         Some(("keygen", keygen_mtches)) => {
             let client_key_path = keygen_mtches.get_one::<String>("client-key").unwrap();
