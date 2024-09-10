@@ -2,6 +2,7 @@
 Convert the simple Tlu Dag to a concrete-python Tracer function.
 """
 
+from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 from typing import Iterable, cast

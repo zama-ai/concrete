@@ -2,6 +2,7 @@
 Rewrite yosys json output as a simple Tlu Dag.
 """
 
+from __future__ import annotations
 import json
 import os
 import shutil

@@ -2,6 +2,7 @@
 INTERNAL extension to synthesize a fhe compatible function from verilog code.
 """
 
+from __future__ import annotations
 from collections import Counter
 from typing import Optional
 
