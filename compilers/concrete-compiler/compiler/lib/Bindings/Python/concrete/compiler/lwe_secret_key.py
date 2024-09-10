@@ -57,6 +57,38 @@ class LweSecretKey(WrapperCpp):
             )
         super().__init__(lwe_secret_key)
 
+    def serialize(self) -> bytes:
+        """Serialize key.
+
+        Returns:
+            bytes: serialized key
+        """
+
+        return self.cpp().serialize()
+
+    @staticmethod
+    def deserialize(serialized_key: bytes, param: LweSecretKeyParam) -> "LweSecretKey":
+        """Deserialize LweSecretKey from bytes.
+
+        Args:
+            serialized_key (bytes): previously serialized secret key
+
+        Raises:
+            TypeError: if wrong types for input arguments
+
+        Returns:
+            LweSecretKey: deserialized object
+        """
+        if not isinstance(serialized_key, bytes):
+            raise TypeError(
+                f"serialized_key must be of type bytes, not {type(serialized_key)}"
+            )
+        if not isinstance(param, LweSecretKeyParam):
+            raise TypeError(
+                f"param must be of type LweSecretKeyParam, not {type(param)}"
+            )
+        return LweSecretKey.wrap(_LweSecretKey.deserialize(serialized_key, param.cpp()))
+
     def serialize_as_glwe(self, glwe_dim: int, poly_size: int) -> bytes:
         """Serialize key as a glwe secret key.
 
@@ -78,29 +110,29 @@ class LweSecretKey(WrapperCpp):
 
     @staticmethod
     def deserialize_from_glwe(
-        serialized_key_set: bytes, param: LweSecretKeyParam
+        serialized_glwe_key: bytes, param: LweSecretKeyParam
     ) -> "LweSecretKey":
-        """Deserialize LweSecretKey from bytes.
+        """Deserialize LweSecretKey from glwe secret key bytes.
 
         Args:
-            serialized_key_set (bytes): previously serialized KeySet
+            serialized_glwe_key (bytes): previously serialized glwe secret key
 
         Raises:
-            TypeError: if serialized_key_set is not of type bytes
+            TypeError: if wrong types for input arguments
 
         Returns:
-            KeySet: deserialized object
+            LweSecretKey: deserialized object
         """
-        if not isinstance(serialized_key_set, bytes):
+        if not isinstance(serialized_glwe_key, bytes):
             raise TypeError(
-                f"serialized_key_set must be of type bytes, not {type(serialized_key_set)}"
+                f"serialized_glwe_key must be of type bytes, not {type(serialized_glwe_key)}"
             )
         if not isinstance(param, LweSecretKeyParam):
             raise TypeError(
                 f"param must be of type LweSecretKeyParam, not {type(param)}"
             )
         return LweSecretKey.wrap(
-            _LweSecretKey.deserialize_from_glwe(serialized_key_set, param.cpp())
+            _LweSecretKey.deserialize_from_glwe(serialized_glwe_key, param.cpp())
         )
 
     @property

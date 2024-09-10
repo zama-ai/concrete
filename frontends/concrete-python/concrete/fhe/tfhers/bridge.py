@@ -170,16 +170,10 @@ class Bridge:
             bytes: serialized key
         """
         keyid = self._input_keyid(input_idx)
-        input_type = self._input_type(input_idx)
-        if input_type is None:  # pragma: no cover
-            msg = "input at 'input_idx' is not a TFHErs value"
-            raise ValueError(msg)
-        glwe_dim = input_type.params.glwe_dimension
-        poly_size = input_type.params.polynomial_size
         # pylint: disable=protected-access
         secret_key = self.circuit.client.keys._keyset.get_lwe_secret_key(keyid)  # type: ignore
         # pylint: enable=protected-access
-        return secret_key.serialize_as_glwe(glwe_dim, poly_size)
+        return secret_key.serialize()
 
     def keygen_with_initial_keys(
         self,
@@ -218,7 +212,7 @@ class Bridge:
             key_buffer = input_idx_to_key_buffer[input_idx]
             param = client_specs.client_parameters.lwe_secret_key_param_at(key_id)
             try:
-                initial_keys[key_id] = LweSecretKey.deserialize_from_glwe(key_buffer, param)
+                initial_keys[key_id] = LweSecretKey.deserialize(key_buffer, param)
             except Exception as e:  # pragma: no cover
                 msg = (
                     f"failed deserializing key for input with index {input_idx}. Make sure the key"
