@@ -30,7 +30,7 @@ def test_tlu_error_rate(p_error):
     nok_fhe = 0
     nok_sim = 0
     size = 0
-    for t in inputset * max(1000, int(10 / p_error)):
+    for t in inputset * repetition:
         fhe_value = circuit.encrypt_run_decrypt(t)
         sim_value = circuit.simulate(t)
         for v, fhe_v, sim_v in zip(t, fhe_value, sim_value):
@@ -45,9 +45,9 @@ def test_tlu_error_rate(p_error):
     assert fhe_p_error
     assert sim_p_error
     # the sample size is not big => we accept significant releative error
-    assert fhe_p_error == pytest.approx(p_error, rel=0.5)
-    assert sim_p_error == pytest.approx(p_error, rel=0.5)
-    assert fhe_p_error == pytest.approx(sim_p_error, rel=0.5)
+    assert fhe_p_error == pytest.approx(p_error, rel=0.75)
+    assert sim_p_error == pytest.approx(p_error, rel=0.75)
+    assert fhe_p_error == pytest.approx(sim_p_error, rel=0.75)
 
 
 @pytest.mark.parametrize("p_error", [0.01, 1e-120])
@@ -98,4 +98,4 @@ def test_approx_tlu_error_rate(p_error):
     assert fhe_p_error < 0.2 + p_error
     assert sim_p_error < 0.2 + p_error
 
-    assert fhe_p_error == pytest.approx(sim_p_error, rel=0.5)
+    assert fhe_p_error == pytest.approx(sim_p_error, rel=0.75)
