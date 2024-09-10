@@ -404,23 +404,29 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     # keygen starting from Concrete's secret key
     assert (
         os.system(
-            f"{tfhers_utils} keygen --glwe-sk {key_path} -c {client_key_path} -s {server_key_path}"
+            f"{tfhers_utils} keygen --lwe-sk {key_path} -c {client_key_path} -s {server_key_path}"
         )
         == 0
     )
 
     # encrypt inputs and incremnt them by one in TFHErs
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key -v 1 -c {ct_one_path} -l {client_key_path}")
+        os.system(
+            f"{tfhers_utils} encrypt-with-key -v 1 -c {ct_one_path} --client-key {client_key_path}"
+        )
         == 0
     )
     sample = [s + 1 for s in sample]
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} -l {client_key_path}")
+        os.system(
+            f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} --client-key {client_key_path}"
+        )
         == 0
     )
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} -l {client_key_path}")
+        os.system(
+            f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} --client-key {client_key_path}"
+        )
         == 0
     )
     assert (
@@ -462,7 +468,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} -g {key_path} -p {pt_path}"
+            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} --lwe-sk {key_path} -p {pt_path}"
         )
         == 0
     )
@@ -626,7 +632,10 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     tfhers_utils = (
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
-    assert os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} -g {key_path}") == 0
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} --lwe-sk {key_path}")
+        == 0
+    )
 
     # import first ciphertexts and encrypt second with concrete
     with open(ct1_path, "rb") as f:
@@ -651,7 +660,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} -g {key_path} -p {pt_path}"
+            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} --lwe-sk {key_path} -p {pt_path}"
         )
         == 0
     )
@@ -765,7 +774,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-glwe-sk {sk_path}"
+            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk {sk_path}"
         )
         == 0
     )
@@ -794,8 +803,12 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     tfhers_utils = (
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
-    assert os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} -g {sk_path}") == 0
-    assert os.system(f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} -g {sk_path}") == 0
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} --lwe-sk {sk_path}") == 0
+    )
+    assert (
+        os.system(f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} --lwe-sk {sk_path}") == 0
+    )
 
     # import ciphertexts and run
     cts = []
@@ -822,7 +835,9 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
         f.write(buff)
 
     assert (
-        os.system(f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} -g {sk_path} -p {pt_path}")
+        os.system(
+            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} --lwe-sk {sk_path} -p {pt_path}"
+        )
         == 0
     )
 
@@ -838,7 +853,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     random_value = np.random.randint(*tfhers_value_range)
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v {random_value} -c {random_ct_path} -l {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key -v {random_value} -c {random_ct_path} --client-key {client_key_path}"
         )
         == 0
     )
@@ -853,7 +868,9 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
 
     # decrypt result
     assert (
-        os.system(f"{tfhers_utils} decrypt-with-key -c {sum_ct_path} -g {sk_path} -p {pt_path}")
+        os.system(
+            f"{tfhers_utils} decrypt-with-key -c {sum_ct_path} --lwe-sk {sk_path} -p {pt_path}"
+        )
         == 0
     )
 
@@ -1021,7 +1038,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-glwe-sk {sk_path}"
+            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk {sk_path}"
         )
         == 0
     )
@@ -1046,7 +1063,9 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     _, ct1_path = tempfile.mkstemp()
 
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key -v {pt1} -c {ct1_path} -l {client_key_path}")
+        os.system(
+            f"{tfhers_utils} encrypt-with-key -v {pt1} -c {ct1_path} --client-key {client_key_path}"
+        )
         == 0
     )
 
@@ -1072,7 +1091,9 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
         f.write(buff)
 
     assert (
-        os.system(f"{tfhers_utils} decrypt-with-key -c {ct_out_path} -g {sk_path} -p {pt_path}")
+        os.system(
+            f"{tfhers_utils} decrypt-with-key -c {ct_out_path} --lwe-sk {sk_path} -p {pt_path}"
+        )
         == 0
     )
 
@@ -1088,7 +1109,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     random_value = np.random.randint(*tfhers_value_range)
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v {random_value} -c {random_ct_path} -l {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key -v {random_value} -c {random_ct_path} --client-key {client_key_path}"
         )
         == 0
     )
@@ -1103,7 +1124,9 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
 
     # decrypt result
     assert (
-        os.system(f"{tfhers_utils} decrypt-with-key -c {sum_ct_path} -g {sk_path} -p {pt_path}")
+        os.system(
+            f"{tfhers_utils} decrypt-with-key -c {sum_ct_path} --lwe-sk {sk_path} -p {pt_path}"
+        )
         == 0
     )
 

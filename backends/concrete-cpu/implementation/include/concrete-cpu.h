@@ -381,6 +381,8 @@ size_t concrete_cpu_lwe_packing_keyswitch_key_size(size_t output_glwe_dimension,
                                                    size_t decomposition_level_count,
                                                    size_t input_lwe_dimension);
 
+size_t concrete_cpu_lwe_secret_key_buffer_size_u64(size_t lwe_dimension);
+
 size_t concrete_cpu_lwe_secret_key_size_u64(size_t lwe_dimension);
 
 void concrete_cpu_mul_cleartext_lwe_ciphertext_u64(uint64_t *ct_out,
@@ -406,6 +408,11 @@ size_t concrete_cpu_serialize_glwe_secret_key_u64(const uint64_t *glwe_sk,
                                                   uint8_t *out_buffer,
                                                   size_t out_buffer_len);
 
+size_t concrete_cpu_serialize_lwe_secret_key_u64(const uint64_t *lwe_sk,
+                                                 size_t lwe_dimension,
+                                                 uint8_t *out_buffer,
+                                                 size_t out_buffer_len);
+
 size_t concrete_cpu_tfhers_fheint_buffer_size_u64(size_t lwe_size, size_t n_cts);
 
 struct TfhersFheIntDescription concrete_cpu_tfhers_uint8_description(const uint8_t *serialized_data_ptr,
@@ -421,6 +428,11 @@ size_t concrete_cpu_unserialize_glwe_secret_key_u64(const uint8_t *buffer,
                                                     size_t buffer_len,
                                                     uint64_t *glwe_sk,
                                                     size_t glwe_sk_size);
+
+size_t concrete_cpu_unserialize_lwe_secret_key_u64(const uint8_t *buffer,
+                                                   size_t buffer_len,
+                                                   uint64_t *lwe_sk,
+                                                   size_t lwe_sk_size);
 
 void simulation_circuit_bootstrap_boolean_vertical_packing_lwe_ciphertext_u64(const uint64_t *lwe_list_in,
                                                                               uint64_t *lwe_list_out,

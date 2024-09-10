@@ -212,6 +212,48 @@ pub unsafe extern "C" fn concrete_cpu_decompress_seeded_lwe_ciphertext_u64(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_serialize_lwe_secret_key_u64(
+    lwe_sk: *const u64,
+    lwe_dimension: usize,
+    out_buffer: *mut u8,
+    out_buffer_len: usize,
+) -> usize {
+    let lwe_sk = LweSecretKey::from_container(slice::from_raw_parts(
+        lwe_sk,
+        concrete_cpu_lwe_secret_key_size_u64(lwe_dimension),
+    ));
+    let mut serialized_data = Vec::new();
+    match bincode::serialize_into(&mut serialized_data, &lwe_sk) {
+        Ok(_) => (),
+        Err(_) => return 0,
+    }
+
+    if serialized_data.len() > out_buffer_len {
+        return 0;
+    }
+
+    let buff: &mut [u8] = slice::from_raw_parts_mut(out_buffer, serialized_data.len());
+    buff.copy_from_slice(&serialized_data);
+    serialized_data.len()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn concrete_cpu_unserialize_lwe_secret_key_u64(
+    buffer: *const u8,
+    buffer_len: usize,
+    lwe_sk: *mut u64,
+    lwe_sk_size: usize,
+) -> usize {
+    let serialized_data = slice::from_raw_parts(buffer, buffer_len);
+    let sk: LweSecretKey<Vec<u64>> = bincode::deserialize_from(serialized_data).unwrap();
+    let container = sk.into_container();
+    assert!(container.len() <= lwe_sk_size);
+    let lwe_sk_slice = slice::from_raw_parts_mut(lwe_sk, lwe_sk_size);
+    lwe_sk_slice.copy_from_slice(container.as_slice());
+    container.len()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_serialize_glwe_secret_key_u64(
     glwe_sk: *const u64,
     glwe_dimension: usize,
@@ -292,7 +334,7 @@ pub unsafe extern "C" fn concrete_cpu_decrypt_glwe_ciphertext_u64(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn concrete_cpu_lwe_secret_key_size_u64(lwe_dimension: usize) -> usize {
+pub extern "C" fn concrete_cpu_lwe_secret_key_size_u64(lwe_dimension: usize) -> usize {
     lwe_dimension
 }
 
@@ -302,6 +344,12 @@ pub unsafe extern "C" fn concrete_cpu_glwe_secret_key_size_u64(
     polynomial_size: usize,
 ) -> usize {
     lwe_dimension * polynomial_size
+}
+
+#[no_mangle]
+pub extern "C" fn concrete_cpu_lwe_secret_key_buffer_size_u64(lwe_dimension: usize) -> usize {
+    let metadata = core::mem::size_of::<LweSecretKey<&[u64]>>();
+    metadata + concrete_cpu_lwe_secret_key_size_u64(lwe_dimension) * 8 /*u64*/
 }
 
 #[no_mangle]

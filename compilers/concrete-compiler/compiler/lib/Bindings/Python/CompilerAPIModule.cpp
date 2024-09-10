@@ -1387,6 +1387,38 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   pybind11::class_<LweSecretKey>(m, "LweSecretKey")
       .def_static(
+          "deserialize",
+          [](pybind11::bytes buffer,
+             ::concretelang::clientlib::LweSecretKeyParam &params) {
+            std::string buffer_str = buffer;
+            auto lwe_dim = params.info.asReader().getParams().getLweDimension();
+            auto lwe_size = concrete_cpu_lwe_secret_key_size_u64(lwe_dim);
+            std::vector<uint64_t> lwe_sk(lwe_size);
+            auto key_size = concrete_cpu_unserialize_lwe_secret_key_u64(
+                (uint8_t *)buffer_str.data(), buffer_str.size(), lwe_sk.data(),
+                lwe_sk.size());
+            lwe_sk.resize(key_size);
+            return LweSecretKey(
+                std::make_shared<std::vector<uint64_t>>(std::move(lwe_sk)),
+                params.info);
+          })
+      .def("serialize",
+           [](LweSecretKey &lweSk) {
+             auto skBuffer = lweSk.getBuffer();
+             auto lwe_dimension =
+                 lweSk.getInfo().asReader().getParams().getLweDimension();
+             auto buffer_size =
+                 concrete_cpu_lwe_secret_key_buffer_size_u64(lwe_dimension);
+             std::vector<uint8_t> buffer(buffer_size, 0);
+             buffer_size = concrete_cpu_serialize_lwe_secret_key_u64(
+                 skBuffer.data(), lwe_dimension, buffer.data(), buffer_size);
+             if (buffer_size == 0) {
+               throw std::runtime_error("couldn't serialize the secret key");
+             }
+             auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
+             return bytes;
+           })
+      .def_static(
           "deserialize_from_glwe",
           [](pybind11::bytes buffer,
              ::concretelang::clientlib::LweSecretKeyParam &params) {
