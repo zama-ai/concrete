@@ -407,10 +407,10 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
 }
 )XXX");
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(
-      err, "Program can not be composed: At -:4:8: please add "
-           "`fhe.refresh(...)` to guarantee the function composability.\n"
-           "The noise of the node 0 is contaminated by noise coming straight "
-           "from the input (partition: 0, coeff: 4.00).");
+      err, "Program can not be composed (see https://docs.zama.ai/concrete/"
+           "compilation/common_errors#id-8.-unfeasible-noise-constraint): "
+           "At location -:4:8:\nThe noise of the node 0 is contaminated by "
+           "noise coming straight from the input (partition: 0, coeff: 4.00).");
 }
 
 TEST(CompileNotComposable, not_composable_2) {
@@ -430,10 +430,10 @@ func.func @main(%arg0: !FHE.eint<3>) -> (!FHE.eint<3>, !FHE.eint<3>) {
 }
 )XXX");
   ASSERT_OUTCOME_HAS_FAILURE_WITH_ERRORMSG(
-      err, "Program can not be composed: At -:5:8: please add "
-           "`fhe.refresh(...)` to guarantee the function composability.\n"
-           "The noise of the node 0 is contaminated by noise coming straight "
-           "from the input (partition: 0, coeff: 4.00).");
+      err, "Program can not be composed (see https://docs.zama.ai/concrete/"
+           "compilation/common_errors#id-8.-unfeasible-noise-constraint): "
+           "At location -:5:8:\nThe noise of the node 0 is contaminated by "
+           "noise coming straight from the input (partition: 0, coeff: 4.00).");
 }
 
 TEST(CompileComposable, composable_supported_v0) {
