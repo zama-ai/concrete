@@ -381,8 +381,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     concrete_encoded_result = circuit.encrypt_run_decrypt(*concrete_encoded_sample)
     assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
 
-    ###### TFHErs Encryption ######################################################
-    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="<lambda>")
+    ###### TFHErs Encryption & Computation ########################################
+    tfhers_bridge = tfhers.new_bridge(circuit, func_name="main")
 
     # serialize key
     _, key_path = tempfile.mkstemp()
@@ -617,7 +617,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     assert (dtype.decode(concrete_encoded_result) == function(*sample)).all()
 
     ###### TFHErs Encryption ######################################################
-    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="<lambda>")
+    tfhers_bridge = tfhers.new_bridge(circuit, func_name="main")
 
     # serialize key
     _, key_path = tempfile.mkstemp()
@@ -780,7 +780,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     )
 
     ###### Concrete Keygen ########################################################
-    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="main")
+    tfhers_bridge = tfhers.new_bridge(circuit, func_name="main")
 
     with open(sk_path, "rb") as f:
         sk_buff = f.read()
@@ -1044,7 +1044,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     )
 
     ###### Concrete Keygen ########################################################
-    tfhers_bridge = tfhers.new_bridge(circuit, dtype, dtype, func_name="main")
+    tfhers_bridge = tfhers.new_bridge(circuit, func_name="main")
 
     with open(sk_path, "rb") as f:
         sk_buff = f.read()
