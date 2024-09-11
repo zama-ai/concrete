@@ -18,15 +18,6 @@ fn load_lwe_sk(lwe_sk_path: &String) -> LweSecretKey<Vec<u64>> {
     bincode::deserialize_from(&mut serialized_data).unwrap()
 }
 
-fn load_client_key_from_lwe(lwe_sk_path: &String) -> ClientKey {
-    let lwe_sk = load_lwe_sk(lwe_sk_path);
-
-    let shortint_key =
-        tfhe::shortint::ClientKey::try_from_lwe_encryption_key(lwe_sk, BLOCK_PARAMS).unwrap();
-    let client_key = ClientKey::from_raw_parts(shortint_key.into(), None, None);
-    client_key
-}
-
 fn set_server_key_from_file(server_key_path: &String) {
     let serialized_sk = fs::read(Path::new(server_key_path)).unwrap();
     let mut serialized_data = Cursor::new(serialized_sk);
@@ -157,6 +148,15 @@ fn keygen(
         Some(lwe_secret_key),
     )?;
     Ok(())
+}
+
+fn keygen_from_lwe(lwe_sk_path: &String) -> ClientKey {
+    let lwe_sk = load_lwe_sk(lwe_sk_path);
+
+    let shortint_key =
+        tfhe::shortint::ClientKey::try_from_lwe_encryption_key(lwe_sk, BLOCK_PARAMS).unwrap();
+    let client_key = ClientKey::from_raw_parts(shortint_key.into(), None, None);
+    client_key
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -330,7 +330,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let client_key: ClientKey;
             if let Some(lwe_sk_path) = encrypt_matches.get_one::<String>("lwe-sk") {
-                client_key = load_client_key_from_lwe(lwe_sk_path);
+                client_key = keygen_from_lwe(lwe_sk_path);
             } else if let Some(client_key_path) = encrypt_matches.get_one::<String>("client-key") {
                 client_key = load_client_key(client_key_path);
             } else {
@@ -345,7 +345,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let client_key: ClientKey;
             if let Some(lwe_sk_path) = decrypt_mtches.get_one::<String>("lwe-sk") {
-                client_key = load_client_key_from_lwe(lwe_sk_path);
+                client_key = keygen_from_lwe(lwe_sk_path);
             } else if let Some(client_key_path) = decrypt_mtches.get_one::<String>("client-key") {
                 client_key = load_client_key(client_key_path);
             } else {
@@ -369,7 +369,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // we keygen based on an initial secret key if provided, otherwise we keygen from scratch
             if let Some(lwe_sk_path) = keygen_mtches.get_one::<String>("lwe-sk") {
-                let client_key = load_client_key_from_lwe(lwe_sk_path);
+                let client_key = keygen_from_lwe(lwe_sk_path);
                 let server_key = client_key.generate_server_key();
                 let lwe_secret_key = load_lwe_sk(lwe_sk_path);
                 write_keys(
