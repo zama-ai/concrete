@@ -2327,7 +2327,11 @@ class Context:
         if x.is_clear:
             x, y = y, x
 
-        if (x.is_signed or y.is_signed) and resulting_type.is_unsigned:
+        if (
+            (x.is_signed or y.is_signed)
+            and resulting_type.is_unsigned
+            and (x.is_encrypted and y.is_encrypted)
+        ):
             x = self.to_signed(x)
             y = self.to_signed(y)
 
@@ -2670,7 +2674,11 @@ class Context:
         else:
             operation = fhelinalg.MatMulEintIntOp if x.is_encrypted else fhelinalg.MatMulIntEintOp
 
-        if (x.is_signed or y.is_signed) and resulting_type.is_unsigned:
+        if (
+            (x.is_signed or y.is_signed)
+            and resulting_type.is_unsigned
+            and (x.is_encrypted and y.is_encrypted)
+        ):
             x = self.to_signed(x)
             y = self.to_signed(y)
 
