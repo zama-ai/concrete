@@ -72,11 +72,60 @@ impl TfhersFheIntDescription {
             false => tfhe::integer::ciphertext::DataKind::Unsigned(self.width),
         }
     }
+
+    /// Does the main parameters match
+    fn is_similar(&self, other: &TfhersFheIntDescription) -> bool {
+        if self.width != other.width {
+            return false;
+        }
+        if self.is_signed != other.is_signed {
+            return false;
+        }
+        if self.lwe_size != other.lwe_size {
+            return false;
+        }
+        if self.n_cts != other.n_cts {
+            return false;
+        }
+        if self.message_modulus != other.message_modulus {
+            return false;
+        }
+        if self.carry_modulus != other.carry_modulus {
+            return false;
+        }
+        if self.ks_first != other.ks_first {
+            return false;
+        }
+        true
+    }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_tfhers_unknown_noise_level() -> usize {
     NoiseLevel::UNKNOWN.get()
+}
+
+pub fn tfhers_uint8_description(fheuint: FheUint8) -> TfhersFheIntDescription {
+    // get metadata from fheuint's ciphertext
+    let (radix, _) = fheuint.into_raw_parts();
+    let blocks = radix.blocks();
+    let ct = match blocks.first() {
+        Some(value) => &value.ct,
+        None => {
+            return TfhersFheIntDescription::zero();
+        }
+    };
+    TfhersFheIntDescription {
+        width: 8,
+        is_signed: false,
+        lwe_size: ct.lwe_size().0,
+        n_cts: blocks.len(),
+        degree: blocks[0].degree.get(),
+        noise_level: blocks[0].noise_level().get(),
+        message_modulus: blocks[0].message_modulus.0,
+        carry_modulus: blocks[0].carry_modulus.0,
+        ks_first: blocks[0].pbs_order == PBSOrder::KeyswitchBootstrap,
+    }
 }
 
 #[no_mangle]
@@ -96,26 +145,7 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_description(
                 return TfhersFheIntDescription::zero();
             }
         };
-        // get metadata from fheuint's ciphertext
-        let (radix, _) = fheuint.into_raw_parts();
-        let blocks = radix.blocks();
-        let ct = match blocks.first() {
-            Some(value) => &value.ct,
-            None => {
-                return TfhersFheIntDescription::zero();
-            }
-        };
-        TfhersFheIntDescription {
-            width: 8,
-            is_signed: false,
-            lwe_size: ct.lwe_size().0,
-            n_cts: blocks.len(),
-            degree: blocks[0].degree.get(),
-            noise_level: blocks[0].noise_level().get(),
-            message_modulus: blocks[0].message_modulus.0,
-            carry_modulus: blocks[0].carry_modulus.0,
-            ks_first: blocks[0].pbs_order == PBSOrder::KeyswitchBootstrap,
-        }
+        tfhers_uint8_description(fheuint)
     })
 }
 
@@ -124,6 +154,7 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_to_lwe_array(
     serialized_data_ptr: *const u8,
     serialized_data_len: usize,
     lwe_vec_buffer: *mut u64,
+    desc: TfhersFheIntDescription,
 ) -> i64 {
     nounwind(|| {
         // deserialize fheuint8
@@ -138,6 +169,12 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_to_lwe_array(
                 return 1;
             }
         };
+        let fheuint_desc = tfhers_uint8_description(fheuint.clone());
+
+        if !fheuint_desc.is_similar(&desc) {
+            return 1;
+        }
+
         // collect LWEs from fheuint
         let (radix, _) = fheuint.into_raw_parts();
         let blocks = radix.blocks();
