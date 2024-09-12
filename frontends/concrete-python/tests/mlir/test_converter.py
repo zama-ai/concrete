@@ -1940,6 +1940,42 @@ module {
 
             """,  # noqa: E501
         ),
+        pytest.param(
+            lambda x: np.dot(x, [1, 0, 2]),
+            {
+                "x": {"range": [0, 2**6 - 1], "status": "encrypted", "shape": (3,)},
+            },
+            {},
+            """
+
+module {
+  func.func @main(%arg0: tensor<3x!FHE.eint<8>>) -> !FHE.eint<8> {
+    %cst = arith.constant dense<[1, 0, 2]> : tensor<3xi3>
+    %0 = "FHELinalg.dot_eint_int"(%arg0, %cst) : (tensor<3x!FHE.eint<8>>, tensor<3xi3>) -> !FHE.eint<8>
+    return %0 : !FHE.eint<8>
+  }
+}
+
+            """,  # noqa: E501
+        ),
+        pytest.param(
+            lambda x: np.matmul(x, [[1, 0], [2, 3]]),
+            {
+                "x": {"range": [0, 2**6 - 1], "status": "encrypted", "shape": (2, 2)},
+            },
+            {},
+            """
+
+module {
+  func.func @main(%arg0: tensor<2x2x!FHE.eint<8>>) -> tensor<2x2x!FHE.eint<8>> {
+    %cst = arith.constant dense<[[1, 0], [2, 3]]> : tensor<2x2xi3>
+    %0 = "FHELinalg.matmul_eint_int"(%arg0, %cst) : (tensor<2x2x!FHE.eint<8>>, tensor<2x2xi3>) -> tensor<2x2x!FHE.eint<8>>
+    return %0 : tensor<2x2x!FHE.eint<8>>
+  }
+}
+
+            """,  # noqa: E501
+        ),
     ],
 )
 def test_converter_convert_multi_precision(
