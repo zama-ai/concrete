@@ -420,7 +420,8 @@ struct TfhersFheIntDescription concrete_cpu_tfhers_uint8_description(const uint8
 
 int64_t concrete_cpu_tfhers_uint8_to_lwe_array(const uint8_t *serialized_data_ptr,
                                                size_t serialized_data_len,
-                                               uint64_t *lwe_vec_buffer);
+                                               uint64_t *lwe_vec_buffer,
+                                               struct TfhersFheIntDescription desc);
 
 size_t concrete_cpu_tfhers_unknown_noise_level(void);
 

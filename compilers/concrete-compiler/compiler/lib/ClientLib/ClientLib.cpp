@@ -150,9 +150,9 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
 
   auto dims = std::vector({desc.n_cts, desc.lwe_size});
   auto outputTensor = Tensor<uint64_t>::fromDimensions(dims);
-  auto err = concrete_cpu_tfhers_uint8_to_lwe_array(serializedFheUint8.data(),
-                                                    serializedFheUint8.size(),
-                                                    outputTensor.values.data());
+  auto err = concrete_cpu_tfhers_uint8_to_lwe_array(
+      serializedFheUint8.data(), serializedFheUint8.size(),
+      outputTensor.values.data(), desc);
   if (err) {
     return StringError("couldn't convert fheuint to lwe array");
   }
