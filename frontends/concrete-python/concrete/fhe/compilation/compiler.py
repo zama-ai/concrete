@@ -681,3 +681,10 @@ class Compiler:
         return circuit
 
     # pylint: enable=too-many-branches,too-many-statements
+
+    def reset(self):
+        """
+        Reset the compiler so that another compilation with another inputset can be performed.
+        """
+        fresh_compiler = Compiler(self.function, self.parameter_encryption_statuses)
+        self.__dict__.update(fresh_compiler.__dict__)

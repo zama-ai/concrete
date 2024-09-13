@@ -153,6 +153,13 @@ class Compilable:
 
         return self.compiler.compile(inputset, configuration, artifacts, **kwargs)
 
+    def reset(self):
+        """
+        Reset the compilable so that another compilation with another inputset can be performed.
+        """
+
+        self.compiler.reset()
+
 
 def compiler(parameters: Mapping[str, Union[str, EncryptionStatus]]):
     """
