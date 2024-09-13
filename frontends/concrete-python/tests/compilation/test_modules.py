@@ -131,7 +131,7 @@ def test_non_composable_message():
     assert (
         str(excinfo.value)
         == f"""\
-Program can not be composed (see https://docs.zama.ai/concrete/compilation/common_errors#id-8.-unfeasible-noise-constraint): \
+Program can not be composed (see https://docs.zama.ai/concrete/compilation/common_errors#id-9.-non-composable-circuit): \
 At location test_modules.py:{line}:0:\nThe noise of the node 0 is contaminated by noise coming straight from the input \
 (partition: 0, coeff: 2.00).\
 """

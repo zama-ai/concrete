@@ -32,7 +32,7 @@ def test_non_composable(helpers):
 
     assert (
         str(excinfo.value)
-        == f"Program can not be composed (see https://docs.zama.ai/concrete/compilation/common_errors#id-8.-unfeasible-noise-constraint): \
+        == f"Program can not be composed (see https://docs.zama.ai/concrete/compilation/common_errors#id-9.-non-composable-circuit): \
 At location test_optimizer_errors.py:{line}:0:\nThe noise of the node 0 is contaminated by noise coming straight from the input \
 (partition: 0, coeff: 4.00)."
     )
@@ -61,6 +61,6 @@ def test_unfeasible(helpers):
 
     assert (
         str(excinfo.value)
-        == f"Unfeasible noise constraint encountered (see https://docs.zama.ai/concrete/compilation/common_errors#id-9.-non-composable-circuit): \
+        == f"Unfeasible noise constraint encountered (see https://docs.zama.ai/concrete/compilation/common_errors#id-8.-unfeasible-noise-constraint): \
 At location test_optimizer_errors.py:{line}:0:\n21990232555520000000σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4.5 (0bits partition:0 count:1, dom=73)."
     )
