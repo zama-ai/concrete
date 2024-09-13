@@ -434,3 +434,65 @@ def test_compiler_enable_fusing(helpers):
         helpers.configuration().fork(enable_tlu_fusing=False),
     )
     assert circuit4.programmable_bootstrap_count == 6
+
+
+def test_compiler_reset(helpers):
+    def f(x, y):
+        return x + y
+
+    configuration = helpers.configuration()
+    compiler = fhe.Compiler(f, {"x": "encrypted", "y": "encrypted"})
+
+    inputset1 = fhe.inputset(fhe.uint3, fhe.uint3)
+    circuit1 = compiler.compile(inputset1, configuration)
+
+    helpers.check_str(
+        """
+
+module {
+  func.func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {
+    %0 = "FHE.add_eint"(%arg0, %arg1) : (!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>
+    return %0 : !FHE.eint<4>
+  }
+}
+
+        """.strip(),
+        circuit1.mlir.strip(),
+    )
+    compiler.reset()
+
+    inputset2 = fhe.inputset(fhe.uint10, fhe.uint10)
+    circuit2 = compiler.compile(inputset2, configuration)
+
+    helpers.check_str(
+        """
+
+module {
+  func.func @main(%arg0: !FHE.eint<11>, %arg1: !FHE.eint<11>) -> !FHE.eint<11> {
+    %0 = "FHE.add_eint"(%arg0, %arg1) : (!FHE.eint<11>, !FHE.eint<11>) -> !FHE.eint<11>
+    return %0 : !FHE.eint<11>
+  }
+}
+
+        """.strip(),
+        circuit2.mlir.strip(),
+    )
+    compiler.reset()
+
+    inputset3 = fhe.inputset(fhe.tensor[fhe.uint2, 3, 2], fhe.tensor[fhe.uint2, 2])  # type: ignore
+    circuit3 = compiler.compile(inputset3, configuration)
+
+    helpers.check_str(
+        """
+
+module {
+  func.func @main(%arg0: tensor<3x2x!FHE.eint<3>>, %arg1: tensor<2x!FHE.eint<3>>) -> tensor<3x2x!FHE.eint<3>> {
+    %0 = "FHELinalg.add_eint"(%arg0, %arg1) : (tensor<3x2x!FHE.eint<3>>, tensor<2x!FHE.eint<3>>) -> tensor<3x2x!FHE.eint<3>>
+    return %0 : tensor<3x2x!FHE.eint<3>>
+  }
+}
+
+        """.strip(),
+        circuit3.mlir.strip(),
+    )
+    compiler.reset()
