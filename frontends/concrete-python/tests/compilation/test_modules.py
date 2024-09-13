@@ -753,7 +753,7 @@ def test_trace_wire_single_input_output(helpers):
     assert fhe.Wire(fhe.Output(Module.b, 0), fhe.Input(Module.c, 0)) in Module.composition.wires
 
     module = Module.compile(
-        p_error=0.01,
+        p_error=0.000001,
     )
 
     inp_enc = module.a.encrypt(5)
@@ -792,7 +792,7 @@ def test_trace_wires_multi_inputs_outputs(helpers):
     assert fhe.Wire(fhe.Output(Module.a, 1), fhe.Input(Module.b, 1)) in Module.composition.wires
 
     module = Module.compile(
-        p_error=0.01,
+        p_error=0.000001,
     )
 
     inp_enc = module.a.encrypt(5, 1)
