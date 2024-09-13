@@ -80,6 +80,9 @@ jobs:
             set -e
             rm -rf /build/*
 
+            export PYTHON=python3.12
+            echo "Using $PYTHON"
+
             dnf -y install graphviz graphviz-devel
 
             cd /concrete/frontends/concrete-python
