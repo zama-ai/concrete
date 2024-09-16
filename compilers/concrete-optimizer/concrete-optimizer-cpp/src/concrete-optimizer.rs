@@ -874,7 +874,11 @@ impl Into<Encoding> for ffi::Encoding {
     }
 }
 
-#[allow(unused_must_use, clippy::needless_lifetimes)]
+#[allow(
+    unused_must_use,
+    clippy::needless_lifetimes,
+    clippy::needless_maybe_sized
+)]
 #[cxx::bridge]
 mod ffi {
     #[namespace = "concrete_optimizer"]
