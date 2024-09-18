@@ -83,6 +83,12 @@ jobs:
             make process-benchmark-results-for-grafana
 
             deactivate
+            
+      - name: Upload result
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        with:
+          name: progress.processed.json
+          path: frontends/concrete-python/progress.processed.json
 
       - name: Checkout Slab repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
