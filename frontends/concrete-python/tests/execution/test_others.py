@@ -1003,6 +1003,14 @@ def issue650(x):
             {},
             id="np.min(x, 0)",
         ),
+        pytest.param(
+            lambda x: (x + 20, fhe.bits(x)[1]),
+            {
+                "x": {"status": "encrypted", "range": [0, 3]},
+            },
+            {},
+            id="x + 20, fhe.bits(x)[1]",
+        ),
     ],
 )
 def test_others(function, parameters, configuration_overrides, helpers):
