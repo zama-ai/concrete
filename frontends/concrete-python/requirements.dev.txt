@@ -22,3 +22,5 @@ py-progress-tracker==0.7.0
 linkcheckmd>=1.4.0
 linkchecker>=10.3.0
 mistletoe>=0.9.0
+
+pygame>=2.6.0

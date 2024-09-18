@@ -10,7 +10,9 @@ environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 # ruff: noqa:E402
 # pylint: disable=wrong-import-position,no-member
+
 import argparse
+from typing import Callable, List, Optional
 
 # ruff: noqa:E402
 import pygame
@@ -50,7 +52,6 @@ def conv_with_hand_padding(grid, weight, do_padded_fix):
 
 
 # Function for Game of Life
-@fhe.compiler({"grid": "encrypted"})
 def update_grid_method_3b(grid):
     # Method which uses two first TLU of 3 bits and a third TLU of 2 bits
 
@@ -102,7 +103,6 @@ def update_grid_method_3b(grid):
     return grid
 
 
-@fhe.compiler({"grid": "encrypted"})
 def update_grid_method_4b(grid):
     # Method which uses a first TLU of 4 bits and a second TLU of 2 bits
 
@@ -131,7 +131,6 @@ def update_grid_method_4b(grid):
     return grid
 
 
-@fhe.compiler({"grid": "encrypted"})
 def update_grid_method_5b(grid):
     # Method which uses a single TLU of 5 bits
 
@@ -156,7 +155,6 @@ def update_grid_method_5b(grid):
     return grid
 
 
-@fhe.compiler({"grid": "encrypted"})
 def update_grid_method_bits(grid):
     # Method which uses bits operator, with 4 calls to fhe.bits
     debug = False
@@ -208,7 +206,6 @@ def update_grid_method_bits(grid):
     return new_grid
 
 
-@fhe.compiler({"grid": "encrypted"})
 def update_grid_basic(grid):
     # Method which follows the naive approach
 
@@ -235,6 +232,108 @@ def update_grid_basic(grid):
     )
 
     return grid
+
+
+class GameOfLife:
+    dimension: int
+    circuit: fhe.Circuit
+
+    def __init__(
+        self,
+        implementation: Callable,
+        dimension: int,
+        configuration: Optional[fhe.Configuration] = None,
+        compiled: bool = True,
+    ):
+        self.dimension = dimension
+        if compiled:
+            if configuration is None:
+                configuration = fhe.Configuration()
+
+            compiler = fhe.Compiler(implementation, {"grid": "encrypted"})
+            self.circuit = compiler.compile(
+                fhe.inputset(fhe.tensor[fhe.uint1, 1, 1, dimension, dimension]),  # type: ignore
+                configuration.fork(
+                    bitwise_strategy_preference=fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
+                ),
+            )
+
+    @staticmethod
+    def method_3b(
+        dimension: int,
+        configuration: Optional[fhe.Configuration] = None,
+        compiled: bool = True,
+    ) -> "GameOfLife":
+        return GameOfLife(update_grid_method_3b, dimension, configuration, compiled)
+
+    @staticmethod
+    def method_4b(
+        dimension: int,
+        configuration: Optional[fhe.Configuration] = None,
+        compiled: bool = True,
+    ) -> "GameOfLife":
+        return GameOfLife(update_grid_method_4b, dimension, configuration, compiled)
+
+    @staticmethod
+    def method_5b(
+        dimension: int,
+        configuration: Optional[fhe.Configuration] = None,
+        compiled: bool = True,
+    ) -> "GameOfLife":
+        return GameOfLife(update_grid_method_5b, dimension, configuration, compiled)
+
+    @staticmethod
+    def method_bits(
+        dimension: int,
+        configuration: Optional[fhe.Configuration] = None,
+        compiled: bool = True,
+    ) -> "GameOfLife":
+        return GameOfLife(update_grid_method_bits, dimension, configuration, compiled)
+
+    @staticmethod
+    def method_basic(
+        dimension: int,
+        configuration: Optional[fhe.Configuration] = None,
+        compiled: bool = True,
+    ) -> "GameOfLife":
+        return GameOfLife(update_grid_basic, dimension, configuration, compiled)
+
+    @staticmethod
+    def implementation(
+        implementation: str,
+        dimension: int,
+        configuration: Optional[fhe.Configuration] = None,
+        compiled: bool = True,
+    ) -> "GameOfLife":
+        if implementation == "method_3b":
+            return GameOfLife.method_3b(dimension, configuration, compiled)
+
+        if implementation == "method_4b":
+            return GameOfLife.method_4b(dimension, configuration, compiled)
+
+        if implementation == "method_5b":
+            return GameOfLife.method_5b(dimension, configuration, compiled)
+
+        if implementation == "method_bits":
+            return GameOfLife.method_bits(dimension, configuration, compiled)
+
+        if implementation == "method_basic":
+            return GameOfLife.method_basic(dimension, configuration, compiled)
+
+        raise ValueError("unknown implementation")
+
+    @staticmethod
+    def implementations() -> List[str]:
+        return [
+            "method_3b",
+            "method_4b",
+            "method_5b",
+            "method_bits",
+            "method_basic",
+        ]
+
+    def random_grid(self):
+        return np.random.randint(0, 2, size=(1, 1, self.dimension, self.dimension))
 
 
 # Function for Game of Life
@@ -501,35 +600,22 @@ def main():
 
     # Compile
     if do_compile:
-        inputset = [
-            np.random.randint(2, size=(1, 1, dimension, dimension), dtype=np.int8)
-            for _ in range(1000)
-        ]
-
-        if which_method == "method_3b":
-            function = update_grid_method_3b
-        elif which_method == "method_4b":
-            function = update_grid_method_4b
-        elif which_method == "method_5b":
-            function = update_grid_method_5b
-        elif which_method == "method_bits":
-            function = update_grid_method_bits
-        else:
-            assert which_method == "method_basic"
-            function = update_grid_basic
-
-        circuit = function.compile(
-            inputset,
-            show_mlir=args.show_mlir,
-            show_graph=args.show_graph,
-            fhe_simulation=fhe_simulation,
-            global_p_error=None,  # 2**log2_global_p_error,
-            p_error=2**log2_p_error,
-            bitwise_strategy_preference=fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
-            verbose=args.verbose_compilation,
-            # parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
-            # single_precision=False,
+        game_of_life = GameOfLife.implementation(
+            which_method,
+            dimension,
+            fhe.Configuration(
+                show_mlir=args.show_mlir,
+                show_graph=args.show_graph,
+                fhe_simulation=fhe_simulation,
+                global_p_error=None,  # 2**log2_global_p_error,
+                p_error=2**log2_p_error,
+                bitwise_strategy_preference=fhe.BitwiseStrategy.ONE_TLU_PROMOTED,
+                verbose=args.verbose_compilation,
+                # parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
+                # single_precision=False,
+            ),
         )
+        circuit = game_of_life.circuit
 
         # print(circuit.graph.format(show_assigned_bit_widths=True))
 
