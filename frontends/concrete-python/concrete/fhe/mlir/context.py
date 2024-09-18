@@ -2533,9 +2533,6 @@ class Context:
                 resulting_type.bit_width,
             )
             if delta_precision:
-                bit_value = self.reinterpret(
-                    bit_value, bit_width=max(resulting_type.bit_width, max_bit)
-                )
                 bit_value = self.shift_left_at_constant_precision(bit_value, delta_precision)
 
             bit_value = self.reinterpret(bit_value, bit_width=resulting_type.bit_width)
