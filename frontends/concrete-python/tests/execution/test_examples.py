@@ -7,6 +7,7 @@ from typing import Optional
 import numpy as np
 import pytest
 
+from examples.game_of_life.game_of_life import GameOfLife
 from examples.key_value_database.static_size import StaticKeyValueDatabase
 from examples.levenshtein_distance.levenshtein_distance import (
     Alphabet,
@@ -271,3 +272,135 @@ def test_levenshtein_distance_randomly(alphabet_name, max_length, helpers):
         expected_distance = levenshtein_clear(str1, str2)
         actual_distance = levenshtein_distance.calculate(str1, str2, "simulate", show_distance=True)
         assert actual_distance == expected_distance
+
+
+@pytest.mark.parametrize(
+    "implementation",
+    GameOfLife.implementations(),
+)
+@pytest.mark.parametrize(
+    "dimension,sample_input_output_pairs",
+    [
+        pytest.param(
+            4,
+            [
+                (
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                    ],
+                    # should become
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                    ],
+                ),
+                (
+                    [
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1],
+                    ],
+                    # should become
+                    [
+                        [0, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 0],
+                    ],
+                ),
+                (
+                    [
+                        [0, 0, 0, 0],
+                        [0, 1, 1, 0],
+                        [0, 1, 1, 0],
+                        [0, 0, 0, 0],
+                    ],
+                    # should become
+                    [
+                        [0, 0, 0, 0],
+                        [0, 1, 1, 0],
+                        [0, 1, 1, 0],
+                        [0, 0, 0, 0],
+                    ],
+                ),
+                (
+                    [
+                        [1, 0, 0, 0],
+                        [0, 1, 1, 0],
+                        [0, 1, 1, 0],
+                        [0, 0, 0, 1],
+                    ],
+                    # should become
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 0],
+                    ],
+                ),
+                (
+                    [
+                        [1, 1, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 0, 0, 1],
+                        [0, 0, 1, 1],
+                    ],
+                    # should become
+                    [
+                        [0, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 0],
+                    ],
+                ),
+                (
+                    [
+                        [1, 1, 1, 1],
+                        [1, 1, 1, 1],
+                        [1, 1, 1, 1],
+                        [1, 1, 1, 1],
+                    ],
+                    # should become
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                    ],
+                ),
+            ],
+        ),
+    ],
+)
+def test_game_of_life(implementation, dimension, sample_input_output_pairs, helpers):
+    """
+    Test game of life implementation.
+    """
+
+    configuration = helpers.configuration()
+    game_of_life = GameOfLife.implementation(implementation, dimension, configuration)
+    game_of_life.circuit.keygen()
+
+    for sample_input, expected_output in sample_input_output_pairs:
+        sample = np.array(sample_input).reshape((1, 1, dimension, dimension))
+        result = game_of_life.circuit.encrypt_run_decrypt(sample)
+        actual_output = result.reshape((dimension, dimension))
+        assert np.array_equal(
+            actual_output, expected_output
+        ), f"""
+
+Expected Output
+===============
+{expected_output}
+
+Actual Output
+=============
+{actual_output}
+
+            """
