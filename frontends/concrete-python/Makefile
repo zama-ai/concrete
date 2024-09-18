@@ -126,6 +126,14 @@ benchmark:
 	rm -rf progress.json
 	find ./benchmarks/ -name "*.py" -exec python {} \;
 
+benchmark-target:
+	eval $(shell make silent_cp_activate)
+
+	export PROGRESS_SAMPLES=3
+	export PROGRESS_OUTPUT_INDENT=2
+
+	python "benchmarks/$(TARGET).py"
+
 process-benchmark-results-for-grafana:
 	eval $(shell make silent_cp_activate)
 	python scripts/benchmark/postprocessor.py \
