@@ -62,8 +62,7 @@ licenses:
 # =======
 
 tfhers-utils:
-	cd ${TFHERS_UTILS_DIRECTORY}
-	make build
+	cd ${TFHERS_UTILS_DIRECTORY} && $(MAKE) build
 
 pytest: pytest-default
 
@@ -76,7 +75,7 @@ pytest-default: tfhers-utils
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-pytest-macos:
+pytest-macos: tfhers-utils
 	pytest tests -svv -n auto \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
