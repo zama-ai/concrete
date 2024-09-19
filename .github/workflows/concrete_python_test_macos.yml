@@ -94,7 +94,7 @@ jobs:
           
           deactivate
 
-      - name: Test
+      - name: Prepare test environment
         run: |
           set -e
           export TEST_TMP_DIR=$(mktemp -d)
@@ -117,7 +117,21 @@ jobs:
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
           
           cp $GITHUB_WORKSPACE/frontends/concrete-python/Makefile .
+
+      - name: Test
+        run: |
+
+          set -e
+          export TEST_TMP_DIR="testing_concrete_python"
+          cd $TEST_TMP_DIR && . .testenv/bin/activate
           KEY_CACHE_DIRECTORY=./KeySetCache PYTEST_MARKERS="not dataflow and not graphviz" make pytest-macos
+
+      - name: Test notebooks
+        run: |
+          set -e
+          export TEST_TMP_DIR="testing_concrete_python"
+          cd $TEST_TMP_DIR && . .testenv/bin/activate
+          make test-notebooks
 
       - name: Cleanup host
         if: success() || failure()
