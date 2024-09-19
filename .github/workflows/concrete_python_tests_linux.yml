@@ -92,7 +92,7 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
-      - name: Test
+      - name: Prepare test environment
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         if: ${{ !contains(inputs.instance_type, 'p3') }}
         with:
@@ -111,13 +111,53 @@ jobs:
             
             cd /concrete/frontends/concrete-python
             make venv
+
+      - name: Test
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        if: ${{ !contains(inputs.instance_type, 'p3') }}
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+
+            cd /concrete/frontends/concrete-python
             source .venv/bin/activate
 
             export COMPILER_BUILD_DIRECTORY=/build
             
             mkdir ./KeySetCache
             KEY_CACHE_DIRECTORY=./KeySetCache make pytest
-            
+
+      - name: Test notebooks
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        if: ${{ !contains(inputs.instance_type, 'p3') }}
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+
+            cd /concrete/frontends/concrete-python
+            source .venv/bin/activate
+
+            export COMPILER_BUILD_DIRECTORY=/build
+
+            make test-notebooks
+
+
       - name: Build bindings gpu
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         if: ${{ contains(inputs.instance_type, 'p3') }}

@@ -133,6 +133,10 @@ process-benchmark-results-for-grafana:
 		--target progress.processed.json \
 		--path_to_repository ../..
 
+test-notebooks:
+	eval $(shell make silent_cp_activate)
+	./scripts/jupyter/jupyter.sh
+
 # ==========
 # Formatting
 # ==========
