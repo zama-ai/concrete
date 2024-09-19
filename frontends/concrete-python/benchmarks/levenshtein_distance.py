@@ -73,7 +73,9 @@ def targets():
                 {
                     "id": (
                         f"levenshtein-distance :: "
-                        f"alphabet = {alphabet} | max_string_size = {max_string_length}"
+                        f"Levenshtein distance "
+                        f"| alphabet = {alphabet} "
+                        f"| max_string_size = {max_string_length}"
                     ),
                     "name": (
                         f"Levenshtein distance between two strings "

@@ -48,7 +48,11 @@ def targets():
         for implementation in GameOfLife.implementations():
             result.append(
                 {
-                    "id": f"game-of-life :: " f"{dimension} x {dimension} ({implementation})",
+                    "id": (
+                        f"game-of-life :: "
+                        f"Game of Life "
+                        f"| {dimension} x {dimension} | {implementation}"
+                    ),
                     "name": (
                         f"Advancing Game of Life simulation "
                         f"of size {dimension} x {dimension} "

@@ -190,7 +190,8 @@ def targets():
                         {
                             "id": (
                                 f"static-kvdb-insert :: "
-                                f"{number_of_entries} * {key_size}->{value_size} ^ {chunk_size}"
+                                f"Static KVDB insert "
+                                f"| {number_of_entries} * {key_size}->{value_size} ^ {chunk_size}"
                             ),
                             "name": (
                                 f"Insertion to "
@@ -212,7 +213,8 @@ def targets():
                         {
                             "id": (
                                 f"static-kvdb-replace :: "
-                                f"{number_of_entries} * {key_size}->{value_size} ^ {chunk_size}"
+                                f"Static KVDB replace "
+                                f"| {number_of_entries} * {key_size}->{value_size} ^ {chunk_size}"
                             ),
                             "name": (
                                 f"Replacement in "
@@ -234,7 +236,8 @@ def targets():
                         {
                             "id": (
                                 f"static-kvdb-query :: "
-                                f"{number_of_entries} * {key_size}->{value_size} ^ {chunk_size}"
+                                f"Static KVDB query "
+                                f"| {number_of_entries} * {key_size}->{value_size} ^ {chunk_size}"
                             ),
                             "name": (
                                 f"Query of "
