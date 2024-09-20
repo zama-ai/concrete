@@ -244,19 +244,7 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_uint8(
                 return 0;
             }
         };
-        // serialize fheuint
-        let mut serialized_data = Vec::new();
-        match bincode::serialize_into(&mut serialized_data, &fheuint) {
-            Ok(_) => (),
-            Err(_) => {
-                return 0;
-            }
-        }
-        if serialized_data.len() > fheuint_buffer_size {
-            return 0;
-        }
-        let buff: &mut [u8] = slice::from_raw_parts_mut(fheuint_buffer, serialized_data.len());
-        buff.copy_from_slice(&serialized_data);
-        serialized_data.len()
+
+        super::utils::serialize(&fheuint, fheuint_buffer, fheuint_buffer_size)
     })
 }

@@ -222,19 +222,8 @@ pub unsafe extern "C" fn concrete_cpu_serialize_lwe_secret_key_u64(
         lwe_sk,
         concrete_cpu_lwe_secret_key_size_u64(lwe_dimension),
     ));
-    let mut serialized_data = Vec::new();
-    match bincode::serialize_into(&mut serialized_data, &lwe_sk) {
-        Ok(_) => (),
-        Err(_) => return 0,
-    }
 
-    if serialized_data.len() > out_buffer_len {
-        return 0;
-    }
-
-    let buff: &mut [u8] = slice::from_raw_parts_mut(out_buffer, serialized_data.len());
-    buff.copy_from_slice(&serialized_data);
-    serialized_data.len()
+    super::utils::serialize(&lwe_sk, out_buffer, out_buffer_len)
 }
 
 #[no_mangle]
@@ -268,19 +257,8 @@ pub unsafe extern "C" fn concrete_cpu_serialize_glwe_secret_key_u64(
         ),
         PolynomialSize(polynomial_size),
     );
-    let mut serialized_data = Vec::new();
-    match bincode::serialize_into(&mut serialized_data, &glwe_sk) {
-        Ok(_) => (),
-        Err(_) => return 0,
-    }
 
-    if serialized_data.len() > out_buffer_len {
-        return 0;
-    }
-
-    let buff: &mut [u8] = slice::from_raw_parts_mut(out_buffer, serialized_data.len());
-    buff.copy_from_slice(&serialized_data);
-    serialized_data.len()
+    super::utils::serialize(&glwe_sk, out_buffer, out_buffer_len)
 }
 
 #[no_mangle]
