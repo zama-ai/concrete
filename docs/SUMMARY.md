@@ -106,6 +106,7 @@
     * [SDFG dialect](explanations/SDFGDialect.md)
   * [Call FHE circuits from other languages](explanations/call_from_other_language.md)
   * [Benchmarking](dev/benchmarking.md)
+  * [Examples](dev/examples.md)
   * [Making a release](explanations/releasing.md)
 * [Release note](https://github.com/zama-ai/concrete/releases)
 * [Feature request](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=feature\&projects=\&template=features.md)
