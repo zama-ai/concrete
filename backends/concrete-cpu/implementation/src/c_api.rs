@@ -33,6 +33,27 @@ mod utils {
         let _: libc::size_t = 0_usize;
     };
 
+    pub unsafe fn serialize<T>(value: &T, out_buffer: *mut u8, out_buffer_len: usize) -> usize
+    where
+        T: serde::ser::Serialize,
+    {
+        let serialized_size: usize = match bincode::serialized_size(value) {
+            Ok(size) => {
+                if size > out_buffer_len as u64 {
+                    return 0;
+                }
+                size as usize
+            }
+            Err(_) => return 0,
+        };
+
+        let write_buff: &mut [u8] = core::slice::from_raw_parts_mut(out_buffer, out_buffer_len);
+        match bincode::serialize_into(&mut write_buff[..], value) {
+            Ok(_) => serialized_size,
+            Err(_) => 0,
+        }
+    }
+
     #[cfg(test)]
     mod tests {
         use super::*;
