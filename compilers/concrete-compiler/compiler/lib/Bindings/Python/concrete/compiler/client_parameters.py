@@ -38,7 +38,7 @@ class ClientParameters(WrapperCpp):
             )
         super().__init__(client_parameters)
 
-    def lwe_secret_key_param_at(self, key_id: int) -> LweSecretKeyParam:
+    def lwe_secret_key_param(self, key_id: int) -> LweSecretKeyParam:
         """Get the parameters of a selected LWE secret key.
 
         Args:
@@ -52,7 +52,7 @@ class ClientParameters(WrapperCpp):
         """
         if not isinstance(key_id, int):
             raise TypeError(f"key_id must be of type int, not {type(key_id)}")
-        return LweSecretKeyParam.wrap(self.cpp().lwe_secret_key_param_at(key_id))
+        return LweSecretKeyParam.wrap(self.cpp().lwe_secret_key_param(key_id))
 
     def input_keyid_at(self, input_idx: int, circuit_name: str = "main") -> int:
         """Get the keyid of a selected encrypted input in a given circuit.

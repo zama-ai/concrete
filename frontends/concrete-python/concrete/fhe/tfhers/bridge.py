@@ -212,7 +212,7 @@ class Bridge:
                 continue
 
             key_buffer = input_idx_to_key_buffer[input_idx]
-            param = client_specs.client_parameters.lwe_secret_key_param_at(key_id)
+            param = client_specs.client_parameters.lwe_secret_key_param(key_id)
             try:
                 initial_keys[key_id] = LweSecretKey.deserialize(key_buffer, param)
             except Exception as e:  # pragma: no cover

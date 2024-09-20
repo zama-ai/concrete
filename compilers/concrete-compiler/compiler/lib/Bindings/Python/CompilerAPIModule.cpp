@@ -1300,7 +1300,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
              return pybind11::bytes(
                  clientParametersSerialize(clientParameters));
            })
-      .def("lwe_secret_key_param_at",
+      .def("lwe_secret_key_param",
            [](::concretelang::clientlib::ClientParameters &clientParameters,
               size_t keyId) {
              if (keyId >= clientParameters.secretKeys.size()) {
