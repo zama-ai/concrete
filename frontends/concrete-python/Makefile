@@ -123,8 +123,7 @@ benchmark:
 	export PROGRESS_SAMPLES=3
 	export PROGRESS_OUTPUT_INDENT=2
 
-	rm -rf progress.json
-	find ./benchmarks/ -name "*.py" | xargs python
+	rm -rf progress.json && for script in benchmarks/*.py; do python $script; done
 
 process-benchmark-results-for-grafana:
 	eval $(shell make silent_cp_activate)
