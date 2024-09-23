@@ -119,11 +119,12 @@ pytest-gpu: tfhers-utils
 		-m "${PYTEST_MARKERS}"
 
 benchmark:
-	eval $(shell make silent_cp_activate)
+	eval $(shell #make silent_cp_activate)
 	export PROGRESS_SAMPLES=3
 	export PROGRESS_OUTPUT_INDENT=2
 
-	rm -rf progress.json && for script in benchmarks/*.py; do python $script; done
+	rm -rf progress.json
+	find ./benchmarks/ -name "*.py" -exec python {} \;
 
 process-benchmark-results-for-grafana:
 	eval $(shell make silent_cp_activate)
