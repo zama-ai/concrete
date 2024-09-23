@@ -13,7 +13,7 @@ cd compiler
 
 ### Prerequisite: Install build tools
 
-If you intend to build the Compiler from source, you should make sure to have `build-essentials` (or equivalent if not on Ubuntu), [CMake](https://cmake.org/), and [Ninja](https://ninja-build.org/) installed. Optionally, you can also install [Ccache](https://ccache.dev/) to speedup compilations after small changes.
+If you intend to build the Compiler from source, you should make sure to have `build-essential` (or equivalent if not on Ubuntu), [CMake](https://cmake.org/), and [Ninja](https://ninja-build.org/) installed. Optionally, you can also install [Ccache](https://ccache.dev/) to speedup compilations after small changes.
 
 ### Prerequisite: Install Rust
 
