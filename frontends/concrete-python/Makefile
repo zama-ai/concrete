@@ -118,7 +118,8 @@ pytest-gpu: tfhers-utils
 		-m "${PYTEST_MARKERS}"
 
 benchmark:
-	eval $(shell #make silent_cp_activate)
+	eval $(shell make silent_cp_activate)
+
 	export PROGRESS_SAMPLES=3
 	export PROGRESS_OUTPUT_INDENT=2
 
