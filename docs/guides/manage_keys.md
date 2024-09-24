@@ -1,7 +1,7 @@
 # Manage Keys
 This document explains how to manage keys when using **Concrete**, introducing the key management API for generating, reusing, and securely handling keys.
 
-**Concrete** generates keys implicitly when needed. While this is convenient for development, it's not ideal for the production environment. The explicit key management API is available for you to easily generate and reuse keys as needed.
+**Concrete** generates keys lazily when needed. While this is convenient for development, it's not ideal for the production environment. The explicit key management API is available for you to easily generate and reuse keys as needed.
 
 ## Definition
 
@@ -39,7 +39,7 @@ circuit.keys.generate(seed=420)
 ```
 
 {% hint style="warning" %}
-Do not specify the seed manually in a production environment!
+Do not specify the seed manually in a production environment! This is not secure and should only be done for debugging purposes.
 {% endhint %}
 
 ## Serialization
