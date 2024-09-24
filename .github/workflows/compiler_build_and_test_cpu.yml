@@ -48,8 +48,7 @@ jobs:
       - name: Set up env
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
-          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+          echo "SSH_AUTH_SOCK_DIR=$(dirname "{$SSH_AUTH_SOCK}")" >> "${GITHUB_ENV}"
 
       - name: Fetch repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -114,11 +113,11 @@ jobs:
 
       - name: Enable complete tests on push to main
         if: github.ref == 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=OFF" >> $GITHUB_ENV
+        run: echo "MINIMAL_TESTS=OFF" >> "${GITHUB_ENV}"
 
       - name: Enable minimal tests otherwise
         if: github.ref != 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=ON" >> $GITHUB_ENV
+        run: echo "MINIMAL_TESTS=ON" >> "${GITHUB_ENV}"
 
       - name: Test compiler
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3

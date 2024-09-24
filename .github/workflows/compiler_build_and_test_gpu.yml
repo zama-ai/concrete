@@ -49,7 +49,7 @@ jobs:
         # "Install rust" step require root user to have a HOME directory which is not set.
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
-          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
+          echo "SSH_AUTH_SOCK_DIR=$(dirname "${SSH_AUTH_SOCK}")" >> "${GITHUB_ENV}"
 
       - name: Fetch repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
