@@ -4,6 +4,7 @@ autofix: false
 # list of paths to ignore, uses gitignore syntaxes (executes before any rule)
 ignore:
   - compilers/concrete-compiler/llvm-project
+  - backends/concrete-cuda/implementation
 
 rules:
   # checks if file ends in a newline character
