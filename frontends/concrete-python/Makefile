@@ -228,6 +228,14 @@ check-links:
 	linkchecker ../../docs --check-extern \
 		--no-warnings
 
+actionlint:
+	./scripts/actionlint/actionlint.sh
+
+shelllint:
+	@# grep -v "^\./\." is to avoid files in .hidden_directories
+	find . -type f -name "*.sh" | grep -v "^\./\." | \
+	xargs shellcheck
+
 pcc: check-format check-sanitize-notebooks mypy pydocstyle pylint ruff check-links
 
 # ============
