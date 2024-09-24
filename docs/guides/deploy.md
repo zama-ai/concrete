@@ -98,7 +98,7 @@ serialized_evaluation_keys: bytes = client.evaluation_keys.serialize()
 11. **Send the evaluation keys to the server**.
 
 {% hint style="info" %}
-Serialized evaluation keys are very large. Consider caching them on the server instead of sending them with each request.
+Serialized evaluation keys are very large, even if they are [compressed](https://docs.zama.ai/concrete/compilation/compression) and can be reused several times: consider caching them on the server
 {% endhint %}
 
 ### Encrypting inputs (client-side)
