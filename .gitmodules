@@ -6,3 +6,6 @@
 [submodule "lattice-estimator"]
 	path = third_party/lattice-estimator
 	url = https://github.com/malb/lattice-estimator
+[submodule "third_party/tfhe-rs"]
+	path = third_party/tfhe-rs
+	url = https://github.com/zama-ai/tfhe-rs.git

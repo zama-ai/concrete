@@ -34,7 +34,7 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
 endif()
 
 if(CONCRETELANG_CUDA_SUPPORT)
-  target_link_libraries(ConcretelangRuntime LINK_PUBLIC concrete_cuda)
+  target_link_libraries(ConcretelangRuntime LINK_PUBLIC tfhe_cuda_backend)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -70,7 +70,7 @@ target_link_libraries(
          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
 
 if(CONCRETELANG_CUDA_SUPPORT)
-  install(TARGETS ConcretelangRuntime omp concrete_cuda EXPORT ConcretelangRuntime)
+  install(TARGETS ConcretelangRuntime omp tfhe_cuda_backend EXPORT ConcretelangRuntime)
 else()
   install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
 endif()
