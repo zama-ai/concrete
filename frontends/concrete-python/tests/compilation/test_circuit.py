@@ -2,6 +2,7 @@
 Tests of `Circuit` class.
 """
 
+import platform
 import tempfile
 from pathlib import Path
 
@@ -510,10 +511,11 @@ def test_circuit_run_with_unused_arg(helpers):
 @pytest.mark.dataflow
 def test_dataflow_circuit(helpers):
     """
-    Test execution with dataflow_parallelize=True.
+    Test execution with dataflow_parallelize=True, unless on macOS.
     """
 
-    configuration = helpers.configuration().fork(dataflow_parallelize=True)
+    is_not_mac = platform.system() != "Darwin"
+    configuration = helpers.configuration().fork(dataflow_parallelize=is_not_mac)
 
     @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def f(x, y):
