@@ -95,6 +95,7 @@ jobs:
 
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/examples ./examples
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
+          cp -R $GITHUB_WORKSPACE/frontends/concrete-python/scripts ./scripts
           cp $GITHUB_WORKSPACE/frontends/concrete-python/Makefile .
       - name: Run pytest-macos
         run: |
