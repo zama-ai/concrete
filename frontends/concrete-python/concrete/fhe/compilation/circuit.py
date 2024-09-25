@@ -147,7 +147,9 @@ class Circuit:
             initial_keys (Optional[Dict[int, LweSecretKey]] = None):
                 initial keys to set before keygen
         """
-        self._module.keygen(force=force, seed=seed, encryption_seed=encryption_seed, initial_keys)
+        self._module.keygen(
+            force=force, seed=seed, encryption_seed=encryption_seed, initial_keys=initial_keys
+        )
 
     def encrypt(
         self,
