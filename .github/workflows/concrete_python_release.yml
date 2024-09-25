@@ -336,8 +336,10 @@ jobs:
           # Copy test files
           cp -R $CONCRETE_PYTHON/tests .
           cp -R $CONCRETE_PYTHON/pytest.ini .
+          cp $CONCRETE_PYTHON/Makefile .
 
           # Running tests
+          make tfhers-utils
           pytest tests -svv -n auto
 
   test-macos:
@@ -389,6 +391,7 @@ jobs:
           cp $CONCRETE_PYTHON/Makefile .
 
           # Running tests
+          make tfhers-utils
           mkdir ./KeySetCache
           pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
 
