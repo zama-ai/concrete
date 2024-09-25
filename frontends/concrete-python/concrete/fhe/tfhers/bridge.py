@@ -232,7 +232,7 @@ class Bridge:
 
 def new_bridge(
     circuit: "fhe.Circuit",
-    func_name: str = "main",
+    func_name: str = "<lambda>",
 ) -> Bridge:
     """Create a TFHErs bridge from a circuit.
 

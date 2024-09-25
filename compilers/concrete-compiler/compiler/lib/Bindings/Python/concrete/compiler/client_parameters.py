@@ -54,7 +54,7 @@ class ClientParameters(WrapperCpp):
             raise TypeError(f"key_id must be of type int, not {type(key_id)}")
         return LweSecretKeyParam.wrap(self.cpp().lwe_secret_key_param(key_id))
 
-    def input_keyid_at(self, input_idx: int, circuit_name: str = "main") -> int:
+    def input_keyid_at(self, input_idx: int, circuit_name: str = "<lambda>") -> int:
         """Get the keyid of a selected encrypted input in a given circuit.
 
         Args:
