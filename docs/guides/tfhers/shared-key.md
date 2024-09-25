@@ -18,7 +18,7 @@ In this scenario, a shared secret key will be used, while different keysets will
 
 After the key generation is complete and we have both keysets, we can perform computations, encryption, and decryption on both ends.
 
-![alt text](../_static/tfhers/tfhers_uc1.excalidraw.svg)
+![alt text](../../_static/tfhers/tfhers_uc1.excalidraw.svg)
 
 ## Setup and configuration
 
