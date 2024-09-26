@@ -14,6 +14,25 @@ from concrete import fhe
 from concrete.fhe import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, Value
 
 
+def test_circuit_statistics(helpers):
+    """
+    Test circuit statistics has statistics from both module and func.
+    """
+
+    configuration = helpers.configuration()
+
+    @fhe.compiler({"x": "encrypted", "y": "encrypted"})
+    def f(x, y):
+        return x + y
+
+    inputset = [(np.random.randint(0, 2**4), np.random.randint(0, 2**5)) for _ in range(100)]
+    circuit = f.compile(inputset, configuration.fork(p_error=6e-5))
+
+    stat = circuit.statistics
+    assert "p_error" in stat  # from module
+    assert "size_of_inputs" in stat  # from circuit
+
+
 def test_circuit_str(helpers):
     """
     Test `__str__` method of `Circuit` class.
