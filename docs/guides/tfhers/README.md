@@ -1,5 +1,12 @@
 # TFHE-rs Compatibility
 
+
+{% hint style="warning" %}
+
+This feature is currently in beta version. Please note that the API may change in future Concrete releases.
+
+{% endhint %}
+
 This guide explains how to combine Concrete and [TFHE-rs](https://github.com/zama-ai/tfhe-rs) computations together. This allows you to convert ciphertexts from Concrete to TFHE-rs, and vice versa, and to run a computation with both libraries without requiring a decryption.
 
 ## Overview
