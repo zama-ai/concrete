@@ -21,7 +21,7 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
         run: |
           mkdir wheels
-          aws s3 cp s3://${S3_BUCKET_NAME}/cpu/concrete-python/ ./wheels/ --recursive --exclude "*" --include "concrete_python-${{ inputs.version }}*"
+          aws s3 cp s3://${S3_BUCKET_NAME}/cpu/concrete-python/ ./wheels/ --recursive --exclude "*" --include "concrete_python-${{ inputs.version }}-*"
           echo "============== Downloaded wheels ==============="
           ls -la ./wheels/
 
