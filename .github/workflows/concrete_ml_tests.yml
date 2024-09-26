@@ -26,7 +26,7 @@ jobs:
   linux-x86:
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.8"]
 
     runs-on: ${{ github.event.inputs.runner_name }}
     steps:
