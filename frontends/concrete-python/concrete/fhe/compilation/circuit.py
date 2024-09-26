@@ -39,6 +39,10 @@ class Circuit:
     def _function(self) -> FheFunction:
         return getattr(self._module, self._name)
 
+    @property
+    def function_name(self) -> str:
+        return self._name
+
     def __str__(self):
         return self._function.graph.format()
 
@@ -148,7 +152,10 @@ class Circuit:
                 initial keys to set before keygen
         """
         self._module.keygen(
-            force=force, seed=seed, encryption_seed=encryption_seed, initial_keys=initial_keys
+            force=force,
+            seed=seed,
+            encryption_seed=encryption_seed,
+            initial_keys=initial_keys,
         )
 
     def encrypt(
