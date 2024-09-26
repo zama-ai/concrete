@@ -497,13 +497,13 @@ class Circuit:
     # All Statistics
 
     @property
-    def statistics(self) -> Dict:  # pragma: no cover
+    def statistics(self) -> Dict:
         """
         Get all statistics of the circuit.
         """
         mod_stats = self._module.statistics
         func_stats = mod_stats.pop("functions")[self._name]
-        return mod_stats | func_stats
+        return {**mod_stats, **func_stats}
 
     @property
     def configuration(self) -> Configuration:
