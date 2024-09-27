@@ -48,7 +48,7 @@ Get only evaluation keys.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
@@ -78,7 +78,8 @@ Deserialize keys from bytes.
 generate(
     force: bool = False,
     seed: Optional[int] = None,
-    encryption_seed: Optional[int] = None
+    encryption_seed: Optional[int] = None,
+    initial_keys: Optional[Dict[int, LweSecretKey]] = None
 )
 ```
 
@@ -93,9 +94,11 @@ Generate new keys.
 
  encryption_seed (Optional[int], default = None):  seed for encryption randomness 
 
+ initial_keys (Optional[Dict[int, LweSecretKey]] = None):  initial keys to set before keygen 
+
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L105"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -112,7 +115,7 @@ Load keys from a location.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L136"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_if_exists_generate_and_save_otherwise`
 
@@ -134,7 +137,7 @@ Load keys from a location if they exist, else generate new keys and save to that
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
@@ -153,7 +156,7 @@ Saved keys are not encrypted, so be careful how you store/transfer them!
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 

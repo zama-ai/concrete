@@ -223,12 +223,26 @@ inputs_share_precision(node: Node, preds: List[Node])
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/processors/assign_bit_widths.py#L354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/processors/assign_bit_widths.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `min_max`
 
 ```python
 min_max(node: Node, preds: List[Node])
+```
+
+
+
+
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/processors/assign_bit_widths.py#L354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `minimum_maximum`
+
+```python
+minimum_maximum(node: Node, preds: List[Node])
 ```
 
 

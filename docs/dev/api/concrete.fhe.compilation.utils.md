@@ -5,10 +5,15 @@
 # <kbd>module</kbd> `concrete.fhe.compilation.utils`
 Declaration of various functions and constants related to compilation. 
 
+**Global Variables**
+---------------
+- **TYPE_CHECKING**
+- **SignedInteger**
+- **UnsignedInteger**
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `inputset`
 
@@ -36,7 +41,7 @@ Generate a random inputset.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `validate_input_args`
 
@@ -44,7 +49,7 @@ Generate a random inputset.
 validate_input_args(
     client_specs: ClientSpecs,
     *args: Optional[int, ndarray, List],
-    function_name: str = 'main'
+    function_name: str
 ) → List[Union[int, ndarray, NoneType]]
 ```
 
@@ -65,12 +70,15 @@ Validate input arguments.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `fuse`
 
 ```python
-fuse(graph: Graph, artifacts: Optional[FunctionDebugArtifacts] = None)
+fuse(
+    graph: Graph,
+    artifacts: Optional[ForwardRef('FunctionDebugArtifacts')] = None
+)
 ```
 
 Fuse appropriate subgraphs in a graph to a single Operation.Generic node. 
@@ -90,7 +98,7 @@ Fuse appropriate subgraphs in a graph to a single Operation.Generic node.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_float_subgraph_with_unique_terminal_node`
 
@@ -118,7 +126,7 @@ Find a subgraph with float computations that end with an integer output.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L317"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L376"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_ancestor`
 
@@ -146,7 +154,7 @@ Find a subgraph with a tlu computation that has multiple variable inputs     whe
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_single_lca`
 
@@ -168,7 +176,7 @@ Returns  Optional[Node]:  single lca if it exists, None otherwise
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L446"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L505"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_single_common_ancestor`
 
@@ -198,7 +206,7 @@ Returns  bool:  True if `candidate` is a single common ancestor of `nodes`, Fals
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L577"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L636"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `find_closest_integer_output_nodes`
 
@@ -229,7 +237,7 @@ Find the closest upstream integer output nodes to a set of start nodes in a grap
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `add_nodes_from_to`
 
@@ -263,7 +271,7 @@ Add nodes from `from_nodes` to `to_nodes`, to `all_nodes`.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L672"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L731"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_subgraph_to_subgraph_node`
 
@@ -302,7 +310,7 @@ Convert a subgraph to Operation.Generic node.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L783"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L842"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_subgraph_fusibility`
 
@@ -337,7 +345,7 @@ shuffling or reshaping a tensor make fusing impossible as there should be a one-
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L844"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L903"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `friendly_type_format`
 
@@ -350,7 +358,7 @@ Convert a type to a string. Remove package name and class/type keywords.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L862"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L921"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_terminal_size`
 
@@ -359,5 +367,54 @@ get_terminal_size() → int
 ```
 
 Get the terminal size. 
+
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `Lazy`
+A lazyly initialized value. 
+
+Allows to prevent executing a costly initialization if the value is not used afterward. 
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(init: Callable[[], ~T]) → None
+```
+
+
+
+
+
+
+---
+
+#### <kbd>property</kbd> initialized
+
+Returns whether the value has been initialized or not. 
+
+---
+
+#### <kbd>property</kbd> val
+
+Initializes the value if needed, and returns it. 
+
+
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/utils.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `init`
+
+```python
+init() → None
+```
+
+Force initialization of the value. 
 
 

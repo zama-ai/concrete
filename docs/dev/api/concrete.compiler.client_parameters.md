@@ -9,14 +9,14 @@ Client parameters.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L18"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ClientParameters`
 ClientParameters are public parameters used for key generation. 
 
 It's a compilation artifact that describes which and how public and private keys should be generated, and used to encrypt arguments of the compiled function. 
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -43,7 +43,7 @@ Wrap the native Cpp object.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
@@ -73,7 +73,56 @@ Unserialize ClientParameters from bytes of serialized_params.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `function_list`
+
+```python
+function_list() → List[str]
+```
+
+Return the list of function names. 
+
+
+
+**Returns:**
+ 
+ - <b>`List[str]`</b>:  list of the names of the functions. 
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `input_keyid_at`
+
+```python
+input_keyid_at(input_idx: int, circuit_name: str = '<lambda>') → int
+```
+
+Get the keyid of a selected encrypted input in a given circuit. 
+
+
+
+**Args:**
+ 
+ - <b>`input_idx`</b> (int):  index of the input in the circuit. 
+ - <b>`circuit_name`</b> (str):  name of the circuit containing the desired input. 
+
+
+
+**Raises:**
+ 
+ - <b>`TypeError`</b>:  if arguments aren't of expected types 
+
+
+
+**Returns:**
+ 
+ - <b>`int`</b>:  keyid 
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `input_signs`
 
@@ -91,7 +140,68 @@ Return the sign information of inputs.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `input_variance_at`
+
+```python
+input_variance_at(input_idx: int, circuit_name: str) → float
+```
+
+Get the variance of a selected encrypted input in a given circuit. 
+
+
+
+**Args:**
+ 
+ - <b>`input_idx`</b> (int):  index of the input in the circuit. 
+ - <b>`circuit_name`</b> (str):  name of the circuit containing the desired input. 
+
+
+
+**Raises:**
+ 
+ - <b>`TypeError`</b>:  if arguments aren't of expected types 
+
+
+
+**Returns:**
+ 
+ - <b>`float`</b>:  variance 
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `lwe_secret_key_param`
+
+```python
+lwe_secret_key_param(key_id: int) → LweSecretKeyParam
+```
+
+Get the parameters of a selected LWE secret key. 
+
+
+
+**Args:**
+ 
+ - <b>`key_id`</b> (int):  keyid to get parameters from 
+
+
+
+**Raises:**
+ 
+ - <b>`TypeError`</b>:  if arguments aren't of expected types 
+
+
+
+**Returns:**
+ 
+ - <b>`LweSecretKeyParam`</b>:  LWE secret key parameters 
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `output_signs`
 
@@ -109,7 +219,7 @@ Return the sign information of outputs.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_parameters.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 

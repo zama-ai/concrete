@@ -17,6 +17,7 @@
 - [`concrete.compiler.library_compilation_result`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult.
 - [`concrete.compiler.library_lambda`](./concrete.compiler.library_lambda.md): LibraryLambda.
 - [`concrete.compiler.library_support`](./concrete.compiler.library_support.md): LibrarySupport.
+- [`concrete.compiler.lwe_secret_key`](./concrete.compiler.lwe_secret_key.md): LweSecretKey.
 - [`concrete.compiler.parameter`](./concrete.compiler.parameter.md): Parameter.
 - [`concrete.compiler.public_arguments`](./concrete.compiler.public_arguments.md): PublicArguments.
 - [`concrete.compiler.public_result`](./concrete.compiler.public_result.md): PublicResult.
@@ -24,6 +25,7 @@
 - [`concrete.compiler.server_program`](./concrete.compiler.server_program.md): ServerProgram.
 - [`concrete.compiler.simulated_value_decrypter`](./concrete.compiler.simulated_value_decrypter.md): SimulatedValueDecrypter.
 - [`concrete.compiler.simulated_value_exporter`](./concrete.compiler.simulated_value_exporter.md): SimulatedValueExporter.
+- [`concrete.compiler.tfhers_int`](./concrete.compiler.tfhers_int.md): Import and export TFHErs integers into Concrete.
 - [`concrete.compiler.utils`](./concrete.compiler.utils.md): Common utils for the compiler submodule.
 - [`concrete.compiler.value`](./concrete.compiler.value.md): Value.
 - [`concrete.compiler.value_decrypter`](./concrete.compiler.value_decrypter.md): ValueDecrypter.
@@ -43,8 +45,10 @@
 - [`concrete.fhe.compilation.module_compiler`](./concrete.fhe.compilation.module_compiler.md): Declaration of `MultiCompiler` class.
 - [`concrete.fhe.compilation.server`](./concrete.fhe.compilation.server.md): Declaration of `Server` class.
 - [`concrete.fhe.compilation.specs`](./concrete.fhe.compilation.specs.md): Declaration of `ClientSpecs` class.
+- [`concrete.fhe.compilation.status`](./concrete.fhe.compilation.status.md): Declaration of `EncryptionStatus` class.
 - [`concrete.fhe.compilation.utils`](./concrete.fhe.compilation.utils.md): Declaration of various functions and constants related to compilation.
 - [`concrete.fhe.compilation.value`](./concrete.fhe.compilation.value.md): Declaration of `Value` class.
+- [`concrete.fhe.compilation.wiring`](./concrete.fhe.compilation.wiring.md): Declaration of wiring related class.
 - [`concrete.fhe.dtypes`](./concrete.fhe.dtypes.md): Define available data types and their semantics.
 - [`concrete.fhe.dtypes.base`](./concrete.fhe.dtypes.base.md): Declaration of `BaseDataType` abstract class.
 - [`concrete.fhe.dtypes.float`](./concrete.fhe.dtypes.float.md): Declaration of `Float` class.
@@ -53,6 +57,7 @@
 - [`concrete.fhe.extensions`](./concrete.fhe.extensions.md): Provide additional features that are not present in numpy.
 - [`concrete.fhe.extensions.array`](./concrete.fhe.extensions.array.md): Declaration of `array` function, to simplify creation of encrypted arrays.
 - [`concrete.fhe.extensions.bits`](./concrete.fhe.extensions.bits.md): Bit extraction extensions.
+- [`concrete.fhe.extensions.constant`](./concrete.fhe.extensions.constant.md): Declaration of `constant` functions, to allow server side trivial encryption.
 - [`concrete.fhe.extensions.convolution`](./concrete.fhe.extensions.convolution.md): Tracing and evaluation of convolution.
 - [`concrete.fhe.extensions.hint`](./concrete.fhe.extensions.hint.md): Declaration of hinting extensions, to provide more information to Concrete.
 - [`concrete.fhe.extensions.identity`](./concrete.fhe.extensions.identity.md): Declaration of `identity` extension.
@@ -85,6 +90,7 @@
 - [`concrete.fhe.representation.operation`](./concrete.fhe.representation.operation.md): Declaration of `Operation` enum.
 - [`concrete.fhe.representation.utils`](./concrete.fhe.representation.utils.md): Declaration of various functions and constants related to representation of computation.
 - [`concrete.fhe.tfhers`](./concrete.fhe.tfhers.md): tfhers module to represent, and compute on tfhers integer values.
+- [`concrete.fhe.tfhers.bridge`](./concrete.fhe.tfhers.bridge.md): Declaration of `tfhers.Bridge` class.
 - [`concrete.fhe.tfhers.dtypes`](./concrete.fhe.tfhers.dtypes.md): Declaration of `TFHERSIntegerType` class.
 - [`concrete.fhe.tfhers.tracing`](./concrete.fhe.tfhers.tracing.md): Tracing of tfhers operations.
 - [`concrete.fhe.tfhers.values`](./concrete.fhe.tfhers.values.md): Declaration of `TFHERSInteger` which wraps values as being of tfhers types.
@@ -117,6 +123,8 @@
 - [`library_compilation_result.LibraryCompilationResult`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult holds the result of the library compilation.
 - [`library_lambda.LibraryLambda`](./concrete.compiler.library_lambda.md): LibraryLambda reference a compiled library and can be ran using LibrarySupport.
 - [`library_support.LibrarySupport`](./concrete.compiler.library_support.md): Support class for library compilation and execution.
+- [`lwe_secret_key.LweSecretKey`](./concrete.compiler.lwe_secret_key.md): An LweSecretKey.
+- [`lwe_secret_key.LweSecretKeyParam`](./concrete.compiler.lwe_secret_key.md): LWE Secret Key Parameters
 - [`parameter.Parameter`](./concrete.compiler.parameter.md): An FHE parameter.
 - [`public_arguments.PublicArguments`](./concrete.compiler.public_arguments.md): PublicArguments holds encrypted and plain arguments, as well as public materials.
 - [`public_result.PublicResult`](./concrete.compiler.public_result.md): PublicResult holds the result of an encrypted execution and can be decrypted using ClientSupport.
@@ -124,51 +132,48 @@
 - [`server_program.ServerProgram`](./concrete.compiler.server_program.md): ServerProgram references compiled circuit objects.
 - [`simulated_value_decrypter.SimulatedValueDecrypter`](./concrete.compiler.simulated_value_decrypter.md): A helper class to decrypt `Value`s.
 - [`simulated_value_exporter.SimulatedValueExporter`](./concrete.compiler.simulated_value_exporter.md): A helper class to create `Value`s.
+- [`tfhers_int.TfhersExporter`](./concrete.compiler.tfhers_int.md): A helper class to import and export TFHErs big integers.
+- [`tfhers_int.TfhersFheIntDescription`](./concrete.compiler.tfhers_int.md): A helper class to create `TfhersFheIntDescription`s.
 - [`value.Value`](./concrete.compiler.value.md): An encrypted/clear value which can be scalar/tensor.
 - [`value_decrypter.ValueDecrypter`](./concrete.compiler.value_decrypter.md): A helper class to decrypt `Value`s.
 - [`value_exporter.ValueExporter`](./concrete.compiler.value_exporter.md): A helper class to create `Value`s.
 - [`wrapper.WrapperCpp`](./concrete.compiler.wrapper.md): Wrapper base class for native Cpp objects.
 - [`artifacts.DebugArtifacts`](./concrete.fhe.compilation.artifacts.md): DebugArtifacts class, to export information about the compilation process for single function.
+- [`artifacts.DebugManager`](./concrete.fhe.compilation.artifacts.md): A debug manager, allowing streamlined debugging.
 - [`artifacts.FunctionDebugArtifacts`](./concrete.fhe.compilation.artifacts.md): An object containing debug artifacts for a certain function in an fhe module.
 - [`artifacts.ModuleDebugArtifacts`](./concrete.fhe.compilation.artifacts.md): An object containing debug artifacts for an fhe module.
 - [`circuit.Circuit`](./concrete.fhe.compilation.circuit.md): Circuit class, to combine computation graph, mlir, client and server into a single object.
 - [`client.Client`](./concrete.fhe.compilation.client.md): Client class, which can be used to manage keys, encrypt arguments and decrypt results.
 - [`compiler.Compiler`](./concrete.fhe.compilation.compiler.md): Compiler class, to glue the compilation pipeline.
-- [`compiler.EncryptionStatus`](./concrete.fhe.compilation.compiler.md): EncryptionStatus enum, to represent encryption status of parameters.
 - [`composition.CompositionClause`](./concrete.fhe.compilation.composition.md): A raw composition clause.
 - [`composition.CompositionPolicy`](./concrete.fhe.compilation.composition.md): A protocol for composition policies.
 - [`composition.CompositionRule`](./concrete.fhe.compilation.composition.md): A raw composition rule.
 - [`configuration.ApproximateRoundingConfig`](./concrete.fhe.compilation.configuration.md): Controls the behavior of approximate rounding.
-- [`configuration.BitwiseStrategy`](./concrete.fhe.compilation.configuration.md): BitwiseStrategy, to specify implementation preference for bitwise operations.
-- [`configuration.ComparisonStrategy`](./concrete.fhe.compilation.configuration.md): ComparisonStrategy, to specify implementation preference for comparisons.
-- [`configuration.Configuration`](./concrete.fhe.compilation.configuration.md): Configuration class, to allow the compilation process to be customized.
-- [`configuration.Exactness`](./concrete.fhe.compilation.configuration.md).
-- [`configuration.MinMaxStrategy`](./concrete.fhe.compilation.configuration.md): MinMaxStrategy, to specify implementation preference for minimum and maximum operations.
-- [`configuration.MultiParameterStrategy`](./concrete.fhe.compilation.configuration.md): MultiParamStrategy, to set optimization strategy for multi-parameter.
-- [`configuration.MultivariateStrategy`](./concrete.fhe.compilation.configuration.md): MultivariateStrategy, to specify implementation preference for multivariate operations.
-- [`configuration.ParameterSelectionStrategy`](./concrete.fhe.compilation.configuration.md): ParameterSelectionStrategy, to set optimization strategy.
 - [`decorators.Compilable`](./concrete.fhe.compilation.decorators.md): Compilable class, to wrap a function and provide methods to trace and compile it.
 - [`keys.Keys`](./concrete.fhe.compilation.keys.md): Keys class, to manage generate/reuse keys.
 - [`module.ExecutionRt`](./concrete.fhe.compilation.module.md): Runtime object class for execution.
 - [`module.FheFunction`](./concrete.fhe.compilation.module.md): Fhe function class, allowing to run or simulate one function of an fhe module.
 - [`module.FheModule`](./concrete.fhe.compilation.module.md): Fhe module class, to combine computation graphs, mlir, runtime objects into a single object.
 - [`module.SimulationRt`](./concrete.fhe.compilation.module.md): Runtime object class for simulation.
-- [`module_compiler.AllComposable`](./concrete.fhe.compilation.module_compiler.md): Composition policy that allows to forward any output of the module to any of its input.
-- [`module_compiler.AllInputs`](./concrete.fhe.compilation.module_compiler.md): All the inputs of a given function of a module.
-- [`module_compiler.AllOutputs`](./concrete.fhe.compilation.module_compiler.md): All the outputs of a given function of a module.
-- [`module_compiler.DebugManager`](./concrete.fhe.compilation.module_compiler.md): A debug manager, allowing streamlined debugging.
 - [`module_compiler.FunctionDef`](./concrete.fhe.compilation.module_compiler.md): An object representing the definition of a function as used in an fhe module.
-- [`module_compiler.Input`](./concrete.fhe.compilation.module_compiler.md): The input of a given function of a module.
 - [`module_compiler.ModuleCompiler`](./concrete.fhe.compilation.module_compiler.md): Compiler class for multiple functions, to glue the compilation pipeline.
-- [`module_compiler.NotComposable`](./concrete.fhe.compilation.module_compiler.md): Composition policy that does not allow the forwarding of any output to any input.
-- [`module_compiler.Output`](./concrete.fhe.compilation.module_compiler.md): The output of a given function of a module.
-- [`module_compiler.Wire`](./concrete.fhe.compilation.module_compiler.md): A forwarding rule between an output and an input.
-- [`module_compiler.WireInput`](./concrete.fhe.compilation.module_compiler.md): A protocol for wire inputs.
-- [`module_compiler.WireOutput`](./concrete.fhe.compilation.module_compiler.md): A protocol for wire outputs.
-- [`module_compiler.Wired`](./concrete.fhe.compilation.module_compiler.md): Composition policy which allows the forwarding of certain outputs to certain inputs.
 - [`server.Server`](./concrete.fhe.compilation.server.md): Server class, which can be used to perform homomorphic computation.
 - [`specs.ClientSpecs`](./concrete.fhe.compilation.specs.md): ClientSpecs class, to create Client objects.
+- [`status.EncryptionStatus`](./concrete.fhe.compilation.status.md): EncryptionStatus enum, to represent encryption status of parameters.
+- [`utils.Lazy`](./concrete.fhe.compilation.utils.md): A lazyly initialized value.
 - [`value.Value`](./concrete.fhe.compilation.value.md): Value class, to store scalar or tensor values which can be encrypted or clear.
+- [`wiring.AllComposable`](./concrete.fhe.compilation.wiring.md): Composition policy that allows to forward any output of the module to any of its input.
+- [`wiring.AllInputs`](./concrete.fhe.compilation.wiring.md): All the encrypted inputs of a given function of a module.
+- [`wiring.AllOutputs`](./concrete.fhe.compilation.wiring.md): All the encrypted outputs of a given function of a module.
+- [`wiring.Input`](./concrete.fhe.compilation.wiring.md): The input of a given function of a module.
+- [`wiring.NotComposable`](./concrete.fhe.compilation.wiring.md): Composition policy that does not allow the forwarding of any output to any input.
+- [`wiring.Output`](./concrete.fhe.compilation.wiring.md): The output of a given function of a module.
+- [`wiring.TracedOutput`](./concrete.fhe.compilation.wiring.md): A wrapper type used to trace wiring.
+- [`wiring.Wire`](./concrete.fhe.compilation.wiring.md): A forwarding rule between an output and an input.
+- [`wiring.WireInput`](./concrete.fhe.compilation.wiring.md): A protocol for wire inputs.
+- [`wiring.WireOutput`](./concrete.fhe.compilation.wiring.md): A protocol for wire outputs.
+- [`wiring.WireTracingContextManager`](./concrete.fhe.compilation.wiring.md): A context manager returned by the `wire_pipeline` method.
+- [`wiring.Wired`](./concrete.fhe.compilation.wiring.md): Composition policy which allows the forwarding of certain outputs to certain inputs.
 - [`base.BaseDataType`](./concrete.fhe.dtypes.base.md): BaseDataType abstract class, to form a basis for data types.
 - [`float.Float`](./concrete.fhe.dtypes.float.md): Float class, to represent floating point numbers.
 - [`integer.Integer`](./concrete.fhe.dtypes.integer.md): Integer class, to represent integers.
@@ -198,6 +203,9 @@
 - [`graph.MultiGraphProcessor`](./concrete.fhe.representation.graph.md): MultiGraphProcessor base class, to define the API for a multiple graph processing pipeline.
 - [`node.Node`](./concrete.fhe.representation.node.md): Node class, to represent computation in a computation graph.
 - [`operation.Operation`](./concrete.fhe.representation.operation.md): Operation enum, to distinguish nodes within a computation graph.
+- [`bridge.Bridge`](./concrete.fhe.tfhers.bridge.md): TFHErs Bridge extend a Circuit with TFHErs functionalities.
+- [`dtypes.CryptoParams`](./concrete.fhe.tfhers.dtypes.md): Crypto parameters used for a tfhers integer.
+- [`dtypes.EncryptionKeyChoice`](./concrete.fhe.tfhers.dtypes.md): TFHErs key choice: big or small.
 - [`dtypes.TFHERSIntegerType`](./concrete.fhe.tfhers.dtypes.md) to represent tfhers integer types.
 - [`values.TFHERSInteger`](./concrete.fhe.tfhers.values.md) into typed values, using tfhers types.
 - [`tracer.Annotation`](./concrete.fhe.tracing.tracer.md): Base annotation for direct definition.
@@ -339,6 +347,8 @@
 
 ## Functions
 
+- [`compiler.check_gpu_available`](./concrete.compiler.md): Check whether a CUDA device is available and online.
+- [`compiler.check_gpu_enabled`](./concrete.compiler.md): Check whether the compiler and runtime support GPU offloading.
 - [`compiler.init_dfr`](./concrete.compiler.md): Initialize dataflow parallelization.
 - [`compiler.round_trip`](./concrete.compiler.md): Parse the MLIR input, then return it back.
 - [`compilation_feedback.tag_from_location`](./concrete.compiler.compilation_feedback.md): Extract tag of the operation from its location.
@@ -363,9 +373,11 @@
 - [`utils.combine_dtypes`](./concrete.fhe.dtypes.utils.md): Get the 'BaseDataType' that can represent a set of 'BaseDataType's.
 - [`array.array`](./concrete.fhe.extensions.array.md): Create an encrypted array from either encrypted or clear values.
 - [`bits.bits`](./concrete.fhe.extensions.bits.md): Extract bits of integers.
+- [`constant.constant`](./concrete.fhe.extensions.constant.md): Trivial encryption of a cleartext value.
 - [`convolution.conv`](./concrete.fhe.extensions.convolution.md): Trace and evaluate convolution operations.
 - [`hint.hint`](./concrete.fhe.extensions.hint.md): Hint the compilation process about properties of a value.
 - [`identity.identity`](./concrete.fhe.extensions.identity.md): Apply identity function to x.
+- [`identity.refresh`](./concrete.fhe.extensions.identity.md): Refresh x.
 - [`maxpool.maxpool`](./concrete.fhe.extensions.maxpool.md): Evaluate or trace MaxPool operation.
 - [`multivariate.multivariate`](./concrete.fhe.extensions.multivariate.md): Wrap a multivariate function so that it is traced into a single generic node.
 - [`ones.one`](./concrete.fhe.extensions.ones.md): Create an encrypted scalar with the value of one.
@@ -387,6 +399,7 @@
 - [`utils.flood_replace_none_values`](./concrete.fhe.mlir.utils.md): Use flooding algorithm to replace `None` values.
 - [`utils.format_constant`](./concrete.fhe.representation.utils.md): Get the textual representation of a constant.
 - [`utils.format_indexing_element`](./concrete.fhe.representation.utils.md): Format an indexing element.
+- [`bridge.new_bridge`](./concrete.fhe.tfhers.bridge.md): Create a TFHErs bridge from a circuit.
 - [`tracing.from_native`](./concrete.fhe.tfhers.tracing.md): Convert a Concrete integer to the tfhers representation.
 - [`tracing.to_native`](./concrete.fhe.tfhers.tracing.md): Convert a tfhers integer to the Concrete representation.
 - [`scalar.clear_scalar_builder`](./concrete.fhe.values.scalar.md): Build a clear scalar value.

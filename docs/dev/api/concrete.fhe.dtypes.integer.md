@@ -5,6 +5,10 @@
 # <kbd>module</kbd> `concrete.fhe.dtypes.integer`
 Declaration of `Integer` class. 
 
+**Global Variables**
+---------------
+- **SignedInteger**
+- **UnsignedInteger**
 
 
 ---

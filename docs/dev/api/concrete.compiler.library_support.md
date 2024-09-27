@@ -196,7 +196,7 @@ Load the compilation feedback from the compilation result.
 load_server_lambda(
     library_compilation_result: LibraryCompilationResult,
     simulation: bool,
-    circuit_name: str = 'main'
+    circuit_name: str
 ) → LibraryLambda
 ```
 

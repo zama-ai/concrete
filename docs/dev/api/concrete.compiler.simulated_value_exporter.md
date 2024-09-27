@@ -96,7 +96,7 @@ Export tensor.
 ```python
 new(
     client_parameters: ClientParameters,
-    circuitName: str = 'main'
+    circuitName: str
 ) → SimulatedValueExporter
 ```
 

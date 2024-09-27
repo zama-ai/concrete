@@ -51,14 +51,14 @@ Get the keys for the client.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt`
 
 ```python
 decrypt(
     *results: Union[Value, Tuple[Value, ]],
-    function_name: str = 'main'
+    function_name: Optional[str] = None
 ) → Union[int, ndarray, Tuple[Union[int, ndarray, NoneType], ], NoneType]
 ```
 
@@ -76,14 +76,14 @@ Decrypt result(s) of evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt`
 
 ```python
 encrypt(
     *args: Optional[int, ndarray, List],
-    function_name: str = 'main'
+    function_name: Optional[str] = None
 ) → Union[Value, Tuple[Optional[Value], ], NoneType]
 ```
 
@@ -109,7 +109,8 @@ Encrypt argument(s) to for evaluation.
 keygen(
     force: bool = False,
     seed: Optional[int] = None,
-    encryption_seed: Optional[int] = None
+    encryption_seed: Optional[int] = None,
+    initial_keys: Optional[Dict[int, LweSecretKey]] = None
 )
 ```
 
@@ -123,6 +124,8 @@ Generate keys required for homomorphic evaluation.
  seed (Optional[int], default = None):  seed for private keys randomness 
 
  encryption_seed (Optional[int], default = None):  seed for encryption randomness 
+
+ initial_keys (Optional[Dict[int, LweSecretKey]] = None):  initial keys to set before keygen 
 
 ---
 

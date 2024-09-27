@@ -9,12 +9,12 @@ Declaration of `TFHERSInteger` which wraps values as being of tfhers types.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L13"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TFHERSInteger`
 Wrap integer values (scalar or arrays) into typed values, using tfhers types. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -65,7 +65,7 @@ Get the wrapped value.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `max`
 
@@ -82,7 +82,7 @@ Get the maximum value that can be represented by the current type.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/values.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `min`
 
