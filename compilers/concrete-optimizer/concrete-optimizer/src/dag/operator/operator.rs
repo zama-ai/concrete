@@ -77,6 +77,10 @@ pub enum Operator {
         out_precision: Precision,
         out_shape: Shape,
     },
+    Zero {
+        out_precision: Precision,
+        out_shape: Shape,
+    },
     Lut {
         input: OperatorIndex,
         table: FunctionTable,
@@ -93,6 +97,10 @@ pub enum Operator {
         weights: Vec<f64>,
         out_shape: Shape,
         comment: String,
+    },
+    Max {
+        inputs: Vec<OperatorIndex>,
+        out_shape: Shape,
     },
     // Used to reduced or increase precision when the ciphertext is compatible with different precision
     // This is done without any checking
@@ -116,8 +124,10 @@ impl Operator {
     // Returns an iterator on the indices of the operator inputs.
     pub(crate) fn get_inputs_iter(&self) -> Box<dyn Iterator<Item = &OperatorIndex> + '_> {
         match self {
-            Self::Input { .. } => Box::new(empty()),
-            Self::LevelledOp { inputs, .. } | Self::Dot { inputs, .. } => Box::new(inputs.iter()),
+            Self::Input { .. } | Self::Zero { .. } => Box::new(empty()),
+            Self::LevelledOp { inputs, .. }
+            | Self::Dot { inputs, .. }
+            | Self::Max { inputs, .. } => Box::new(inputs.iter()),
             Self::UnsafeCast { input, .. }
             | Self::Lut { input, .. }
             | Self::Round { input, .. }
@@ -152,6 +162,12 @@ impl fmt::Display for Operator {
                 out_shape,
             } => {
                 write!(f, "Input : u{out_precision} x {out_shape:?}")?;
+            }
+            Self::Zero {
+                out_precision,
+                out_shape,
+            } => {
+                write!(f, "Zero : u{out_precision} x {out_shape:?}")?;
             }
             Self::Dot {
                 inputs, weights, ..
@@ -190,6 +206,18 @@ impl fmt::Display for Operator {
                     write!(f, "%{}", input.0)?;
                 }
                 write!(f, "] : weights={weights:?}, out_shape={out_shape:?}")?;
+            }
+            Self::Max {
+                inputs, out_shape, ..
+            } => {
+                write!(f, "MAX[")?;
+                for (i, input) in inputs.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "%{}", input.0)?;
+                }
+                write!(f, "] : out_shape={out_shape:?}")?;
             }
             Self::Round {
                 input,

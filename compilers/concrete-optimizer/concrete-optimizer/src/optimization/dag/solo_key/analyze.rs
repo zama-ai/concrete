@@ -44,14 +44,14 @@ fn assert_non_empty_inputs(op: &Operator) {
 
 fn assert_inputs_index(op: &Operator, first_bad_index: usize) {
     let valid = match op {
-        Operator::Input { .. } => true,
+        Operator::Input { .. } | Operator::Zero { .. } => true,
         Operator::Lut { input, .. }
         | Operator::UnsafeCast { input, .. }
         | Operator::Round { input, .. }
         | Operator::ChangePartition { input, .. } => input.0 < first_bad_index,
-        Operator::LevelledOp { inputs, .. } | Operator::Dot { inputs, .. } => {
-            inputs.iter().all(|input| input.0 < first_bad_index)
-        }
+        Operator::LevelledOp { inputs, .. }
+        | Operator::Dot { inputs, .. }
+        | Operator::Max { inputs, .. } => inputs.iter().all(|input| input.0 < first_bad_index),
     };
     assert!(valid, "Invalid dag, bad index in op: {op:?}");
 }
@@ -148,6 +148,7 @@ fn out_variance(
     // TODO: track each elements instead of container
     match op {
         Operator::Input { .. } => SymbolicVariance::INPUT,
+        Operator::Zero { .. } => SymbolicVariance::ZERO,
         Operator::Lut { .. } => SymbolicVariance::LUT,
         Operator::LevelledOp {
             inputs, weights, ..
@@ -158,6 +159,15 @@ fn out_variance(
             .fold(SymbolicVariance::ZERO, |acc, (var, &weight)| {
                 acc + var * square(weight)
             }),
+        Operator::Max { inputs, .. } => {
+            inputs
+                .iter()
+                .map(|i| out_variances[i.0])
+                .fold(SymbolicVariance::ZERO, |acc, var| SymbolicVariance {
+                    lut_coeff: acc.lut_coeff.max(var.lut_coeff),
+                    input_coeff: acc.input_coeff.max(var.lut_coeff),
+                })
+        }
         Operator::Dot {
             kind: DotKind::CompatibleTensor { .. },
             ..
@@ -253,6 +263,8 @@ fn op_levelled_complexity(op: &Operator, out_shapes: &[Shape]) -> LevelledComple
 
         Operator::LevelledOp { complexity, .. } => *complexity,
         Operator::Input { .. }
+        | Operator::Zero { .. }
+        | Operator::Max { .. }
         | Operator::Lut { .. }
         | Operator::UnsafeCast { .. }
         | Operator::ChangePartition { .. } => LevelledComplexity::ZERO,

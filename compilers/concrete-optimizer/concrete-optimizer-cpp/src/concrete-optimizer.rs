@@ -690,6 +690,21 @@ impl<'dag> DagBuilder<'dag> {
             .into()
     }
 
+    fn add_zero(
+        &mut self,
+        out_precision: Precision,
+        out_shape: &[u64],
+        location: &Location,
+    ) -> ffi::OperatorIndex {
+        let out_shape = Shape {
+            dimensions_size: out_shape.to_owned(),
+        };
+
+        self.0
+            .add_zero(out_precision, out_shape, location.0.clone())
+            .into()
+    }
+
     fn add_lut(
         &mut self,
         input: ffi::OperatorIndex,
@@ -750,6 +765,21 @@ impl<'dag> DagBuilder<'dag> {
                 location.0.clone(),
             )
             .into()
+    }
+
+    fn add_max(
+        &mut self,
+        inputs: &[ffi::OperatorIndex],
+        out_shape: &[u64],
+        location: &Location,
+    ) -> ffi::OperatorIndex {
+        let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
+
+        let out_shape = Shape {
+            dimensions_size: out_shape.to_owned(),
+        };
+
+        self.0.add_max(inputs, out_shape, location.0.clone()).into()
     }
 
     fn add_round_op(
@@ -943,6 +973,13 @@ mod ffi {
             location: &Location,
         ) -> OperatorIndex;
 
+        unsafe fn add_zero(
+            self: &mut DagBuilder<'_>,
+            out_precision: u8,
+            out_shape: &[u64],
+            location: &Location,
+        ) -> OperatorIndex;
+
         unsafe fn add_lut(
             self: &mut DagBuilder<'_>,
             input: OperatorIndex,
@@ -966,6 +1003,13 @@ mod ffi {
             weights: &[f64],
             out_shape: &[u64],
             comment: &str,
+            location: &Location,
+        ) -> OperatorIndex;
+
+        unsafe fn add_max(
+            self: &mut DagBuilder<'_>,
+            inputs: &[OperatorIndex],
+            out_shape: &[u64],
             location: &Location,
         ) -> OperatorIndex;
 
