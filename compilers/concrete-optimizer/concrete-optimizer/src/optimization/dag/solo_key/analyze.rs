@@ -25,7 +25,7 @@ fn assert_all_same<Property: PartialEq + std::fmt::Debug>(
 }
 
 fn assert_inputs_uniform_precisions(op: &Operator, out_precisions: &[Precision]) {
-    if let Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } = op {
+    if let Operator::Dot { inputs, .. } | Operator::LinearNoise { inputs, .. } = op {
         assert_all_same(inputs, out_precisions);
     }
 }
@@ -37,21 +37,21 @@ fn assert_dot_uniform_inputs_shape(op: &Operator, out_shapes: &[Shape]) {
 }
 
 fn assert_non_empty_inputs(op: &Operator) {
-    if let Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } = op {
+    if let Operator::Dot { inputs, .. } | Operator::LinearNoise { inputs, .. } = op {
         assert!(!inputs.is_empty());
     }
 }
 
 fn assert_inputs_index(op: &Operator, first_bad_index: usize) {
     let valid = match op {
-        Operator::Input { .. } => true,
+        Operator::Input { .. } | Operator::ZeroNoise { .. } => true,
         Operator::Lut { input, .. }
         | Operator::UnsafeCast { input, .. }
         | Operator::Round { input, .. }
         | Operator::ChangePartition { input, .. } => input.0 < first_bad_index,
-        Operator::LevelledOp { inputs, .. } | Operator::Dot { inputs, .. } => {
-            inputs.iter().all(|input| input.0 < first_bad_index)
-        }
+        Operator::LinearNoise { inputs, .. }
+        | Operator::Dot { inputs, .. }
+        | Operator::MaxNoise { inputs, .. } => inputs.iter().all(|input| input.0 < first_bad_index),
     };
     assert!(valid, "Invalid dag, bad index in op: {op:?}");
 }
@@ -148,8 +148,9 @@ fn out_variance(
     // TODO: track each elements instead of container
     match op {
         Operator::Input { .. } => SymbolicVariance::INPUT,
+        Operator::ZeroNoise { .. } => SymbolicVariance::ZERO,
         Operator::Lut { .. } => SymbolicVariance::LUT,
-        Operator::LevelledOp {
+        Operator::LinearNoise {
             inputs, weights, ..
         } => inputs
             .iter()
@@ -158,6 +159,15 @@ fn out_variance(
             .fold(SymbolicVariance::ZERO, |acc, (var, &weight)| {
                 acc + var * square(weight)
             }),
+        Operator::MaxNoise { inputs, .. } => {
+            inputs
+                .iter()
+                .map(|i| out_variances[i.0])
+                .fold(SymbolicVariance::ZERO, |acc, var| SymbolicVariance {
+                    lut_coeff: acc.lut_coeff.max(var.lut_coeff),
+                    input_coeff: acc.input_coeff.max(var.input_coeff),
+                })
+        }
         Operator::Dot {
             kind: DotKind::CompatibleTensor { .. },
             ..
@@ -251,8 +261,10 @@ fn op_levelled_complexity(op: &Operator, out_shapes: &[Shape]) -> LevelledComple
                 * out_shapes[inputs[0].0].flat_size()
         }
 
-        Operator::LevelledOp { complexity, .. } => *complexity,
+        Operator::LinearNoise { complexity, .. } => *complexity,
         Operator::Input { .. }
+        | Operator::ZeroNoise { .. }
+        | Operator::MaxNoise { .. }
         | Operator::Lut { .. }
         | Operator::UnsafeCast { .. }
         | Operator::ChangePartition { .. } => LevelledComplexity::ZERO,
@@ -710,7 +722,7 @@ pub mod tests {
         let weights = Weights::vector([1, 2]);
         #[allow(clippy::imprecise_flops)]
         let dot =
-            graph.add_levelled_op([input1, input1], cpx_dot, [1., 2.], Shape::number(), "dot");
+            graph.add_linear_noise([input1, input1], cpx_dot, [1., 2.], Shape::number(), "dot");
         let analysis = analyze(&graph);
         let one_lut_cost = 100.0;
         let lwe_dim = 1024;

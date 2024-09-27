@@ -232,7 +232,9 @@ impl PartitionCut {
         for (op_i, op) in dag.operators.iter().enumerate() {
             match op {
                 // propagate
-                Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
+                Operator::Dot { inputs, .. }
+                | Operator::LinearNoise { inputs, .. }
+                | Operator::MaxNoise { inputs, .. } => {
                     let mut origins = HashSet::default();
                     for input in inputs {
                         origins.extend(&noise_origins[input.0]);
@@ -249,6 +251,10 @@ impl PartitionCut {
                 }
                 Operator::Input { .. } => {
                     max_output_norm2[op_i] = 1.0; // initial value that can be maxed
+                    noise_origins[op_i] = std::iter::once(op_i).collect();
+                }
+                Operator::ZeroNoise { .. } => {
+                    max_output_norm2[op_i] = 0.0; // initial value that can be maxed
                     noise_origins[op_i] = std::iter::once(op_i).collect();
                 }
                 Operator::ChangePartition {
