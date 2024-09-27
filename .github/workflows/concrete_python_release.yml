@@ -238,7 +238,7 @@ jobs:
       base64-subjects: ${{ needs.hash.outputs.hash }}
 
   push:
-    needs: [release-checks, build-linux-x86, build-macos, provenance]
+    needs: [build-linux-x86, build-macos, provenance]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
