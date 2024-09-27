@@ -977,9 +977,11 @@ private:
 struct DagBuilder final : public ::rust::Opaque {
   ::rust::String dump() const noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_input(::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape, ::concrete_optimizer::Location const &location) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_zero_noise(::std::uint8_t out_precision, ::rust::Slice<::std::uint64_t const> out_shape, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_lut(::concrete_optimizer::dag::OperatorIndex input, ::rust::Slice<::std::uint64_t const> table, ::std::uint8_t out_precision, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_dot(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Box<::concrete_optimizer::Weights> weights, ::concrete_optimizer::Location const &location) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_levelled_op(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, ::rust::Slice<double const> weights, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment, ::concrete_optimizer::Location const &location) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_linear_noise(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, double lwe_dim_cost_factor, double fixed_cost, ::rust::Slice<double const> weights, ::rust::Slice<::std::uint64_t const> out_shape, ::rust::Str comment, ::concrete_optimizer::Location const &location) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_max_noise(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Slice<::std::uint64_t const> out_shape, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_change_partition_with_src(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &src_partition, ::concrete_optimizer::Location const &location) noexcept;

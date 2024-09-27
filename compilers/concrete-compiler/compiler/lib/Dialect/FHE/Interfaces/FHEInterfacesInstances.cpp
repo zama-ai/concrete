@@ -17,6 +17,9 @@ using namespace mlir::tensor;
 void registerFheInterfacesExternalModels(DialectRegistry &registry) {
   registry.addExtension(+[](MLIRContext *ctx, TensorDialect *dialect) {
     ExtractOp::attachInterface<UnaryEint>(*ctx);
+    InsertSliceOp::attachInterface<MaxNoise>(*ctx);
+    InsertOp::attachInterface<MaxNoise>(*ctx);
+    ParallelInsertSliceOp::attachInterface<MaxNoise>(*ctx);
   });
 }
 } // namespace FHE

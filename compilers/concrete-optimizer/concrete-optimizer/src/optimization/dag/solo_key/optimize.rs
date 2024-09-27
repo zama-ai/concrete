@@ -390,9 +390,9 @@ pub fn add_v0_dag(dag: &mut unparametrized::Dag, sum_size: u64, precision: u64, 
     let comment = "dot";
     let precision = precision as crate::dag::operator::Precision;
     let input1 = dag.add_input(precision, out_shape);
-    let dot1 = dag.add_levelled_op([input1], complexity, [1.0], out_shape, comment);
+    let dot1 = dag.add_linear_noise([input1], complexity, [1.0], out_shape, comment);
     let lut1 = dag.add_lut(dot1, FunctionTable::UNKWOWN, precision);
-    let dot2 = dag.add_levelled_op([lut1], complexity, [manp], out_shape, comment);
+    let dot2 = dag.add_linear_noise([lut1], complexity, [manp], out_shape, comment);
     let _lut2 = dag.add_lut(dot2, FunctionTable::UNKWOWN, precision);
 }
 
