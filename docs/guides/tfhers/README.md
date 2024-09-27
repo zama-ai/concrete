@@ -23,14 +23,14 @@ from concrete.fhe import tfhers
 # don't worry about the API, we will have better examples later.
 # we just want to show the encoding here
 tfhers_params = tfhers.CryptoParams(
-lwe_dimension=909,
-glwe_dimension=1,
-polynomial_size=4096,
-pbs_base_log=15,
-pbs_level=2,
-lwe_noise_distribution=9.743962418842052e-07,
-glwe_noise_distribution=2.168404344971009e-19,
-encryption_key_choice=tfhers.EncryptionKeyChoice.BIG,
+    lwe_dimension=909,
+    glwe_dimension=1,
+    polynomial_size=4096,
+    pbs_base_log=15,
+    pbs_level=2,
+    lwe_noise_distribution=9.743962418842052e-07,
+    glwe_noise_distribution=2.168404344971009e-19,
+    encryption_key_choice=tfhers.EncryptionKeyChoice.BIG,
 )
 
 # TFHERSInteger using this type will be represented as a vector of 8/2=4 integers
