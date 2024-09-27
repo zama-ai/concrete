@@ -14,7 +14,7 @@ Declaration of `Tracer` class.
 ## <kbd>class</kbd> `Tracer`
 Tracer class, to create computation graphs from python functions. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -55,7 +55,7 @@ Trace numpy.ndarray.size.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `astype`
 
@@ -69,7 +69,7 @@ Trace numpy.ndarray.astype(dtype).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L694"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clip`
 
@@ -81,7 +81,7 @@ Trace numpy.ndarray.clip().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L718"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dot`
 
@@ -93,7 +93,7 @@ Trace numpy.ndarray.dot().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L710"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `flatten`
 
@@ -105,7 +105,7 @@ Trace numpy.ndarray.flatten().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L732"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reshape`
 
@@ -117,7 +117,7 @@ Trace numpy.ndarray.reshape(newshape).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L729"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L744"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `round`
 
@@ -129,7 +129,7 @@ Trace numpy.ndarray.round().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sanitize`
 
@@ -160,7 +160,7 @@ trace(
     function: Callable,
     parameters: Dict[str, ValueDescription],
     is_direct: bool = False,
-    name: str = 'main'
+    location: str = ''
 ) → Graph
 ```
 
@@ -175,8 +175,6 @@ Trace `function` and create the `Graph` that represents it.
 
  is_direct (bool, default = False):  whether the tracing is done on actual parameters or placeholders 
 
- name (str, default = "main"):  the name of the function being traced 
-
 
 
 **Returns:**
@@ -184,7 +182,7 @@ Trace `function` and create the `Graph` that represents it.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `transpose`
 
@@ -197,12 +195,12 @@ Trace numpy.ndarray.transpose().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L1061"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L1076"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Annotation`
 Base annotation for direct definition. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -243,7 +241,7 @@ Trace numpy.ndarray.size.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `astype`
 
@@ -257,7 +255,7 @@ Trace numpy.ndarray.astype(dtype).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L694"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clip`
 
@@ -269,7 +267,7 @@ Trace numpy.ndarray.clip().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L718"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dot`
 
@@ -281,7 +279,7 @@ Trace numpy.ndarray.dot().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L710"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `flatten`
 
@@ -293,7 +291,7 @@ Trace numpy.ndarray.flatten().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L732"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reshape`
 
@@ -305,7 +303,7 @@ Trace numpy.ndarray.reshape(newshape).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L729"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L744"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `round`
 
@@ -317,7 +315,7 @@ Trace numpy.ndarray.round().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sanitize`
 
@@ -348,7 +346,7 @@ trace(
     function: Callable,
     parameters: Dict[str, ValueDescription],
     is_direct: bool = False,
-    name: str = 'main'
+    location: str = ''
 ) → Graph
 ```
 
@@ -363,8 +361,6 @@ Trace `function` and create the `Graph` that represents it.
 
  is_direct (bool, default = False):  whether the tracing is done on actual parameters or placeholders 
 
- name (str, default = "main"):  the name of the function being traced 
-
 
 
 **Returns:**
@@ -372,7 +368,7 @@ Trace `function` and create the `Graph` that represents it.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `transpose`
 
@@ -385,12 +381,12 @@ Trace numpy.ndarray.transpose().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L1067"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L1082"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ScalarAnnotation`
 Base scalar annotation for direct definition. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -431,7 +427,7 @@ Trace numpy.ndarray.size.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `astype`
 
@@ -445,7 +441,7 @@ Trace numpy.ndarray.astype(dtype).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L694"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clip`
 
@@ -457,7 +453,7 @@ Trace numpy.ndarray.clip().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L718"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dot`
 
@@ -469,7 +465,7 @@ Trace numpy.ndarray.dot().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L710"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `flatten`
 
@@ -481,7 +477,7 @@ Trace numpy.ndarray.flatten().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L732"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reshape`
 
@@ -493,7 +489,7 @@ Trace numpy.ndarray.reshape(newshape).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L729"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L744"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `round`
 
@@ -505,7 +501,7 @@ Trace numpy.ndarray.round().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sanitize`
 
@@ -536,7 +532,7 @@ trace(
     function: Callable,
     parameters: Dict[str, ValueDescription],
     is_direct: bool = False,
-    name: str = 'main'
+    location: str = ''
 ) → Graph
 ```
 
@@ -551,8 +547,6 @@ Trace `function` and create the `Graph` that represents it.
 
  is_direct (bool, default = False):  whether the tracing is done on actual parameters or placeholders 
 
- name (str, default = "main"):  the name of the function being traced 
-
 
 
 **Returns:**
@@ -560,7 +554,7 @@ Trace `function` and create the `Graph` that represents it.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `transpose`
 
@@ -573,12 +567,12 @@ Trace numpy.ndarray.transpose().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L1075"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L1090"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TensorAnnotation`
 Base tensor annotation for direct definition. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -619,7 +613,7 @@ Trace numpy.ndarray.size.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `astype`
 
@@ -633,7 +627,7 @@ Trace numpy.ndarray.astype(dtype).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L694"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clip`
 
@@ -645,7 +639,7 @@ Trace numpy.ndarray.clip().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L718"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dot`
 
@@ -657,7 +651,7 @@ Trace numpy.ndarray.dot().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L710"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `flatten`
 
@@ -669,7 +663,7 @@ Trace numpy.ndarray.flatten().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L732"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reshape`
 
@@ -681,7 +675,7 @@ Trace numpy.ndarray.reshape(newshape).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L729"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L744"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `round`
 
@@ -693,7 +687,7 @@ Trace numpy.ndarray.round().
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sanitize`
 
@@ -724,7 +718,7 @@ trace(
     function: Callable,
     parameters: Dict[str, ValueDescription],
     is_direct: bool = False,
-    name: str = 'main'
+    location: str = ''
 ) → Graph
 ```
 
@@ -739,8 +733,6 @@ Trace `function` and create the `Graph` that represents it.
 
  is_direct (bool, default = False):  whether the tracing is done on actual parameters or placeholders 
 
- name (str, default = "main"):  the name of the function being traced 
-
 
 
 **Returns:**
@@ -748,7 +740,7 @@ Trace `function` and create the `Graph` that represents it.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tracing/tracer.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `transpose`
 

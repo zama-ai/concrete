@@ -5,6 +5,10 @@
 # <kbd>module</kbd> `concrete.fhe.dtypes.utils`
 Declaration of various functions and constants related to data types. 
 
+**Global Variables**
+---------------
+- **SignedInteger**
+- **UnsignedInteger**
 
 ---
 

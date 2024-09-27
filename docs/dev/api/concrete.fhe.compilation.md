@@ -7,21 +7,23 @@ Glue the compilation process together.
 
 **Global Variables**
 ---------------
-- **artifacts**
 - **specs**
-- **keys**
 - **utils**
+- **configuration**
+- **artifacts**
+- **keys**
 - **value**
 - **client**
 - **composition**
-- **configuration**
 - **server**
+- **module**
 - **circuit**
+- **status**
+- **wiring**
+- **module_compiler**
 - **compiler**
 - **DEFAULT_GLOBAL_P_ERROR**
 - **DEFAULT_P_ERROR**
-- **module**
-- **module_compiler**
 - **decorators**
 
 
