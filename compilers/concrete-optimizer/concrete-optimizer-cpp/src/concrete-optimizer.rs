@@ -690,6 +690,21 @@ impl<'dag> DagBuilder<'dag> {
             .into()
     }
 
+    fn add_zero_noise(
+        &mut self,
+        out_precision: Precision,
+        out_shape: &[u64],
+        location: &Location,
+    ) -> ffi::OperatorIndex {
+        let out_shape = Shape {
+            dimensions_size: out_shape.to_owned(),
+        };
+
+        self.0
+            .add_zero_noise(out_precision, out_shape, location.0.clone())
+            .into()
+    }
+
     fn add_lut(
         &mut self,
         input: ffi::OperatorIndex,
@@ -718,7 +733,7 @@ impl<'dag> DagBuilder<'dag> {
         self.0.add_dot(inputs, weights.0, location.0.clone()).into()
     }
 
-    fn add_levelled_op(
+    fn add_linear_noise(
         &mut self,
         inputs: &[ffi::OperatorIndex],
         lwe_dim_cost_factor: f64,
@@ -741,7 +756,7 @@ impl<'dag> DagBuilder<'dag> {
         };
 
         self.0
-            .add_levelled_op(
+            .add_linear_noise(
                 inputs,
                 complexity,
                 weights,
@@ -749,6 +764,23 @@ impl<'dag> DagBuilder<'dag> {
                 comment,
                 location.0.clone(),
             )
+            .into()
+    }
+
+    fn add_max_noise(
+        &mut self,
+        inputs: &[ffi::OperatorIndex],
+        out_shape: &[u64],
+        location: &Location,
+    ) -> ffi::OperatorIndex {
+        let inputs: Vec<OperatorIndex> = inputs.iter().copied().map(Into::into).collect();
+
+        let out_shape = Shape {
+            dimensions_size: out_shape.to_owned(),
+        };
+
+        self.0
+            .add_max_noise(inputs, out_shape, location.0.clone())
             .into()
     }
 
@@ -943,6 +975,13 @@ mod ffi {
             location: &Location,
         ) -> OperatorIndex;
 
+        unsafe fn add_zero_noise(
+            self: &mut DagBuilder<'_>,
+            out_precision: u8,
+            out_shape: &[u64],
+            location: &Location,
+        ) -> OperatorIndex;
+
         unsafe fn add_lut(
             self: &mut DagBuilder<'_>,
             input: OperatorIndex,
@@ -958,7 +997,7 @@ mod ffi {
             location: &Location,
         ) -> OperatorIndex;
 
-        unsafe fn add_levelled_op(
+        unsafe fn add_linear_noise(
             self: &mut DagBuilder<'_>,
             inputs: &[OperatorIndex],
             lwe_dim_cost_factor: f64,
@@ -966,6 +1005,13 @@ mod ffi {
             weights: &[f64],
             out_shape: &[u64],
             comment: &str,
+            location: &Location,
+        ) -> OperatorIndex;
+
+        unsafe fn add_max_noise(
+            self: &mut DagBuilder<'_>,
+            inputs: &[OperatorIndex],
+            out_shape: &[u64],
             location: &Location,
         ) -> OperatorIndex;
 

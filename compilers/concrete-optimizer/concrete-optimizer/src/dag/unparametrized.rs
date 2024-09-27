@@ -73,7 +73,10 @@ pub struct DagOperator<'dag> {
 impl<'dag> DagOperator<'dag> {
     /// Returns if the operator is an input.
     pub fn is_input(&self) -> bool {
-        matches!(self.operator, Operator::Input { .. })
+        matches!(
+            self.operator,
+            Operator::Input { .. } | Operator::ZeroNoise { .. }
+        )
     }
 
     /// Returns if the operator is an output.
@@ -163,6 +166,22 @@ impl<'dag> DagBuilder<'dag> {
         OperatorIndex(i)
     }
 
+    pub fn add_zero_noise(
+        &mut self,
+        out_precision: Precision,
+        out_shape: impl Into<Shape>,
+        location: Location,
+    ) -> OperatorIndex {
+        let out_shape = out_shape.into();
+        self.add_operator(
+            Operator::ZeroNoise {
+                out_precision,
+                out_shape,
+            },
+            location,
+        )
+    }
+
     pub fn add_input(
         &mut self,
         out_precision: Precision,
@@ -217,7 +236,7 @@ impl<'dag> DagBuilder<'dag> {
         )
     }
 
-    pub fn add_levelled_op(
+    pub fn add_linear_noise(
         &mut self,
         inputs: impl Into<Vec<OperatorIndex>>,
         complexity: LevelledComplexity,
@@ -231,13 +250,25 @@ impl<'dag> DagBuilder<'dag> {
         let comment = comment.into();
         let weights = weights.into();
         assert_eq!(weights.len(), inputs.len());
-        let op = Operator::LevelledOp {
+        let op = Operator::LinearNoise {
             inputs,
             complexity,
             weights,
             out_shape,
             comment,
         };
+        self.add_operator(op, location)
+    }
+
+    pub fn add_max_noise(
+        &mut self,
+        inputs: impl Into<Vec<OperatorIndex>>,
+        out_shape: impl Into<Shape>,
+        location: Location,
+    ) -> OperatorIndex {
+        let inputs = inputs.into();
+        let out_shape = out_shape.into();
+        let op = Operator::MaxNoise { inputs, out_shape };
         self.add_operator(op, location)
     }
 
@@ -433,9 +464,10 @@ impl<'dag> DagBuilder<'dag> {
 
     fn infer_out_shape(&self, op: &Operator) -> Shape {
         match op {
-            Operator::Input { out_shape, .. } | Operator::LevelledOp { out_shape, .. } => {
-                out_shape.clone()
-            }
+            Operator::Input { out_shape, .. }
+            | Operator::LinearNoise { out_shape, .. }
+            | Operator::ZeroNoise { out_shape, .. }
+            | Operator::MaxNoise { out_shape, .. } => out_shape.clone(),
             Operator::Lut { input, .. }
             | Operator::UnsafeCast { input, .. }
             | Operator::Round { input, .. }
@@ -468,12 +500,13 @@ impl<'dag> DagBuilder<'dag> {
     fn infer_out_precision(&self, op: &Operator) -> Precision {
         match op {
             Operator::Input { out_precision, .. }
+            | Operator::ZeroNoise { out_precision, .. }
             | Operator::Lut { out_precision, .. }
             | Operator::UnsafeCast { out_precision, .. }
             | Operator::Round { out_precision, .. } => *out_precision,
-            Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
-                self.dag.out_precisions[inputs[0].0]
-            }
+            Operator::Dot { inputs, .. }
+            | Operator::LinearNoise { inputs, .. }
+            | Operator::MaxNoise { inputs, .. } => self.dag.out_precisions[inputs[0].0],
             Operator::ChangePartition { input, .. } => self.dag.out_precisions[input.0],
         }
     }
@@ -591,6 +624,15 @@ impl Dag {
             .add_input(out_precision, out_shape, Location::Unknown)
     }
 
+    pub fn add_zero_noise(
+        &mut self,
+        out_precision: Precision,
+        out_shape: impl Into<Shape>,
+    ) -> OperatorIndex {
+        self.builder(DEFAULT_CIRCUIT)
+            .add_zero_noise(out_precision, out_shape, Location::Unknown)
+    }
+
     pub fn add_lut(
         &mut self,
         input: OperatorIndex,
@@ -624,7 +666,7 @@ impl Dag {
             .add_dot(inputs, weights, Location::Unknown)
     }
 
-    pub fn add_levelled_op(
+    pub fn add_linear_noise(
         &mut self,
         inputs: impl Into<Vec<OperatorIndex>>,
         complexity: LevelledComplexity,
@@ -632,7 +674,7 @@ impl Dag {
         out_shape: impl Into<Shape>,
         comment: impl Into<String>,
     ) -> OperatorIndex {
-        self.builder(DEFAULT_CIRCUIT).add_levelled_op(
+        self.builder(DEFAULT_CIRCUIT).add_linear_noise(
             inputs,
             complexity,
             weights,
@@ -640,6 +682,15 @@ impl Dag {
             comment,
             Location::Unknown,
         )
+    }
+
+    pub fn add_max_noise(
+        &mut self,
+        inputs: impl Into<Vec<OperatorIndex>>,
+        out_shape: impl Into<Shape>,
+    ) -> OperatorIndex {
+        self.builder(DEFAULT_CIRCUIT)
+            .add_max_noise(inputs, out_shape, Location::Unknown)
     }
 
     pub fn add_unsafe_cast(
@@ -932,7 +983,7 @@ mod tests {
         let input2 = builder.add_input(2, Shape::number(), Location::Unknown);
 
         let cpx_add = LevelledComplexity::ADDITION;
-        let sum1 = builder.add_levelled_op(
+        let sum1 = builder.add_linear_noise(
             [input1, input2],
             cpx_add,
             [1.0, 1.0],
@@ -943,7 +994,7 @@ mod tests {
 
         let lut1 = builder.add_lut(sum1, FunctionTable::UNKWOWN, 1, Location::Unknown);
 
-        let concat = builder.add_levelled_op(
+        let concat = builder.add_linear_noise(
             [input1, lut1],
             cpx_add,
             [1.0, 1.0],
@@ -981,7 +1032,7 @@ mod tests {
                     out_precision: 2,
                     out_shape: Shape::number(),
                 },
-                Operator::LevelledOp {
+                Operator::LinearNoise {
                     inputs: vec![input1, input2],
                     complexity: cpx_add,
                     weights: vec![1.0, 1.0],
@@ -993,7 +1044,7 @@ mod tests {
                     table: FunctionTable::UNKWOWN,
                     out_precision: 1,
                 },
-                Operator::LevelledOp {
+                Operator::LinearNoise {
                     inputs: vec![input1, lut1],
                     complexity: cpx_add,
                     weights: vec![1.0, 1.0],

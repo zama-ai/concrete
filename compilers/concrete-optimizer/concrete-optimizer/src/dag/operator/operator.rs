@@ -77,6 +77,10 @@ pub enum Operator {
         out_precision: Precision,
         out_shape: Shape,
     },
+    ZeroNoise {
+        out_precision: Precision,
+        out_shape: Shape,
+    },
     Lut {
         input: OperatorIndex,
         table: FunctionTable,
@@ -87,12 +91,16 @@ pub enum Operator {
         weights: Weights,
         kind: DotKind,
     },
-    LevelledOp {
+    LinearNoise {
         inputs: Vec<OperatorIndex>,
         complexity: LevelledComplexity,
         weights: Vec<f64>,
         out_shape: Shape,
         comment: String,
+    },
+    MaxNoise {
+        inputs: Vec<OperatorIndex>,
+        out_shape: Shape,
     },
     // Used to reduced or increase precision when the ciphertext is compatible with different precision
     // This is done without any checking
@@ -116,8 +124,10 @@ impl Operator {
     // Returns an iterator on the indices of the operator inputs.
     pub(crate) fn get_inputs_iter(&self) -> Box<dyn Iterator<Item = &OperatorIndex> + '_> {
         match self {
-            Self::Input { .. } => Box::new(empty()),
-            Self::LevelledOp { inputs, .. } | Self::Dot { inputs, .. } => Box::new(inputs.iter()),
+            Self::Input { .. } | Self::ZeroNoise { .. } => Box::new(empty()),
+            Self::LinearNoise { inputs, .. }
+            | Self::Dot { inputs, .. }
+            | Self::MaxNoise { inputs, .. } => Box::new(inputs.iter()),
             Self::UnsafeCast { input, .. }
             | Self::Lut { input, .. }
             | Self::Round { input, .. }
@@ -153,6 +163,12 @@ impl fmt::Display for Operator {
             } => {
                 write!(f, "Input : u{out_precision} x {out_shape:?}")?;
             }
+            Self::ZeroNoise {
+                out_precision,
+                out_shape,
+            } => {
+                write!(f, "Zero : u{out_precision} x {out_shape:?}")?;
+            }
             Self::Dot {
                 inputs, weights, ..
             } => {
@@ -176,7 +192,7 @@ impl fmt::Display for Operator {
             } => {
                 write!(f, "LUT[%{}] : u{out_precision}", input.0)?;
             }
-            Self::LevelledOp {
+            Self::LinearNoise {
                 inputs,
                 weights,
                 out_shape,
@@ -190,6 +206,18 @@ impl fmt::Display for Operator {
                     write!(f, "%{}", input.0)?;
                 }
                 write!(f, "] : weights={weights:?}, out_shape={out_shape:?}")?;
+            }
+            Self::MaxNoise {
+                inputs, out_shape, ..
+            } => {
+                write!(f, "MAX[")?;
+                for (i, input) in inputs.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "%{}", input.0)?;
+                }
+                write!(f, "] : out_shape={out_shape:?}")?;
             }
             Self::Round {
                 input,

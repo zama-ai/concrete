@@ -53,7 +53,7 @@ def FHE_ZeroTensorOp : FHE_Op<"zero_tensor", [Pure, ZeroNoise]> {
     let results = (outs Type<And<[TensorOf<[FHE_AnyEncryptedInteger]>.predicate, HasStaticShapePred]>>:$tensor);
 }
 
-def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure, BinaryEintInt, AdditiveNoise,  DeclareOpInterfaceMethods<Binary>]> {
+def FHE_AddEintIntOp : FHE_Op<"add_eint_int", [Pure, BinaryEintInt, MaxNoise,  DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Adds an encrypted integer and a clear integer";
 
     let description = [{
@@ -118,7 +118,7 @@ def FHE_AddEintOp : FHE_Op<"add_eint", [Pure, BinaryEint, AdditiveNoise, Declare
     let hasVerifier = 1;
 }
 
-def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure, BinaryIntEint, AdditiveNoise]> {
+def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure, BinaryIntEint, MaxNoise]> {
     let summary = "Subtract an encrypted integer from a clear integer";
 
     let description = [{
@@ -150,7 +150,7 @@ def FHE_SubIntEintOp : FHE_Op<"sub_int_eint", [Pure, BinaryIntEint, AdditiveNois
     let hasVerifier = 1;
 }
 
-def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure, BinaryEintInt, AdditiveNoise, DeclareOpInterfaceMethods<Binary>]> {
+def FHE_SubEintIntOp : FHE_Op<"sub_eint_int", [Pure, BinaryEintInt, MaxNoise, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Subtract a clear integer from an encrypted integer";
 
     let description = [{
@@ -215,7 +215,7 @@ def FHE_SubEintOp : FHE_Op<"sub_eint", [Pure, BinaryEint, AdditiveNoise, Declare
     let hasVerifier = 1;
 }
 
-def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure, UnaryEint, AdditiveNoise, DeclareOpInterfaceMethods<UnaryEint>]> {
+def FHE_NegEintOp : FHE_Op<"neg_eint", [Pure, UnaryEint, MaxNoise, DeclareOpInterfaceMethods<UnaryEint>]> {
 
     let summary = "Negates an encrypted integer";
 

@@ -420,7 +420,7 @@ fn optimize_sign_extract() {
     let free_small_input1 = dag.add_input(precision, Shape::number());
     let small_input1 = dag.add_lut(free_small_input1, FunctionTable::UNKWOWN, precision);
     let small_input1 = dag.add_lut(small_input1, FunctionTable::UNKWOWN, high_precision);
-    let input1 = dag.add_levelled_op(
+    let input1 = dag.add_linear_noise(
         [small_input1],
         complexity,
         [1.0],
@@ -571,7 +571,7 @@ fn test_chained_partitions_non_feasible_single_params() {
     let mut lut_input = dag.add_input(precisions[0], Shape::number());
     for out_precision in precisions {
         let noise_factor = MAX_WEIGHT[*dag.out_precisions.last().unwrap() as usize] as f64;
-        lut_input = dag.add_levelled_op(
+        lut_input = dag.add_linear_noise(
             [lut_input],
             LevelledComplexity::ZERO,
             [noise_factor],
@@ -831,8 +831,8 @@ fn test_bug_with_zero_noise() {
     let out_shape = Shape::number();
     let mut dag = unparametrized::Dag::new();
     let v0 = dag.add_input(2, &out_shape);
-    let v1 = dag.add_levelled_op([v0], complexity, [0.0], &out_shape, "comment");
-    let v2 = dag.add_levelled_op([v1], complexity, [1.0], &out_shape, "comment");
+    let v1 = dag.add_linear_noise([v0], complexity, [0.0], &out_shape, "comment");
+    let v2 = dag.add_linear_noise([v1], complexity, [1.0], &out_shape, "comment");
     let v3 = dag.add_unsafe_cast(v2, 1);
     let _ = dag.add_lut(v3, FunctionTable { values: vec![] }, 1);
     let sol = optimize(&dag, &None, PartitionIndex(0));

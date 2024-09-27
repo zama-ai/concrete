@@ -16,6 +16,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Pass/PassManager.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/Pass.h"
@@ -201,10 +202,11 @@ struct FunctionToDag {
       addEncMatMulTensor(matmulEintEint, encrypted_inputs, precision);
       return;
     } else if (auto zero = asZeroNoise(op)) {
-      // special case as zero are rewritten in several optimizer nodes
       index = addZeroNoise(zero);
     } else if (auto additive = asAdditiveNoise(op)) {
       index = addAdditiveNoise(additive, encrypted_inputs);
+    } else if (isMaxNoise(op)) {
+      index = addMaxNoise(op, encrypted_inputs);
     } else {
       index = addLevelledOp(op, encrypted_inputs);
     }
@@ -336,22 +338,8 @@ struct FunctionToDag {
     auto val = op->getOpResult(0);
     auto outShape = getShape(val);
     auto loc = loc_to_location(op.getLoc());
-
-    // Trivial encrypted constants encoding
-    // There are converted to input + levelledop
     auto precision = fhe::utils::getEintPrecision(val);
-    auto opI = dagBuilder.add_input(precision, slice(outShape), *loc);
-    auto inputs = Inputs{opI};
-
-    // Default complexity is negligible
-    double const fixedCost = NEGLIGIBLE_COMPLEXITY;
-    double const lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
-    auto comment = std::string(op->getName().getStringRef()) + " " +
-                   loc_to_string(op.getLoc());
-    auto weights = std::vector<double>{1.};
-    index[val] = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                            fixedCost, slice(weights),
-                                            slice(outShape), comment, *loc);
+    index[val] = dagBuilder.add_zero_noise(precision, slice(outShape), *loc);
     return index[val];
   }
 
@@ -366,9 +354,9 @@ struct FunctionToDag {
                    loc_to_string(op.getLoc());
     auto loc = loc_to_location(op.getLoc());
     auto weights = std::vector<double>(inputs.size(), 1.);
-    index[val] = dagBuilder.add_levelled_op(slice(inputs), lwe_dim_cost_factor,
-                                            fixed_cost, slice(weights),
-                                            slice(out_shape), comment, *loc);
+    index[val] = dagBuilder.add_linear_noise(slice(inputs), lwe_dim_cost_factor,
+                                             fixed_cost, slice(weights),
+                                             slice(out_shape), comment, *loc);
     return index[val];
   }
 
@@ -376,6 +364,19 @@ struct FunctionToDag {
   loc_to_location(mlir::Location location) {
     return location_from_string(loc_to_string(location));
   }
+
+  concrete_optimizer::dag::OperatorIndex addMaxNoise(mlir::Operation &op,
+                                                     Inputs &inputs) {
+    auto val = op.getResult(0);
+    auto out_shape = getShape(val);
+    auto loc = loc_to_location(op.getLoc());
+    assert(!inputs.empty());
+
+    index[val] =
+        dagBuilder.add_max_noise(slice(inputs), slice(out_shape), *loc);
+    return index[val];
+  }
+
   concrete_optimizer::dag::OperatorIndex addLevelledOp(mlir::Operation &op,
                                                        Inputs &inputs) {
     auto val = op.getResult(0);
@@ -425,9 +426,9 @@ struct FunctionToDag {
       assert(!std::isnan(weight));
     }
     auto weights = std::vector<double>(n_inputs, weight);
-    index[val] = dagBuilder.add_levelled_op(slice(inputs), lwe_dim_cost_factor,
-                                            fixed_cost, slice(weights),
-                                            slice(out_shape), comment, *loc);
+    index[val] = dagBuilder.add_linear_noise(slice(inputs), lwe_dim_cost_factor,
+                                             fixed_cost, slice(weights),
+                                             slice(out_shape), comment, *loc);
     return index[val];
   }
 
@@ -497,7 +498,7 @@ struct FunctionToDag {
     // tlu(x + y)
 
     auto addWeights = std::vector<double>{1, 1};
-    auto addNode = dagBuilder.add_levelled_op(
+    auto addNode = dagBuilder.add_linear_noise(
         slice(inputs), lweDimCostFactor, fixedCost, slice(addWeights),
         slice(resultShape), comment, *loc);
 
@@ -517,7 +518,7 @@ struct FunctionToDag {
 
     // tlu(x - y)
     auto subWeights = std::vector<double>{1, 1};
-    auto subNode = dagBuilder.add_levelled_op(
+    auto subNode = dagBuilder.add_linear_noise(
         slice(inputs), lweDimCostFactor, fixedCost, slice(subWeights),
         slice(resultShape), comment, *loc);
 
@@ -535,7 +536,7 @@ struct FunctionToDag {
     auto resultWeights = std::vector<double>{1, 1};
     const std::vector<concrete_optimizer::dag::OperatorIndex> subInputs = {
         lhsTluNode, rhsTluNode};
-    auto resultNode = dagBuilder.add_levelled_op(
+    auto resultNode = dagBuilder.add_linear_noise(
         slice(subInputs), lweDimCostFactor, fixedCost, slice(resultWeights),
         slice(resultShape), comment, *loc);
 
@@ -661,7 +662,7 @@ struct FunctionToDag {
 
     // tlu(x + y)
     auto addWeights = std::vector<double>{1, 1};
-    auto addNode = dagBuilder.add_levelled_op(
+    auto addNode = dagBuilder.add_linear_noise(
         slice(inputs), lweDimCostFactor, fixedCost, slice(addWeights),
         slice(pairMatrixShape), comment, *loc);
 
@@ -681,7 +682,7 @@ struct FunctionToDag {
 
     // tlu(x - y)
     auto subWeights = std::vector<double>{1, 1};
-    auto subNode = dagBuilder.add_levelled_op(
+    auto subNode = dagBuilder.add_linear_noise(
         slice(inputs), lweDimCostFactor, fixedCost, slice(subWeights),
         slice(pairMatrixShape), comment, *loc);
 
@@ -699,7 +700,7 @@ struct FunctionToDag {
     auto resultWeights = std::vector<double>{1, 1};
     const std::vector<concrete_optimizer::dag::OperatorIndex> subInputs = {
         lhsTluNode, rhsTluNode};
-    auto resultNode = dagBuilder.add_levelled_op(
+    auto resultNode = dagBuilder.add_linear_noise(
         slice(subInputs), lweDimCostFactor, fixedCost, slice(resultWeights),
         slice(pairMatrixShape), comment, *loc);
 
@@ -723,7 +724,7 @@ struct FunctionToDag {
     // TODO: use APIFloat.sqrt when it's available
     double manp = sqrt(smanp_int.getValue().roundToDouble());
     auto weights = std::vector<double>(sumOperands.size(), manp / tluSubManp);
-    index[result] = dagBuilder.add_levelled_op(
+    index[result] = dagBuilder.add_linear_noise(
         slice(sumOperands), lwe_dim_cost_factor, fixed_cost, slice(weights),
         slice(resultShape), comment, *loc);
 
@@ -774,7 +775,7 @@ struct FunctionToDag {
                    loc_to_string(maxOp.getLoc());
 
     auto subWeights = std::vector<double>{1, 1};
-    auto subNode = dagBuilder.add_levelled_op(
+    auto subNode = dagBuilder.add_linear_noise(
         slice(inputs), lweDimCostFactor, fixedCost, slice(subWeights),
         slice(resultShape), comment, *loc);
 
@@ -785,7 +786,7 @@ struct FunctionToDag {
     const std::vector<concrete_optimizer::dag::OperatorIndex> addInputs = {
         tluNode, inputs[1]};
     auto addWeights = std::vector<double>{1, 1};
-    auto resultNode = dagBuilder.add_levelled_op(
+    auto resultNode = dagBuilder.add_linear_noise(
         slice(addInputs), lweDimCostFactor, fixedCost, slice(addWeights),
         slice(resultShape), comment, *loc);
 
@@ -837,9 +838,9 @@ struct FunctionToDag {
 
     auto subWeights = std::vector<double>(
         inputs.size(), subManp / sqrt(inputSmanp.roundToDouble()));
-    auto subNode = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                              fixedCost, slice(subWeights),
-                                              slice(fakeShape), comment, *loc);
+    auto subNode = dagBuilder.add_linear_noise(slice(inputs), lweDimCostFactor,
+                                               fixedCost, slice(subWeights),
+                                               slice(fakeShape), comment, *loc);
 
     const std::vector<std::uint64_t> unknownFunction;
     auto tluNode =
@@ -851,7 +852,7 @@ struct FunctionToDag {
 
     auto resultWeights = std::vector<double>(
         addInputs.size(), addManp / sqrt(inputSmanp.roundToDouble()));
-    auto resultNode = dagBuilder.add_levelled_op(
+    auto resultNode = dagBuilder.add_linear_noise(
         slice(addInputs), lweDimCostFactor, fixedCost, slice(resultWeights),
         slice(resultShape), comment, *loc);
 
@@ -1000,6 +1001,10 @@ struct FunctionToDag {
 
   bool isArg(const mlir::Value &value) {
     return value.isa<mlir::BlockArgument>();
+  }
+
+  bool isMaxNoise(mlir::Operation &op) {
+    return llvm::isa<mlir::concretelang::FHE::MaxNoise>(op);
   }
 
   std::optional<std::vector<std::int64_t>>
