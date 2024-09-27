@@ -28,7 +28,7 @@ def TensorBinaryEint : NativeOpTrait<"TensorBinaryEint">;
 def TensorUnaryEint : NativeOpTrait<"TensorUnaryEint">;
 
 
-def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [Pure, TensorBroadcastingRules, TensorBinaryEintInt, BinaryEintInt, DeclareOpInterfaceMethods<Binary>]> {
+def FHELinalg_AddEintIntOp : FHELinalg_Op<"add_eint_int", [Pure, TensorBroadcastingRules, TensorBinaryEintInt, BinaryEintInt, MaxNoise, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Returns a tensor that contains the addition of a tensor of encrypted integers and a tensor of clear integers.";
 
     let description = [{
@@ -136,7 +136,7 @@ def FHELinalg_AddEintOp : FHELinalg_Op<"add_eint", [Pure,
     ];
 }
 
-def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [Pure, TensorBroadcastingRules, TensorBinaryIntEint, BinaryIntEint, DeclareOpInterfaceMethods<Binary>]> {
+def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [Pure, TensorBroadcastingRules, TensorBinaryIntEint, BinaryIntEint, MaxNoise, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Returns a tensor that contains the subtraction of a tensor of clear integers and a tensor of encrypted integers.";
 
     let description = [{
@@ -189,7 +189,7 @@ def FHELinalg_SubIntEintOp : FHELinalg_Op<"sub_int_eint", [Pure, TensorBroadcast
     ];
 }
 
-def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [Pure, TensorBroadcastingRules, TensorBinaryEintInt, BinaryEintInt, DeclareOpInterfaceMethods<Binary>]> {
+def FHELinalg_SubEintIntOp : FHELinalg_Op<"sub_eint_int", [Pure, TensorBroadcastingRules, TensorBinaryEintInt, BinaryEintInt, MaxNoise, DeclareOpInterfaceMethods<Binary>]> {
     let summary = "Returns a tensor that contains the subtraction of a tensor of clear integers from a tensor of encrypted integers.";
 
     let description = [{
@@ -297,7 +297,7 @@ def FHELinalg_SubEintOp : FHELinalg_Op<"sub_eint", [Pure, TensorBroadcastingRule
     ];
 }
 
-def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [Pure, TensorUnaryEint, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
+def FHELinalg_NegEintOp : FHELinalg_Op<"neg_eint", [Pure, TensorUnaryEint, UnaryEint, MaxNoise, DeclareOpInterfaceMethods<UnaryEint>]> {
     let summary = "Returns a tensor that contains the negation of a tensor of encrypted integers.";
 
     let description = [{
@@ -1128,7 +1128,7 @@ def FHELinalg_SumOp : FHELinalg_Op<"sum", [Pure, TensorUnaryEint]> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_ConcatOp : FHELinalg_Op<"concat", [Pure]> {
+def FHELinalg_ConcatOp : FHELinalg_Op<"concat", [Pure, MaxNoise]> {
     let summary = "Concatenates a sequence of tensors along an existing axis.";
 
     let description = [{
@@ -1201,7 +1201,7 @@ def FHELinalg_Maxpool2dOp : FHELinalg_Op<"maxpool2d", [UnaryEint, DeclareOpInter
   let hasVerifier = 1;
 }
 
-def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", [Pure, UnaryEint, DeclareOpInterfaceMethods<UnaryEint>]> {
+def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", [Pure, UnaryEint, MaxNoise, DeclareOpInterfaceMethods<UnaryEint>]> {
     let summary = "Returns a tensor that contains the transposition of the input tensor.";
 
     let description = [{
@@ -1240,7 +1240,7 @@ def FHELinalg_TransposeOp : FHELinalg_Op<"transpose", [Pure, UnaryEint, DeclareO
     let hasVerifier = 1;
 }
 
-def FHELinalg_FromElementOp : FHELinalg_Op<"from_element", [Pure]> {
+def FHELinalg_FromElementOp : FHELinalg_Op<"from_element", [Pure, MaxNoise]> {
     let summary = "Creates a tensor with a single element.";
 
     let description = [{
@@ -1415,7 +1415,7 @@ def FHELinalg_ReinterpretPrecisionEintOp: FHELinalg_Op<"reinterpret_precision", 
     let hasVerifier = 1;
 }
 
-def FHELinalg_FancyIndexOp : FHELinalg_Op<"fancy_index", [Pure]> {
+def FHELinalg_FancyIndexOp : FHELinalg_Op<"fancy_index", [Pure, MaxNoise]> {
     let summary = "Index into a tensor using a tensor of indices.";
 
     let description = [{
@@ -1462,7 +1462,7 @@ def FHELinalg_FancyIndexOp : FHELinalg_Op<"fancy_index", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_FancyAssignOp : FHELinalg_Op<"fancy_assign", [Pure]> {
+def FHELinalg_FancyAssignOp : FHELinalg_Op<"fancy_assign", [Pure, MaxNoise]> {
     let summary = "Assigns a tensor into another tensor at a tensor of indices.";
 
     let description = [{
@@ -1517,7 +1517,7 @@ def FHELinalg_FancyAssignOp : FHELinalg_Op<"fancy_assign", [Pure]> {
     let hasVerifier = 1;
 }
 
-def FHELinalg_BroadcastOp: FHELinalg_Op<"broadcast", [Pure, ConstantNoise]> {
+def FHELinalg_BroadcastOp: FHELinalg_Op<"broadcast", [Pure, ConstantNoise, MaxNoise]> {
     let summary = "Broadcasts a tensor to a shape.";
     let description = [{
         Broadcasting is used for expanding certain dimensions of a tensor

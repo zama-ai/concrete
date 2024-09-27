@@ -48,7 +48,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEintInt, TensorBroadcastingRules
 
-Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -350,7 +350,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, ConstantNoise, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, ConstantNoise, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -397,7 +397,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -560,7 +560,7 @@ Notes:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -614,7 +614,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -643,7 +643,7 @@ Creates a tensor with a single element.
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1300,7 +1300,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorUnaryEint
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
+Interfaces: ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
@@ -1435,7 +1435,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryEintInt, TensorBroadcastingRules
 
-Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryEintInt, ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1548,7 +1548,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait, TensorBinaryIntEint, TensorBroadcastingRules
 
-Interfaces: Binary, BinaryIntEint, ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface)
+Interfaces: Binary, BinaryIntEint, ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface)
 
 Effects: MemoryEffects::Effect{}
 
@@ -1761,7 +1761,7 @@ Examples:
 
 Traits: AlwaysSpeculatableImplTrait
 
-Interfaces: ConditionallySpeculatable, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
+Interfaces: ConditionallySpeculatable, MaxNoise, NoMemoryEffect (MemoryEffectOpInterface), UnaryEint
 
 Effects: MemoryEffects::Effect{}
 
