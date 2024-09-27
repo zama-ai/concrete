@@ -31,7 +31,7 @@ __init__(client_parameters: ClientParameters)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
@@ -53,7 +53,7 @@ Create client specs from its string representation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 

@@ -9,23 +9,17 @@ Declaration of `Circuit` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Circuit`
 Circuit class, to combine computation graph, mlir, client and server into a single object. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(
-    graph: Graph,
-    mlir: Module,
-    compilation_context: CompilationContext,
-    configuration: Optional[Configuration] = None,
-    composition_rules: Optional[Iterable[CompositionRule]] = None
-)
+__init__(module: FheModule)
 ```
 
 
@@ -83,9 +77,27 @@ Get the number of clear multiplications per tag per parameter in the circuit.
 
 ---
 
+#### <kbd>property</kbd> client
+
+Return the circuit client. 
+
+---
+
+#### <kbd>property</kbd> compilation_context
+
+Return the circuit compilation context. 
+
+---
+
 #### <kbd>property</kbd> complexity
 
 Get complexity of the circuit. 
+
+---
+
+#### <kbd>property</kbd> configuration
+
+Return the circuit configuration. 
 
 ---
 
@@ -137,9 +149,23 @@ Get the number of encrypted negations per tag per parameter in the circuit.
 
 ---
 
+#### <kbd>property</kbd> function_name
+
+
+
+
+
+---
+
 #### <kbd>property</kbd> global_p_error
 
 Get the probability of having at least one simple TLU error during the entire execution. 
+
+---
+
+#### <kbd>property</kbd> graph
+
+Return the circuit graph. 
 
 ---
 
@@ -188,6 +214,12 @@ Textual representation of the MLIR module.
 **Returns:**
  
  - <b>`str`</b>:  textual representation of the MLIR module 
+
+---
+
+#### <kbd>property</kbd> mlir_module
+
+Return the circuit mlir module. 
 
 ---
 
@@ -245,6 +277,18 @@ Get the number of programmable bootstraps per tag per bit width in the circuit.
 
 ---
 
+#### <kbd>property</kbd> server
+
+Return the circuit server. 
+
+---
+
+#### <kbd>property</kbd> simulator
+
+Return the circuit simulator. 
+
+---
+
 #### <kbd>property</kbd> size_of_bootstrap_keys
 
 Get size of the bootstrap keys of the circuit. 
@@ -283,7 +327,7 @@ Get all statistics of the circuit.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `cleanup`
 
@@ -295,7 +339,7 @@ Cleanup the temporary library output directory.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt`
 
@@ -319,7 +363,7 @@ Decrypt result(s) of evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `draw`
 
@@ -353,7 +397,7 @@ That this function requires the python `pygraphviz` package which itself require
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_fhe_execution`
 
@@ -365,7 +409,7 @@ Enable FHE execution.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_fhe_simulation`
 
@@ -377,7 +421,7 @@ Enable FHE simulation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt`
 
@@ -401,7 +445,7 @@ Encrypt argument(s) to for evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt_run_decrypt`
 
@@ -423,7 +467,7 @@ Encrypt inputs, run the circuit, and decrypt the outputs in one go.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen`
 
@@ -431,7 +475,8 @@ Encrypt inputs, run the circuit, and decrypt the outputs in one go.
 keygen(
     force: bool = False,
     seed: Optional[int] = None,
-    encryption_seed: Optional[int] = None
+    encryption_seed: Optional[int] = None,
+    initial_keys: Optional[Dict[int, LweSecretKey]] = None
 )
 ```
 
@@ -446,9 +491,11 @@ Generate keys required for homomorphic evaluation.
 
  encryption_seed (Optional[int], default = None):  seed for encryption randomness 
 
+ initial_keys (Optional[Dict[int, LweSecretKey]] = None):  initial keys to set before keygen 
+
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -472,7 +519,7 @@ Evaluate the circuit.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `simulate`
 

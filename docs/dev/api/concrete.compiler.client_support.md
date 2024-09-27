@@ -14,7 +14,7 @@ Client support.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L23"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ClientSupport`
 Client interface for doing key generation and encryption. 
@@ -24,7 +24,7 @@ It provides features that are needed on the client side:
 - Encryption and preparation of public arguments, used later as input to the computation 
 - Decryption of public result returned after execution 
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -51,7 +51,7 @@ Wrap the native Cpp object.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt_result`
 
@@ -60,7 +60,7 @@ decrypt_result(
     client_parameters: ClientParameters,
     keyset: KeySet,
     public_result: PublicResult,
-    circuit_name: str = 'main'
+    circuit_name: str
 ) → Union[int, ndarray]
 ```
 
@@ -92,7 +92,7 @@ Decrypt a public result using the keyset.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt_arguments`
 
@@ -101,7 +101,7 @@ encrypt_arguments(
     client_parameters: ClientParameters,
     keyset: KeySet,
     args: List[Union[int, ndarray]],
-    circuit_name: str = 'main'
+    circuit_name: str
 ) → PublicArguments
 ```
 
@@ -134,7 +134,7 @@ Pack public arguments by encrypting the ones that requires encryption, and leavi
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_set`
 
@@ -143,13 +143,14 @@ key_set(
     client_parameters: ClientParameters,
     keyset_cache: Optional[KeySetCache] = None,
     secret_seed: Optional[int] = None,
-    encryption_seed: Optional[int] = None
+    encryption_seed: Optional[int] = None,
+    initial_lwe_secret_keys: Optional[Dict[int, LweSecretKey]] = None
 ) → KeySet
 ```
 
 Generate a key set according to the client parameters. 
 
-If the cache is set, and include equivalent keys as specified by the client parameters, the keyset is loaded, otherwise, a new keyset is generated and saved in the cache. 
+If the cache is set, and include equivalent keys as specified by the client parameters, the keyset is loaded, otherwise, a new keyset is generated and saved in the cache. If keygen is required, it will first initialize the secret keys provided, if any. 
 
 
 
@@ -159,6 +160,7 @@ If the cache is set, and include equivalent keys as specified by the client para
  - <b>`keyset_cache`</b> (Optional[KeySetCache], optional):  keyset cache. Defaults to None. 
  - <b>`secret_seed`</b> (Optional[int]):  secret seed, must be a positive 128 bits integer 
  - <b>`encryption_seed`</b> (Optional[int]):  encryption seed, must be a positive 128 bits integer 
+ - <b>`initial_lwe_secret_keys`</b> (Optional[Dict[int, LweSecretKey]]):  keys to init the keyset  with before keygen. It maps keyid to secret key 
 
 
 
@@ -176,7 +178,7 @@ If the cache is set, and include equivalent keys as specified by the client para
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/client_support.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `new`
 

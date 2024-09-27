@@ -9,30 +9,20 @@ Declaration of `Compiler` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>class</kbd> `EncryptionStatus`
-EncryptionStatus enum, to represent encryption status of parameters. 
-
-
-
-
-
----
-
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Compiler`
 Compiler class, to glue the compilation pipeline. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
     function: Callable,
-    parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]]
+    parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]],
+    composition: Optional[NotComposable, AllComposable] = None
 )
 ```
 
@@ -45,7 +35,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `assemble`
 
@@ -81,7 +71,7 @@ Assemble a circuit from the raw parameter values, used in direct circuit definit
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -114,7 +104,19 @@ Compile the function using an inputset.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L312"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `reset`
+
+```python
+reset()
+```
+
+Reset the compiler so that another compilation with another inputset can be performed. 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/compiler.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `trace`
 
