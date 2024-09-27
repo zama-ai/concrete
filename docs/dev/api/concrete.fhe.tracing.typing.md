@@ -5,6 +5,10 @@
 # <kbd>module</kbd> `concrete.fhe.tracing.typing`
 Declaration of type annotation. 
 
+**Global Variables**
+---------------
+- **SignedInteger**
+- **UnsignedInteger**
 
 
 ---

@@ -97,7 +97,7 @@ Export tensor.
 new(
     keyset: KeySet,
     client_parameters: ClientParameters,
-    circuit_name: str = 'main'
+    circuit_name: str
 ) → ValueExporter
 ```
 

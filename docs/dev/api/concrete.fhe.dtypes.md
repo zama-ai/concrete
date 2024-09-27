@@ -10,6 +10,8 @@ Define available data types and their semantics.
 - **base**
 - **float**
 - **integer**
+- **SignedInteger**
+- **UnsignedInteger**
 - **utils**
 
 

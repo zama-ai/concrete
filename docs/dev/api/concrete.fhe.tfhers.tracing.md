@@ -39,7 +39,7 @@ Convert a tfhers integer to the Concrete representation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/tracing.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/tracing.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `from_native`
 
