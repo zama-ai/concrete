@@ -7,7 +7,7 @@
 #define CONCRETELANG_GPUDFG_HPP
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
-#include "bootstrap.h"
+#include "programmable_bootstrap.h"
 #include "device.h"
 #include "keyswitch.h"
 #include "linear_algebra.h"

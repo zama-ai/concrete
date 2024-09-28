@@ -31,6 +31,16 @@ namespace concretelang {
 namespace gpu_dfg {
 namespace {
 
+void *alloc_and_memcpy_async_to_gpu(uint64_t *buf_ptr, uint64_t buf_offset,
+                                    uint64_t buf_size, uint32_t gpu_idx,
+                                    void *stream) {
+  size_t buf_size_ = buf_size * sizeof(uint64_t);
+  void *ct_gpu = cuda_malloc_async(buf_size_, (cudaStream_t)stream, gpu_idx);
+  cuda_memcpy_async_to_gpu(ct_gpu, buf_ptr + buf_offset, buf_size_,
+                           (cudaStream_t)stream, gpu_idx);
+  return ct_gpu;
+}
+
 #if CONCRETELANG_TIMING_ENABLED
 static struct timespec init_timer, blocking_get_timer, acc1, acc2;
 #endif
@@ -111,12 +121,12 @@ struct PBS_buffer {
       : max_pbs_buffer_samples(input_lwe_ciphertext_count),
         glwe_dim(glwe_dimension), poly_size(polynomial_size),
         gpu_stream(stream), gpu_index(gpu_idx) {
-    scratch_cuda_bootstrap_amortized_64(
+    scratch_cuda_programmable_bootstrap_amortized_64(
         gpu_stream, gpu_index, &pbs_buffer, glwe_dim, poly_size,
-        max_pbs_buffer_samples, cuda_get_max_shared_memory(gpu_index), true);
+        max_pbs_buffer_samples, true);
   }
   ~PBS_buffer() {
-    cleanup_cuda_bootstrap_amortized(gpu_stream, gpu_index, &pbs_buffer);
+    cleanup_cuda_programmable_bootstrap_amortized(gpu_stream, gpu_index, &pbs_buffer);
   }
   int8_t *get_pbs_buffer(void *stream, uint32_t gpu_idx,
                          uint32_t glwe_dimension, uint32_t polynomial_size,
@@ -150,7 +160,7 @@ struct GPU_state {
     if (pbs_buffer != nullptr)
       delete pbs_buffer;
     if (gpu_stream != nullptr)
-      cuda_destroy_stream((cudaStream_t *)gpu_stream, gpu_idx);
+      cuda_destroy_stream((cudaStream_t)gpu_stream, gpu_idx);
   }
   inline int8_t *get_pbs_buffer(uint32_t glwe_dimension,
                                 uint32_t polynomial_size,
@@ -234,7 +244,7 @@ private:
 
 struct Dependence;
 static void sdfg_gpu_debug_print_mref(const char *c, MemRef2 m);
-static MemRef2 sdfg_gpu_debug_dependence(Dependence *d, cudaStream_t *s);
+static MemRef2 sdfg_gpu_debug_dependence(Dependence *d, cudaStream_t s);
 static bool sdfg_gpu_debug_compare_memref(MemRef2 &a, MemRef2 &b,
                                           char const *msg);
 
@@ -374,7 +384,7 @@ struct Dependence {
       return;
     cuda_drop_async(
         chunks[chunk_id]->device_data,
-        (cudaStream_t *)dfg->get_gpu_stream(chunks[chunk_id]->location),
+        (cudaStream_t)dfg->get_gpu_stream(chunks[chunk_id]->location),
         chunks[chunk_id]->location);
     chunks[chunk_id]->device_data = nullptr;
   }
@@ -385,8 +395,8 @@ struct Dependence {
       data_offset +=
           chunking_schedule[c] * host_data.sizes[1] * sizeof(uint64_t);
     size_t csize = memref_get_data_size(chunks[chunk_id]->host_data);
-    cudaStream_t *s =
-        (cudaStream_t *)dfg->get_gpu_stream(chunks[chunk_id]->location);
+    cudaStream_t s =
+        (cudaStream_t)dfg->get_gpu_stream(chunks[chunk_id]->location);
     cuda_memcpy_async_to_cpu(((char *)host_data.aligned) + data_offset,
                              chunks[chunk_id]->device_data, csize, s,
                              chunks[chunk_id]->location);
@@ -404,7 +414,7 @@ struct Dependence {
       return;
     cuda_drop_async(
         chunks[chunk_id]->device_data,
-        (cudaStream_t *)dfg->get_gpu_stream(chunks[chunk_id]->location),
+        (cudaStream_t)dfg->get_gpu_stream(chunks[chunk_id]->location),
         chunks[chunk_id]->location);
     chunks[chunk_id]->device_data = nullptr;
     chunks[chunk_id]->location =
@@ -413,7 +423,7 @@ struct Dependence {
   inline void free_data(GPU_DFG *dfg, bool immediate = false) {
     if (device_data != nullptr) {
       cuda_drop_async(device_data,
-                      (cudaStream_t *)dfg->get_gpu_stream(location), location);
+                      (cudaStream_t)dfg->get_gpu_stream(location), location);
     }
     if (onHostReady && host_data.allocated != nullptr && hostAllocated) {
       // As streams are not synchronized aside from the GET operation,
@@ -442,16 +452,16 @@ struct Dependence {
         host_data.allocated = host_data.aligned = (uint64_t *)malloc(data_size);
         hostAllocated = true;
       }
-      cudaStream_t *s = (cudaStream_t *)dfg->get_gpu_stream(location);
+      cudaStream_t s = (cudaStream_t)dfg->get_gpu_stream(location);
       cuda_memcpy_async_to_cpu(host_data.aligned, device_data, data_size, s,
                                location);
       if (synchronize)
-        cudaStreamSynchronize(*s);
+        cudaStreamSynchronize(s);
       onHostReady = true;
     } else {
       assert(onHostReady &&
              "Device-to-device data transfers not supported yet.");
-      cudaStream_t *s = (cudaStream_t *)dfg->get_gpu_stream(loc);
+      cudaStream_t s = (cudaStream_t)dfg->get_gpu_stream(loc);
       if (device_data != nullptr)
         cuda_drop_async(device_data, s, location);
       device_data = cuda_malloc_async(data_size, s, loc);
@@ -681,7 +691,7 @@ struct Stream {
       // TODO: this could be improved
       // Force deallocation with a synchronization point
       for (size_t g = 0; g < num_devices; ++g)
-        cudaStreamSynchronize(*(cudaStream_t *)dfg->get_gpu_stream(g));
+        cudaStreamSynchronize((cudaStream_t)dfg->get_gpu_stream(g));
       auto status = cudaMemGetInfo(&gpu_free_mem, &gpu_total_mem);
       assert(status == cudaSuccess);
       // TODO - for now assume each device on the system has roughly same
@@ -871,7 +881,7 @@ struct Stream {
                 iv->dep->free_chunk_device_data(c, dfg);
               for (auto o : outputs)
                 o->dep->free_chunk_device_data(c, dfg);
-              cudaStreamSynchronize(*(cudaStream_t *)dfg->get_gpu_stream(dev));
+              cudaStreamSynchronize((cudaStream_t)dfg->get_gpu_stream(dev));
             }
           },
           queue, dev));
@@ -886,7 +896,7 @@ struct Stream {
     for (auto o : outputs)
       o->dep->finalize_merged_dependence(dfg);
     for (dev = 0; dev < num_devices; ++dev)
-      cudaStreamSynchronize(*(cudaStream_t *)dfg->get_gpu_stream(dev));
+      cudaStreamSynchronize((cudaStream_t)dfg->get_gpu_stream(dev));
     // We will assume that only one subgraph is being processed per
     // DFG at a time, so we can safely free these here.
     dfg->free_stream_order_dependent_data();
@@ -1004,7 +1014,7 @@ make_process_2_1(void *dfg, void *sin1, void *sin2, void *sout,
 }
 
 [[maybe_unused]] static MemRef2 sdfg_gpu_debug_dependence(Dependence *d,
-                                                          cudaStream_t *s) {
+                                                          cudaStream_t s) {
   if (d->onHostReady)
     return d->host_data;
   size_t data_size = memref_get_data_size(d->host_data);
@@ -1015,7 +1025,7 @@ make_process_2_1(void *dfg, void *sin1, void *sin2, void *sout,
                  {d->host_data.sizes[0], d->host_data.sizes[1]},
                  {d->host_data.strides[0], d->host_data.strides[1]}};
   cuda_memcpy_async_to_cpu(data, d->device_data, data_size, s, d->location);
-  cudaStreamSynchronize(*s);
+  cudaStreamSynchronize(s);
   return ret;
 }
 
@@ -1064,17 +1074,26 @@ void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
       return dep;
     } else {
       // Schedule the keyswitch kernel on the GPU
-      cudaStream_t *s = (cudaStream_t *)p->dfg->get_gpu_stream(loc);
+      cudaStream_t s = (cudaStream_t)p->dfg->get_gpu_stream(loc);
       void *ct0_gpu = d->device_data;
       void *out_gpu = cuda_malloc_async(data_size, s, loc);
       void *ksk_gpu = p->ctx.val->get_ksk_gpu(
           p->level.val, p->input_lwe_dim.val, p->output_lwe_dim.val, loc, s,
           p->sk_index.val);
+        // Initialize indexes
+      uint64_t *indexes = (uint64_t*) malloc(num_samples * sizeof(uint64_t));
+      for (uint32_t i = 0; i < num_samples; i++) {
+	indexes[i] = i;
+      }
+      void *indexes_gpu = alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples, loc, s);
+
       cuda_keyswitch_lwe_ciphertext_vector_64(
-          s, loc, out_gpu, ct0_gpu, ksk_gpu, p->input_lwe_dim.val,
+	  s, loc, out_gpu, indexes_gpu, ct0_gpu, indexes_gpu, ksk_gpu, p->input_lwe_dim.val,
           p->output_lwe_dim.val, p->base_log.val, p->level.val, num_samples);
+      cuda_drop_async(indexes_gpu, s, loc);
       Dependence *dep =
           new Dependence(loc, out, out_gpu, false, false, d->chunk_id);
+      p->dfg->register_stream_order_dependent_allocation(indexes);
       return dep;
     }
   };
@@ -1108,7 +1127,7 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
   }
 
   auto sched = [&](Dependence *d0, Dependence *d1, uint64_t *glwe_ct,
-                   std::vector<size_t> &lut_indexes, cudaStream_t *s,
+                   std::vector<size_t> &lut_indexes, cudaStream_t s,
                    int32_t loc) {
     uint64_t num_samples = d0->host_data.sizes[0];
     MemRef2 out = {out_ptr,
@@ -1168,6 +1187,13 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
           cuda_malloc_async(test_vector_idxes_size, s, loc);
       cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, (void *)test_vector_idxes,
                                test_vector_idxes_size, s, loc);
+      // Initialize indexes
+      uint64_t *indexes = (uint64_t*) malloc(num_samples * sizeof(uint64_t));
+      for (uint32_t i = 0; i < num_samples; i++) {
+	indexes[i] = i;
+      }
+      void *indexes_gpu = alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples, loc, s);
+
       int8_t *pbs_buffer = p->dfg->gpus[loc].get_pbs_buffer(
           p->glwe_dim.val, p->poly_size.val, num_samples);
       void *ct0_gpu = d0->device_data;
@@ -1175,13 +1201,13 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
       void *fbsk_gpu = p->ctx.val->get_bsk_gpu(
           p->input_lwe_dim.val, p->poly_size.val, p->level.val, p->glwe_dim.val,
           loc, s, p->sk_index.val);
-      cuda_bootstrap_amortized_lwe_ciphertext_vector_64(
-          s, loc, out_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu,
+      cuda_programmable_bootstrap_amortized_lwe_ciphertext_vector_64(
+          s, loc, out_gpu, indexes_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu, indexes_gpu,
           fbsk_gpu, (int8_t *)pbs_buffer, p->input_lwe_dim.val, p->glwe_dim.val,
-          p->poly_size.val, p->base_log.val, p->level.val, num_samples,
-          lut_indexes.size(), lwe_idx, cuda_get_max_shared_memory(loc));
+          p->poly_size.val, p->base_log.val, p->level.val, num_samples);
       cuda_drop_async(test_vector_idxes_gpu, s, loc);
       cuda_drop_async(glwe_ct_gpu, s, loc);
+      cuda_drop_async(indexes_gpu, s, loc);
       Dependence *dep =
           new Dependence(loc, out, out_gpu, false, false, d0->chunk_id);
       // As streams are not synchronized, we can only free this vector
@@ -1189,6 +1215,7 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
       // this vector is no longer needed.
       p->dfg->register_stream_order_dependent_allocation(test_vector_idxes);
       p->dfg->register_stream_order_dependent_allocation(glwe_ct);
+      p->dfg->register_stream_order_dependent_allocation(indexes);
       return dep;
     }
   };
@@ -1204,7 +1231,7 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
     lut_indexes.push_back(0);
   }
 
-  cudaStream_t *cstream = (cudaStream_t *)p->dfg->get_gpu_stream(loc);
+  cudaStream_t cstream = (cudaStream_t)p->dfg->get_gpu_stream(loc);
   Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
   if (p->output_streams[0]->need_new_gen(chunk_id))
     p->output_streams[0]->put(
@@ -1214,7 +1241,7 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
 void memref_add_lwe_ciphertexts_u64_process(Process *p, int32_t loc,
                                             int32_t chunk_id,
                                             uint64_t *out_ptr) {
-  auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t *s,
+  auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t s,
                    int32_t loc) {
     assert(d0->host_data.sizes[0] == d1->host_data.sizes[0]);
     assert(d0->host_data.sizes[1] == d1->host_data.sizes[1]);
@@ -1257,14 +1284,14 @@ void memref_add_lwe_ciphertexts_u64_process(Process *p, int32_t loc,
   Dependence *idep1 = p->input_streams[1]->get(loc, chunk_id);
   if (p->output_streams[0]->need_new_gen(chunk_id))
     p->output_streams[0]->put(
-        sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc),
+        sched(idep0, idep1, (cudaStream_t)p->dfg->get_gpu_stream(loc), loc),
         chunk_id);
 }
 
 void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
                                                      int32_t chunk_id,
                                                      uint64_t *out_ptr) {
-  auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t *s,
+  auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t s,
                    int32_t loc) {
     assert(d0->host_data.sizes[0] == d1->host_data.sizes[1] ||
            d1->host_data.sizes[1] == 1);
@@ -1315,14 +1342,14 @@ void memref_add_plaintext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
   Dependence *idep1 = p->input_streams[1]->get(loc, chunk_id);
   if (p->output_streams[0]->need_new_gen(chunk_id))
     p->output_streams[0]->put(
-        sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc),
+        sched(idep0, idep1, (cudaStream_t)p->dfg->get_gpu_stream(loc), loc),
         chunk_id);
 }
 
 void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
                                                      int32_t chunk_id,
                                                      uint64_t *out_ptr) {
-  auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t *s,
+  auto sched = [&](Dependence *d0, Dependence *d1, cudaStream_t s,
                    int32_t loc) {
     assert(d0->host_data.sizes[0] == d1->host_data.sizes[1] ||
            d1->host_data.sizes[1] == 1);
@@ -1373,14 +1400,14 @@ void memref_mul_cleartext_lwe_ciphertext_u64_process(Process *p, int32_t loc,
   Dependence *idep1 = p->input_streams[1]->get(loc, chunk_id);
   if (p->output_streams[0]->need_new_gen(chunk_id))
     p->output_streams[0]->put(
-        sched(idep0, idep1, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc),
+        sched(idep0, idep1, (cudaStream_t)p->dfg->get_gpu_stream(loc), loc),
         chunk_id);
 }
 
 void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc,
                                               int32_t chunk_id,
                                               uint64_t *out_ptr) {
-  auto sched = [&](Dependence *d0, cudaStream_t *s, int32_t loc) {
+  auto sched = [&](Dependence *d0, cudaStream_t s, int32_t loc) {
     uint64_t num_samples = d0->host_data.sizes[0];
     MemRef2 out = {out_ptr,
                    out_ptr,
@@ -1415,7 +1442,7 @@ void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc,
   Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
   if (p->output_streams[0]->need_new_gen(chunk_id))
     p->output_streams[0]->put(
-        sched(idep0, (cudaStream_t *)p->dfg->get_gpu_stream(loc), loc),
+        sched(idep0, (cudaStream_t)p->dfg->get_gpu_stream(loc), loc),
         chunk_id);
 }
 
