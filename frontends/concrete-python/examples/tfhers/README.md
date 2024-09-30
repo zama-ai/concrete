@@ -1,6 +1,6 @@
-# TFHE-rs Compatibility Example
+# TFHE-rs Interoperability Example
 
-This is the full execution for the example explained in the [TFHE-rs Compatibility Guide](../../../../docs/guides/tfhers) (use case 1). You can find the TFHE-rs code [here](../../tests/tfhers-utils/src/main.rs), while the Python code is under this direcotry [here](example.py). Both are CLI tools, so that we can execute the example step by step. You can refer to the code at every step to see how it's implemented.
+This is the full execution for the example explained in the [TFHE-rs Interoperability Guide](../../../../docs/guides/tfhers) (use case 1). You can find the TFHE-rs code [here](../../tests/tfhers-utils/src/main.rs), while the Python code is under this direcotry [here](example.py). Both are CLI tools, so that we can execute the example step by step. You can refer to the code at every step to see how it's implemented.
 
 ## Make tmpdir
 

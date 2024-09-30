@@ -1,10 +1,10 @@
-# TFHE-rs Compatibility
+# TFHE-rs Interoperability
 
 This guide explains how to combine Concrete and [TFHE-rs](https://github.com/zama-ai/tfhe-rs) computations together. This allows you to convert ciphertexts from Concrete to TFHE-rs, and vice versa, and to run a computation with both libraries without requiring a decryption.
 
 ## Overview
 
-There are differences between Concrete and TFHE-rs, so ensuring compatibility between them involves more than just data serialization. To achieve compatibility, we need to consider two main aspects.
+There are differences between Concrete and TFHE-rs, so ensuring interoperability between them involves more than just data serialization. To achieve interoperability, we need to consider two main aspects.
 
 #### Encoding differences
 
@@ -49,7 +49,7 @@ assert tfhers_type.decode([3, 2, 3, 1]) == 123
 
 #### Parameter match
 
-The Concrete Optimizer may find parameters which are not in TFHE-rs's pre-computed list. To ensure compatibility, you need to either fix or constrain the search space in parts of the circuit where compatibility is required. This ensures that compatible parameters are used consistently.
+The Concrete Optimizer may find parameters which are not in TFHE-rs's pre-computed list. To ensure interoperability, you need to either fix or constrain the search space in parts of the circuit where interoperability is required. This ensures that compatible parameters are used consistently.
 
 ## Scenarios
 
