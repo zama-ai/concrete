@@ -14,3 +14,6 @@ tmp_directory_for_cml_tests
 
 # Temp file
 frontends/concrete-python/examples/sha1/tmp_sha1_test_file.txt
+
+# macOS
+**/.DS_Store
