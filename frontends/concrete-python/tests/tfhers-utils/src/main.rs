@@ -1,4 +1,3 @@
-use bincode;
 use clap::{Arg, ArgAction, Command};
 use core::panic;
 use std::fs;
@@ -79,7 +78,7 @@ fn decrypt_with_key(
 }
 
 fn sum(cts_paths: Vec<&String>, out_ct_path: &String) -> Result<(), Box<dyn std::error::Error>> {
-    if cts_paths.len() == 0 {
+    if cts_paths.is_empty() {
         panic!("can't call sum with 0 ciphertexts");
     }
     let mut acc = deserialize_fheuint8(cts_paths[0]);
@@ -133,7 +132,7 @@ fn keygen(
     let config = ConfigBuilder::with_custom_parameters(BLOCK_PARAMS).build();
 
     let (client_key, server_key) = generate_keys(config);
-    let (integer_ck, _, _) = client_key.clone().into_raw_parts();
+    let (integer_ck, _, _, _) = client_key.clone().into_raw_parts();
     let shortint_ck = integer_ck.into_raw_parts();
     assert!(BLOCK_PARAMS.encryption_key_choice == EncryptionKeyChoice::Big);
     let (glwe_secret_key, _, _) = shortint_ck.into_raw_parts();
@@ -155,8 +154,7 @@ fn keygen_from_lwe(lwe_sk_path: &String) -> ClientKey {
 
     let shortint_key =
         tfhe::shortint::ClientKey::try_from_lwe_encryption_key(lwe_sk, BLOCK_PARAMS).unwrap();
-    let client_key = ClientKey::from_raw_parts(shortint_key.into(), None, None);
-    client_key
+    ClientKey::from_raw_parts(shortint_key.into(), None, None, tfhe::Tag::default())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -325,7 +323,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match matches.subcommand() {
         Some(("encrypt-with-key", encrypt_matches)) => {
             let value_str = encrypt_matches.get_one::<String>("value").unwrap();
-            let value = u8::from_str_radix(value_str, 10).unwrap();
+            let value: u8 = value_str.parse().unwrap();
             let ciphertext_path = encrypt_matches.get_one::<String>("ciphertext").unwrap();
 
             let client_key: ClientKey;
