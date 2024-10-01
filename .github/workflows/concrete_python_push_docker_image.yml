@@ -12,7 +12,7 @@ on:
         type: string
 
 env:
-  DOCKER_IMAGE_NAME: zamafhe/concrete-python:${{ inputs.tag }}
+  DOCKER_IMAGE_NAME: zamafhe/concrete-python
   DOCKER_FILE: docker/Dockerfile.concrete-python
 
 jobs:
@@ -25,13 +25,14 @@ jobs:
       - name: Get version from tag
         run: |
           # remove leading 'v' and '-' from tag
-          export VERSION=`echo ${{ inputs.tag }} | sed "s/^v//g" | sed "s/-//g"`
+          export VERSION=`echo ${{ inputs.tag }} | sed "s/^v*//g" | sed "s/-//g"`
           echo "VERSION=$VERSION" >> "${GITHUB_ENV}"
+          echo "NAME_TAG=${{ env.DOCKER_IMAGE_NAME }}:v$VERSION" >> "${GITHUB_ENV}"
 
       - name: Build image
         run: |
           mkdir empty_context
-          docker image build -t ${{ env.DOCKER_IMAGE_NAME }} --build-arg version=${{ env.VERSION }} -f ${{ env.DOCKER_FILE }} empty_context
+          docker image build -t ${{ env.NAME_TAG }} --build-arg version=${{ env.VERSION }} -f ${{ env.DOCKER_FILE }} empty_context
 
       - name: Login to Docker Hub
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
@@ -40,4 +41,4 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Push image
-        run: docker image push ${{ env.DOCKER_IMAGE_NAME }}
+        run: docker image push ${{ env.NAME_TAG }}
