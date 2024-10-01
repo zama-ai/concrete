@@ -343,7 +343,7 @@ def test_print(helpers):
     class Module:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
     inputset = list(range(20))
     module = Module.compile(
@@ -351,10 +351,12 @@ def test_print(helpers):
     )
     helpers.check_str(
         """
-%0 = x                  # EncryptedScalar<uint5>        ∈ [0, 19]
-%1 = 1                  # ClearScalar<uint1>            ∈ [1, 1]
-%2 = add(%0, %1)        # EncryptedScalar<uint5>        ∈ [1, 20]
-return %2
+%0 = x                        # EncryptedScalar<uint5>        ∈ [0, 19]
+%1 = 1                        # ClearScalar<uint1>            ∈ [1, 1]
+%2 = add(%0, %1)              # EncryptedScalar<uint5>        ∈ [1, 20]
+%3 = 20                       # ClearScalar<uint5>            ∈ [20, 20]
+%4 = remainder(%2, %3)        # EncryptedScalar<uint5>        ∈ [0, 19]
+return %4
         """,
         str(module.inc),
     )
@@ -369,11 +371,11 @@ def test_encrypted_execution():
     class Module:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
         @fhe.function({"x": "encrypted"})
         def dec(x):
-            return x - 1 % 20
+            return (x - 1) % 20
 
     inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
     module = Module.compile(
@@ -407,11 +409,11 @@ def test_key_set():
     class Module:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
         @fhe.function({"x": "encrypted"})
         def dec(x):
-            return x - 1 % 20
+            return (x - 1) % 20
 
     inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
     module = Module.compile(
@@ -596,11 +598,11 @@ def test_simulate_encrypt_run_decrypt(helpers):
     class Module:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
         @fhe.function({"x": "encrypted"})
         def dec(x):
-            return x - 1 % 20
+            return (x - 1) % 20
 
     inputset = [np.random.randint(1, 20, size=()) for _ in range(100)]
     module = Module.compile(
@@ -808,7 +810,7 @@ def test_lazy_simulation_execution(helpers):
     class Module1:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
     module = Module1.compile(
         {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
@@ -829,7 +831,7 @@ def test_lazy_simulation_execution(helpers):
     class Module2:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
     module = Module2.compile(
         {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
@@ -848,7 +850,7 @@ def test_lazy_simulation_execution(helpers):
     class Module3:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
     module = Module3.compile(
         {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
@@ -867,7 +869,7 @@ def test_lazy_simulation_execution(helpers):
     class Module4:
         @fhe.function({"x": "encrypted"})
         def inc(x):
-            return x + 1 % 20
+            return (x + 1) % 20
 
     module = Module4.compile(
         {"inc": [np.random.randint(1, 20, size=()) for _ in range(100)]},
