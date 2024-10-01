@@ -172,7 +172,8 @@ checksum = "d3fd119d74b830634cea2a0f58bbd0d54540518a14397557951e79340abc28c0"
 [[package]]
 name = "concrete-csprng"
 version = "0.4.1"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90518357249582c16a6b64d7410243dfb3109d5bf0ad1665c058c9a59f2fc4cc"
 dependencies = [
  "aes",
  "libc",
@@ -507,8 +508,9 @@ dependencies = [
 
 [[package]]
 name = "tfhe"
-version = "0.8.0-alpha.3"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81923c2433f461e35f3d0b933696335e4f03b874438c844c576eab99e302fe00"
 dependencies = [
  "aligned-vec",
  "bincode",
@@ -529,8 +531,9 @@ dependencies = [
 
 [[package]]
 name = "tfhe-versionable"
-version = "0.2.1"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d09ede610a0eac494ab832533415d4cb4f103b716901a11da84ccfeb287d08bf"
 dependencies = [
  "aligned-vec",
  "num-complex",
@@ -540,8 +543,9 @@ dependencies = [
 
 [[package]]
 name = "tfhe-versionable-derive"
-version = "0.2.1"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d92c0fe0b3e42c45ac7ef98092e60c09db69aeaeb821429a1754aef28ea575c"
 dependencies = [
  "proc-macro2",
  "quote",
