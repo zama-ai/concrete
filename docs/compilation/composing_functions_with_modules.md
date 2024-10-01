@@ -310,7 +310,7 @@ with MyModule.wire_pipeline(inputset) as samples_iter:
     for s in samples_iter:
 
         # Here we provide an example of how we expect the module functions to be used at runtime in fhe.
-        Module.increment(Module.decimate(Module.decrement(s)))
+        MyModule.increment(MyModule.decimate(MyModule.decrement(s)))
 
 # It is not needed to provide any inputsets to the `compile` method after tracing the wires, since those were already computed automatically during the module tracing.
 module = MyModule.compile(
