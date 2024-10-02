@@ -443,7 +443,7 @@ Different strategies are good for different circuits. If you want the best runti
 
 ## Shifts
 
-The same configuration option is used to modify the behavior of encrypted shift operations, and shifts are much more complex to implement, so we'll not go over the details. What is important is, the end the result is computed using additions or subtractions on the original shifted operand. Since additions and subtractions require the same bit-width across operands, input and output bit-widths need to be synchronized at some point. There are two ways to do this:
+The same configuration option is used to modify the behavior of encrypted shift operations, and shifts are much more complex to implement, so we'll not go over the details. What is important is, that the end result is computed using additions or subtractions on the original shifted operand. Since additions and subtractions require the same bit-width across operands, input and output bit-widths need to be synchronized at some point. There are two ways to do this:
 
 ### With promotion
 
