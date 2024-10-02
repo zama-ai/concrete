@@ -189,10 +189,10 @@ dependencies = [
  "cbindgen",
  "concrete-cpu-noise-model",
  "concrete-csprng",
- "concrete-fft",
+ "concrete-fft 0.4.1",
  "concrete-security-curves",
  "criterion",
- "dyn-stack",
+ "dyn-stack 0.10.0",
  "libc",
  "num-complex",
  "once_cell",
@@ -230,7 +230,21 @@ checksum = "3144f883422ee22c65d4f408c11b3406513eadc0d50b3d65bfadcb97852817e0"
 dependencies = [
  "aligned-vec",
  "bytemuck",
- "dyn-stack",
+ "dyn-stack 0.9.0",
+ "num-complex",
+ "pulp",
+]
+
+[[package]]
+name = "concrete-fft"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86ff7397e00e903afb03f0adca6a5f3bec3a6e96a7cdb70bdc088e01b125e170"
+dependencies = [
+ "aligned-vec",
+ "bytemuck",
+ "dyn-stack 0.10.0",
+ "js-sys",
  "num-complex",
  "pulp",
  "serde",
@@ -238,9 +252,9 @@ dependencies = [
 
 [[package]]
 name = "concrete-ntt"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4f4643dbd5de069e099122ae6c2bbd3db70d69ffec348dfc228448d635f949e"
+checksum = "bea708a14b4cfe650eec644eac11889a187404a3a0738a41a5524b0f548850a1"
 dependencies = [
  "aligned-vec",
  "pulp",
@@ -363,6 +377,16 @@ name = "dyn-stack"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "24269739c7c175bc12130622ef1a60b9ab2d5b30c0b9ce5110cd406d7fd497bc"
+dependencies = [
+ "bytemuck",
+ "reborrow",
+]
+
+[[package]]
+name = "dyn-stack"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56e53799688f5632f364f8fb387488dd05db9fe45db7011be066fc20e7027f8b"
 dependencies = [
  "bytemuck",
  "reborrow",
@@ -671,9 +695,9 @@ dependencies = [
 
 [[package]]
 name = "pulp"
-version = "0.18.21"
+version = "0.18.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ec8d02258294f59e4e223b41ad7e81c874aa6b15bc4ced9ba3965826da0eed5"
+checksum = "a0a01a0dc67cf4558d279f0c25b0962bd08fc6dec0137699eae304103e882fe6"
 dependencies = [
  "bytemuck",
  "libm",
@@ -897,17 +921,17 @@ checksum = "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d"
 
 [[package]]
 name = "tfhe"
-version = "0.7.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "273f968d322dd02cd76a51fe8e2312b5807631d33e99ea06ccfd8034d558c562"
+checksum = "81923c2433f461e35f3d0b933696335e4f03b874438c844c576eab99e302fe00"
 dependencies = [
  "aligned-vec",
  "bincode",
  "bytemuck",
  "concrete-csprng",
- "concrete-fft",
+ "concrete-fft 0.5.1",
  "concrete-ntt",
- "dyn-stack",
+ "dyn-stack 0.10.0",
  "itertools 0.11.0",
  "paste",
  "pulp",
@@ -920,9 +944,9 @@ dependencies = [
 
 [[package]]
 name = "tfhe-versionable"
-version = "0.1.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7977829d8b2d59a16d9780ffbf8e4084a8d67f32c0e557b647136d094d391b2"
+checksum = "d09ede610a0eac494ab832533415d4cb4f103b716901a11da84ccfeb287d08bf"
 dependencies = [
  "aligned-vec",
  "num-complex",
@@ -932,9 +956,9 @@ dependencies = [
 
 [[package]]
 name = "tfhe-versionable-derive"
-version = "0.1.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "754aede9c522d81d852b46714d42137d307f418b8b6eed4db03d1466080f4f9d"
+checksum = "5d92c0fe0b3e42c45ac7ef98092e60c09db69aeaeb821429a1754aef28ea575c"
 dependencies = [
  "proc-macro2",
  "quote",

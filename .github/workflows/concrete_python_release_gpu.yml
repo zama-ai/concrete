@@ -90,7 +90,7 @@ jobs:
           run: |
             set -e
 
-            rustup toolchain install nightly-2024-07-01
+            rustup toolchain install nightly-2024-09-30
             rm -rf /build/*
             
             export PYTHON=${{ format('python{0}', matrix.python-version) }}

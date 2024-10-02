@@ -144,7 +144,7 @@ pub unsafe extern "C" fn concrete_cpu_encrypt_ggsw_ciphertext_u64(
         encrypt_constant_ggsw_ciphertext(
             &glwe_sk,
             &mut ggsw_out,
-            Plaintext(input),
+            Cleartext(input),
             Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
             &mut *(csprng as *mut EncryptionRandomGenerator<SoftwareRandomGenerator>),
         );
