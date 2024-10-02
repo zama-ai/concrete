@@ -279,7 +279,7 @@ If you cannot find a solution in the community forum, or if you have found a bug
 
 For [bug reports](https://github.com/zama-ai/concrete/issues/new?assignees=&labels=bug%2C+triage&projects=&template=bug_report.md), try to:
 
-* Avoid randomness to ensure reproductibility of the bug
+* Avoid randomness to ensure reproducibility of the bug
 * Minimize your function while keeping the bug to expedite the fix
 * Include your input-set in the issue
 * Provide clear reproduction steps
