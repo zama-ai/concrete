@@ -17,7 +17,7 @@ concrete-cpu-noise-model = { path = "../noise-model/" }
 concrete-security-curves = { path = "../../../tools/parameter-curves/concrete-security-curves-rust" }
 libc = { version = "0.2", default-features = false }
 pulp = { version = "0.18.8", default-features = false }
-dyn-stack = { version = "0.9", default-features = false }
+dyn-stack = { version = "0.10", default-features = false }
 readonly = "0.2"
 aligned-vec = { version = "0.5", default-features = false }
 concrete-fft = { version = "0.4.1", default-features = false }
@@ -31,16 +31,16 @@ serde = "~1"
 rayon = { version = "1.6", optional = true }
 once_cell = { version = "1.16", optional = true }
 
-tfhe = { version = "0.7", features = ["integer"] }
+tfhe = { version = "0.8", features = ["integer"] }
 
 [target.x86_64-unknown-unix-gnu.dependencies]
-tfhe = { version = "0.7", features = ["integer", "x86_64-unix"] }
+tfhe = { version = "0.8", features = ["integer", "x86_64-unix"] }
 
 [target.aarch64-unknown-unix-gnu.dependencies]
-tfhe = { version = "0.7", features = ["integer", "aarch64-unix"] }
+tfhe = { version = "0.8", features = ["integer", "aarch64-unix"] }
 
 [target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { version = "0.7", features = ["integer", "x86_64"] }
+tfhe = { version = "0.8", features = ["integer", "x86_64"] }
 
 [features]
 default = ["parallel", "std", "csprng"]

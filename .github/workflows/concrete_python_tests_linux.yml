@@ -76,7 +76,7 @@ jobs:
             -e SSH_AUTH_SOCK=/ssh.socket
           shell: bash
           run: |
-            rustup toolchain install nightly-2024-07-01
+            rustup toolchain install nightly-2024-09-30
             set -e
             rm -rf /build/*
 

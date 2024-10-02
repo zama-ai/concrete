@@ -107,7 +107,7 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_unknown_noise_level() -> usize {
 
 pub fn tfhers_uint8_description(fheuint: FheUint8) -> TfhersFheIntDescription {
     // get metadata from fheuint's ciphertext
-    let (radix, _) = fheuint.into_raw_parts();
+    let (radix, _, _) = fheuint.into_raw_parts();
     let blocks = radix.blocks();
     let ct = match blocks.first() {
         Some(value) => &value.ct,
@@ -176,7 +176,7 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_to_lwe_array(
         }
 
         // collect LWEs from fheuint
-        let (radix, _) = fheuint.into_raw_parts();
+        let (radix, _, _) = fheuint.into_raw_parts();
         let blocks = radix.blocks();
         let first_ct = match blocks.first() {
             Some(value) => &value.ct,
