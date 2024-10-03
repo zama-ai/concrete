@@ -14,8 +14,6 @@ jobs:
   start-instance:
     name: Start instance
     runs-on: ubuntu-latest
-    if: github.event_name != 'schedule' ||
-      (github.event_name == 'schedule' && github.repository == 'zama-ai/tfhe-rs')
     outputs:
       runner-name: ${{ steps.start-instance.outputs.label }}
     steps:
