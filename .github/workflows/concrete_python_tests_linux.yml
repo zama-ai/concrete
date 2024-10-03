@@ -99,7 +99,7 @@ jobs:
           run: |
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
-            cd frontends/concrete-python
+            cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             export KEY_CACHE_DIRECTORY=./key-set-cache
             mkdir $KEY_CACHE_DIRECTORY
@@ -128,7 +128,7 @@ jobs:
           run: |
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-notebooks
-            cd frontends/concrete-python
+            cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             make test-notebooks
   teardown-instance:
