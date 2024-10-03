@@ -41,7 +41,6 @@ jobs:
         run: mkdir build
       - name: Build concrete-compiler python bindings
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        id: build-compiler-bindings
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -86,19 +85,25 @@ jobs:
         with:
           name: concrete-compiler-python-bindings
           path: /compiler-artifacts-pytest
-      - name: Prepare test environment
-        run: |
-          cd frontends/concrete-python
-          make venv
-      - name: Test pytest
-        run: |
-          set -e
-          export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
-          cd frontends/concrete-python
-          source .venv/bin/activate
-          export KEY_CACHE_DIRECTORY=./key-set-cache
-          mkdir $KEY_CACHE_DIRECTORY
-          make pytest
+      - name: Run pytest
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
+            cd frontends/concrete-python
+            source .venv/bin/activate
+            export KEY_CACHE_DIRECTORY=./key-set-cache
+            mkdir $KEY_CACHE_DIRECTORY
+            make pytest
   concrete-python-test-notebooks:
     name: Test concrete-python notebooks
     needs: [setup-instance, concrete-compiler-build-python-bindings]
@@ -109,21 +114,27 @@ jobs:
         with:
           name: concrete-compiler-python-bindings
           path: /compiler-artifacts-notebooks
-      - name: Prepare test environment
-        run: |
-          cd frontends/concrete-python
-          make venv
-      - name: Test pytest
-        run: |
-          set -e
-          export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-notebooks
-          cd frontends/concrete-python
-          source .venv/bin/activate
-          make test-notebooks
+      - name: Run pytest
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-notebooks
+            cd frontends/concrete-python
+            source .venv/bin/activate
+            make test-notebooks
   teardown-instance:
     name: Teardown instance
     if: ${{ always() && needs.setup-instance.result != 'skipped' }}
-    needs: [ setup-instance, concrete-python-test-pytest ]
+    needs: [ setup-instance, concrete-python-test-pytest, concrete-python-test-notebooks ]
     runs-on: ubuntu-latest
     steps:
       - name: Stop instance
