@@ -27,7 +27,7 @@ jobs:
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
           profile: m7i-cpu-bench
-  build-python-bindings:
+  concrete-compiler-build-python-bindings:
     name: Build concrete-compiler python bindings
     needs: setup-instance
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
@@ -39,7 +39,7 @@ jobs:
           fetch-depth: 0
       - name: Create concrete build directory
         run: mkdir build
-      - name: Build concrete python bindings
+      - name: Build concrete-compiler python bindings
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler-bindings
         with:
@@ -62,10 +62,10 @@ jobs:
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate
-            
+
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) python-bindings
-            
+
             echo "Debug: ccache statistics (after the build):"
             ccache -s
       - name: Upload concrete-compiler python-bindings
@@ -77,26 +77,49 @@ jobs:
             /build/lib/libConcretelangRuntime.so
             /build/tools/concretelang/python_packages/concretelang_core/
   concrete-python-test-pytest:
-    needs: [setup-instance, build-python-bindings]
+    name: Test concrete-python pytest
+    needs: [setup-instance, concrete-compiler-build-python-bindings]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
       - name: Download concrete-compiler python-bindings
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: concrete-compiler-python-bindings
-          path: /compiler-artifacts
+          path: /compiler-artifacts-pytest
       - name: Prepare test environment
         run: |
           cd frontends/concrete-python
           make venv
       - name: Test pytest
         run: |
-          export COMPILER_BUILD_DIRECTORY=/compiler-artifacts
+          set -e
+          export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
           cd frontends/concrete-python
           source .venv/bin/activate
           export KEY_CACHE_DIRECTORY=./key-set-cache
           mkdir $KEY_CACHE_DIRECTORY
           make pytest
+  concrete-python-test-notebooks:
+    name: Test concrete-python notebooks
+    needs: [setup-instance, concrete-compiler-build-python-bindings]
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    steps:
+      - name: Download concrete-compiler python-bindings
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: concrete-compiler-python-bindings
+          path: /compiler-artifacts-notebooks
+      - name: Prepare test environment
+        run: |
+          cd frontends/concrete-python
+          make venv
+      - name: Test pytest
+        run: |
+          set -e
+          export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-notebooks
+          cd frontends/concrete-python
+          source .venv/bin/activate
+          make test-notebooks
   teardown-instance:
     name: Teardown instance
     if: ${{ always() && needs.setup-instance.result != 'skipped' }}
