@@ -1,11 +1,11 @@
 # This job is the main jobs will dispatch build and test for every modules of our mono repo.
 name: Main
 
-# on:
+on:
 #   pull_request:
-#   push:
-#     branches:
-#       - 'main'
+  push:
+    branches:
+      - 'main'
 #       - 'release/*'
 #       - 'force-docker-images'
 #       - 'private_release/*'
