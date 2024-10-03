@@ -178,6 +178,65 @@ Provide a `function_name` keyword argument to disambiguate."
 
         return tuple(exported) if len(exported) != 1 else exported[0]
 
+    def encrypt_single(
+        self,
+        arg: Union[int, np.ndarray, List],
+        *,
+        position: int,
+        function_name: Optional[str] = None,
+    ) -> Value:
+        """
+        Encrypt an argument at a specific position for evaluation.
+
+        Args:
+            arg (Union[int, np.ndarray, List]):
+                argument to encrypt
+
+            position (int):
+                position of the argument
+
+            function_name (str):
+                name of the function to encrypt for (needs to be specified explicitly for modules)
+
+        Returns:
+            Value:
+                encrypted argument
+        """
+
+        if function_name is None:
+            functions = self.specs.client_parameters.function_list()
+            if len(functions) == 1:
+                function_name = functions[0]
+            else:
+                message = (
+                    "The client contains more than one functions. "
+                    "Provide a `function_name` keyword argument to disambiguate."
+                )
+                raise ValueError(message)
+
+        args = [None] * self.specs.number_of_inputs(function_name)
+
+        if position >= len(args):
+            message = (
+                f"Function {function_name} has {len(args)} inputs so "
+                f"it's not possible to encrypt a value for position {position}."
+            )
+            raise ValueError(message)
+
+        args[position] = arg  # type: ignore
+        ordered_sanitized_args = validate_input_args(self.specs, *args, function_name=function_name)
+        arg = ordered_sanitized_args[position]
+
+        self.keygen(force=False)
+        keyset = self.keys._keyset  # pylint: disable=protected-access
+
+        exporter = ValueExporter.new(keyset, self.specs.client_parameters, function_name)
+        return Value(
+            exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
+            if isinstance(arg, np.ndarray) and arg.shape != ()
+            else exporter.export_scalar(position, int(arg))  # type: ignore
+        )
+
     def decrypt(
         self,
         *results: Union[Value, Tuple[Value, ...]],
@@ -224,6 +283,48 @@ Provide a `function_name` keyword argument to disambiguate."
         )
 
         return decrypted if len(decrypted) != 1 else decrypted[0]
+
+    def decrypt_single(
+        self,
+        result: Value,
+        *,
+        position: int,
+        function_name: Optional[str] = None,
+    ) -> Union[int, np.ndarray]:
+        """
+        Decrypt a result at a specific position after evaluation.
+
+        Args:
+            result (Value):
+                result to decrypt
+
+            position (int):
+                position of the result
+
+            function_name (str):
+                name of the function to decrypt after (needs to be specified explicitly for modules)
+
+        Returns:
+            Union[int, np.ndarray]:
+                decrypted result
+        """
+
+        if function_name is None:
+            functions = self.specs.client_parameters.function_list()
+            if len(functions) == 1:
+                function_name = functions[0]
+            else:
+                message = (
+                    "The client contains more than one functions. "
+                    "Provide a `function_name` keyword argument to disambiguate."
+                )
+                raise ValueError(message)
+
+        self.keygen(force=False)
+        keyset = self.keys._keyset  # pylint: disable=protected-access
+
+        decrypter = ValueDecrypter.new(keyset, self.specs.client_parameters, function_name)
+        return decrypter.decrypt(position, result.inner)
 
     @property
     def evaluation_keys(self) -> EvaluationKeys:

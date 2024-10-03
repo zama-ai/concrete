@@ -191,6 +191,36 @@ class FheFunction:
 
         return self.execution_runtime.val.client.encrypt(*args, function_name=self.name)
 
+    def encrypt_single(
+        self,
+        arg: Union[int, np.ndarray, List],
+        *,
+        position: int,
+    ) -> Value:
+        """
+        Encrypt an argument at a specific position for evaluation.
+
+        Args:
+            arg (Union[int, np.ndarray, List]):
+                argument to encrypt
+
+            position (int):
+                position of the argument
+
+        Returns:
+            Value:
+                encrypted argument
+        """
+
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return arg  # type: ignore
+
+        return self.execution_runtime.val.client.encrypt_single(
+            arg,
+            position=position,
+            function_name=self.name,
+        )
+
     def run(
         self,
         *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
@@ -236,6 +266,36 @@ class FheFunction:
             return results if len(results) != 1 else results[0]  # type: ignore
 
         return self.execution_runtime.val.client.decrypt(*results, function_name=self.name)
+
+    def decrypt_single(
+        self,
+        result: Value,
+        *,
+        position: int,
+    ) -> Union[int, np.ndarray]:
+        """
+        Decrypt a result at a specific position after evaluation.
+
+        Args:
+            result (Value):
+                result to decrypt
+
+            position (int):
+                position of the result
+
+        Returns:
+            Union[int, np.ndarray]:
+                decrypted result
+        """
+
+        if self.configuration.simulate_encrypt_run_decrypt:
+            return result  # type: ignore
+
+        return self.execution_runtime.val.client.decrypt_single(
+            result,
+            position=position,
+            function_name=self.name,
+        )
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """

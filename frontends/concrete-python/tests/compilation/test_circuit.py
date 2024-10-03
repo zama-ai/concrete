@@ -841,3 +841,38 @@ def test_simulate_encrypt_run_decrypt(helpers):
     assert isinstance(encrypted_y, int)
     assert hasattr(circuit, "simulator")
     assert isinstance(encrypted_result, int)
+
+
+def test_positional_encrypt_decrypt(helpers):
+    """
+    Test `circuit.encrypt_single` and `circuit.decrypt_single`.
+    """
+
+    configuration = helpers.configuration()
+
+    def f(x, y):
+        return x + y, x * y
+
+    inputset = fhe.inputset(fhe.uint3, fhe.uint3)
+    configuration = fhe.Configuration(
+        enable_unsafe_features=True,
+        use_insecure_key_cache=True,
+        insecure_key_cache_location=".keys",
+    )
+
+    compiler = fhe.Compiler(f, {"x": "encrypted", "y": "encrypted"})
+    circuit = compiler.compile(inputset, configuration, show_mlir=True)
+
+    x = 3
+    y = 5
+
+    encrypted_x = circuit.encrypt_single(x, position=0)
+    encrypted_y = circuit.encrypt_single(y, position=1)
+
+    encrypted_a, encrypted_b = circuit.run(encrypted_x, encrypted_y)
+
+    a = circuit.decrypt_single(encrypted_a, position=0)
+    b = circuit.decrypt_single(encrypted_b, position=1)
+
+    assert a == 8
+    assert b == 15

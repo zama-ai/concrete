@@ -16,10 +16,10 @@ inputset = [(2, 3), (0, 0), (1, 6), (7, 7), (7, 1), (3, 2), (6, 1), (1, 7), (4, 
 circuit = add.compile(inputset)
 
 sample_y = 4
-_, encrypted_y = circuit.encrypt(None, sample_y)
+_, encrypted_y = circuit.encrypt(None, sample_y)  # or # encrypted_y = circuit.encrypt_single(sample_y, position=1)
 
 for sample_x in range(3, 6):
-    encrypted_x, _ = circuit.encrypt(sample_x, None)
+    encrypted_x, _ = circuit.encrypt(sample_x, None)  # or # encrypted_x = circuit.encrypt_single(sample_x, position=0)
 
     encrypted_result = circuit.run(encrypted_x, encrypted_y)
     result = circuit.decrypt(encrypted_result)

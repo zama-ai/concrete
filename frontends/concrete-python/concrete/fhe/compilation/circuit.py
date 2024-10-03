@@ -175,6 +175,29 @@ class Circuit:
         """
         return self._function.encrypt(*args)
 
+    def encrypt_single(
+        self,
+        arg: Union[int, np.ndarray, List],
+        *,
+        position: int,
+    ) -> Value:
+        """
+        Encrypt an argument at a specific position for evaluation.
+
+        Args:
+            arg (Union[int, np.ndarray, List]):
+                argument to encrypt
+
+            position (int):
+                position of the argument
+
+        Returns:
+            Value:
+                encrypted argument
+        """
+
+        return self._function.encrypt_single(arg, position=position)
+
     def run(
         self,
         *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
@@ -210,6 +233,29 @@ class Circuit:
         """
 
         return self._function.decrypt(*results)
+
+    def decrypt_single(
+        self,
+        result: Value,
+        *,
+        position: int,
+    ) -> Union[int, np.ndarray]:
+        """
+        Decrypt a result at a specific position after evaluation.
+
+        Args:
+            result (Value):
+                result to decrypt
+
+            position (int):
+                position of the result
+
+        Returns:
+            Union[int, np.ndarray]:
+                decrypted result
+        """
+
+        return self._function.decrypt_single(result, position=position)
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """
