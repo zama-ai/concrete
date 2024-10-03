@@ -136,7 +136,10 @@ jobs:
 
       - name: Login
         id: login
-        if: contains(steps.changed-files.outputs.modified_files, '${{ matrix.dockerfile }}') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
+        # from the docs: The jobs.<job_id>.if condition is evaluated before jobs.<job_id>.strategy.matrix is applied. So we can't just use matrix.dockerfile
+        # so we have to build both images if one of the two files change, or we will have to split this into two
+        # https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idif
+        if: contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.cuda-118-env') || contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.cuda-123-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
       - name: Build Tag and Publish
