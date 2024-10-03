@@ -30,7 +30,7 @@ jobs:
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
-          profile: m7i-cpu-bench
+          profile: cpu-test
   concrete-compiler-build-python-bindings:
     name: Build concrete-compiler python bindings
     needs: setup-instance
