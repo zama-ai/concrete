@@ -46,13 +46,13 @@ jobs:
 
       - name: Get changed files in the concrete-compiler directory
         id: compiler
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./compilers/concrete-compiler/**
 
       - name: Get changed files for concrete-optimizer
         id: optimizer
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: |
             ./tools/parameter-curves/concrete-security-curves-rust/**
@@ -61,43 +61,43 @@ jobs:
 
       - name: Get changed files in the concrete-cpu directory
         id: concrete-cpu
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./backends/concrete-cpu/implementation/**
 
       - name: Get changed files in the concrete-python directory
         id: concrete-python
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./frontends/concrete-python/**
 
       - name: Check if compiler_build_and_test_cpu workflow has changed
         id: concrete-compiler-cpu-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./.github/workflows/compiler_build_and_test_cpu.yml
 
       - name: Check if compiler_build_and_test_gpu workflow has changed
         id: concrete-compiler-gpu-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./.github/workflows/compiler_build_and_test_gpu.yml
 
       - name: Check if compiler_format_and_linting.yml workflow has changed
         id: concrete-compiler-format-and-linting-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./.github/workflows/compiler_format_and_linting.yml
 
       - name: Check if compiler_macos_build_and_test workflow has changed
         id: concrete-compiler-macos-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./.github/workflows/compiler_macos_build_and_test.yml
 
       - name: Check if compiler_publish_docker_images workflow has changed
         id: concrete-compiler-docker-images-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: |
             ./.github/workflows/compiler_publish_docker_images.yml
@@ -105,31 +105,31 @@ jobs:
 
       - name: Check if concrete_cpu_test workflow has changed
         id: concrete-cpu-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./.github/workflows/concrete_cpu_test.yml
 
       - name: Check if concrete_python_checks workflow has changed
         id: concrete-python-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./.github/workflows/concrete_python_checks.yml
 
       - name: Check if optimizer workflow has changed
         id: concrete-optimizer-workflow
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./.github/workflows/optimizer.yml
 
       - name: Get changed files in the concrete-cpu directory
         id: concrete-cpu-api
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./backends/concrete-cpu/implementation/include/**
 
       - name: Get changed files in the concrete-cuda directory
         id: concrete-cuda-api
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
         with:
           files: ./backends/concrete-cuda/implementation/include/**
 
