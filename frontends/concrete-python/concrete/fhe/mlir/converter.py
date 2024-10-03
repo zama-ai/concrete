@@ -853,7 +853,9 @@ class Converter:
         variable_input_index = variable_input_indices[0]
         variable_input = preds[variable_input_index]
 
+        no_synth = False
         if variable_input.origin.properties.get("name") == "truncate_bit_pattern":
+            no_synth = True
             original_bit_width = variable_input.origin.properties["original_bit_width"]
             lsbs_to_remove = variable_input.origin.properties["kwargs"]["lsbs_to_remove"]
             truncated_bit_width = original_bit_width - lsbs_to_remove
@@ -868,6 +870,7 @@ class Converter:
 
             variable_input = ctx.reinterpret(variable_input, bit_width=truncated_bit_width)
         elif variable_input.origin.properties.get("name") == "round_bit_pattern":
+            no_synth = True
             exactness = (
                 variable_input.origin.properties["exactness"]
                 or ctx.configuration.rounding_exactness
@@ -900,7 +903,9 @@ class Converter:
                         )
 
         if len(tables) == 1:
-            return ctx.tlu(ctx.typeof(node), on=variable_input, table=lut_values.tolist())
+            return ctx.tlu(
+                ctx.typeof(node), on=variable_input, table=lut_values.tolist(), no_synth=no_synth
+            )
 
         assert map_values is not None
         return ctx.multi_tlu(
