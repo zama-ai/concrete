@@ -11,26 +11,26 @@ env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
 
 jobs:
-  start-instance:
-    name: Start instance
+  setup-instance:
+    name: Setup Instance
     runs-on: ubuntu-latest
     outputs:
       runner-name: ${{ steps.start-instance.outputs.label }}
     steps:
       - name: Start instance
         id: start-instance
-        uses: zama-ai/slab-github-runner@c0e7168795bd78f61f61146951ed9d0c73c9b701
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
         with:
           mode: start
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
-          profile: cpu-test
+          profile: m7i-cpu-bench
   build-python-bindings:
     name: Build concrete-compiler python bindings
-    needs: start-instance
-    runs-on: ${{ needs.start-instance.outputs.runner-name }}
+    needs: setup-instance
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
       - name: Checkout concrete
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -77,8 +77,8 @@ jobs:
             /build/lib/libConcretelangRuntime.so
             /build/tools/concretelang/python_packages/concretelang_core/
   concrete-python-test-pytest:
-    needs: [start-instance, build-python-bindings]
-    runs-on: ${{ needs.start-instance.outputs.runner-name }}
+    needs: [setup-instance, build-python-bindings]
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
       - name: Download concrete-compiler python-bindings
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
@@ -100,7 +100,7 @@ jobs:
   teardown-instance:
     name: Teardown instance
     if: ${{ always() && needs.setup-instance.result != 'skipped' }}
-    needs: [ start-instance, concrete-python-test-pytest ]
+    needs: [ setup-instance, concrete-python-test-pytest ]
     runs-on: ubuntu-latest
     steps:
       - name: Stop instance
