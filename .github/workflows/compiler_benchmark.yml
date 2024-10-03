@@ -68,15 +68,18 @@ jobs:
       - name: Export specific variables (GPU)
         if: ${{ startswith(inputs.instance_type, 'p3.') }}
         run: |
-          echo "CUDA_SUPPORT=ON" >> "${GITHUB_ENV}"
-          echo "BENCHMARK_TARGET=run-gpu-benchmarks" >> "${GITHUB_ENV}"
-          echo "CUDA_PATH=$CUDA_PATH" >> "${GITHUB_ENV}"
+
+          { echo "CUDA_SUPPORT=ON"; \
+          echo "BENCHMARK_TARGET=run-gpu-benchmarks"; \
+          echo "CUDA_PATH=$CUDA_PATH"; \
+          echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH"; \
+          echo "CC=/usr/bin/gcc-${{ env.GCC_VERSION }}"; \
+          echo "CXX=/usr/bin/g++-${{ env.GCC_VERSION }}"; \
+          echo "CUDAHOSTCXX=/usr/bin/g++-${{ env.GCC_VERSION }}"; \
+          echo "CUDACXX=$CUDA_PATH/bin/nvcc"; } >> "${GITHUB_ENV}"
+
+          # FIXME: expected to be in another file?
           echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
-          echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-          echo "CC=/usr/bin/gcc-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
-          echo "CXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
-          echo "CUDAHOSTCXX=/usr/bin/g++-${{ env.GCC_VERSION }}" >> "${GITHUB_ENV}"
-          echo "CUDACXX=$CUDA_PATH/bin/nvcc" >> "${GITHUB_ENV}"
 
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
@@ -108,9 +111,9 @@ jobs:
           python3 ./ci/benchmark_parser.py compilers/concrete-compiler/compiler/benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
           --database compiler_benchmarks \
           --hardware ${{ inputs.instance_type }} \
-          --project-version ${COMMIT_HASH} \
+          --project-version "${COMMIT_HASH}" \
           --branch ${{ github.ref_name }} \
-          --commit-date ${COMMIT_DATE} \
+          --commit-date "${COMMIT_DATE}" \
           --bench-date "${{ env.BENCH_DATE }}" \
           --throughput
 
