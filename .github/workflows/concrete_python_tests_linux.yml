@@ -22,7 +22,7 @@ jobs:
         uses: zama-ai/slab-github-runner@c0e7168795bd78f61f61146951ed9d0c73c9b701
         with:
           mode: start
-          github-token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
-          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          fetch-depth: 0
       - name: Create concrete build directory
         run: mkdir build
       - name: Build concrete python bindings
