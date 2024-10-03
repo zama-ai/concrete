@@ -14,7 +14,7 @@ security_group = ["sg-0e55cc31dfda0d8a7", ]
 [profile.m7i-cpu-bench]
 region = "eu-west-1"
 image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
-instance_type = "m7i.48xlarge"
+instance_type = "m7i.16xlarge"
 security_group= ["sg-0e55cc31dfda0d8a7", ]
 
 [profile.m7i-cpu-test]

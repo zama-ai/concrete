@@ -7,9 +7,13 @@ on:
     branches:
       - 'main'
       - 'release/*'
+    path:
+      - frontends/concrete-python/**
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-
+concurrency:
+  group: concrete_python_tests_linux_${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   setup-instance:
     name: Setup Instance
