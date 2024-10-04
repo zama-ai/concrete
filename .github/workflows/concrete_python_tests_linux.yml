@@ -105,6 +105,7 @@ jobs:
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
             cd /concrete/frontends/concrete-python
+            make venv
             source .venv/bin/activate
             export KEY_CACHE_DIRECTORY=./key-set-cache
             mkdir $KEY_CACHE_DIRECTORY
