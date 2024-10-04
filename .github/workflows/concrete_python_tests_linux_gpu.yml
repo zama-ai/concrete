@@ -99,7 +99,7 @@ jobs:
           options: >-
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
-            --gpus-all
+            --gpus all
           shell: bash
           run: |
             set -e
