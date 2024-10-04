@@ -58,7 +58,7 @@ jobs:
           rm -rf .venv
           python3.10 -m venv .venv
 
-          $GITHUB_WORKSPACE/frontends/concrete-python .venv/bin/activate
+          $GITHUB_WORKSPACE/frontends/concrete-python/.venv/bin/activate
 
           pip install -r requirements.dev.txt
           pip install -r requirements.txt
