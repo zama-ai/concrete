@@ -341,7 +341,7 @@ The off-centering is:
 
 ## Approximate rounding features
 
-With approximate rounding, you can enable an approximate clipping to get further improve performance in the case of overflow handling. Approximate clipping enable to discard the extra bit of overflow protection bit in the successor TLU. For consistency a logical clipping is available when this optimization is not suitable.
+With approximate rounding, you can enable an approximate clipping to get further improved performance in the case of overflow handling. Approximate clipping enable to discard the extra bit of overflow protection bit in the successor TLU. For consistency a logical clipping is available when this optimization is not suitable.
 
 ### Logical clipping
 
