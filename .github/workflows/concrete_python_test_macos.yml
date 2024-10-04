@@ -67,7 +67,6 @@ jobs:
           cd $GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
           ccache -z
           make Python3_EXECUTABLE=$(which python) python-bindings
-          echo "Debug: ccache statistics (after the build):"
           ccache -s
       - name: Create wheels
           $GITHUB_WORKSPACE/frontends/concrete-python .venv/bin/activate
