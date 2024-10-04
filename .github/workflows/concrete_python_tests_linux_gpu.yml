@@ -16,7 +16,7 @@ env:
   GCC_VERSION: 11
   GLIB_VER: 2_28
 concurrency:
-  group: concrete_python_tests_linux_${{ github.ref }}
+  group: concrete_python_tests_linux_gpu_${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   setup-instance:
@@ -112,7 +112,7 @@ jobs:
   teardown-instance:
     name: Teardown instance
     if: ${{ always() && needs.setup-instance.result != 'skipped' }}
-    needs: [ setup-instance, concrete-python-test-pytest, concrete-python-test-notebooks ]
+    needs: [ setup-instance, concrete-python-test-pytest ]
     runs-on: ubuntu-latest
     steps:
       - name: Stop instance
