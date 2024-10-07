@@ -14,16 +14,21 @@ struct ParameterCount {
 pub struct ParameterDomains {
     // move next comment to pareto ranges definition
     // TODO: verify if pareto optimal parameters depends on precisions
-    pub glwe_pbs_constrained: GlweParameterRanges,
+    pub glwe_pbs_constrained_cpu: GlweParameterRanges,
+    pub glwe_pbs_constrained_gpu: GlweParameterRanges,
     pub free_glwe: GlweParameterRanges,
     pub br_decomposition: BrDecompositionParameterRanges,
     pub ks_decomposition: KsDecompositionParameterRanges,
     pub free_lwe: Range,
 }
 
-pub const DEFAUT_DOMAINS: ParameterDomains = ParameterDomains {
-    glwe_pbs_constrained: GlweParameterRanges {
+pub const DEFAULT_DOMAINS: ParameterDomains = ParameterDomains {
+    glwe_pbs_constrained_cpu: GlweParameterRanges {
         log2_polynomial_size: Range { start: 8, end: 18 },
+        glwe_dimension: Range { start: 1, end: 7 },
+    },
+    glwe_pbs_constrained_gpu: GlweParameterRanges {
+        log2_polynomial_size: Range { start: 8, end: 14 },
         glwe_dimension: Range { start: 1, end: 7 },
     },
     free_glwe: GlweParameterRanges {
