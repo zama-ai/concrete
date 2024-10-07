@@ -69,7 +69,9 @@ jobs:
           ccache -z
           make Python3_EXECUTABLE=$(which python) python-bindings
           ccache -s
-          export COMPILER_BUILD_DIRECTORY=$GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
+          export COMPILER_BUILD_DIRECTORY=$GITHUB_WORKSPACE/compilers/concrete-compiler/compiler/build
+
+          cd $GITHUB_WORKSPACE/frontends/concrete-python
           rm -rf dist && mkdir -p dist
           pip wheel -v --no-deps -w dist .
           delocate-wheel -v dist/*macos*.whl
@@ -96,7 +98,6 @@ jobs:
 
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/examples ./examples
           cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
-
           cp $GITHUB_WORKSPACE/frontends/concrete-python/Makefile .
       - name: Run pytest-macos
         run: |
