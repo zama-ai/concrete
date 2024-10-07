@@ -1,69 +1,51 @@
-name: Concrete Python Tests (Linux)
+name: concrete-python tests linux-cpu
 
 on:
   workflow_dispatch:
-    inputs:
-      instance_id:
-        description: 'Instance ID'
-        type: string
-      instance_image_id:
-        description: 'Instance AMI ID'
-        type: string
-      instance_type:
-        description: 'Instance product type'
-        type: string
-      runner_name:
-        description: 'Action runner name'
-        type: string
-      request_id:
-        description: 'Slab request ID'
-        type: string
-
-# concurrency:
-#   group: concrete_python_tests_linux-${{ github.ref }}
-#   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
+  pull_request:
+    path:
+      - .github/workflows/concrete_python_tests_linux.yml
+      - frontends/concrete-python/**
+  push:
+    branches:
+      - 'main'
+      - 'release/*'
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-  CUDA_PATH: /usr/local/cuda-11.8
-  GCC_VERSION: 11
-  GLIB_VER: 2_28
-
+concurrency:
+  group: concrete_python_tests_linux_${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
-  BuildConcreteCompilerAndTestConcretePythonInLinux:
-    name: Build Concrete Compiler and Test Concrete Python in Linux
-    runs-on: ${{ github.event.inputs.runner_name }}
-    if: ${{ !cancelled() }}
+  setup-instance:
+    name: Setup Instance
+    runs-on: ubuntu-latest
+    outputs:
+      runner-name: ${{ steps.start-instance.outputs.label }}
     steps:
-      - name: Log instance configuration
-        run: |
-          echo "IDs: ${{ inputs.instance_id }}"
-          echo "AMI: ${{ inputs.instance_image_id }}"
-          echo "Type: ${{ inputs.instance_type }}"
-          echo "Request ID: ${{ inputs.request_id }}"
-
-      - name: Set up GitHub environment
-        run: |
-          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
-          #echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-          echo "SSH_AUTH_SOCK_DIR=$(dirname $SSH_AUTH_SOCK)" >> "${GITHUB_ENV}"
-          
-      - name: Checkout
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: cpu-test
+  concrete-compiler-build-python-bindings:
+    name: Build concrete-compiler python bindings
+    needs: setup-instance
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    steps:
+      - name: Checkout concrete
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
-          token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
-
-      - name: Create build directory
+          fetch-depth: 0
+      - name: Create concrete build directory
         run: mkdir build
-
-      - name: Setup rust toolchain for concrete-cpu
-        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
-
-      - name: Build bindings
+      - name: Build concrete-compiler python bindings
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        if: ${{ !contains(inputs.instance_type, 'p3') }}
-        id: build-compiler-bindings
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -72,29 +54,44 @@ jobs:
           options: >-
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
-            -e SSH_AUTH_SOCK=/ssh.socket
           shell: bash
           run: |
-            rustup toolchain install nightly-2024-09-30
             set -e
-            rm -rf /build/*
 
+            rustup toolchain install nightly-2024-09-30
             dnf -y install graphviz graphviz-devel
+
+            rm -rf /build/*
 
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate
-            
+
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) python-bindings
-            
+
             echo "Debug: ccache statistics (after the build):"
             ccache -s
-
-      - name: Prepare test environment
+      - name: Upload concrete-compiler python-bindings
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: concrete-compiler-python-bindings
+          retention-days: 3
+          path: |
+            build/lib/libConcretelangRuntime.so
+            build/tools/concretelang/python_packages/concretelang_core/
+  concrete-python-test-pytest:
+    name: Test concrete-python pytest
+    needs: [setup-instance, concrete-compiler-build-python-bindings]
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    steps:
+      - name: Download concrete-compiler python-bindings
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: concrete-compiler-python-bindings
+          path: /compiler-artifacts-pytest
+      - name: Run pytest
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        if: ${{ !contains(inputs.instance_type, 'p3') }}
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -106,15 +103,25 @@ jobs:
           shell: bash
           run: |
             set -e
-
-            dnf -y install graphviz graphviz-devel
-            
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
             cd /concrete/frontends/concrete-python
             make venv
-
-      - name: Test
+            source .venv/bin/activate
+            export KEY_CACHE_DIRECTORY=./key-set-cache
+            mkdir $KEY_CACHE_DIRECTORY
+            make pytest
+  concrete-python-test-notebooks:
+    name: Test concrete-python notebooks
+    needs: [setup-instance, concrete-compiler-build-python-bindings]
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    steps:
+      - name: Download concrete-compiler python-bindings
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: concrete-compiler-python-bindings
+          path: /compiler-artifacts-notebooks
+      - name: Run pytest
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        if: ${{ !contains(inputs.instance_type, 'p3') }}
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -126,92 +133,30 @@ jobs:
           shell: bash
           run: |
             set -e
-
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-notebooks
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
-
-            export COMPILER_BUILD_DIRECTORY=/build
-            
-            mkdir ./KeySetCache
-            KEY_CACHE_DIRECTORY=./KeySetCache make pytest
-
-      - name: Test notebooks
-        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        if: ${{ !contains(inputs.instance_type, 'p3') }}
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
-          shell: bash
-          run: |
-            set -e
-
-            cd /concrete/frontends/concrete-python
-            source .venv/bin/activate
-
-            export COMPILER_BUILD_DIRECTORY=/build
-
             make test-notebooks
-
-
-      - name: Build bindings gpu
-        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        if: ${{ contains(inputs.instance_type, 'p3') }}
-        id: build-compiler-bindings-gpu
+  teardown-instance:
+    name: Teardown instance
+    if: ${{ always() && needs.setup-instance.result != 'skipped' }}
+    needs: [ setup-instance, concrete-python-test-pytest, concrete-python-test-notebooks ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@c0e7168795bd78f61f61146951ed9d0c73c9b701
         with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
-            -v ${{ github.workspace }}/wheels:/wheels
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
-            -e SSH_AUTH_SOCK=/ssh.socket
-            --gpus all
-          shell: bash
-          run: |
-            set -e
-            rm -rf /build/*
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-instance.outputs.runner-name }}
 
-            cd /concrete/frontends/concrete-python
-            make venv
-            source .venv/bin/activate
-            
-            cd /concrete/compilers/concrete-compiler/compiler
-            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$(which python3) CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} python-bindings
-            
-            echo "Debug: ccache statistics (after the build):"
-            ccache -s
-
-      - name: Test gpu
-        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        if: ${{ contains(inputs.instance_type, 'p3') }}
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
-            -v ${{ github.workspace }}/wheels:/wheels
-            --gpus all
-          shell: bash
-          run: |
-            set -e
-            
-            cd /concrete/frontends/concrete-python
-            make venv
-            source .venv/bin/activate
-
-            export COMPILER_BUILD_DIRECTORY=/build
-            KEY_CACHE_DIRECTORY=/tmp/KeySetCache mkdir ./KeySetCache
-            make pytest-gpu
-            
-            chmod -R ugo+rwx /tmp/KeySetCache
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Instance teardown finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
