@@ -74,7 +74,7 @@ print(f'Mean Squared Error (FHE Quantized): {mse_fhe_q}')
 print(f'R² Score (FHE Quantized): {r2_fhe_q}')
 
 # Do one example
-X_test_one = X_test[0:1]
+X_test_one = X_test[1:2]
 print(f"{X_test_one=}")
 
 X_test_q_one = model.quantize_input(X_test_one.to_numpy().astype(np.float32))
@@ -86,41 +86,19 @@ print(f"{y_pred_q_one=}")
 y_pred_q_dequantized_one = model.dequantize_output(y_pred_q_one)
 print(f"{y_pred_q_dequantized_one=}")
 
-u = np.array([ 115,  -16, -128, -128, -128, -128, -128, -124])
-print(f"{u=}")
-v = np.array([-101, -104, -91, -117, 127, -114, -128, -126])
-print(f"{v=}")
-w = np.matmul(u, v)
-print(f"{w=}")
-
-
-usum = np.sum([ 115,  -16, -128, -128, -128, -128, -128, -124])
-print(f"{usum=}")
-vsum = np.matmul(np.array([usum]), np.array([-106]))
-print(f"{vsum=}")
-
-# print(onnx.helper.printable_graph(model.onnx_model_.graph))
-# onnx.save(model.onnx_model_, "benoit.onnx")
-
-# %1 == 47017 je pense
-# %2 == -665 je pense
-# %4 == 70490 je pense
-# 47017 - 70490 = 23 473!!!
-# before -20584: %7 == -23473
-# expected output: %8 == -44057
-
-x = w - vsum
-print(f"{x=}")
-y = x - 20584
-print(f"{y=}")
-
+# Reimplement in pure numpy
 def f(inputs):
-    matrix = np.array([-101, -104, -91, -117, 127, -114, -128, -126])
-    a = np.matmul(inputs, matrix)
-    s = np.sum(inputs)
-    t = s * -106
-    u = a - t
-    v = u - 20584
-    return v
+    # matrix = np.array([-101, -104, -91, -117, 127, -114, -128, -126])
+    # a = np.matmul(inputs, matrix)  # W.in
+    # s = np.sum(inputs)             # [1's].in
+    # t = s * -106                   # [-106's].in
+    # u = a - t                      # (W-106).in
+    # v = u - 20584
 
+    matrix = np.array([-101, -104, -91, -117, 127, -114, -128, -126])
+    res = np.matmul(inputs, matrix + 106) - 20584
+    return res
+
+# And check
 print(f"{f(np.array([ 115,  -16, -128, -128, -128, -128, -128, -124]))=}")
+print(f"{f(np.array([  -4,  -18, -120, -124, -128, -128, -128, -128]))=}")
