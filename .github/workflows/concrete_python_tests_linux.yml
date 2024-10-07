@@ -53,14 +53,13 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/artifacts:/artifacts
           shell: bash
           run: |
             set -e
 
             rustup toolchain install nightly-2024-09-30
             dnf -y install graphviz graphviz-devel
-
-            rm -rf /build
 
             cd /concrete/frontends/concrete-python
             make venv
@@ -71,14 +70,18 @@ jobs:
 
             echo "Debug: ccache statistics (after the build):"
             ccache -s
+
+            mkdir -P /artifacts/lib && cp ./build/lib/libConcretelangRuntime.so /artifacts/lib/
+            mkdir -P /artifacts/tools/concretelang/python_packages/concretelang_core/
+            cp -R ./build/tools/concretelang/python_packages/concretelang_core/* /artifacts/tools/concretelang/python_packages/concretelang_core/
       - name: Upload concrete-compiler python-bindings
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: concrete-compiler-python-bindings
           retention-days: 3
           path: |
-            /build/lib/libConcretelangRuntime.so
-            /build/tools/concretelang/python_packages/concretelang_core/
+            ./artifacts/libConcretelangRuntime.so
+            ./artifacts/concretelang_core/
   concrete-python-test-pytest:
     name: Test concrete-python pytest
     needs: [setup-instance, concrete-compiler-build-python-bindings]
