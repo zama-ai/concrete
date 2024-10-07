@@ -42,6 +42,8 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: Setup rust toolchain for concrete-cpu
+        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
       - name: Build concrete-compiler python bindings
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
