@@ -100,6 +100,9 @@ jobs:
         run: |
           set -e
           cd $TEST_TMP_DIR && . .testenv/bin/activate
+          echo "DEBUG: Rust versions"
+          cargo --version
+          rustc --version
           KEY_CACHE_DIRECTORY=./KeySetCache PYTEST_MARKERS="not dataflow and not graphviz" make pytest-macos
       - name: Run test-notebooks
         run: |
