@@ -42,6 +42,9 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: Set up GitHub environment
+        run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
       - name: Build concrete-compiler python bindings
