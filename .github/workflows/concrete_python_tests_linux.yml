@@ -53,7 +53,6 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
@@ -78,8 +77,8 @@ jobs:
           name: concrete-compiler-python-bindings
           retention-days: 3
           path: |
-            build/lib/libConcretelangRuntime.so
-            build/tools/concretelang/python_packages/concretelang_core/
+            /build/lib/libConcretelangRuntime.so
+            /build/tools/concretelang/python_packages/concretelang_core/
   concrete-python-test-pytest:
     name: Test concrete-python pytest
     needs: [setup-instance, concrete-compiler-build-python-bindings]
@@ -99,7 +98,6 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
