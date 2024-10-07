@@ -68,30 +68,9 @@ jobs:
 
             echo "Debug: ccache statistics (after the build):"
             ccache -s
-
-            mkdir -p /artifacts/lib && cp /build/lib/libConcretelangRuntime.so /artifacts/lib/
-            mkdir -p /artifacts/tools/concretelang/python_packages/concretelang_core/
-            cp -R /build/tools/concretelang/python_packages/concretelang_core/* /artifacts/tools/concretelang/python_packages/concretelang_core/
-      - name: Upload concrete-compiler python-bindings
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
-        with:
-          name: concrete-compiler-python-bindings
-          retention-days: 3
-          path: |
-            ./artifacts/libConcretelangRuntime.so
-            ./artifacts/tools/concretelang/python_packages/concretelang_core/
-  concrete-python-test-pytest:
-    name: Test concrete-python pytest
-    needs: [setup-instance, concrete-compiler-build-python-bindings]
-    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
-    steps:
-      - name: Download concrete-compiler python-bindings
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          name: concrete-compiler-python-bindings
-          path: /compiler-artifacts-pytest
-      - name: Run pytest
+      - name: Prepare test environment
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        if: ${{ !contains(inputs.instance_type, 'p3') }}
         with:
           registry: ghcr.io
           image: ${{ env.DOCKER_IMAGE_TEST }}
@@ -99,16 +78,75 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
-            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
+            dnf -y install graphviz graphviz-devel
+            
             cd /concrete/frontends/concrete-python
             make venv
+      - name: Test
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        if: ${{ !contains(inputs.instance_type, 'p3') }}
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            set -e
+            cd /concrete/frontends/concrete-python
             source .venv/bin/activate
-            export KEY_CACHE_DIRECTORY=./key-set-cache
-            mkdir $KEY_CACHE_DIRECTORY
-            make pytest
+            export COMPILER_BUILD_DIRECTORY=/build
+            
+            mkdir ./KeySetCache
+            KEY_CACHE_DIRECTORY=./KeySetCache make pytest
+
+            # mkdir -p /artifacts/lib && cp /build/lib/libConcretelangRuntime.so /artifacts/lib/
+            # mkdir -p /artifacts/tools/concretelang/python_packages/concretelang_core/
+            # cp -R /build/tools/concretelang/python_packages/concretelang_core/* /artifacts/tools/concretelang/python_packages/concretelang_core/
+  #     - name: Upload concrete-compiler python-bindings
+  #       uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+  #       with:
+  #         name: concrete-compiler-python-bindings
+  #         retention-days: 3
+  #         path: |
+  #           ./artifacts/libConcretelangRuntime.so
+  #           ./artifacts/tools/concretelang/python_packages/concretelang_core/
+  # concrete-python-test-pytest:
+  #   name: Test concrete-python pytest
+  #   needs: [setup-instance, concrete-compiler-build-python-bindings]
+  #   runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+  #   steps:
+  #     - name: Download concrete-compiler python-bindings
+  #       uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+  #       with:
+  #         name: concrete-compiler-python-bindings
+  #         path: /compiler-artifacts-pytest
+  #     - name: Run pytest
+  #       uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+  #       with:
+  #         registry: ghcr.io
+  #         image: ${{ env.DOCKER_IMAGE_TEST }}
+  #         username: ${{ secrets.GHCR_LOGIN }}
+  #         password: ${{ secrets.GHCR_PASSWORD }}
+  #         options: >-
+  #           -v ${{ github.workspace }}:/concrete
+  #         shell: bash
+  #         run: |
+  #           set -e
+  #           export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
+  #           cd /concrete/frontends/concrete-python
+  #           make venv
+  #           source .venv/bin/activate
+  #           export KEY_CACHE_DIRECTORY=./key-set-cache
+  #           mkdir $KEY_CACHE_DIRECTORY
+  #           make pytest
   # concrete-python-test-notebooks:
   #   name: Test concrete-python notebooks
   #   needs: [setup-instance, concrete-compiler-build-python-bindings]
@@ -139,7 +177,7 @@ jobs:
   teardown-instance:
     name: Teardown instance
     if: ${{ always() && needs.setup-instance.result != 'skipped' }}
-    needs: [ setup-instance, concrete-python-test-pytest ] #, concrete-python-test-notebooks ]
+    needs: [ setup-instance, concrete-compiler-build-python-bindings ]
     runs-on: ubuntu-latest
     steps:
       - name: Stop instance
