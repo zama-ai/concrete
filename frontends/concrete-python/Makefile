@@ -145,6 +145,9 @@ test-notebooks:
 	eval $(shell make silent_cp_activate)
 	./scripts/jupyter/jupyter.sh
 
+test-notebooks-macos:
+	./scripts/jupyter/jupyter.sh
+
 # ==========
 # Formatting
 # ==========
