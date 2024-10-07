@@ -88,13 +88,6 @@ print(f"{y_pred_q_dequantized_one=}")
 
 # Reimplement in pure numpy
 def f(inputs):
-    # matrix = np.array([-101, -104, -91, -117, 127, -114, -128, -126])
-    # a = np.matmul(inputs, matrix)  # W.in
-    # s = np.sum(inputs)             # [1's].in
-    # t = s * -106                   # [-106's].in
-    # u = a - t                      # (W-106).in
-    # v = u - 20584
-
     matrix = np.array([-101, -104, -91, -117, 127, -114, -128, -126])
     res = np.matmul(inputs, matrix + 106) - 20584
     return res
