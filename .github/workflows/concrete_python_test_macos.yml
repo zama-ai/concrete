@@ -69,10 +69,10 @@ jobs:
           ccache -z
           make Python3_EXECUTABLE=$(which python) python-bindings
           ccache -s
-      - name: Create wheels
-        run: |
-          . $GITHUB_WORKSPACE/frontends/concrete-python/.venv/bin/activate
-          cd $GITHUB_WORKSPACE/frontends/concrete-python
+      # - name: Create wheels
+      #   run: |
+      #     . $GITHUB_WORKSPACE/frontends/concrete-python/.venv/bin/activate
+      #     cd $GITHUB_WORKSPACE/frontends/concrete-python
 
           export COMPILER_BUILD_DIRECTORY=$GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
           rm -rf dist && mkdir -p dist
