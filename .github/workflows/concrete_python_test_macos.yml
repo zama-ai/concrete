@@ -62,9 +62,6 @@ jobs:
 
           pip install -r requirements.dev.txt
           pip install -r requirements.txt
-      - name: Build concrete-compiler python-bindings
-        run: |
-          . $GITHUB_WORKSPACE/frontends/concrete-python/.venv/bin/activate
           cd $GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
           ccache -z
           make Python3_EXECUTABLE=$(which python) python-bindings
