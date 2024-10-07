@@ -81,7 +81,7 @@ jobs:
           retention-days: 3
           path: |
             ./artifacts/libConcretelangRuntime.so
-            ./artifacts/concretelang_core/
+            ./artifacts/tools/concretelang/python_packages/concretelang_core/
   concrete-python-test-pytest:
     name: Test concrete-python pytest
     needs: [setup-instance, concrete-compiler-build-python-bindings]
