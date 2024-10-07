@@ -71,7 +71,7 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
-            mkdir -p /artifacts/lib && cp .build/lib/libConcretelangRuntime.so /artifacts/lib/
+            mkdir -p /artifacts/lib && cp /build/lib/libConcretelangRuntime.so /artifacts/lib/
             mkdir -p /artifacts/tools/concretelang/python_packages/concretelang_core/
             cp -R /build/tools/concretelang/python_packages/concretelang_core/* /artifacts/tools/concretelang/python_packages/concretelang_core/
       - name: Upload concrete-compiler python-bindings
