@@ -55,22 +55,13 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}:/workdir
+            -v ${{ github.workspace }}/artifacts:/artifacts
           shell: bash
           run: |
             set -e
 
-            rustup toolchain install nightly-2024-09-30
-            dnf -y install graphviz graphviz-devel
-            ls /build
-            rm -rf /build/*
-
-            cd /concrete/frontends/concrete-python
-            make venv
-            source .venv/bin/activate
-
-            cd /concrete/compilers/concrete-compiler/compiler
+            cd /workdir/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) python-bindings
 
             echo "Debug: ccache statistics (after the build):"
@@ -84,14 +75,14 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}:/workdir
+            -v ${{ github.workspace }}/artifacts:/artifacts
           shell: bash
           run: |
             set -e
             dnf -y install graphviz graphviz-devel
             
-            cd /concrete/frontends/concrete-python
+            cd /workdir/frontends/concrete-python
             make venv
       - name: Test
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
@@ -102,15 +93,15 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}:/workdir
+            -v ${{ github.workspace }}/artifacts:/artifacts
           shell: bash
           run: |
             set -e
-            cd /concrete/frontends/concrete-python
+            cd /workdir/frontends/concrete-python
             source .venv/bin/activate
             export COMPILER_BUILD_DIRECTORY=/build
-
+            
             mkdir ./KeySetCache
             KEY_CACHE_DIRECTORY=./KeySetCache make pytest
 
