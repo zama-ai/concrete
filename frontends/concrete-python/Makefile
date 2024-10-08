@@ -69,7 +69,7 @@ pytest: pytest-default
 pytest-default: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	export RUST_BACKTRACE=1
-	pytest tests -svv -n 2 \
+	pytest tests -svv -n auto \
 		--cov=concrete.fhe \
 		--cov-fail-under=100 \
 		--cov-report=term-missing:skip-covered \
