@@ -56,7 +56,7 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/artifacts:/artifacts
+            -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
