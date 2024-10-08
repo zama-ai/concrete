@@ -187,7 +187,7 @@ public:
     std::string runtimeLibraryPath;
     bool cleanUp;
     mlir::concretelang::ProgramCompilationFeedback compilationFeedback;
-    Message<concreteprotocol::ProgramInfo> programInfo;
+    std::optional<Message<concreteprotocol::ProgramInfo>> programInfo;
 
   public:
     /// Create a library instance on which you can add compilation results.
@@ -209,22 +209,22 @@ public:
     std::string staticLibraryPath;
 
     /// Returns the program info of the library.
-    Message<concreteprotocol::ProgramInfo> getProgramInfo() const;
+    Result<Message<concreteprotocol::ProgramInfo>> getProgramInfo();
 
     /// Returns the path to the output dir.
     const std::string &getOutputDirPath() const;
 
     /// Returns the path of the shared library
-    static std::string getSharedLibraryPath(std::string outputDirPath);
+    std::string getSharedLibraryPath() const;
 
     /// Returns the path of the static library
-    static std::string getStaticLibraryPath(std::string outputDirPath);
+    std::string getStaticLibraryPath() const;
 
     /// Returns the path of the program info
-    static std::string getProgramInfoPath(std::string outputDirPath);
+    std::string getProgramInfoPath() const;
 
     /// Returns the path of the compilation feedback
-    static std::string getCompilationFeedbackPath(std::string outputDirPath);
+    std::string getCompilationFeedbackPath() const;
 
     // For advanced use
     const static std::string OBJECT_EXT, LINKER, LINKER_SHARED_OPT, AR,

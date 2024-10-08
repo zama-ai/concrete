@@ -1,14 +1,14 @@
 """Import and export TFHErs integers into Concrete."""
 
-# pylint: disable=no-name-in-module,import-error
+# pylint: disable=no-name-in-module,import-error,
 
 from mlir._mlir_libs._concretelang._compiler import (
     import_tfhers_fheuint8 as _import_tfhers_fheuint8,
     export_tfhers_fheuint8 as _export_tfhers_fheuint8,
     get_tfhers_fheuint8_description as _get_tfhers_fheuint8_description,
     TfhersFheIntDescription as _TfhersFheIntDescription,
+    TransportValue,
 )
-from .value import Value
 from .wrapper import WrapperCpp
 
 # pylint: enable=no-name-in-module,import-error
@@ -200,7 +200,7 @@ class TfhersExporter:
     """A helper class to import and export TFHErs big integers."""
 
     @staticmethod
-    def export_fheuint8(value: Value, info: TfhersFheIntDescription) -> bytes:
+    def export_fheuint8(value: TransportValue, info: TfhersFheIntDescription) -> bytes:
         """Convert Concrete value to TFHErs and serialize it.
 
         Args:
@@ -213,18 +213,18 @@ class TfhersExporter:
         Returns:
             bytes: converted and serialized fheuint8
         """
-        if not isinstance(value, Value):
-            raise TypeError(f"value must be of type Value, not {type(value)}")
+        if not isinstance(value, TransportValue):
+            raise TypeError(f"value must be of type TransportValue, not {type(value)}")
         if not isinstance(info, TfhersFheIntDescription):
             raise TypeError(
                 f"info must be of type TfhersFheIntDescription, not {type(info)}"
             )
-        return bytes(_export_tfhers_fheuint8(value.cpp(), info.cpp()))
+        return bytes(_export_tfhers_fheuint8(value, info.cpp()))
 
     @staticmethod
     def import_fheuint8(
         buffer: bytes, info: TfhersFheIntDescription, keyid: int, variance: float
-    ) -> Value:
+    ) -> TransportValue:
         """Unserialize and convert from TFHErs to Concrete value.
 
         Args:
@@ -237,7 +237,7 @@ class TfhersExporter:
             TypeError: if wrong input types
 
         Returns:
-            Value: unserialized and converted value
+            TransportValue: unserialized and converted value
         """
         if not isinstance(buffer, bytes):
             raise TypeError(f"buffer must be of type bytes, not {type(buffer)}")
@@ -249,4 +249,4 @@ class TfhersExporter:
             raise TypeError(f"keyid must be of type int, not {type(keyid)}")
         if not isinstance(variance, float):
             raise TypeError(f"variance must be of type float, not {type(variance)}")
-        return Value.wrap(_import_tfhers_fheuint8(buffer, info.cpp(), keyid, variance))
+        return _import_tfhers_fheuint8(buffer, info.cpp(), keyid, variance)

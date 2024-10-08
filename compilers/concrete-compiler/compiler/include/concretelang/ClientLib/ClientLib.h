@@ -47,31 +47,46 @@ class ClientCircuit {
 
 public:
   static Result<ClientCircuit>
-  create(const Message<concreteprotocol::CircuitInfo> &info,
-         const ClientKeyset &keyset,
-         std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
-         bool useSimulation = false);
+  createEncrypted(const Message<concreteprotocol::CircuitInfo> &info,
+                  const ClientKeyset &keyset,
+                  std::shared_ptr<csprng::EncryptionCSPRNG> csprng);
+
+  static Result<ClientCircuit>
+  createSimulated(const Message<concreteprotocol::CircuitInfo> &info,
+                  std::shared_ptr<csprng::EncryptionCSPRNG> csprng);
 
   Result<TransportValue> prepareInput(Value arg, size_t pos);
 
   Result<Value> processOutput(TransportValue result, size_t pos);
 
+  Result<TransportValue> simulatePrepareInput(Value arg, size_t pos);
+
+  Result<Value> simulateProcessOutput(TransportValue result, size_t pos);
+
   std::string getName();
 
   const Message<concreteprotocol::CircuitInfo> &getCircuitInfo();
+
+  bool isSimulated();
 
 private:
   ClientCircuit() = delete;
   ClientCircuit(const Message<concreteprotocol::CircuitInfo> &circuitInfo,
                 std::vector<InputTransformer> inputTransformers,
-                std::vector<OutputTransformer> outputTransformers)
+                std::vector<OutputTransformer> outputTransformers,
+                bool simulated)
       : circuitInfo(circuitInfo), inputTransformers(inputTransformers),
-        outputTransformers(outputTransformers){};
+        outputTransformers(outputTransformers), simulated(simulated){};
+  static Result<ClientCircuit>
+  create(const Message<concreteprotocol::CircuitInfo> &info,
+         const ClientKeyset &keyset,
+         std::shared_ptr<csprng::EncryptionCSPRNG> csprng, bool useSimulation);
 
 private:
   Message<concreteprotocol::CircuitInfo> circuitInfo;
   std::vector<InputTransformer> inputTransformers;
   std::vector<OutputTransformer> outputTransformers;
+  bool simulated;
 };
 
 /// Contains all the context to generate inputs for a server call by the
@@ -80,10 +95,14 @@ class ClientProgram {
 public:
   /// Generates a fresh client program with fresh keyset on the first use.
   static Result<ClientProgram>
-  create(const Message<concreteprotocol::ProgramInfo> &info,
-         const ClientKeyset &keyset,
-         std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
-         bool useSimulation = false);
+  createEncrypted(const Message<concreteprotocol::ProgramInfo> &info,
+                  const ClientKeyset &keyset,
+                  std::shared_ptr<csprng::EncryptionCSPRNG> csprng);
+
+  /// Generates a fresh client program with empty keyset for simulation.
+  static Result<ClientProgram>
+  createSimulated(const Message<concreteprotocol::ProgramInfo> &info,
+                  std::shared_ptr<csprng::EncryptionCSPRNG> csprng);
 
   /// Returns a reference to the named client circuit if it exists.
   Result<ClientCircuit> getClientCircuit(std::string circuitName);

@@ -3,48 +3,58 @@
 
 """Compiler submodule."""
 import atexit
+from typing import Union
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
+    LweSecretKeyParam,
+    BootstrapKeyParam,
+    KeyswitchKeyParam,
+    PackingKeyswitchKeyParam,
+    ProgramInfo,
+    CompilationOptions,
+    LweSecretKey,
+    KeysetCache,
+    ServerKeyset,
+    Keyset,
+    Compiler,
+    TransportValue,
+    Value,
+    ServerProgram,
+    ServerCircuit,
+    ClientProgram,
+    ClientCircuit,
+    Backend,
+    KeyType,
+    OptimizerMultiParameterStrategy,
+    OptimizerStrategy,
+    PrimitiveOperation,
+    Library,
+    ProgramCompilationFeedback,
+    CircuitCompilationFeedback,
     terminate_df_parallelization as _terminate_df_parallelization,
     init_df_parallelization as _init_df_parallelization,
     check_gpu_runtime_enabled as _check_gpu_runtime_enabled,
     check_cuda_device_available as _check_cuda_device_available,
-)
-from mlir._mlir_libs._concretelang._compiler import round_trip as _round_trip
-from mlir._mlir_libs._concretelang._compiler import (
+    round_trip as _round_trip,
     set_llvm_debug_flag,
     set_compiler_logging,
 )
 
 # pylint: enable=no-name-in-module,import-error
 
-from .compilation_options import CompilationOptions, Encoding
+from .utils import lookup_runtime_lib
+from .compilation_feedback import MoreCircuitCompilationFeedback
 from .compilation_context import CompilationContext
-from .key_set_cache import KeySetCache
-from .client_parameters import ClientParameters
-from .compilation_feedback import ProgramCompilationFeedback, CircuitCompilationFeedback
-from .key_set import KeySet
-from .public_result import PublicResult
-from .public_arguments import PublicArguments
-from .lambda_argument import LambdaArgument
-from .library_compilation_result import LibraryCompilationResult
-from .library_lambda import LibraryLambda
-from .client_support import ClientSupport
-from .library_support import LibrarySupport
-from .lwe_secret_key import LweSecretKey, LweSecretKeyParam
-from .evaluation_keys import EvaluationKeys
+
 from .tfhers_int import (
     TfhersExporter,
     TfhersFheIntDescription,
 )
-from .value import Value
-from .value_decrypter import ValueDecrypter
-from .value_exporter import ValueExporter
-from .simulated_value_decrypter import SimulatedValueDecrypter
-from .simulated_value_exporter import SimulatedValueExporter
-from .parameter import Parameter
-from .server_program import ServerProgram
+
+Parameter = Union[
+    LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam
+]
 
 
 def init_dfr():

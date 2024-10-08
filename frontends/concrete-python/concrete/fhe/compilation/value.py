@@ -4,44 +4,28 @@ Declaration of `Value` class.
 
 # pylint: disable=import-error,no-name-in-module
 
-from concrete.compiler import Value as NativeValue
-
-# pylint: enable=import-error,no-name-in-module
+from concrete.compiler import TransportValue
 
 
 class Value:
     """
-    Value class, to store scalar or tensor values which can be encrypted or clear.
+    A public value object that can be sent between client and server.
     """
 
-    inner: NativeValue
+    _inner: TransportValue
 
-    def __init__(self, inner: NativeValue):
-        self.inner = inner
+    def __init__(self, inner: TransportValue):
+        self._inner = inner
+
+    @staticmethod
+    def deserialize(buffer: bytes) -> "Value":
+        """
+        Deserialize a Value from bytes.
+        """
+        return Value(TransportValue.deserialize(buffer))
 
     def serialize(self) -> bytes:
         """
-        Serialize data into bytes.
-
-        Returns:
-            bytes:
-                serialized data
+        Serialize a Value to bytes.
         """
-
-        return self.inner.serialize()
-
-    @staticmethod
-    def deserialize(serialized_data: bytes) -> "Value":
-        """
-        Deserialize data from bytes.
-
-        Args:
-            serialized_data (bytes):
-                previously serialized data
-
-        Returns:
-            Value:
-                deserialized data
-        """
-
-        return Value(NativeValue.deserialize(serialized_data))
+        return self._inner.serialize()

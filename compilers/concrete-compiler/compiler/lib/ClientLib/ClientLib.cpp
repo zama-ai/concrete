@@ -33,6 +33,8 @@ using concretelang::values::Value;
 namespace concretelang {
 namespace clientlib {
 
+bool ClientCircuit::isSimulated() { return simulated; }
+
 Result<ClientCircuit>
 ClientCircuit::create(const Message<concreteprotocol::CircuitInfo> &info,
                       const ClientKeyset &keyset,
@@ -79,10 +81,27 @@ ClientCircuit::create(const Message<concreteprotocol::CircuitInfo> &info,
     outputTransformers.push_back(transformer);
   }
 
-  return ClientCircuit(info, inputTransformers, outputTransformers);
+  return ClientCircuit(info, inputTransformers, outputTransformers,
+                       useSimulation);
+}
+
+Result<ClientCircuit> ClientCircuit::createEncrypted(
+    const Message<concreteprotocol::CircuitInfo> &info,
+    const ClientKeyset &keyset,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
+  return ClientCircuit::create(info, keyset, csprng, false);
+}
+
+Result<ClientCircuit> ClientCircuit::createSimulated(
+    const Message<concreteprotocol::CircuitInfo> &info,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
+  return ClientCircuit::create(info, ClientKeyset(), csprng, true);
 }
 
 Result<TransportValue> ClientCircuit::prepareInput(Value arg, size_t pos) {
+  if (simulated) {
+    return StringError("Called prepareInput on simulated client circuit.");
+  }
   if (pos >= inputTransformers.size()) {
     return StringError("Tried to prepare a Value for incorrect position.");
   }
@@ -90,6 +109,34 @@ Result<TransportValue> ClientCircuit::prepareInput(Value arg, size_t pos) {
 }
 
 Result<Value> ClientCircuit::processOutput(TransportValue result, size_t pos) {
+  if (simulated) {
+    return StringError("Called processOutput on simulated client circuit.");
+  }
+  if (pos >= outputTransformers.size()) {
+    return StringError(
+        "Tried to process a TransportValue for incorrect position.");
+  }
+  return outputTransformers[pos](result);
+}
+
+Result<TransportValue> ClientCircuit::simulatePrepareInput(Value arg,
+                                                           size_t pos) {
+  if (!simulated) {
+    return StringError(
+        "Called simulatePrepareInput on encrypted client circuit.");
+  }
+  if (pos >= inputTransformers.size()) {
+    return StringError("Tried to prepare a Value for incorrect position.");
+  }
+  return inputTransformers[pos](arg);
+}
+
+Result<Value> ClientCircuit::simulateProcessOutput(TransportValue result,
+                                                   size_t pos) {
+  if (!simulated) {
+    return StringError(
+        "Called simulateProcessOutput on encrypted client circuit.");
+  }
   if (pos >= outputTransformers.size()) {
     return StringError(
         "Tried to process a TransportValue for incorrect position.");
@@ -105,16 +152,26 @@ const Message<concreteprotocol::CircuitInfo> &ClientCircuit::getCircuitInfo() {
   return circuitInfo;
 }
 
-Result<ClientProgram>
-ClientProgram::create(const Message<concreteprotocol::ProgramInfo> &info,
-                      const ClientKeyset &keyset,
-                      std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
-                      bool useSimulation) {
+Result<ClientProgram> ClientProgram::createEncrypted(
+    const Message<concreteprotocol::ProgramInfo> &info,
+    const ClientKeyset &keyset,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
   ClientProgram output;
   for (auto circuitInfo : info.asReader().getCircuits()) {
-    OUTCOME_TRY(
-        ClientCircuit clientCircuit,
-        ClientCircuit::create(circuitInfo, keyset, csprng, useSimulation));
+    OUTCOME_TRY(const ClientCircuit clientCircuit,
+                ClientCircuit::createEncrypted(circuitInfo, keyset, csprng));
+    output.circuits.push_back(clientCircuit);
+  }
+  return output;
+}
+
+Result<ClientProgram> ClientProgram::createSimulated(
+    const Message<concreteprotocol::ProgramInfo> &info,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
+  ClientProgram output;
+  for (auto circuitInfo : info.asReader().getCircuits()) {
+    OUTCOME_TRY(const ClientCircuit clientCircuit,
+                ClientCircuit::createSimulated(circuitInfo, csprng));
     output.circuits.push_back(clientCircuit);
   }
   return output;
@@ -195,12 +252,12 @@ exportTfhersFheUint8(TransportValue value, TfhersFheIntDescription desc) {
   if (!tensorOrError.has_value()) {
     return StringError("couldn't get tensor from value");
   }
-  size_t buffer_size =
+  const size_t bufferSize =
       concrete_cpu_tfhers_fheint_buffer_size_u64(desc.lwe_size, desc.n_cts);
-  std::vector<uint8_t> buffer(buffer_size, 0);
-  auto flat_data = tensorOrError.value().values;
+  std::vector<uint8_t> buffer(bufferSize, 0);
+  auto flatData = tensorOrError.value().values;
   auto size = concrete_cpu_lwe_array_to_tfhers_uint8(
-      flat_data.data(), buffer.data(), buffer.size(), desc);
+      flatData.data(), buffer.data(), buffer.size(), desc);
   if (size == 0) {
     return StringError("couldn't convert lwe array to fheuint8");
   }

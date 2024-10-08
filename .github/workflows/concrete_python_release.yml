@@ -102,6 +102,7 @@ jobs:
             set -e
 
             rustup toolchain install nightly-2024-09-30
+            pip install mypy
             rm -rf /build/*
 
             export PYTHON=${{ format('python{0}', matrix.python-version) }}

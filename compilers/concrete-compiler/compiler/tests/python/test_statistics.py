@@ -4,14 +4,14 @@ import shutil
 import tempfile
 
 from concrete.compiler import (
-    ClientSupport,
-    EvaluationKeys,
-    KeySet,
-    LibrarySupport,
-    PublicArguments,
-    PublicResult,
+    Compiler,
+    KeyType,
+    PrimitiveOperation,
+    lookup_runtime_lib,
+    Backend,
+    CompilationOptions,
+    MoreCircuitCompilationFeedback,
 )
-from mlir._mlir_libs._concretelang._compiler import KeyType, PrimitiveOperation
 
 
 def test_statistics():
@@ -28,50 +28,52 @@ module {
     """.strip()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        support = LibrarySupport.new(str(tmpdirname))
-        compilation_result = support.compile(mlir)
+        support = Compiler(str(tmpdirname), lookup_runtime_lib())
+        library = support.compile(mlir, CompilationOptions(Backend.CPU))
 
-        client_parameters = support.load_client_parameters(compilation_result)
-        program_compilation_feedback = support.load_compilation_feedback(
-            compilation_result
-        )
-        compilation_feedback = program_compilation_feedback.circuit("main")
+        program_info = library.get_program_info()
+        program_compilation_feedback = library.get_program_compilation_feedback()
+        compilation_feedback = program_compilation_feedback.get_circuit_feedback("main")
 
-        pbs_count = compilation_feedback.count(
+        pbs_count = MoreCircuitCompilationFeedback.count(
+            compilation_feedback,
             operations={
                 PrimitiveOperation.PBS,
                 PrimitiveOperation.WOP_PBS,
-            }
+            },
         )
         assert pbs_count == 1
 
-        pbs_counts_per_parameter = compilation_feedback.count_per_parameter(
+        pbs_counts_per_parameter = MoreCircuitCompilationFeedback.count_per_parameter(
+            compilation_feedback,
             operations={
                 PrimitiveOperation.PBS,
                 PrimitiveOperation.WOP_PBS,
             },
             key_types={KeyType.BOOTSTRAP},
-            client_parameters=client_parameters,
+            program_info=program_info,
         )
         assert len(pbs_counts_per_parameter) == 1
         assert pbs_counts_per_parameter[list(pbs_counts_per_parameter.keys())[0]] == 1
 
-        pbs_counts_per_tag = compilation_feedback.count_per_tag(
+        pbs_counts_per_tag = MoreCircuitCompilationFeedback.count_per_tag(
+            compilation_feedback,
             operations={
                 PrimitiveOperation.PBS,
                 PrimitiveOperation.WOP_PBS,
-            }
+            },
         )
         assert pbs_counts_per_tag == {}
 
         pbs_counts_per_tag_per_parameter = (
-            compilation_feedback.count_per_tag_per_parameter(
+            MoreCircuitCompilationFeedback.count_per_tag_per_parameter(
+                compilation_feedback,
                 operations={
                     PrimitiveOperation.PBS,
                     PrimitiveOperation.WOP_PBS,
                 },
                 key_types={KeyType.BOOTSTRAP},
-                client_parameters=client_parameters,
+                program_info=program_info,
             )
         )
         assert pbs_counts_per_tag_per_parameter == {}

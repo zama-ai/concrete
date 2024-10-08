@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import os
@@ -6,60 +7,88 @@ import pytest
 import shutil
 import numpy as np
 from concrete.compiler import (
-    LibrarySupport,
-    PublicArguments,
-    SimulatedValueExporter,
-    SimulatedValueDecrypter,
+    Compiler,
     CompilationOptions,
+    ProgramCompilationFeedback,
+    CircuitCompilationFeedback,
+    Backend,
+    lookup_runtime_lib,
+    Keyset,
+    Library,
+    ServerKeyset,
+    ServerProgram,
+    ClientProgram,
+    TransportValue,
+    Value,
 )
 
 
-def assert_result(result, expected_result):
+def assert_result(results, expected_results):
     """Assert that result and expected result are equal.
 
     result and expected_result can be integers on numpy arrays.
     """
-    assert type(expected_result) == type(result)
-    if isinstance(expected_result, int):
-        assert result == expected_result, f"{result} != {expected_result}"
-    else:
+    for result, expected_result in zip(results, expected_results):
+        assert type(expected_result) == type(result)
         assert np.all(result == expected_result)
 
 
-def run_simulated(engine, args_and_shape, compilation_result):
-    client_parameters = engine.load_client_parameters(compilation_result)
-    sim_value_exporter = SimulatedValueExporter.new(client_parameters)
-    values = []
-    pos = 0
-    for arg, shape in args_and_shape:
-        if shape is None:
-            assert isinstance(arg, int)
-            values.append(sim_value_exporter.export_scalar(pos, arg))
-        else:
-            assert isinstance(arg, list)
-            assert isinstance(shape, list)
-            values.append(sim_value_exporter.export_tensor(pos, arg, shape))
-        pos += 1
-    public_arguments = PublicArguments.new(client_parameters, values)
-    server_lambda = engine.load_server_lambda(compilation_result, True)
-    public_result = engine.simulate(server_lambda, public_arguments)
-    sim_value_decrypter = SimulatedValueDecrypter.new(client_parameters)
-    result = sim_value_decrypter.decrypt(0, public_result.get_value(0))
-    return result
+def run_simulated(library: Library, args, circuit_name):
+    """Execute engine on the given arguments.
+
+    Perform required loading, encryption, execution, and decryption."""
+    # Dev
+    compilation_feedback = library.get_program_compilation_feedback()
+    assert isinstance(compilation_feedback, ProgramCompilationFeedback)
+    assert isinstance(compilation_feedback.complexity, float)
+    assert isinstance(compilation_feedback.p_error, float)
+    assert isinstance(compilation_feedback.global_p_error, float)
+    assert isinstance(compilation_feedback.total_secret_keys_size, int)
+    assert isinstance(compilation_feedback.total_bootstrap_keys_size, int)
+    assert isinstance(compilation_feedback.circuit_feedbacks, list)
+    circuit_feedback = compilation_feedback.get_circuit_feedback(circuit_name)
+    assert isinstance(circuit_feedback, CircuitCompilationFeedback)
+    assert isinstance(circuit_feedback.total_inputs_size, int)
+    assert isinstance(circuit_feedback.total_output_size, int)
+
+    program_info = library.get_program_info()
+
+    client_program = ClientProgram.create_simulated(program_info)
+    client_circuit = client_program.get_client_circuit(circuit_name)
+    args_serialized = [
+        client_circuit.simulate_prepare_input(Value(arg), i).serialize()
+        for (i, arg) in enumerate(args)
+    ]
+    args_deserialized = [TransportValue.deserialize(arg) for arg in args_serialized]
+
+    server_program = ServerProgram(library, True)
+    server_circuit = server_program.get_server_circuit(circuit_name)
+
+    results = server_circuit.simulate(args_deserialized)
+    results_serialized = [result.serialize() for result in results]
+    results_deserialized = [
+        client_circuit.simulate_process_output(
+            TransportValue.deserialize(result), i
+        ).to_py_val()
+        for (i, result) in enumerate(results_serialized)
+    ]
+
+    return results_deserialized
 
 
 def compile_run_assert(
-    engine,
+    compiler,
     mlir_input,
-    args_and_shape,
+    args,
     expected_result,
-    options=CompilationOptions.new(),
+    options=CompilationOptions(Backend.CPU),
+    circuit_name="main",
 ):
-    # compile with simulation
+    """Compile run and assert result."""
     options.simulation(True)
     options.set_enable_overflow_detection_in_simulation(True)
-    compilation_result = engine.compile(mlir_input, options)
-    result = run_simulated(engine, args_and_shape, compilation_result)
+    library = compiler.compile(mlir_input, options)
+    result = run_simulated(library, args, circuit_name)
     assert_result(result, expected_result)
 
 
@@ -72,7 +101,7 @@ end_to_end_fixture = [
             }
             """,
         (5, 7),
-        12,
+        (12,),
         id="add_eint_int",
     ),
     pytest.param(
@@ -84,7 +113,7 @@ end_to_end_fixture = [
             }
             """,
         (73,),
-        73,
+        (73,),
         id="apply_lookup_table",
     ),
     pytest.param(
@@ -97,10 +126,10 @@ end_to_end_fixture = [
             }
             """,
         (
-            np.array([1, 2, 3, 4], dtype=np.uint8),
-            np.array([4, 3, 2, 1], dtype=np.uint8),
+            np.array([1, 2, 3, 4]),
+            np.array([4, 3, 2, 1]),
         ),
-        20,
+        (20,),
         id="dot_eint_int_uint8",
     ),
     pytest.param(
@@ -111,10 +140,10 @@ end_to_end_fixture = [
             }
             """,
         (
-            np.array([31, 6, 12, 9], dtype=np.uint8),
-            np.array([32, 9, 2, 3], dtype=np.uint8),
+            np.array([31, 6, 12, 9]),
+            np.array([32, 9, 2, 3]),
         ),
-        np.array([63, 15, 14, 12]),
+        (np.array([63, 15, 14, 12]),),
         id="add_eint_int_1D",
     ),
     pytest.param(
@@ -125,7 +154,7 @@ end_to_end_fixture = [
             }
             """,
         (5,),
-        -5,
+        (-5,),
         id="neg_eint_signed",
     ),
     pytest.param(
@@ -136,7 +165,7 @@ end_to_end_fixture = [
             }
             """,
         (np.array([-5, 3]),),
-        np.array([5, -3]),
+        (np.array([5, -3]),),
         id="neg_eint_signed_2",
     ),
     pytest.param(
@@ -153,26 +182,28 @@ end_to_end_fixture = [
             np.array([i // 4 for i in range(16)]).reshape((4, 4)),
             np.array([i // 4 for i in range(15, -1, -1)]).reshape((4, 4)),
         ),
-        np.array(
-            [
-                0,
-                0,
-                0,
-                0,
-                1296,
-                1296,
-                1296,
-                1296,
-                2592,
-                2592,
-                2592,
-                2592,
-                3888,
-                3888,
-                3888,
-                3888,
-            ]
-        ).reshape((4, 4)),
+        (
+            np.array(
+                [
+                    0,
+                    0,
+                    0,
+                    0,
+                    1296,
+                    1296,
+                    1296,
+                    1296,
+                    2592,
+                    2592,
+                    2592,
+                    2592,
+                    3888,
+                    3888,
+                    3888,
+                    3888,
+                ]
+            ).reshape((4, 4)),
+        ),
         id="matul_chain_with_crt",
     ),
     pytest.param(
@@ -186,9 +217,9 @@ end_to_end_fixture = [
         """,
         (
             81,
-            np.array(range(16384), dtype=np.uint64),
+            np.array(range(16384)),
         ),
-        96,
+        (96,),
         id="add_lut_crt",
     ),
 ]
@@ -205,10 +236,10 @@ end_to_end_parallel_fixture = [
             }
             """,
         (
-            np.array([[1, 2, 3, 4], [4, 2, 1, 0], [2, 3, 1, 5]], dtype=np.uint8),
-            np.array([[1, 2, 3, 4], [4, 2, 1, 1], [2, 3, 1, 5]], dtype=np.uint8),
+            np.array([[1, 2, 3, 4], [4, 2, 1, 0], [2, 3, 1, 5]]),
+            np.array([[1, 2, 3, 4], [4, 2, 1, 1], [2, 3, 1, 5]]),
         ),
-        np.array([[52, 36], [31, 34], [42, 52]]),
+        (np.array([[52, 36], [31, 34], [42, 52]]),),
         id="matmul_eint_int_uint8",
     ),
     pytest.param(
@@ -221,12 +252,12 @@ end_to_end_parallel_fixture = [
             }
             """,
         (
-            np.array([1, 2, 3, 4], dtype=np.uint8),
-            np.array([9, 8, 6, 5], dtype=np.uint8),
-            np.array([3, 2, 7, 0], dtype=np.uint8),
-            np.array([1, 4, 2, 11], dtype=np.uint8),
+            np.array([1, 2, 3, 4]),
+            np.array([9, 8, 6, 5]),
+            np.array([3, 2, 7, 0]),
+            np.array([1, 4, 2, 11]),
         ),
-        np.array([14, 16, 18, 20]),
+        (np.array([14, 16, 18, 20]),),
         id="add_eint_int_1D",
     ),
 ]
@@ -235,14 +266,8 @@ end_to_end_parallel_fixture = [
 @pytest.mark.parametrize("mlir_input, args, expected_result", end_to_end_fixture)
 def test_lib_compile_and_run_simulation(mlir_input, args, expected_result):
     artifact_dir = "./py_test_lib_compile_and_run"
-    engine = LibrarySupport.new(artifact_dir)
-    args_and_shape = []
-    for arg in args:
-        if isinstance(arg, int):
-            args_and_shape.append((arg, None))
-        else:  # np.array
-            args_and_shape.append((arg.flatten().tolist(), list(arg.shape)))
-    compile_run_assert(engine, mlir_input, args_and_shape, expected_result)
+    compiler = Compiler(artifact_dir, lookup_runtime_lib())
+    compile_run_assert(compiler, mlir_input, args, expected_result)
     shutil.rmtree(artifact_dir)
 
 
@@ -255,7 +280,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (120, 30),
-        150,
+        (150,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="add_eint_int",
     ),
@@ -267,7 +292,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-1, -2),
-        -3,
+        (-3,),
         b"",
         id="add_eint_int_signed",
     ),
@@ -279,7 +304,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-60, -20),
-        -80,
+        (-80,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="add_eint_int_signed_underflow",
     ),
@@ -291,7 +316,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (60, 20),
-        -48,
+        (-48,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="add_eint_int_signed_overflow",
     ),
@@ -303,7 +328,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (81, 73),
-        154,
+        (154,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="add_eint",
     ),
@@ -315,7 +340,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-81, 73),
-        -8,
+        (-8,),
         b"",
         id="add_eint_signed",
     ),
@@ -327,7 +352,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-60, -20),
-        -80,  # undefined behavior
+        (-80,),  # undefined behavior
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="add_eint_signed_underflow",
     ),
@@ -339,7 +364,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (81, 73),
-        -102,
+        (-102,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="add_eint_signed_overflow",
     ),
@@ -351,7 +376,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (4, 7),
-        256 - 3,
+        (256 - 3,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="sub_eint_int",
     ),
@@ -363,7 +388,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (4, 7),
-        -3,
+        (-3,),
         b"",
         id="sub_eint_int_signed",
     ),
@@ -375,7 +400,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-37, 40),
-        -77,
+        (-77,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="sub_eint_int_signed_underflow",
     ),
@@ -387,7 +412,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (33, -40),
-        -55,
+        (-55,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="sub_eint_int_signed_overflow",
     ),
@@ -399,7 +424,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (11, 18),
-        256 - 7,
+        (256 - 7,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="sub_eint",
     ),
@@ -411,7 +436,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (11, 18),
-        -7,
+        (-7,),
         b"",
         id="sub_eint_signed",
     ),
@@ -423,7 +448,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-44, 32),
-        -76,  # undefined behavior
+        (-76,),  # undefined behavior
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="sub_eint_signed_underflow",
     ),
@@ -435,7 +460,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (61, -25),
-        -42,  # undefined behavior
+        (-42,),  # undefined behavior
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\n',
         id="sub_eint_signed_overflow",
     ),
@@ -447,7 +472,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (20, 10),
-        200,
+        (200,),
         b'WARNING at loc("-":3:22): overflow happened during multiplication in simulation\n',
         id="mul_eint_int",
     ),
@@ -460,7 +485,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (5, 10),
-        256 - 50,
+        (256 - 50,),
         b'WARNING at loc("-":3:22): overflow happened during addition in simulation\nWARNING at loc("-":4:22): overflow happened during multiplication in simulation\n',
         id="sub_mul_eint_int",
     ),
@@ -472,7 +497,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (5, -2),
-        -10,
+        (-10,),
         b"",
         id="mul_eint_int_signed",
     ),
@@ -484,7 +509,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-33, 5),
-        -37,  # undefined behavior
+        (-37,),  # undefined behavior
         b'WARNING at loc("-":3:22): overflow happened during multiplication in simulation\n',
         id="mul_eint_int_signed_underflow",
     ),
@@ -496,7 +521,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (-33, -5),
-        -91,
+        (-91,),
         b'WARNING at loc("-":3:22): overflow happened during multiplication in simulation\n',
         id="mul_eint_int_signed_overflow",
     ),
@@ -509,7 +534,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (1,),
-        140,
+        (140,),
         b'WARNING at loc("-":4:22): overflow (padding bit) happened during LUT in simulation\nWARNING at loc("-":4:22): overflow (original value didn\'t fit, so a modulus was applied) happened during LUT in simulation\n',
         id="apply_lookup_table_big_value",
     ),
@@ -522,7 +547,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (2,),
-        -2,
+        (-2,),
         b"",
         id="apply_lookup_table_signed",
     ),
@@ -535,7 +560,7 @@ end_to_end_overflow_simu_fixture = [
             }
             """,
         (1,),
-        -8,
+        (-8,),
         b'WARNING at loc("-":4:22): overflow (original value didn\'t fit, so a modulus was applied) happened during LUT in simulation\n',
         id="apply_lookup_table_signed_big_value",
     ),
@@ -557,8 +582,7 @@ def test_lib_compile_and_run_simulation_with_overflow(
     # prepare cmd and run
     script_path = os.path.join(os.path.dirname(__file__), "overflow.py")
     cmd = [sys.executable, script_path, mlir_file.name]
-    cmd.extend(map(str, args))
-    cmd.append(str(expected_result))
+    cmd.append(json.dumps((args, expected_result)))
     out = subprocess.check_output(cmd, env=os.environ)
 
     # close/remove tmp file

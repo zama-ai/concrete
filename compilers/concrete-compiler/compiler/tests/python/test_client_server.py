@@ -4,16 +4,23 @@ import shutil
 import tempfile
 
 from concrete.compiler import (
-    ClientSupport,
-    EvaluationKeys,
-    LibrarySupport,
-    PublicArguments,
-    PublicResult,
+    Library,
+    Compiler,
+    lookup_runtime_lib,
+    CompilationOptions,
+    Backend,
+    Keyset,
+    ClientProgram,
+    ServerKeyset,
+    Value,
+    ServerProgram,
+    TransportValue,
+    CompilationContext,
 )
 
 
 @pytest.mark.parametrize(
-    "mlir, args, expected_result",
+    "mlir, args, expected_results",
     [
         pytest.param(
             """
@@ -25,9 +32,8 @@ func.func @main(%arg0: !FHE.eint<5>, %arg1: i6) -> !FHE.eint<5> {
 
             """,
             (5, 7),
-            12,
+            (12,),
             id="enc_plain_int_args",
-            marks=pytest.mark.xfail,
         ),
         pytest.param(
             """
@@ -39,12 +45,12 @@ func.func @main(%arg0: !FHE.eint<5>, %arg1: !FHE.eint<5>) -> !FHE.eint<5> {
 
             """,
             (5, 7),
-            12,
+            (12,),
             id="enc_enc_int_args",
         ),
         pytest.param(
             """
-            
+
 func.func @main(%arg0: tensor<4x!FHE.eint<5>>, %arg1: tensor<4xi6>) -> !FHE.eint<5> {
     %ret = "FHELinalg.dot_eint_int"(%arg0, %arg1) : (tensor<4x!FHE.eint<5>>, tensor<4xi6>) -> !FHE.eint<5>
     return %ret : !FHE.eint<5>
@@ -52,12 +58,11 @@ func.func @main(%arg0: tensor<4x!FHE.eint<5>>, %arg1: tensor<4xi6>) -> !FHE.eint
 
             """,
             (
-                np.array([1, 2, 3, 4], dtype=np.uint64),
-                np.array([4, 3, 2, 1], dtype=np.uint8),
+                np.array([1, 2, 3, 4], dtype=np.int64),
+                np.array([4, 3, 2, 1], dtype=np.int64),
             ),
-            20,
+            (20,),
             id="enc_plain_ndarray_args",
-            marks=pytest.mark.xfail,
         ),
         pytest.param(
             """
@@ -69,10 +74,10 @@ func.func @main(%a0: tensor<4x!FHE.eint<5>>, %a1: tensor<4x!FHE.eint<5>>) -> ten
 
             """,
             (
-                np.array([1, 2, 3, 4], dtype=np.uint64),
-                np.array([7, 0, 1, 5], dtype=np.uint64),
+                np.array([1, 2, 3, 4], dtype=np.int64),
+                np.array([7, 0, 1, 5], dtype=np.int64),
             ),
-            np.array([8, 2, 4, 9]),
+            (np.array([8, 2, 4, 9]),),
             id="enc_enc_ndarray_args",
         ),
         pytest.param(
@@ -99,38 +104,48 @@ func.func @main(%a0: tensor<4x!FHE.eint<5>>, %a1: tensor<4x!FHE.eint<5>>) -> ten
         ),
     ],
 )
-def test_client_server_end_to_end(mlir, args, expected_result, keyset_cache):
+def test_client_server_end_to_end(mlir, args, expected_results, keyset_cache):
     with tempfile.TemporaryDirectory() as tmpdirname:
-        support = LibrarySupport.new(str(tmpdirname))
-        compilation_result = support.compile(mlir)
-        server_lambda = support.load_server_lambda(compilation_result, False)
+        support = Compiler(
+            str(tmpdirname), lookup_runtime_lib(), generate_shared_lib=True
+        )
+        library = support.compile(mlir, CompilationOptions(Backend.CPU))
 
-        client_parameters = support.load_client_parameters(compilation_result)
-        keyset = ClientSupport.key_set(client_parameters, keyset_cache)
+        program_info = library.get_program_info()
+        keyset = Keyset(program_info, keyset_cache)
 
-        evaluation_keys = keyset.get_evaluation_keys()
+        evaluation_keys = keyset.get_server_keys()
         evaluation_keys_serialized = evaluation_keys.serialize()
-        evaluation_keys_deserialized = EvaluationKeys.deserialize(
+        evaluation_keys_deserialized = ServerKeyset.deserialize(
             evaluation_keys_serialized
         )
 
-        args = ClientSupport.encrypt_arguments(client_parameters, keyset, args)
-        args_serialized = args.serialize()
-        args_deserialized = PublicArguments.deserialize(
-            client_parameters, args_serialized
-        )
+        client_program = ClientProgram.create_encrypted(program_info, keyset)
+        client_circuit = client_program.get_client_circuit("main")
+        args_serialized = [
+            client_circuit.prepare_input(Value(arg), i).serialize()
+            for (i, arg) in enumerate(args)
+        ]
+        args_deserialized = [TransportValue.deserialize(arg) for arg in args_serialized]
 
-        result = support.server_call(
-            server_lambda,
+        server_program = ServerProgram(library, False)
+        server_circuit = server_program.get_server_circuit("main")
+
+        results = server_circuit.call(
             args_deserialized,
             evaluation_keys_deserialized,
         )
-        result_serialized = result.serialize()
-        result_deserialized = PublicResult.deserialize(
-            client_parameters, result_serialized
-        )
+        results_serialized = [result.serialize() for result in results]
+        results_deserialized = [
+            client_circuit.process_output(
+                TransportValue.deserialize(result), i
+            ).to_py_val()
+            for (i, result) in enumerate(results_serialized)
+        ]
 
-        output = ClientSupport.decrypt_result(
-            client_parameters, keyset, result_deserialized
+        assert all(
+            [
+                np.all(result == expected)
+                for (result, expected) in zip(results_deserialized, expected_results)
+            ]
         )
-        assert np.array_equal(output, expected_result)

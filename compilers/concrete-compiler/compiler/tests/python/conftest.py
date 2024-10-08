@@ -1,7 +1,7 @@
 import os
 import tempfile
 import pytest
-from concrete.compiler import KeySetCache
+from concrete.compiler import KeysetCache
 
 KEY_SET_CACHE_PATH = os.path.join(tempfile.gettempdir(), "KeySetCache")
 
@@ -12,7 +12,7 @@ def pytest_configure(config):
 
 @pytest.fixture(scope="session")
 def keyset_cache():
-    return KeySetCache.new(KEY_SET_CACHE_PATH)
+    return KeysetCache(KEY_SET_CACHE_PATH)
 
 
 @pytest.fixture(scope="session")
