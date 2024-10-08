@@ -92,6 +92,35 @@ def f(inputs):
     res = np.matmul(inputs, matrix + 106) - 20584
     return res
 
+def fall(all_inputs):
+
+    d = all_inputs.shape[0]
+    ans = np.zeros((d, 1))
+
+    for i in range(d):
+        inputs = all_inputs[i]
+        ans_i = f(inputs)
+        ans[i, :] = ans_i
+
+    return ans
+
 # And check
-print(f"{f(np.array([ 115,  -16, -128, -128, -128, -128, -128, -124]))=}")
-print(f"{f(np.array([  -4,  -18, -120, -124, -128, -128, -128, -128]))=}")
+assert f(np.array([ 115,  -16, -128, -128, -128, -128, -128, -124])) == -44057
+assert f(np.array([  -4,  -18, -120, -124, -128, -128, -128, -128])) == -44500
+
+print(f"{f(X_test_q_one)=}")
+
+# With our function
+
+# Run using quantization integer computation and dequantization (for embedding within concrete-python)
+X_test_bcm = model.quantize_input(X_test.to_numpy().astype(np.float32))
+
+y_pred_bcm = fall(X_test_bcm)
+
+y_pred_bcm_dequantized = model.dequantize_output(y_pred_bcm)
+
+mse_fhe_bcm = mean_squared_error(y_test, y_pred_bcm_dequantized)
+r2_fhe_bcm = r2_score(y_test, y_pred_bcm_dequantized)
+
+print(f'Mean Squared Error (our function): {mse_fhe_bcm}')
+print(f'R² Score (our function): {r2_fhe_bcm}')
