@@ -1,7 +1,8 @@
 import sys
 import shutil
 import numpy as np
-from concrete.compiler import LibrarySupport
+import json
+from concrete.compiler import Compiler, lookup_runtime_lib
 from test_simulation import compile_run_assert
 
 
@@ -14,14 +15,12 @@ if __name__ == "__main__":
         mlir_input = f.read()
 
     artifact_dir = "./py_test_lib_compile_and_run"
-    engine = LibrarySupport.new(artifact_dir)
-    args = list(map(int, sys.argv[2:-1]))
-    expected_result = int(sys.argv[-1])
-    args_and_shape = []
-    for arg in args:
-        if isinstance(arg, int):
-            args_and_shape.append((arg, None))
-        else:  # np.array
-            args_and_shape.append((arg.flatten().tolist(), list(arg.shape)))
-    compile_run_assert(engine, mlir_input, args_and_shape, expected_result)
+    engine = Compiler(
+        artifact_dir,
+        lookup_runtime_lib(),
+    )
+    args_and_res = json.loads(sys.argv[2])
+    args = args_and_res[0]
+    expected_results = args_and_res[1]
+    compile_run_assert(engine, mlir_input, args, expected_results)
     shutil.rmtree(artifact_dir)

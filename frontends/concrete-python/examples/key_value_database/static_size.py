@@ -261,7 +261,7 @@ class StaticKeyValueDatabase:
         initial_state_clear = self.module.reset.encrypt(initial_state)
         initial_state_encrypted = self.module.reset.run(initial_state_clear)
 
-        self.state = initial_state_encrypted
+        self.state = initial_state_encrypted  # type: ignore
 
     def decode_entry(self, entry: np.ndarray) -> Optional[Tuple[int, int]]:
         if entry[0] == 0:

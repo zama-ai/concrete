@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from concrete.compiler.utils import ACCEPTED_NUMPY_UINTS
-from concrete.compiler import ClientSupport
+from concrete.compiler import Value
 
 
 @pytest.mark.parametrize(
@@ -16,8 +16,8 @@ from concrete.compiler import ClientSupport
     ],
 )
 def test_invalid_arg_type(garbage):
-    with pytest.raises(TypeError):
-        ClientSupport._create_lambda_argument(garbage, signed=False)
+    with pytest.raises(RuntimeError):
+        Value(garbage)
 
 
 @pytest.mark.parametrize(
@@ -32,11 +32,11 @@ def test_invalid_arg_type(garbage):
 )
 def test_accepted_ints(value):
     try:
-        arg = ClientSupport._create_lambda_argument(value, signed=False)
+        arg = Value(value)
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
     assert arg.is_scalar(), "should have been a scalar"
-    assert arg.get_signed_scalar() == value
+    assert arg.to_py_val() == value
 
 
 # TODO: #495
@@ -52,16 +52,16 @@ def test_accepted_ints(value):
 def test_accepted_ndarray(dtype, maxvalue):
     value = np.array([0, 1, 2, maxvalue], dtype=dtype)
     try:
-        arg = ClientSupport._create_lambda_argument(value, signed=False)
+        arg = Value(value)
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
 
     assert arg.is_tensor(), "should have been a tensor"
-    assert np.all(np.equal(arg.get_tensor_shape(), value.shape))
+    assert np.all(np.equal(arg.get_shape(), value.shape))
     assert np.all(
         np.equal(
-            value.astype(np.int64),
-            np.array(arg.get_signed_tensor_data()).reshape(arg.get_tensor_shape()),
+            value,
+            np.array(arg.to_py_val()),
         )
     )
 
@@ -69,8 +69,8 @@ def test_accepted_ndarray(dtype, maxvalue):
 def test_accepted_array_as_scalar():
     value = np.array(7, dtype=np.uint16)
     try:
-        arg = ClientSupport._create_lambda_argument(value, signed=False)
+        arg = Value(value)
     except Exception:
         pytest.fail(f"value of type {type(value)} should be supported")
     assert arg.is_scalar(), "should have been a scalar"
-    assert arg.get_signed_scalar() == value
+    assert arg.to_py_val() == value
