@@ -40,10 +40,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     // This is done only once, on the client side
 
     // Client key and server keys, in TFHE-rs format
-    let (client_key, _) = generate_keys(config);
+    let (client_key, _,) = generate_keys(config);
 
     // Get lwe_secret_key, to be reused to generate the server key in Concrete format
-    let (integer_ck, _, _) = client_key.clone().into_raw_parts();
+    let (integer_ck, _, _, _) = client_key.clone().into_raw_parts();
     let shortint_ck = integer_ck.into_raw_parts();
     assert!(BLOCK_PARAMS.encryption_key_choice == EncryptionKeyChoice::Big);
     let (glwe_secret_key, _, _) = shortint_ck.into_raw_parts();
