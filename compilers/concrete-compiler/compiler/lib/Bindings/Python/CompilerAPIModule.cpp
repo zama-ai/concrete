@@ -7,21 +7,25 @@
 #include "concrete-optimizer.hpp"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/ClientLib/ClientLib.h"
-#include "concretelang/Common/Compat.h"
 #include "concretelang/Common/Csprng.h"
+#include "concretelang/Common/Keys.h"
 #include "concretelang/Common/Keysets.h"
-#include "concretelang/Dialect/FHE/IR/FHEOpsDialect.h.inc"
+#include "concretelang/Common/Values.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/GPUDFG.hpp"
 #include "concretelang/ServerLib/ServerLib.h"
+#include "concretelang/Support/CompilerEngine.h"
+#include "concretelang/Support/Error.h"
+#include "concretelang/Support/V0Parameters.h"
 #include "concretelang/Support/logging.h"
-#include <llvm/Support/Debug.h>
+#include <filesystem>
+#include <memory>
 #include <mlir-c/Bindings/Python/Interop.h>
 #include <mlir/CAPI/IR.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/ExecutionEngine/OptUtils.h>
 
+#include <optional>
+#include <pybind11/cast.h>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -29,9 +33,60 @@
 #include <stdexcept>
 #include <string>
 
+using concretelang::clientlib::ClientCircuit;
+using concretelang::clientlib::ClientProgram;
+using concretelang::keysets::Keyset;
+using concretelang::keysets::KeysetCache;
+using concretelang::keysets::ServerKeyset;
+using concretelang::serverlib::ServerCircuit;
+using concretelang::serverlib::ServerProgram;
+using concretelang::values::TransportValue;
+using concretelang::values::Value;
 using mlir::concretelang::CompilationOptions;
-using mlir::concretelang::LambdaArgument;
 
+#define CONCAT(a, b) CONCAT_INNER(a, b)
+#define CONCAT_INNER(a, b) a##b
+
+#define GET_OR_THROW_EXPECTED_(VARNAME, RESULT, MAYBE)                         \
+  auto MAYBE = RESULT;                                                         \
+  if (auto err = MAYBE.takeError()) {                                          \
+    throw std::runtime_error(llvm::toString(std::move(err)));                  \
+  }                                                                            \
+  VARNAME = std::move(*MAYBE);
+
+#define GET_OR_THROW_EXPECTED(VARNAME, RESULT)                                 \
+  GET_OR_THROW_EXPECTED_(VARNAME, RESULT, CONCAT(maybe, __COUNTER__))
+
+#define GET_OR_THROW_RESULT_(VARNAME, RESULT, MAYBE)                           \
+  auto MAYBE = RESULT;                                                         \
+  if (MAYBE.has_failure()) {                                                   \
+    throw std::runtime_error(MAYBE.as_failure().error().mesg);                 \
+  }                                                                            \
+  VARNAME = MAYBE.value();
+
+#define GET_OR_THROW_RESULT(VARNAME, RESULT)                                   \
+  GET_OR_THROW_RESULT_(VARNAME, RESULT, CONCAT(maybe, __COUNTER__))
+
+#define EXPECTED_TRY_(lhs, rhs, maybe)                                         \
+  auto maybe = rhs;                                                            \
+  if (auto err = maybe.takeError()) {                                          \
+    return std::move(err);                                                     \
+  }                                                                            \
+  lhs = *maybe;
+
+#define EXPECTED_TRY(lhs, rhs)                                                 \
+  EXPECTED_TRY_(lhs, rhs, CONCAT(maybe, __COUNTER__))
+
+template <typename T> llvm::Expected<T> outcomeToExpected(Result<T> outcome) {
+  if (outcome.has_failure()) {
+    return mlir::concretelang::StreamStringError(
+        outcome.as_failure().error().mesg);
+  } else {
+    return outcome.value();
+  }
+}
+
+namespace {
 class SignalGuard {
 public:
   SignalGuard() { previousHandler = signal(SIGINT, SignalGuard::handler); }
@@ -45,417 +100,6 @@ private:
     kill(getpid(), SIGKILL);
   }
 };
-
-/// Wrapper of the mlir::concretelang::LambdaArgument
-struct lambdaArgument {
-  std::shared_ptr<mlir::concretelang::LambdaArgument> ptr;
-};
-typedef struct lambdaArgument lambdaArgument;
-
-/// Hold a list of lambdaArgument to represent execution arguments
-struct executionArguments {
-  lambdaArgument *data;
-  size_t size;
-};
-typedef struct executionArguments executionArguments;
-
-// Library Support bindings ///////////////////////////////////////////////////
-
-struct LibrarySupport_Py {
-  mlir::concretelang::LibrarySupport support;
-};
-typedef struct LibrarySupport_Py LibrarySupport_Py;
-
-LibrarySupport_Py
-library_support(const char *outputPath, const char *runtimeLibraryPath,
-                bool generateSharedLib, bool generateStaticLib,
-                bool generateClientParameters, bool generateCompilationFeedback,
-                bool generateCppHeader) {
-  return LibrarySupport_Py{mlir::concretelang::LibrarySupport(
-      outputPath, runtimeLibraryPath, generateSharedLib, generateStaticLib,
-      generateClientParameters, generateCompilationFeedback)};
-}
-
-std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
-library_compile(LibrarySupport_Py support, const char *module,
-                mlir::concretelang::CompilationOptions options) {
-  llvm::SourceMgr sm;
-  sm.AddNewSourceBuffer(llvm::MemoryBuffer::getMemBuffer(module),
-                        llvm::SMLoc());
-  GET_OR_THROW_EXPECTED(auto compilationResult,
-                        support.support.compile(sm, options));
-  return compilationResult;
-}
-
-std::unique_ptr<mlir::concretelang::LibraryCompilationResult>
-library_compile_module(
-    LibrarySupport_Py support, mlir::ModuleOp module,
-    mlir::concretelang::CompilationOptions options,
-    std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
-  GET_OR_THROW_EXPECTED(auto compilationResult,
-                        support.support.compile(module, cctx, options));
-  return compilationResult;
-}
-
-concretelang::clientlib::ClientParameters library_load_client_parameters(
-    LibrarySupport_Py support,
-    mlir::concretelang::LibraryCompilationResult &result) {
-  GET_OR_THROW_EXPECTED(auto clientParameters,
-                        support.support.loadClientParameters(result));
-  return clientParameters;
-}
-
-mlir::concretelang::ProgramCompilationFeedback
-library_load_compilation_feedback(
-    LibrarySupport_Py support,
-    mlir::concretelang::LibraryCompilationResult &result) {
-  GET_OR_THROW_EXPECTED(auto compilationFeedback,
-                        support.support.loadCompilationFeedback(result));
-  return compilationFeedback;
-}
-
-concretelang::serverlib::ServerLambda
-library_load_server_lambda(LibrarySupport_Py support,
-                           mlir::concretelang::LibraryCompilationResult &result,
-                           std::string circuitName, bool useSimulation) {
-  GET_OR_THROW_EXPECTED(
-      auto serverLambda,
-      support.support.loadServerLambda(result, circuitName, useSimulation));
-  return serverLambda;
-}
-
-std::unique_ptr<concretelang::clientlib::PublicResult>
-library_server_call(LibrarySupport_Py support,
-                    concretelang::serverlib::ServerLambda lambda,
-                    concretelang::clientlib::PublicArguments &args,
-                    concretelang::clientlib::EvaluationKeys &evaluationKeys) {
-  GET_OR_THROW_EXPECTED(auto publicResult, support.support.serverCall(
-                                               lambda, args, evaluationKeys));
-  return publicResult;
-}
-
-std::unique_ptr<concretelang::clientlib::PublicResult>
-library_simulate(LibrarySupport_Py support,
-                 concretelang::serverlib::ServerLambda lambda,
-                 concretelang::clientlib::PublicArguments &args) {
-  GET_OR_THROW_EXPECTED(auto publicResult,
-                        support.support.simulate(lambda, args));
-  return publicResult;
-}
-
-std::string library_get_shared_lib_path(LibrarySupport_Py support) {
-  return support.support.getSharedLibPath();
-}
-
-std::string library_get_program_info_path(LibrarySupport_Py support) {
-  return support.support.getProgramInfoPath();
-}
-
-// Client Support bindings ///////////////////////////////////////////////////
-
-std::unique_ptr<concretelang::clientlib::KeySet>
-key_set(concretelang::clientlib::ClientParameters clientParameters,
-        std::optional<concretelang::clientlib::KeySetCache> cache,
-        std::map<uint32_t, LweSecretKey> lweSecretKeys, uint64_t secretSeedMsb,
-        uint64_t secretSeedLsb, uint64_t encSeedMsb, uint64_t encSeedLsb) {
-  auto secretSeed = (((__uint128_t)secretSeedMsb) << 64) | secretSeedLsb;
-  auto encryptionSeed = (((__uint128_t)encSeedMsb) << 64) | encSeedLsb;
-
-  if (cache.has_value()) {
-    GET_OR_THROW_RESULT(Keyset keyset,
-                        (*cache).keysetCache.getKeyset(
-                            clientParameters.programInfo.asReader().getKeyset(),
-                            secretSeed, encryptionSeed, lweSecretKeys));
-    concretelang::clientlib::KeySet output{keyset};
-    return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
-  } else {
-    concretelang::csprng::SecretCSPRNG secCsprng(secretSeed);
-    concretelang::csprng::EncryptionCSPRNG encCsprng(encryptionSeed);
-    auto keyset = Keyset(clientParameters.programInfo.asReader().getKeyset(),
-                         secCsprng, encCsprng, lweSecretKeys);
-    concretelang::clientlib::KeySet output{keyset};
-    return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
-  }
-}
-
-std::unique_ptr<concretelang::clientlib::PublicArguments>
-encrypt_arguments(concretelang::clientlib::ClientParameters clientParameters,
-                  concretelang::clientlib::KeySet &keySet,
-                  llvm::ArrayRef<mlir::concretelang::LambdaArgument *> args,
-                  const std::string &circuitName) {
-  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
-  if (maybeProgram.has_failure()) {
-    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
-  }
-  auto circuit = maybeProgram.value().getClientCircuit(circuitName).value();
-  std::vector<TransportValue> output;
-  for (size_t i = 0; i < args.size(); i++) {
-    auto info = circuit.getCircuitInfo().asReader().getInputs()[i];
-    auto typeTransformer = getPythonTypeTransformer(info);
-    auto input = typeTransformer(args[i]->value);
-    auto maybePrepared = circuit.prepareInput(input, i);
-
-    if (maybePrepared.has_failure()) {
-      throw std::runtime_error(maybePrepared.as_failure().error().mesg);
-    }
-    output.push_back(maybePrepared.value());
-  }
-  concretelang::clientlib::PublicArguments publicArgs{output};
-  return std::make_unique<concretelang::clientlib::PublicArguments>(
-      std::move(publicArgs));
-}
-
-std::vector<lambdaArgument>
-decrypt_result(concretelang::clientlib::ClientParameters clientParameters,
-               concretelang::clientlib::KeySet &keySet,
-               concretelang::clientlib::PublicResult &publicResult,
-               const std::string &circuitName) {
-  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
-  if (maybeProgram.has_failure()) {
-    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
-  }
-  auto circuit = maybeProgram.value().getClientCircuit(circuitName).value();
-  std::vector<lambdaArgument> results;
-  for (auto e : llvm::enumerate(publicResult.values)) {
-    auto maybeProcessed = circuit.processOutput(e.value(), e.index());
-    if (maybeProcessed.has_failure()) {
-      throw std::runtime_error(maybeProcessed.as_failure().error().mesg);
-    }
-
-    mlir::concretelang::LambdaArgument out{maybeProcessed.value()};
-    lambdaArgument tensor_arg{
-        std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-    results.push_back(tensor_arg);
-  }
-  return results;
-}
-
-std::unique_ptr<concretelang::clientlib::PublicArguments>
-publicArgumentsUnserialize(
-    concretelang::clientlib::ClientParameters &clientParameters,
-    const std::string &buffer) {
-  auto publicArgumentsProto = Message<concreteprotocol::PublicArguments>();
-  if (publicArgumentsProto.readBinaryFromString(buffer).has_failure()) {
-    throw std::runtime_error("Failed to deserialize public arguments.");
-  }
-  std::vector<TransportValue> values;
-  for (auto arg : publicArgumentsProto.asReader().getArgs()) {
-    values.push_back(arg);
-  }
-  concretelang::clientlib::PublicArguments output{values};
-  return std::make_unique<concretelang::clientlib::PublicArguments>(
-      std::move(output));
-}
-
-std::string publicArgumentsSerialize(
-    concretelang::clientlib::PublicArguments &publicArguments) {
-  auto publicArgumentsProto = Message<concreteprotocol::PublicArguments>();
-  auto argBuilder =
-      publicArgumentsProto.asBuilder().initArgs(publicArguments.values.size());
-  for (size_t i = 0; i < publicArguments.values.size(); i++) {
-    argBuilder.setWithCaveats(i, publicArguments.values[i].asReader());
-  }
-  auto maybeBuffer = publicArgumentsProto.writeBinaryToString();
-  if (maybeBuffer.has_failure()) {
-    throw std::runtime_error("Failed to serialize public arguments.");
-  }
-  return maybeBuffer.value();
-}
-
-std::unique_ptr<concretelang::clientlib::PublicResult> publicResultUnserialize(
-    concretelang::clientlib::ClientParameters &clientParameters,
-    const std::string &buffer) {
-  auto publicResultsProto = Message<concreteprotocol::PublicResults>();
-  if (publicResultsProto.readBinaryFromString(buffer).has_failure()) {
-    throw std::runtime_error("Failed to deserialize public results.");
-  }
-  std::vector<TransportValue> values;
-  for (auto res : publicResultsProto.asReader().getResults()) {
-    values.push_back(res);
-  }
-  concretelang::clientlib::PublicResult output{values};
-  return std::make_unique<concretelang::clientlib::PublicResult>(
-      std::move(output));
-}
-
-std::string
-publicResultSerialize(concretelang::clientlib::PublicResult &publicResult) {
-  std::string buffer;
-  auto publicResultsProto = Message<concreteprotocol::PublicResults>();
-  auto resBuilder =
-      publicResultsProto.asBuilder().initResults(publicResult.values.size());
-  for (size_t i = 0; i < publicResult.values.size(); i++) {
-    resBuilder.setWithCaveats(i, publicResult.values[i].asReader());
-  }
-  auto maybeBuffer = publicResultsProto.writeBinaryToString();
-  if (maybeBuffer.has_failure()) {
-    throw std::runtime_error("Failed to serialize public results.");
-  }
-  return maybeBuffer.value();
-}
-
-concretelang::clientlib::EvaluationKeys
-evaluationKeysUnserialize(const std::string &buffer) {
-  auto serverKeysetProto = Message<concreteprotocol::ServerKeyset>();
-  auto maybeError = serverKeysetProto.readBinaryFromString(
-      buffer, mlir::concretelang::python::DESER_OPTIONS);
-  if (maybeError.has_failure()) {
-    throw std::runtime_error("Failed to deserialize server keyset." +
-                             maybeError.as_failure().error().mesg);
-  }
-  auto serverKeyset =
-      concretelang::keysets::ServerKeyset::fromProto(serverKeysetProto);
-  concretelang::clientlib::EvaluationKeys output{serverKeyset};
-  return output;
-}
-
-std::string evaluationKeysSerialize(
-    concretelang::clientlib::EvaluationKeys &evaluationKeys) {
-  auto serverKeysetProto = evaluationKeys.keyset.toProto();
-  auto maybeBuffer = serverKeysetProto.writeBinaryToString();
-  if (maybeBuffer.has_failure()) {
-    throw std::runtime_error("Failed to serialize evaluation keys.");
-  }
-  return maybeBuffer.value();
-}
-
-std::unique_ptr<concretelang::clientlib::KeySet>
-keySetUnserialize(const std::string &buffer) {
-  auto keysetProto = Message<concreteprotocol::Keyset>();
-  auto maybeError = keysetProto.readBinaryFromString(
-      buffer, mlir::concretelang::python::DESER_OPTIONS);
-  if (maybeError.has_failure()) {
-    throw std::runtime_error("Failed to deserialize keyset." +
-                             maybeError.as_failure().error().mesg);
-  }
-  auto keyset = concretelang::keysets::Keyset::fromProto(keysetProto);
-  concretelang::clientlib::KeySet output{keyset};
-  return std::make_unique<concretelang::clientlib::KeySet>(std::move(output));
-}
-
-std::string keySetSerialize(concretelang::clientlib::KeySet &keySet) {
-  auto keysetProto = keySet.keyset.toProto();
-  auto maybeBuffer = keysetProto.writeBinaryToString();
-  if (maybeBuffer.has_failure()) {
-    throw std::runtime_error("Failed to serialize keys.");
-  }
-  return maybeBuffer.value();
-}
-
-concretelang::clientlib::SharedScalarOrTensorData
-valueUnserialize(const std::string &buffer) {
-  auto inner = TransportValue();
-  if (inner
-          .readBinaryFromString(buffer,
-                                mlir::concretelang::python::DESER_OPTIONS)
-          .has_failure()) {
-    throw std::runtime_error("Failed to deserialize Value");
-  }
-  return {inner};
-}
-
-std::string
-valueSerialize(const concretelang::clientlib::SharedScalarOrTensorData &value) {
-  auto maybeString = value.value.writeBinaryToString();
-  if (maybeString.has_failure()) {
-    throw std::runtime_error("Failed to serialize Value");
-  }
-  return maybeString.value();
-}
-
-concretelang::clientlib::ValueExporter
-createValueExporter(concretelang::clientlib::KeySet &keySet,
-                    concretelang::clientlib::ClientParameters &clientParameters,
-                    const std::string &circuitName) {
-  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
-  if (maybeProgram.has_failure()) {
-    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
-  }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::ValueExporter{maybeCircuit.value()};
-}
-
-concretelang::clientlib::SimulatedValueExporter createSimulatedValueExporter(
-    concretelang::clientlib::ClientParameters &clientParameters,
-    const std::string &circuitName) {
-
-  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo, ::concretelang::keysets::ClientKeyset(),
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      true);
-  if (maybeProgram.has_failure()) {
-    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
-  }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::SimulatedValueExporter{
-      maybeCircuit.value()};
-}
-
-concretelang::clientlib::ValueDecrypter createValueDecrypter(
-    concretelang::clientlib::KeySet &keySet,
-    concretelang::clientlib::ClientParameters &clientParameters,
-    const std::string &circuitName) {
-
-  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(), keySet.keyset.client,
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      false);
-  if (maybeProgram.has_failure()) {
-    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
-  }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::ValueDecrypter{maybeCircuit.value()};
-}
-
-concretelang::clientlib::SimulatedValueDecrypter createSimulatedValueDecrypter(
-    concretelang::clientlib::ClientParameters &clientParameters,
-    const std::string &circuitName) {
-
-  auto maybeProgram = ::concretelang::clientlib::ClientProgram::create(
-      clientParameters.programInfo.asReader(),
-      ::concretelang::keysets::ClientKeyset(),
-      std::make_shared<::concretelang::csprng::EncryptionCSPRNG>(
-          ::concretelang::csprng::EncryptionCSPRNG(0)),
-      true);
-  if (maybeProgram.has_failure()) {
-    throw std::runtime_error(maybeProgram.as_failure().error().mesg);
-  }
-  auto maybeCircuit = maybeProgram.value().getClientCircuit(circuitName);
-  return ::concretelang::clientlib::SimulatedValueDecrypter{
-      maybeCircuit.value()};
-}
-
-concretelang::clientlib::ClientParameters
-clientParametersUnserialize(const std::string &json) {
-  auto programInfo = Message<concreteprotocol::ProgramInfo>();
-  if (programInfo.readJsonFromString(json).has_failure()) {
-    throw std::runtime_error("Failed to deserialize client parameters");
-  }
-  return concretelang::clientlib::ClientParameters{programInfo, {}, {}, {}, {}};
-}
-
-std::string
-clientParametersSerialize(concretelang::clientlib::ClientParameters &params) {
-  auto maybeJson = params.programInfo.writeJsonToString();
-  if (maybeJson.has_failure()) {
-    throw std::runtime_error("Failed to serialize client parameters");
-  }
-  return maybeJson.value();
-}
 
 void terminateDataflowParallelization() { _dfr_terminate(); }
 
@@ -491,226 +135,98 @@ std::string roundTrip(const char *module) {
   return os.str();
 }
 
-bool lambdaArgumentIsTensor(lambdaArgument &lambda_arg) {
-  return !lambda_arg.ptr->value.isScalar();
-}
-
-std::vector<uint64_t> lambdaArgumentGetTensorData(lambdaArgument &lambda_arg) {
-  if (auto tensor = lambda_arg.ptr->value.getTensor<uint8_t>(); tensor) {
-    Tensor<uint64_t> out = (Tensor<uint64_t>)tensor.value();
-    return out.values;
-  } else if (auto tensor = lambda_arg.ptr->value.getTensor<uint16_t>();
-             tensor) {
-    Tensor<uint64_t> out = (Tensor<uint64_t>)tensor.value();
-    return out.values;
-  } else if (auto tensor = lambda_arg.ptr->value.getTensor<uint32_t>();
-             tensor) {
-    Tensor<uint64_t> out = (Tensor<uint64_t>)tensor.value();
-    return out.values;
-  } else if (auto tensor = lambda_arg.ptr->value.getTensor<uint64_t>();
-             tensor) {
-    return tensor.value().values;
-  } else {
-    throw std::invalid_argument(
-        "LambdaArgument isn't a tensor or has an unsupported bitwidth");
-  }
-}
-
-std::vector<int64_t>
-lambdaArgumentGetSignedTensorData(lambdaArgument &lambda_arg) {
-  if (auto tensor = lambda_arg.ptr->value.getTensor<int8_t>(); tensor) {
-    Tensor<int64_t> out = (Tensor<int64_t>)tensor.value();
-    return out.values;
-  } else if (auto tensor = lambda_arg.ptr->value.getTensor<int16_t>(); tensor) {
-    Tensor<int64_t> out = (Tensor<int64_t>)tensor.value();
-    return out.values;
-  } else if (auto tensor = lambda_arg.ptr->value.getTensor<int32_t>(); tensor) {
-    Tensor<int64_t> out = (Tensor<int64_t>)tensor.value();
-    return out.values;
-  } else if (auto tensor = lambda_arg.ptr->value.getTensor<int64_t>(); tensor) {
-    return tensor.value().values;
-  } else {
-    throw std::invalid_argument(
-        "LambdaArgument isn't a tensor or has an unsupported bitwidth");
-  }
-}
-
-std::vector<int64_t>
-lambdaArgumentGetTensorDimensions(lambdaArgument &lambda_arg) {
-  std::vector<size_t> dims = lambda_arg.ptr->value.getDimensions();
-  return {dims.begin(), dims.end()};
-}
-
-bool lambdaArgumentIsScalar(lambdaArgument &lambda_arg) {
-  return lambda_arg.ptr->value.isScalar();
-}
-
-bool lambdaArgumentIsSigned(lambdaArgument &lambda_arg) {
-  return lambda_arg.ptr->value.isSigned();
-}
-
-uint64_t lambdaArgumentGetScalar(lambdaArgument &lambda_arg) {
-  if (lambda_arg.ptr->value.isScalar() &&
-      lambda_arg.ptr->value.hasElementType<uint64_t>()) {
-    return lambda_arg.ptr->value.getTensor<uint64_t>()->values[0];
-  } else {
-    throw std::invalid_argument("LambdaArgument isn't a scalar, should "
-                                "be an IntLambdaArgument<uint64_t>");
-  }
-}
-
-int64_t lambdaArgumentGetSignedScalar(lambdaArgument &lambda_arg) {
-  if (lambda_arg.ptr->value.isScalar() &&
-      lambda_arg.ptr->value.hasElementType<int64_t>()) {
-    return lambda_arg.ptr->value.getTensor<int64_t>()->values[0];
-  } else {
-    throw std::invalid_argument("LambdaArgument isn't a scalar, should "
-                                "be an IntLambdaArgument<int64_t>");
-  }
-}
-
-lambdaArgument lambdaArgumentFromTensorU8(std::vector<uint8_t> data,
-                                          std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-
-  auto val = Value{((Tensor<int64_t>)Tensor<uint8_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromTensorI8(std::vector<int8_t> data,
-                                          std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-  auto val = Value{((Tensor<int64_t>)Tensor<int8_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromTensorU16(std::vector<uint16_t> data,
-                                           std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-  auto val = Value{((Tensor<int64_t>)Tensor<uint16_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromTensorI16(std::vector<int16_t> data,
-                                           std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-  auto val = Value{((Tensor<int64_t>)Tensor<int16_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromTensorU32(std::vector<uint32_t> data,
-                                           std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-  auto val = Value{((Tensor<int64_t>)Tensor<uint32_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromTensorI32(std::vector<int32_t> data,
-                                           std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-  auto val = Value{((Tensor<int64_t>)Tensor<int32_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromTensorU64(std::vector<uint64_t> data,
-                                           std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-  auto val = Value{((Tensor<int64_t>)Tensor<uint64_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromTensorI64(std::vector<int64_t> data,
-                                           std::vector<int64_t> dimensions) {
-  std::vector<size_t> dims(dimensions.begin(), dimensions.end());
-  auto val = Value{((Tensor<int64_t>)Tensor<int64_t>(data, dims))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument tensor_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return tensor_arg;
-}
-
-lambdaArgument lambdaArgumentFromScalar(uint64_t scalar) {
-  auto val = Value{((Tensor<int64_t>)Tensor<uint64_t>(scalar))};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument scalar_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return scalar_arg;
-}
-
-lambdaArgument lambdaArgumentFromSignedScalar(int64_t scalar) {
-  auto val = Value{Tensor<int64_t>(scalar)};
-  mlir::concretelang::LambdaArgument out{val};
-  lambdaArgument scalar_arg{
-      std::make_shared<mlir::concretelang::LambdaArgument>(std::move(out))};
-  return scalar_arg;
-}
-
-concreteprotocol::LweCiphertextEncryptionInfo::Reader
-clientParametersInputEncryptionAt(
-    ::concretelang::clientlib::ClientParameters &clientParameters,
-    size_t inputIdx, std::string circuitName) {
-  auto reader = clientParameters.programInfo.asReader();
-  if (!reader.hasCircuits()) {
-    throw std::runtime_error("can't get keyid: no circuit info");
-  }
-  auto circuits = reader.getCircuits();
-  for (auto circuit : circuits) {
-    if (circuit.hasName() &&
-        circuitName.compare(circuit.getName().cStr()) == 0) {
-      if (!circuit.hasInputs()) {
-        throw std::runtime_error("can't get keyid: no input");
-      }
-      auto inputs = circuit.getInputs();
-      if (inputIdx >= inputs.size()) {
-        throw std::runtime_error(
-            "can't get keyid: inputIdx bigger than number of inputs");
-      }
-      auto input = inputs[inputIdx];
-      if (!input.hasTypeInfo()) {
-        throw std::runtime_error("can't get keyid: input don't have typeInfo");
-      }
-      auto typeInfo = input.getTypeInfo();
-      if (!typeInfo.hasLweCiphertext()) {
-        throw std::runtime_error("can't get keyid: typeInfo don't "
-                                 "have lwe ciphertext info");
-      }
-      auto lweCt = typeInfo.getLweCiphertext();
-      if (!lweCt.hasEncryption()) {
-        throw std::runtime_error("can't get keyid: lwe ciphertext "
-                                 "don't have encryption info");
-      }
-      return lweCt.getEncryption();
+// Every number sent by python through the API has a type `int64` that must be
+// turned into the proper type expected by the ArgTransformers. This allows to
+// get an extra transformer executed right before the ArgTransformer gets
+// called.
+std::function<Value(Value)>
+getPythonTypeTransformer(const Message<concreteprotocol::GateInfo> &info) {
+  if (info.asReader().getTypeInfo().hasIndex()) {
+    return [=](Value input) {
+      Tensor<int64_t> tensorInput = input.getTensor<int64_t>().value();
+      return Value{(Tensor<uint64_t>)tensorInput};
+    };
+  } else if (info.asReader().getTypeInfo().hasPlaintext()) {
+    if (info.asReader().getTypeInfo().getPlaintext().getIntegerPrecision() <=
+        8) {
+      return [=](Value input) {
+        Tensor<int64_t> tensorInput = input.getTensor<int64_t>().value();
+        return Value{(Tensor<uint8_t>)tensorInput};
+      };
     }
+    if (info.asReader().getTypeInfo().getPlaintext().getIntegerPrecision() <=
+        16) {
+      return [=](Value input) {
+        Tensor<int64_t> tensorInput = input.getTensor<int64_t>().value();
+        return Value{(Tensor<uint16_t>)tensorInput};
+      };
+    }
+    if (info.asReader().getTypeInfo().getPlaintext().getIntegerPrecision() <=
+        32) {
+      return [=](Value input) {
+        Tensor<int64_t> tensorInput = input.getTensor<int64_t>().value();
+        return Value{(Tensor<uint32_t>)tensorInput};
+      };
+    }
+    if (info.asReader().getTypeInfo().getPlaintext().getIntegerPrecision() <=
+        64) {
+      return [=](Value input) {
+        Tensor<int64_t> tensorInput = input.getTensor<int64_t>().value();
+        return Value{(Tensor<uint64_t>)tensorInput};
+      };
+    }
+    assert(false);
+  } else if (info.asReader().getTypeInfo().hasLweCiphertext()) {
+    if (info.asReader()
+            .getTypeInfo()
+            .getLweCiphertext()
+            .getEncoding()
+            .hasInteger() &&
+        info.asReader()
+            .getTypeInfo()
+            .getLweCiphertext()
+            .getEncoding()
+            .getInteger()
+            .getIsSigned()) {
+      return [=](Value input) { return input; };
+    } else {
+      return [=](Value input) {
+        Tensor<int64_t> tensorInput = input.getTensor<int64_t>().value();
+        return Value{(Tensor<uint64_t>)tensorInput};
+      };
+    }
+  } else {
+    assert(false);
   }
+};
 
-  throw std::runtime_error("can't get keyid: no circuit with name " +
-                           circuitName);
+template <typename T> Tensor<T> arrayToTensor(pybind11::array &input) {
+  auto data_ptr = (const T *)input.data();
+  std::vector<T> data = std::vector(data_ptr, data_ptr + input.size());
+  auto dims = std::vector<size_t>(input.ndim(), 0);
+  for (ssize_t i = 0; i < input.ndim(); i++) {
+    dims[i] = input.shape(i);
+  }
+  return std::move(Tensor<T>(std::move(data), std::move(dims)));
 }
+
+template <typename T> pybind11::array tensorToArray(Tensor<T> input) {
+  return pybind11::array(pybind11::array::ShapeContainer(input.dimensions),
+                         input.values.data());
+}
+} // namespace
 
 /// Populate the compiler API python module.
 void mlir::concretelang::python::populateCompilerAPISubmodule(
     pybind11::module &m) {
+
+  using ::concretelang::csprng::EncryptionCSPRNG;
+  using ::concretelang::values::Value;
+  using pybind11::arg;
+  using pybind11::array;
+  using pybind11::init;
+  using Library = CompilerEngine::Library;
+
   m.doc() = "Concretelang compiler python API";
 
   m.def("round_trip",
@@ -726,46 +242,6 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   m.def("init_df_parallelization", &initDataflowParallelization);
   m.def("check_gpu_runtime_enabled", &checkGPURuntimeEnabled);
   m.def("check_cuda_device_available", &checkCudaDeviceAvailable);
-
-  m.def("import_tfhers_fheuint8",
-        [](const pybind11::bytes &serialized_fheuint,
-           TfhersFheIntDescription info, uint32_t encryptionKeyId,
-           double encryptionVariance) {
-          const std::string &buffer_str = serialized_fheuint;
-          std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
-          auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
-          auto valueOrError = ::concretelang::clientlib::importTfhersFheUint8(
-              arrayRef, info, encryptionKeyId, encryptionVariance);
-          if (valueOrError.has_error()) {
-            throw std::runtime_error(valueOrError.error().mesg);
-          }
-          return ::concretelang::clientlib::SharedScalarOrTensorData{
-              valueOrError.value()};
-        });
-
-  m.def("export_tfhers_fheuint8",
-        [](::concretelang::clientlib::SharedScalarOrTensorData fheuint,
-           TfhersFheIntDescription info) {
-          auto result = ::concretelang::clientlib::exportTfhersFheUint8(
-              fheuint.value, info);
-          if (result.has_error()) {
-            throw std::runtime_error(result.error().mesg);
-          }
-          return result.value();
-        });
-
-  m.def("get_tfhers_fheuint8_description",
-        [](const pybind11::bytes &serialized_fheuint) {
-          const std::string &buffer_str = serialized_fheuint;
-          std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
-          auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
-          auto info =
-              ::concretelang::clientlib::getTfhersFheUint8Description(arrayRef);
-          if (info.has_error()) {
-            throw std::runtime_error(info.error().mesg);
-          }
-          return info.value();
-        });
 
   pybind11::class_<TfhersFheIntDescription>(m, "TfhersFheIntDescription")
       .def(pybind11::init([](size_t width, bool is_signed,
@@ -839,8 +315,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           });
 
   pybind11::enum_<mlir::concretelang::Backend>(m, "Backend")
-      .value("CPU", mlir::concretelang::Backend::CPU)
-      .value("GPU", mlir::concretelang::Backend::GPU)
+      .value("CPU", mlir::concretelang::Backend::CPU,
+             "Circuit codegen targets cpu.")
+      .value("GPU", mlir::concretelang::Backend::GPU,
+             "Circuit codegen tartgets gpu.")
       .export_values();
 
   pybind11::enum_<optimizer::Strategy>(m, "OptimizerStrategy")
@@ -864,122 +342,194 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
       .def(pybind11::init([](mlir::concretelang::Backend backend) {
-        return CompilationOptions(backend);
-      }))
-      .def("set_verify_diagnostics",
-           [](CompilationOptions &options, bool b) {
-             options.verifyDiagnostics = b;
-           })
-      .def("set_auto_parallelize", [](CompilationOptions &options,
-                                      bool b) { options.autoParallelize = b; })
-      .def("set_loop_parallelize", [](CompilationOptions &options,
-                                      bool b) { options.loopParallelize = b; })
-      .def("set_dataflow_parallelize",
-           [](CompilationOptions &options, bool b) {
-             options.dataflowParallelize = b;
-           })
-      .def("set_compress_evaluation_keys",
-           [](CompilationOptions &options, bool b) {
-             options.compressEvaluationKeys = b;
-           })
-      .def("set_compress_input_ciphertexts",
-           [](CompilationOptions &options, bool b) {
-             options.compressInputCiphertexts = b;
-           })
-      .def("set_optimize_concrete", [](CompilationOptions &options,
-                                       bool b) { options.optimizeTFHE = b; })
-      .def("set_p_error",
-           [](CompilationOptions &options, double p_error) {
-             options.optimizerConfig.p_error = p_error;
-           })
-      .def("set_display_optimizer_choice",
-           [](CompilationOptions &options, bool display) {
-             options.optimizerConfig.display = display;
-           })
-      .def("set_optimizer_strategy",
-           [](CompilationOptions &options, optimizer::Strategy strategy) {
-             options.optimizerConfig.strategy = strategy;
-           })
-      .def("set_optimizer_multi_parameter_strategy",
-           [](CompilationOptions &options,
-              concrete_optimizer::MultiParamStrategy strategy) {
-             options.optimizerConfig.multi_param_strategy = strategy;
-           })
-      .def("set_global_p_error",
-           [](CompilationOptions &options, double global_p_error) {
-             options.optimizerConfig.global_p_error = global_p_error;
-           })
-      .def("add_composition",
-           [](CompilationOptions &options, std::string from_func,
-              size_t from_pos, std::string to_func, size_t to_pos) {
-             options.optimizerConfig.composition_rules.push_back(
-                 {from_func, from_pos, to_func, to_pos});
-           })
-      .def("set_composable",
-           [](CompilationOptions &options, bool composable) {
-             options.optimizerConfig.composable = composable;
-           })
-      .def("set_security_level",
-           [](CompilationOptions &options, int security_level) {
-             options.optimizerConfig.security = security_level;
-           })
-      .def("set_v0_parameter",
-           [](CompilationOptions &options, size_t glweDimension,
-              size_t logPolynomialSize, size_t nSmall, size_t brLevel,
-              size_t brLogBase, size_t ksLevel, size_t ksLogBase) {
-             options.v0Parameter = {glweDimension, logPolynomialSize, nSmall,
-                                    brLevel,       brLogBase,         ksLevel,
-                                    ksLogBase,     std::nullopt};
-           })
-      .def("set_v0_parameter",
-           [](CompilationOptions &options, size_t glweDimension,
-              size_t logPolynomialSize, size_t nSmall, size_t brLevel,
-              size_t brLogBase, size_t ksLevel, size_t ksLogBase,
-              mlir::concretelang::CRTDecomposition crtDecomposition,
-              size_t cbsLevel, size_t cbsLogBase, size_t pksLevel,
-              size_t pksLogBase, size_t pksInputLweDimension,
-              size_t pksOutputPolynomialSize) {
-             mlir::concretelang::PackingKeySwitchParameter pksParam = {
-                 pksInputLweDimension, pksOutputPolynomialSize, pksLevel,
-                 pksLogBase};
-             mlir::concretelang::CitcuitBoostrapParameter crbParam = {
-                 cbsLevel, cbsLogBase};
-             mlir::concretelang::WopPBSParameter wopPBSParam = {pksParam,
-                                                                crbParam};
-             mlir::concretelang::LargeIntegerParameter largeIntegerParam = {
-                 crtDecomposition, wopPBSParam};
-             options.v0Parameter = {glweDimension, logPolynomialSize, nSmall,
-                                    brLevel,       brLogBase,         ksLevel,
-                                    ksLogBase,     largeIntegerParam};
-           })
-      .def("force_encoding",
-           [](CompilationOptions &options,
-              concrete_optimizer::Encoding encoding) {
-             options.optimizerConfig.encoding = encoding;
-           })
-      .def("simulation", [](CompilationOptions &options,
-                            bool simulate) { options.simulate = simulate; })
-      .def("set_emit_gpu_ops",
-           [](CompilationOptions &options, bool emit_gpu_ops) {
-             options.emitGPUOps = emit_gpu_ops;
-           })
-      .def("set_batch_tfhe_ops",
-           [](CompilationOptions &options, bool batch_tfhe_ops) {
-             options.batchTFHEOps = batch_tfhe_ops;
-           })
-      .def("set_enable_tlu_fusing",
-           [](CompilationOptions &options, bool enableTluFusing) {
-             options.enableTluFusing = enableTluFusing;
-           })
-      .def("set_print_tlu_fusing",
-           [](CompilationOptions &options, bool printTluFusing) {
-             options.printTluFusing = printTluFusing;
-           })
-      .def("set_enable_overflow_detection_in_simulation",
-           [](CompilationOptions &options, bool enableOverflowDetection) {
-             options.enableOverflowDetectionInSimulation =
-                 enableOverflowDetection;
-           });
+             return CompilationOptions(backend);
+           }),
+           arg("backend"))
+      .def(
+          "set_verify_diagnostics",
+          [](CompilationOptions &options, bool b) {
+            options.verifyDiagnostics = b;
+          },
+          "Set option for diagnostics verification.", arg("verify_diagnostics"))
+      .def(
+          "set_auto_parallelize",
+          [](CompilationOptions &options, bool b) {
+            options.autoParallelize = b;
+          },
+          "Set option for auto parallelization.", arg("auto_parallelize"))
+      .def(
+          "set_loop_parallelize",
+          [](CompilationOptions &options, bool b) {
+            options.loopParallelize = b;
+          },
+          "Set option for loop parallelization.", arg("loop_parallelize"))
+      .def(
+          "set_dataflow_parallelize",
+          [](CompilationOptions &options, bool b) {
+            options.dataflowParallelize = b;
+          },
+          "Set option for dataflow parallelization.",
+          arg("dataflow_parallelize"))
+      .def(
+          "set_compress_evaluation_keys",
+          [](CompilationOptions &options, bool b) {
+            options.compressEvaluationKeys = b;
+          },
+          "Set option for compression of evaluation keys.",
+          arg("compress_evaluation_keys"))
+      .def(
+          "set_compress_input_ciphertexts",
+          [](CompilationOptions &options, bool b) {
+            options.compressInputCiphertexts = b;
+          },
+          "Set option for compression of input ciphertexts.",
+          arg("compress_input_ciphertexts"))
+      .def(
+          "set_optimize_concrete",
+          [](CompilationOptions &options, bool b) { options.optimizeTFHE = b; },
+          "Set flag to enable/disable optimization of concrete intermediate "
+          "representation.",
+          arg("optimize"))
+      .def(
+          "set_p_error",
+          [](CompilationOptions &options, double p_error) {
+            options.optimizerConfig.p_error = p_error;
+          },
+          "Set error probability for shared by each pbs.", arg("p_error"))
+      .def(
+          "set_display_optimizer_choice",
+          [](CompilationOptions &options, bool display) {
+            options.optimizerConfig.display = display;
+          },
+          "Set display flag of optimizer choices.", arg("display"))
+      .def(
+          "set_optimizer_strategy",
+          [](CompilationOptions &options, optimizer::Strategy strategy) {
+            options.optimizerConfig.strategy = strategy;
+          },
+          "Set the strategy of the optimizer.", arg("strategy"))
+      .def(
+          "set_optimizer_multi_parameter_strategy",
+          [](CompilationOptions &options,
+             concrete_optimizer::MultiParamStrategy strategy) {
+            options.optimizerConfig.multi_param_strategy = strategy;
+          },
+          "Set the strategy of the optimizer for multi-parameter.",
+          arg("strategy"))
+      .def(
+          "set_global_p_error",
+          [](CompilationOptions &options, double global_p_error) {
+            options.optimizerConfig.global_p_error = global_p_error;
+          },
+          "Set global error probability for the full circuit.",
+          arg("global_p_error"))
+      .def(
+          "add_composition",
+          [](CompilationOptions &options, std::string from_func,
+             size_t from_pos, std::string to_func, size_t to_pos) {
+            options.optimizerConfig.composition_rules.push_back(
+                {from_func, from_pos, to_func, to_pos});
+          },
+          "Add a composition rule.", arg("from_func"), arg("from_pos"),
+          arg("to_func"), arg("to_pos"))
+      .def(
+          "set_composable",
+          [](CompilationOptions &options, bool composable) {
+            options.optimizerConfig.composable = composable;
+          },
+          "Set composable flag.", arg("composable"))
+      .def(
+          "set_security_level",
+          [](CompilationOptions &options, int security_level) {
+            options.optimizerConfig.security = security_level;
+          },
+          "Set security level.", arg("security_level"))
+      .def(
+          "set_v0_parameter",
+          [](CompilationOptions &options, size_t glweDimension,
+             size_t logPolynomialSize, size_t nSmall, size_t brLevel,
+             size_t brLogBase, size_t ksLevel, size_t ksLogBase) {
+            options.v0Parameter = {glweDimension, logPolynomialSize, nSmall,
+                                   brLevel,       brLogBase,         ksLevel,
+                                   ksLogBase,     std::nullopt};
+          },
+          "Set the basic V0 parameters.", arg("glwe_dimension"),
+          arg("log_poly_size"), arg("n_small"), arg("br_level"),
+          arg("br_log_base"), arg("ks_level"), arg("ks_log_base"))
+      .def(
+          "set_all_v0_parameter",
+          [](CompilationOptions &options, size_t glweDimension,
+             size_t logPolynomialSize, size_t nSmall, size_t brLevel,
+             size_t brLogBase, size_t ksLevel, size_t ksLogBase,
+             std::vector<int64_t> crtDecomposition, size_t cbsLevel,
+             size_t cbsLogBase, size_t pksLevel, size_t pksLogBase,
+             size_t pksInputLweDimension, size_t pksOutputPolynomialSize) {
+            mlir::concretelang::PackingKeySwitchParameter pksParam = {
+                pksInputLweDimension, pksOutputPolynomialSize, pksLevel,
+                pksLogBase};
+            mlir::concretelang::CitcuitBoostrapParameter crbParam = {
+                cbsLevel, cbsLogBase};
+            mlir::concretelang::WopPBSParameter wopPBSParam = {pksParam,
+                                                               crbParam};
+            mlir::concretelang::LargeIntegerParameter largeIntegerParam = {
+                crtDecomposition, wopPBSParam};
+            options.v0Parameter = {glweDimension, logPolynomialSize, nSmall,
+                                   brLevel,       brLogBase,         ksLevel,
+                                   ksLogBase,     largeIntegerParam};
+          },
+          "Set all the V0 parameters.", arg("glwe_dimension"),
+          arg("log_poly_size"), arg("n_small"), arg("br_level"),
+          arg("br_log_base"), arg("ks_level"), arg("ks_log_base"),
+          arg("crt_decomp"), arg("cbs_level"), arg("cbs_log_base"),
+          arg("pks_level"), arg("pks_log_base"), arg("pks_input_lwe_dim"),
+          arg("pks_output_poly_size"))
+      .def(
+          "force_encoding",
+          [](CompilationOptions &options,
+             concrete_optimizer::Encoding encoding) {
+            options.optimizerConfig.encoding = encoding;
+          },
+          "Force the compiler to use a specific encoding.", arg("encoding"))
+      .def(
+          "simulation",
+          [](CompilationOptions &options, bool simulate) {
+            options.simulate = simulate;
+          },
+          "Enable or disable simulation.", arg("simulate"))
+      .def(
+          "set_emit_gpu_ops",
+          [](CompilationOptions &options, bool emit_gpu_ops) {
+            options.emitGPUOps = emit_gpu_ops;
+          },
+          "Set flag that allows gpu ops to be emitted.", arg("emit_gpu_ops"))
+      .def(
+          "set_batch_tfhe_ops",
+          [](CompilationOptions &options, bool batch_tfhe_ops) {
+            options.batchTFHEOps = batch_tfhe_ops;
+          },
+          "Set flag that triggers the batching of scalar TFHE operations.",
+          arg("batch_tfhe_ops"))
+      .def(
+          "set_enable_tlu_fusing",
+          [](CompilationOptions &options, bool enableTluFusing) {
+            options.enableTluFusing = enableTluFusing;
+          },
+          "Enable or disable tlu fusing.", arg("enable_tlu_fusing"))
+      .def(
+          "set_print_tlu_fusing",
+          [](CompilationOptions &options, bool printTluFusing) {
+            options.printTluFusing = printTluFusing;
+          },
+          "Enable or disable printing tlu fusing.", arg("print_tlu_fusing"))
+      .def(
+          "set_enable_overflow_detection_in_simulation",
+          [](CompilationOptions &options, bool enableOverflowDetection) {
+            options.enableOverflowDetectionInSimulation =
+                enableOverflowDetection;
+          },
+          "Enable or disable overflow detection during simulation.",
+          arg("enable_overflow_detection"))
+      .doc() = "Holds different flags and options of the compilation process.";
 
   pybind11::enum_<mlir::concretelang::PrimitiveOperation>(m,
                                                           "PrimitiveOperation")
@@ -1010,6 +560,26 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_readonly("keys", &mlir::concretelang::Statistic::keys)
       .def_readonly("count", &mlir::concretelang::Statistic::count);
 
+  pybind11::class_<mlir::concretelang::CircuitCompilationFeedback>(
+      m, "CircuitCompilationFeedback")
+      .def_readonly("name",
+                    &mlir::concretelang::CircuitCompilationFeedback::name)
+      .def_readonly(
+          "total_inputs_size",
+          &mlir::concretelang::CircuitCompilationFeedback::totalInputsSize)
+      .def_readonly(
+          "total_output_size",
+          &mlir::concretelang::CircuitCompilationFeedback::totalOutputsSize)
+      .def_readonly("crt_decompositions_of_outputs",
+                    &mlir::concretelang::CircuitCompilationFeedback::
+                        crtDecompositionsOfOutputs)
+      .def_readonly("statistics",
+                    &mlir::concretelang::CircuitCompilationFeedback::statistics)
+      .def_readonly(
+          "memory_usage_per_location",
+          &mlir::concretelang::CircuitCompilationFeedback::memoryUsagePerLoc)
+      .doc() = "Compilation feedback for a single circuit.";
+
   pybind11::class_<mlir::concretelang::ProgramCompilationFeedback>(
       m, "ProgramCompilationFeedback")
       .def_readonly("complexity",
@@ -1030,26 +600,21 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                         totalKeyswitchKeysSize)
       .def_readonly(
           "circuit_feedbacks",
-          &mlir::concretelang::ProgramCompilationFeedback::circuitFeedbacks);
-
-  pybind11::class_<mlir::concretelang::CircuitCompilationFeedback>(
-      m, "CircuitCompilationFeedback")
-      .def_readonly("name",
-                    &mlir::concretelang::CircuitCompilationFeedback::name)
-      .def_readonly(
-          "total_inputs_size",
-          &mlir::concretelang::CircuitCompilationFeedback::totalInputsSize)
-      .def_readonly(
-          "total_output_size",
-          &mlir::concretelang::CircuitCompilationFeedback::totalOutputsSize)
-      .def_readonly("crt_decompositions_of_outputs",
-                    &mlir::concretelang::CircuitCompilationFeedback::
-                        crtDecompositionsOfOutputs)
-      .def_readonly("statistics",
-                    &mlir::concretelang::CircuitCompilationFeedback::statistics)
-      .def_readonly(
-          "memory_usage_per_location",
-          &mlir::concretelang::CircuitCompilationFeedback::memoryUsagePerLoc);
+          &mlir::concretelang::ProgramCompilationFeedback::circuitFeedbacks)
+      .def(
+          "get_circuit_feedback",
+          [](mlir::concretelang::ProgramCompilationFeedback &feedback,
+             std::string function) {
+            for (auto circuit : feedback.circuitFeedbacks) {
+              if (circuit.name == function) {
+                return circuit;
+              }
+            }
+            throw std::runtime_error(
+                "Circuit feedback not found fo passed function.");
+          },
+          "Return the circuit feedback for `function`.", arg("function"))
+      .doc() = "Compilation feedback for a whole program.";
 
   pybind11::class_<mlir::concretelang::CompilationContext,
                    std::shared_ptr<mlir::concretelang::CompilationContext>>(
@@ -1064,332 +629,586 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                  mlirPythonContextToCapsule(wrap(mlirCtx)));
            });
 
-  pybind11::class_<mlir::concretelang::LibraryCompilationResult>(
-      m, "LibraryCompilationResult")
-      .def(pybind11::init([](std::string outputDirPath) {
-        return mlir::concretelang::LibraryCompilationResult{outputDirPath};
-      }));
-  pybind11::class_<::concretelang::serverlib::ServerLambda>(m, "LibraryLambda");
-  pybind11::class_<LibrarySupport_Py>(m, "LibrarySupport")
-      .def(pybind11::init(
-          [](std::string outputPath, std::string runtimeLibraryPath,
-             bool generateSharedLib, bool generateStaticLib,
-             bool generateClientParameters, bool generateCompilationFeedback,
-             bool generateCppHeader) {
-            return library_support(
-                outputPath.c_str(), runtimeLibraryPath.c_str(),
-                generateSharedLib, generateStaticLib, generateClientParameters,
-                generateCompilationFeedback, generateCppHeader);
-          }))
-      .def("compile",
-           [](LibrarySupport_Py &support, std::string mlir_program,
-              mlir::concretelang::CompilationOptions options) {
-             SignalGuard signalGuard;
-             return library_compile(support, mlir_program.c_str(), options);
-           })
-      .def("compile",
-           [](LibrarySupport_Py &support, pybind11::object mlir_module,
-              mlir::concretelang::CompilationOptions options,
-              std::shared_ptr<mlir::concretelang::CompilationContext> cctx) {
-             SignalGuard signalGuard;
-             return library_compile_module(
-                 support,
-                 unwrap(mlirPythonCapsuleToModule(mlir_module.ptr())).clone(),
-                 options, cctx);
-           })
-      .def("load_client_parameters",
-           [](LibrarySupport_Py &support,
-              mlir::concretelang::LibraryCompilationResult &result) {
-             return library_load_client_parameters(support, result);
-           })
-      .def("load_compilation_feedback",
-           [](LibrarySupport_Py &support,
-              mlir::concretelang::LibraryCompilationResult &result) {
-             return library_load_compilation_feedback(support, result);
-           })
+  // ------------------------------------------------------------------------------//
+  // LWE SECRET KEY PARAM //
+  // ------------------------------------------------------------------------------//
+
+  struct LweSecretKeyParam {
+    Message<concreteprotocol::LweSecretKeyInfo> info;
+
+    std::string toString() {
+      std::string output = "LweSecretKeyParam(dimension=";
+      output.append(
+          std::to_string(info.asReader().getParams().getLweDimension()));
+      output.append(")");
+      return output;
+    }
+  };
+  pybind11::class_<LweSecretKeyParam>(m, "LweSecretKeyParam")
       .def(
-          "load_server_lambda",
-          [](LibrarySupport_Py &support,
-             mlir::concretelang::LibraryCompilationResult &result,
-             std::string circuitName, bool useSimulation) {
-            return library_load_server_lambda(support, result, circuitName,
-                                              useSimulation);
+          "dimension",
+          [](LweSecretKeyParam &key) {
+            return key.info.asReader().getParams().getLweDimension();
           },
-          pybind11::return_value_policy::reference)
-      .def("server_call",
-           [](LibrarySupport_Py &support,
-              ::concretelang::serverlib::ServerLambda lambda,
-              ::concretelang::clientlib::PublicArguments &publicArguments,
-              ::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
-             pybind11::gil_scoped_release release;
-             SignalGuard signalGuard;
-             return library_server_call(support, lambda, publicArguments,
-                                        evaluationKeys);
+          "Return the associated LWE dimension.")
+      .def("__str__", [](LweSecretKeyParam &key) { return key.toString(); })
+      .def("__repr__", [](LweSecretKeyParam &key) { return key.toString(); })
+      .def("__hash__",
+           [](pybind11::object key) {
+             return pybind11::hash(pybind11::repr(key));
            })
-      .def("simulate",
-           [](LibrarySupport_Py &support,
-              ::concretelang::serverlib::ServerLambda lambda,
-              ::concretelang::clientlib::PublicArguments &publicArguments) {
-             pybind11::gil_scoped_release release;
-             return library_simulate(support, lambda, publicArguments);
-           })
-      .def("get_shared_lib_path",
-           [](LibrarySupport_Py &support) {
-             return library_get_shared_lib_path(support);
-           })
-      .def("get_program_info_path", [](LibrarySupport_Py &support) {
-        return library_get_program_info_path(support);
-      });
+      .doc() = "Parameters of an LWE Secret Key.";
 
-  class ClientSupport {};
-  pybind11::class_<ClientSupport>(m, "ClientSupport")
-      .def(pybind11::init())
-      .def_static(
-          "key_set",
-          [](::concretelang::clientlib::ClientParameters clientParameters,
-             ::concretelang::clientlib::KeySetCache *cache,
-             uint64_t secretSeedMsb, uint64_t secretSeedLsb,
-             uint64_t encSeedMsb, uint64_t encSeedLsb,
-             std::map<uint32_t, LweSecretKey> initialLweSecretKeys) {
-            SignalGuard signalGuard;
-            auto optCache =
-                cache == nullptr
-                    ? std::nullopt
-                    : std::optional<::concretelang::clientlib::KeySetCache>(
-                          *cache);
-            return key_set(clientParameters, optCache, initialLweSecretKeys,
-                           secretSeedMsb, secretSeedLsb, encSeedMsb,
-                           encSeedLsb);
+  // ------------------------------------------------------------------------------//
+  // BOOTSTRAP KEY PARAM //
+  // ------------------------------------------------------------------------------//
+
+  struct BootstrapKeyParam {
+    Message<concreteprotocol::LweBootstrapKeyInfo> info;
+
+    std::string toString() {
+      std::string output = "BootstrapKeyParam(";
+      output.append("polynomial_size=");
+      output.append(
+          std::to_string(info.asReader().getParams().getPolynomialSize()));
+      output.append(", glwe_dimension=");
+      output.append(
+          std::to_string(info.asReader().getParams().getGlweDimension()));
+      output.append(", input_lwe_dimension=");
+      output.append(
+          std::to_string(info.asReader().getParams().getInputLweDimension()));
+      output.append(", level=");
+      output.append(
+          std::to_string(info.asReader().getParams().getLevelCount()));
+      output.append(", base_log=");
+      output.append(std::to_string(info.asReader().getParams().getBaseLog()));
+      output.append(", variance=");
+      output.append(std::to_string(info.asReader().getParams().getVariance()));
+      output.append(")");
+      return output;
+    }
+  };
+  pybind11::class_<BootstrapKeyParam>(m, "BootstrapKeyParam")
+      .def(
+          "input_secret_key_id",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getInputId();
           },
-          pybind11::arg().none(false), pybind11::arg().none(true),
-          pybind11::arg("secretSeedMsb") = 0,
-          pybind11::arg("secretSeedLsb") = 0, pybind11::arg("encSeedMsb") = 0,
-          pybind11::arg("encSeedLsb") = 0,
-          pybind11::arg("initialLweSecretKeys") =
-              std::map<uint32_t, LweSecretKey>())
-      .def_static(
-          "encrypt_arguments",
-          [](::concretelang::clientlib::ClientParameters clientParameters,
-             ::concretelang::clientlib::KeySet &keySet,
-             std::vector<lambdaArgument> args, const std::string &circuitName) {
-            std::vector<mlir::concretelang::LambdaArgument *> argsRef;
-            for (auto i = 0u; i < args.size(); i++) {
-              argsRef.push_back(args[i].ptr.get());
+          "Return the key id of the associated input key.")
+      .def(
+          "output_secret_key_id",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getOutputId();
+          },
+          "Return the key id of the associated output key.")
+      .def(
+          "level",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getParams().getLevelCount();
+          },
+          "Return the associated number of levels.")
+      .def(
+          "base_log",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getParams().getBaseLog();
+          },
+          "Return the associated base log.")
+      .def(
+          "glwe_dimension",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getParams().getGlweDimension();
+          },
+          "Return the associated GLWE dimension.")
+      .def(
+          "variance",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getParams().getVariance();
+          },
+          "Return the associated noise variance.")
+      .def(
+          "polynomial_size",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getParams().getPolynomialSize();
+          },
+          "Return the associated polynomial size.")
+      .def(
+          "input_lwe_dimension",
+          [](BootstrapKeyParam &key) {
+            return key.info.asReader().getParams().getInputLweDimension();
+          },
+          "Return the associated input lwe dimension.")
+      .def("__str__", [](BootstrapKeyParam &key) { return key.toString(); })
+      .def("__repr__", [](BootstrapKeyParam &key) { return key.toString(); })
+      .def("__hash__",
+           [](pybind11::object key) {
+             return pybind11::hash(pybind11::repr(key));
+           })
+      .doc() = "Parameters of a Bootstrap key.";
+
+  // ------------------------------------------------------------------------------//
+  // KEYSWITCH KEY PARAM //
+  // ------------------------------------------------------------------------------//
+
+  struct KeyswitchKeyParam {
+    Message<concreteprotocol::LweKeyswitchKeyInfo> info;
+
+    std::string toString() {
+      std::string output = "KeyswitchKeyParam(";
+      output.append("level=");
+      output.append(
+          std::to_string(info.asReader().getParams().getLevelCount()));
+      output.append(", base_log=");
+      output.append(std::to_string(info.asReader().getParams().getBaseLog()));
+      output.append(", variance=");
+      output.append(std::to_string(info.asReader().getParams().getVariance()));
+      output.append(")");
+      return output;
+    }
+  };
+  pybind11::class_<KeyswitchKeyParam>(m, "KeyswitchKeyParam")
+      .def(
+          "input_secret_key_id",
+          [](KeyswitchKeyParam &key) {
+            return key.info.asReader().getInputId();
+          },
+          "Return the key id of the associated input key.")
+      .def(
+          "output_secret_key_id",
+          [](KeyswitchKeyParam &key) {
+            return key.info.asReader().getOutputId();
+          },
+          "Return the key id of the associated output key.")
+      .def(
+          "level",
+          [](KeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getLevelCount();
+          },
+          "Return the associated number of levels.")
+      .def(
+          "base_log",
+          [](KeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getBaseLog();
+          },
+          "Return the associated base log.")
+      .def(
+          "variance",
+          [](KeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getVariance();
+          },
+          "Return the associated noise variance.")
+      .def("__str__", [](KeyswitchKeyParam &key) { return key.toString(); })
+      .def("__repr__", [](KeyswitchKeyParam &key) { return key.toString(); })
+      .def("__hash__",
+           [](pybind11::object key) {
+             return pybind11::hash(pybind11::repr(key));
+           })
+      .doc() = "Parameters of a keyswitch key.";
+
+  // ------------------------------------------------------------------------------//
+  // PACKING KEYSWITCH KEY PARAM //
+  // ------------------------------------------------------------------------------//
+
+  struct PackingKeyswitchKeyParam {
+    Message<concreteprotocol::PackingKeyswitchKeyInfo> info;
+
+    std::string toString() {
+      std::string output = "PackingKeyswitchKeyParam(";
+      output.append("polynomial_size=");
+      output.append(
+          std::to_string(info.asReader().getParams().getPolynomialSize()));
+      output.append(", glwe_dimension=");
+      output.append(
+          std::to_string(info.asReader().getParams().getGlweDimension()));
+      output.append(", input_lwe_dimension=");
+      output.append(
+          std::to_string(info.asReader().getParams().getInputLweDimension()));
+      output.append(", level=");
+      output.append(
+          std::to_string(info.asReader().getParams().getLevelCount()));
+      output.append(", base_log=");
+      output.append(std::to_string(info.asReader().getParams().getBaseLog()));
+      output.append(", variance=");
+      output.append(std::to_string(info.asReader().getParams().getVariance()));
+      output.append(")");
+      return output;
+    }
+  };
+  pybind11::class_<PackingKeyswitchKeyParam>(m, "PackingKeyswitchKeyParam")
+      .def(
+          "input_secret_key_id",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getInputId();
+          },
+          "Return the key id of the associated input key.")
+      .def(
+          "output_secret_key_id",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getOutputId();
+          },
+          "Return the key id of the associated output key.")
+      .def(
+          "level",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getLevelCount();
+          },
+          "Return the associated number of levels.")
+      .def(
+          "base_log",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getBaseLog();
+          },
+          "Return the associated base log.")
+      .def(
+          "glwe_dimension",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getGlweDimension();
+          },
+          "Return the associated GLWE dimension.")
+      .def(
+          "polynomial_size",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getPolynomialSize();
+          },
+          "Return the associated polynomial size.")
+      .def(
+          "input_lwe_dimension",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getInputLweDimension();
+          },
+          "Return the associated input LWE dimension.")
+      .def(
+          "variance",
+          [](PackingKeyswitchKeyParam &key) {
+            return key.info.asReader().getParams().getVariance();
+          },
+          "Return the associated noise variance.")
+      .def("__str__",
+           [](PackingKeyswitchKeyParam &key) { return key.toString(); })
+      .def("__repr__",
+           [](PackingKeyswitchKeyParam &key) { return key.toString(); })
+      .def("__hash__",
+           [](pybind11::object key) {
+             return pybind11::hash(pybind11::repr(key));
+           })
+      .doc() = "Parameters of a packing keyswitch key.";
+
+  // ------------------------------------------------------------------------------//
+  // TYPE INFO //
+  // ------------------------------------------------------------------------------//
+  typedef Message<concreteprotocol::TypeInfo> TypeInfo;
+  pybind11::class_<TypeInfo>(m, "TypeInfo")
+      .def(
+          "is_plaintext",
+          [](TypeInfo &type) { return type.asReader().hasPlaintext(); },
+          "Return true if the type is plaintext")
+      .doc() = "Informations describing the type of a gate.";
+
+  // ------------------------------------------------------------------------------//
+  // RAW INFO //
+  // ------------------------------------------------------------------------------//
+  typedef Message<concreteprotocol::RawInfo> RawInfo;
+  pybind11::class_<RawInfo>(m, "RawInfo")
+      .def(
+          "get_shape",
+          [](RawInfo &raw) {
+            auto output = std::vector<int64_t>();
+            for (auto dim : raw.asReader().getShape().getDimensions()) {
+              output.push_back({dim});
             }
-            return encrypt_arguments(clientParameters, keySet, argsRef,
-                                     circuitName);
-          })
+            return output;
+          },
+          "Return the shape associated to the raw info.")
+      .def(
+          "get_integer_precision",
+          [](RawInfo &raw) { return raw.asReader().getIntegerPrecision(); },
+          "Return the integer precision associated to the raw info.")
+      .def(
+          "get_signedness",
+          [](RawInfo &raw) { return raw.asReader().getIsSigned(); },
+          "Return the signedness associated to the raw info.")
+      .doc() = "Informations describing a raw type of gate.";
+
+  // ------------------------------------------------------------------------------//
+  // GATE INFO //
+  // ------------------------------------------------------------------------------//
+  typedef Message<concreteprotocol::GateInfo> GateInfo;
+  pybind11::class_<GateInfo>(m, "GateInfo")
+      .def(
+          "get_type_info",
+          [](GateInfo &gate) -> TypeInfo {
+            return {gate.asReader().getTypeInfo()};
+          },
+          "Return the type associated to the gate.")
+      .def(
+          "get_raw_info",
+          [](GateInfo &gate) -> RawInfo {
+            return {gate.asReader().getRawInfo()};
+          },
+          "Return the raw type associated to the gate.")
+      .doc() = "Informations describing a circuit gate (input or output).";
+
+  // ------------------------------------------------------------------------------//
+  // CIRCUIT INFO //
+  // ------------------------------------------------------------------------------//
+  typedef Message<concreteprotocol::CircuitInfo> CircuitInfo;
+  pybind11::class_<CircuitInfo>(m, "CircuitInfo")
+      .def(
+          "get_name",
+          [](CircuitInfo &circuit) {
+            return circuit.asReader().getName().cStr();
+          },
+          "Return the name of the circuit")
+      .def(
+          "get_inputs",
+          [](CircuitInfo &circuit) -> std::vector<GateInfo> {
+            auto output = std::vector<GateInfo>();
+            for (auto gate : circuit.asReader().getInputs()) {
+              output.push_back({gate});
+            }
+            return output;
+          },
+          "Return the input gates")
+      .def(
+          "get_outputs",
+          [](CircuitInfo &circuit) -> std::vector<GateInfo> {
+            auto output = std::vector<GateInfo>();
+            for (auto gate : circuit.asReader().getOutputs()) {
+              output.push_back({gate});
+            }
+            return output;
+          },
+          "Return the output gates")
+      .doc() = "Informations describing a compiled circuit.";
+
+  // ------------------------------------------------------------------------------//
+  // PROGRAM INFO //
+  // ------------------------------------------------------------------------------//
+
+  struct ProgramInfo {
+    Message<concreteprotocol::ProgramInfo> programInfo;
+
+    concreteprotocol::LweCiphertextEncryptionInfo::Reader
+    inputEncryptionAt(size_t inputId, std::string circuitName) {
+      auto reader = programInfo.asReader();
+      if (!reader.hasCircuits()) {
+        throw std::runtime_error("can't get keyid: no circuit info");
+      }
+      auto circuits = reader.getCircuits();
+      for (auto circuit : circuits) {
+        if (circuit.hasName() &&
+            circuitName.compare(circuit.getName().cStr()) == 0) {
+          if (!circuit.hasInputs()) {
+            throw std::runtime_error("can't get keyid: no input");
+          }
+          auto inputs = circuit.getInputs();
+          if (inputId >= inputs.size()) {
+            throw std::runtime_error(
+                "can't get keyid: inputId bigger than number of inputs");
+          }
+          auto input = inputs[inputId];
+          if (!input.hasTypeInfo()) {
+            throw std::runtime_error(
+                "can't get keyid: input don't have typeInfo");
+          }
+          auto typeInfo = input.getTypeInfo();
+          if (!typeInfo.hasLweCiphertext()) {
+            throw std::runtime_error("can't get keyid: typeInfo don't "
+                                     "have lwe ciphertext info");
+          }
+          auto lweCt = typeInfo.getLweCiphertext();
+          if (!lweCt.hasEncryption()) {
+            throw std::runtime_error("can't get keyid: lwe ciphertext "
+                                     "don't have encryption info");
+          }
+          return lweCt.getEncryption();
+        }
+      }
+
+      throw std::runtime_error("can't get keyid: no circuit with name " +
+                               circuitName);
+    }
+  };
+  pybind11::class_<ProgramInfo>(m, "ProgramInfo")
       .def_static(
-          "decrypt_result",
-          [](::concretelang::clientlib::ClientParameters clientParameters,
-             ::concretelang::clientlib::KeySet &keySet,
-             ::concretelang::clientlib::PublicResult &publicResult,
-             const std::string &circuitName) {
-            return decrypt_result(clientParameters, keySet, publicResult,
-                                  circuitName);
-          });
-  pybind11::class_<::concretelang::clientlib::KeySetCache>(m, "KeySetCache")
-      .def(pybind11::init<std::string &>());
-
-  pybind11::class_<::concretelang::clientlib::LweSecretKeyParam>(
-      m, "LweSecretKeyParam")
-      .def("dimension", [](::concretelang::clientlib::LweSecretKeyParam &key) {
-        return key.info.asReader().getParams().getLweDimension();
-      });
-
-  pybind11::class_<::concretelang::clientlib::BootstrapKeyParam>(
-      m, "BootstrapKeyParam")
-      .def("input_secret_key_id",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getInputId();
-           })
-      .def("output_secret_key_id",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getOutputId();
-           })
-      .def("level",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getParams().getLevelCount();
-           })
-      .def("base_log",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getParams().getBaseLog();
-           })
-      .def("glwe_dimension",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getParams().getGlweDimension();
-           })
-      .def("variance",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getParams().getVariance();
-           })
-      .def("polynomial_size",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getParams().getPolynomialSize();
-           })
-      .def("input_lwe_dimension",
-           [](::concretelang::clientlib::BootstrapKeyParam &key) {
-             return key.info.asReader().getParams().getInputLweDimension();
-           });
-
-  pybind11::class_<::concretelang::clientlib::KeyswitchKeyParam>(
-      m, "KeyswitchKeyParam")
-      .def("input_secret_key_id",
-           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
-             return key.info.asReader().getInputId();
-           })
-      .def("output_secret_key_id",
-           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
-             return key.info.asReader().getOutputId();
-           })
-      .def("level",
-           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getLevelCount();
-           })
-      .def("base_log",
-           [](::concretelang::clientlib::KeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getBaseLog();
-           })
-      .def("variance", [](::concretelang::clientlib::KeyswitchKeyParam &key) {
-        return key.info.asReader().getParams().getVariance();
-      });
-
-  pybind11::class_<::concretelang::clientlib::PackingKeyswitchKeyParam>(
-      m, "PackingKeyswitchKeyParam")
-      .def("input_secret_key_id",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getInputId();
-           })
-      .def("output_secret_key_id",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getOutputId();
-           })
-      .def("level",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getLevelCount();
-           })
-      .def("base_log",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getBaseLog();
-           })
-      .def("glwe_dimension",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getGlweDimension();
-           })
-      .def("polynomial_size",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getPolynomialSize();
-           })
-      .def("input_lwe_dimension",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getInputLweDimension();
-           })
-      .def("variance",
-           [](::concretelang::clientlib::PackingKeyswitchKeyParam &key) {
-             return key.info.asReader().getParams().getVariance();
-           });
-
-  pybind11::class_<::concretelang::clientlib::ClientParameters>(
-      m, "ClientParameters")
-      .def_static("deserialize",
-                  [](const pybind11::bytes &buffer) {
-                    return clientParametersUnserialize(buffer);
-                  })
-      .def("serialize",
-           [](::concretelang::clientlib::ClientParameters &clientParameters) {
-             return pybind11::bytes(
-                 clientParametersSerialize(clientParameters));
-           })
-      .def("lwe_secret_key_param",
-           [](::concretelang::clientlib::ClientParameters &clientParameters,
-              size_t keyId) {
-             if (keyId >= clientParameters.secretKeys.size()) {
-               throw std::runtime_error("keyId bigger than the number of keys");
-             }
-             return clientParameters.secretKeys[keyId];
-           })
-      .def("input_keyid_at",
-           [](::concretelang::clientlib::ClientParameters &clientParameters,
-              size_t inputIdx, std::string circuitName) {
-             auto encryption = clientParametersInputEncryptionAt(
-                 clientParameters, inputIdx, circuitName);
-             return encryption.getKeyId();
-           })
-      .def("input_variance_at",
-           [](::concretelang::clientlib::ClientParameters &clientParameters,
-              size_t inputIdx, std::string circuitName) {
-             auto encryption = clientParametersInputEncryptionAt(
-                 clientParameters, inputIdx, circuitName);
-             return encryption.getVariance();
-           })
+          "deserialize",
+          [](const pybind11::bytes &buffer) {
+            auto programInfo = Message<concreteprotocol::ProgramInfo>();
+            if (programInfo.readJsonFromString(buffer).has_failure()) {
+              throw std::runtime_error("Failed to deserialize program info");
+            }
+            return ProgramInfo{programInfo};
+          },
+          "Deserialize a ProgramInfo from bytes.", arg("bytes"))
+      .def(
+          "serialize",
+          [](ProgramInfo &programInfo) {
+            auto programInfoSerialize = [](ProgramInfo &params) {
+              auto maybeJson = params.programInfo.writeJsonToString();
+              if (maybeJson.has_failure()) {
+                throw std::runtime_error("Failed to serialize program info");
+              }
+              return maybeJson.value();
+            };
+            return pybind11::bytes(programInfoSerialize(programInfo));
+          },
+          "Serialize a ProgramInfo to bytes.")
+      .def(
+          "input_keyid_at",
+          [](ProgramInfo &programInfo, size_t pos, std::string circuitName) {
+            auto encryption = programInfo.inputEncryptionAt(pos, circuitName);
+            return encryption.getKeyId();
+          },
+          "Return the key id associated to the argument `pos` of circuit "
+          "`circuit_name`.",
+          arg("pos"), arg("circuit_name"))
+      .def(
+          "input_variance_at",
+          [](ProgramInfo &programInfo, size_t pos, std::string circuitName) {
+            auto encryption = programInfo.inputEncryptionAt(pos, circuitName);
+            return encryption.getVariance();
+          },
+          "Return the noise variance associated to the argument `pos` of "
+          "circuit `circuit_name`.",
+          arg("pos"), arg("circuit_name"))
       .def("function_list",
-           [](::concretelang::clientlib::ClientParameters &clientParameters) {
+           [](ProgramInfo &programInfo) {
              std::vector<std::string> result;
              for (auto circuit :
-                  clientParameters.programInfo.asReader().getCircuits()) {
+                  programInfo.programInfo.asReader().getCircuits()) {
                result.push_back(circuit.getName());
              }
              return result;
            })
-      .def("output_signs",
-           [](::concretelang::clientlib::ClientParameters &clientParameters) {
-             std::vector<bool> result;
-             for (auto output : clientParameters.programInfo.asReader()
-                                    .getCircuits()[0]
-                                    .getOutputs()) {
-               if (output.getTypeInfo().hasLweCiphertext() &&
-                   output.getTypeInfo()
-                       .getLweCiphertext()
-                       .getEncoding()
-                       .hasInteger()) {
-                 result.push_back(output.getTypeInfo()
-                                      .getLweCiphertext()
-                                      .getEncoding()
-                                      .getInteger()
-                                      .getIsSigned());
-               } else {
-                 result.push_back(true);
-               }
-             }
-             return result;
-           })
-      .def("input_signs",
-           [](::concretelang::clientlib::ClientParameters &clientParameters) {
-             std::vector<bool> result;
-             for (auto input : clientParameters.programInfo.asReader()
+      .def(
+          "output_signs",
+          [](ProgramInfo &programInfo) {
+            std::vector<bool> result;
+            for (auto output : programInfo.programInfo.asReader()
                                    .getCircuits()[0]
-                                   .getInputs()) {
-               if (input.getTypeInfo().hasLweCiphertext() &&
-                   input.getTypeInfo()
-                       .getLweCiphertext()
-                       .getEncoding()
-                       .hasInteger()) {
-                 result.push_back(input.getTypeInfo()
-                                      .getLweCiphertext()
-                                      .getEncoding()
-                                      .getInteger()
-                                      .getIsSigned());
-               } else {
-                 result.push_back(true);
-               }
-             }
-             return result;
-           })
-      .def_readonly("secret_keys",
-                    &::concretelang::clientlib::ClientParameters::secretKeys)
-      .def_readonly("bootstrap_keys",
-                    &::concretelang::clientlib::ClientParameters::bootstrapKeys)
-      .def_readonly("keyswitch_keys",
-                    &::concretelang::clientlib::ClientParameters::keyswitchKeys)
-      .def_readonly(
+                                   .getOutputs()) {
+              if (output.getTypeInfo().hasLweCiphertext() &&
+                  output.getTypeInfo()
+                      .getLweCiphertext()
+                      .getEncoding()
+                      .hasInteger()) {
+                result.push_back(output.getTypeInfo()
+                                     .getLweCiphertext()
+                                     .getEncoding()
+                                     .getInteger()
+                                     .getIsSigned());
+              } else {
+                result.push_back(true);
+              }
+            }
+            return result;
+          },
+          "Return the signedness of the output of the first circuit.")
+      .def(
+          "input_signs",
+          [](ProgramInfo &programInfo) {
+            std::vector<bool> result;
+            for (auto input : programInfo.programInfo.asReader()
+                                  .getCircuits()[0]
+                                  .getInputs()) {
+              if (input.getTypeInfo().hasLweCiphertext() &&
+                  input.getTypeInfo()
+                      .getLweCiphertext()
+                      .getEncoding()
+                      .hasInteger()) {
+                result.push_back(input.getTypeInfo()
+                                     .getLweCiphertext()
+                                     .getEncoding()
+                                     .getInteger()
+                                     .getIsSigned());
+              } else {
+                result.push_back(true);
+              }
+            }
+            return result;
+          },
+          "Return the signedness of the input of the first circuit.")
+      .def(
+          "secret_keys",
+          [](ProgramInfo &programInfo) {
+            auto secretKeys = std::vector<LweSecretKeyParam>();
+            for (auto key : programInfo.programInfo.asReader()
+                                .getKeyset()
+                                .getLweSecretKeys()) {
+              secretKeys.push_back(LweSecretKeyParam{key});
+            }
+            return secretKeys;
+          },
+          "Return the parameters of the secret keys for this program.")
+      .def(
+          "bootstrap_keys",
+          [](ProgramInfo &programInfo) {
+            auto bootstrapKeys = std::vector<BootstrapKeyParam>();
+            for (auto key : programInfo.programInfo.asReader()
+                                .getKeyset()
+                                .getLweBootstrapKeys()) {
+              bootstrapKeys.push_back(BootstrapKeyParam{key});
+            }
+            return bootstrapKeys;
+          },
+          "Return the parameters of the bootstrap keys for this program.")
+      .def(
+          "keyswitch_keys",
+          [](ProgramInfo &programInfo) {
+            auto keyswitchKeys = std::vector<KeyswitchKeyParam>();
+            for (auto key : programInfo.programInfo.asReader()
+                                .getKeyset()
+                                .getLweKeyswitchKeys()) {
+              keyswitchKeys.push_back(KeyswitchKeyParam{key});
+            }
+            return keyswitchKeys;
+          },
+          "Return the parameters of the keyswitch keys for this program.")
+      .def(
           "packing_keyswitch_keys",
-          &::concretelang::clientlib::ClientParameters::packingKeyswitchKeys);
+          [](ProgramInfo &programInfo) {
+            auto packingKeyswitchKeys = std::vector<PackingKeyswitchKeyParam>();
+            for (auto key : programInfo.programInfo.asReader()
+                                .getKeyset()
+                                .getPackingKeyswitchKeys()) {
+              packingKeyswitchKeys.push_back(PackingKeyswitchKeyParam{key});
+            }
+            return packingKeyswitchKeys;
+          },
+          "Return the parameters of the packing keyswitch keys for this "
+          "program.")
+      .def(
+          "get_circuits",
+          [](ProgramInfo &programInfo) {
+            auto output = std::vector<CircuitInfo>();
+            for (auto circuit :
+                 programInfo.programInfo.asReader().getCircuits()) {
+              output.push_back(circuit);
+            }
+            return output;
+          },
+          "Return the circuits associated to the program.")
+      .def(
+          "get_circuit",
+          [](ProgramInfo &programInfo, std::string &name) -> CircuitInfo {
+            for (auto circuit :
+                 programInfo.programInfo.asReader().getCircuits()) {
+              if (circuit.getName() == name) {
+                return circuit;
+              }
+            }
+            throw std::runtime_error("couldn't find circuit.");
+          },
+          "Return the circuit associated to the program with given name.")
+      .doc() = "Informations describing a compiled program.";
+
+  // ------------------------------------------------------------------------------//
+  // LWE SECRET KEY //
+  // ------------------------------------------------------------------------------//
 
   pybind11::class_<LweSecretKey>(m, "LweSecretKey")
       .def_static(
           "deserialize",
-          [](pybind11::bytes buffer,
-             ::concretelang::clientlib::LweSecretKeyParam &params) {
+          [](pybind11::bytes buffer, LweSecretKeyParam &params) {
             std::string buffer_str = buffer;
             auto lwe_dim = params.info.asReader().getParams().getLweDimension();
             auto lwe_size = concrete_cpu_lwe_secret_key_size_u64(lwe_dim);
@@ -1401,27 +1220,30 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             return LweSecretKey(
                 std::make_shared<std::vector<uint64_t>>(std::move(lwe_sk)),
                 params.info);
-          })
-      .def("serialize",
-           [](LweSecretKey &lweSk) {
-             auto skBuffer = lweSk.getBuffer();
-             auto lwe_dimension =
-                 lweSk.getInfo().asReader().getParams().getLweDimension();
-             auto buffer_size =
-                 concrete_cpu_lwe_secret_key_buffer_size_u64(lwe_dimension);
-             std::vector<uint8_t> buffer(buffer_size, 0);
-             buffer_size = concrete_cpu_serialize_lwe_secret_key_u64(
-                 skBuffer.data(), lwe_dimension, buffer.data(), buffer_size);
-             if (buffer_size == 0) {
-               throw std::runtime_error("couldn't serialize the secret key");
-             }
-             auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
-             return bytes;
-           })
+          },
+          "Deserialize an LweSecretKet from bytes and associated parameters.",
+          arg("buffer"), arg("params"))
+      .def(
+          "serialize",
+          [](LweSecretKey &lweSk) {
+            auto skBuffer = lweSk.getBuffer();
+            auto lwe_dimension =
+                lweSk.getInfo().asReader().getParams().getLweDimension();
+            auto buffer_size =
+                concrete_cpu_lwe_secret_key_buffer_size_u64(lwe_dimension);
+            std::vector<uint8_t> buffer(buffer_size, 0);
+            buffer_size = concrete_cpu_serialize_lwe_secret_key_u64(
+                skBuffer.data(), lwe_dimension, buffer.data(), buffer_size);
+            if (buffer_size == 0) {
+              throw std::runtime_error("couldn't serialize the secret key");
+            }
+            auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
+            return bytes;
+          },
+          "Serialize an LweSecretKey to bytes.")
       .def_static(
           "deserialize_from_glwe",
-          [](pybind11::bytes buffer,
-             ::concretelang::clientlib::LweSecretKeyParam &params) {
+          [](pybind11::bytes buffer, LweSecretKeyParam &params) {
             std::string buffer_str = buffer;
             auto lwe_dim = params.info.asReader().getParams().getLweDimension();
             auto glwe_sk_size = concrete_cpu_lwe_secret_key_size_u64(lwe_dim);
@@ -1433,380 +1255,667 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             return LweSecretKey(
                 std::make_shared<std::vector<uint64_t>>(std::move(glwe_sk)),
                 params.info);
-          })
-      .def("serialize_as_glwe",
-           [](LweSecretKey &lweSk, size_t glwe_dimension,
-              size_t polynomial_size) {
-             auto skBuffer = lweSk.getBuffer();
-             auto buffer_size = concrete_cpu_glwe_secret_key_buffer_size_u64(
-                 glwe_dimension, polynomial_size);
-             std::vector<uint8_t> buffer(buffer_size, 0);
-             buffer_size = concrete_cpu_serialize_glwe_secret_key_u64(
-                 skBuffer.data(), glwe_dimension, polynomial_size,
-                 buffer.data(), buffer_size);
-             if (buffer_size == 0) {
-               throw std::runtime_error("couldn't serialize the secret key");
-             }
-             auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
-             return bytes;
-           })
-      .def_property_readonly("param", [](LweSecretKey &lweSk) {
-        return ::concretelang::clientlib::LweSecretKeyParam{lweSk.getInfo()};
-      });
+          },
+          "Deserialize an LweSecretKey from glwe encoded (tfhe-rs compatible) "
+          "bytes and associated parameters.",
+          arg("buffer"), arg("params"))
+      .def(
+          "serialize_as_glwe",
+          [](LweSecretKey &lweSk, size_t glwe_dimension,
+             size_t polynomial_size) {
+            auto skBuffer = lweSk.getBuffer();
+            auto buffer_size = concrete_cpu_glwe_secret_key_buffer_size_u64(
+                glwe_dimension, polynomial_size);
+            std::vector<uint8_t> buffer(buffer_size, 0);
+            buffer_size = concrete_cpu_serialize_glwe_secret_key_u64(
+                skBuffer.data(), glwe_dimension, polynomial_size, buffer.data(),
+                buffer_size);
+            if (buffer_size == 0) {
+              throw std::runtime_error("couldn't serialize the secret key");
+            }
+            auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
+            return bytes;
+          },
+          "Serialize an LweSecretKey to glwe encoded (tfhe-rs compatible) "
+          "bytes and associated parameters.",
+          arg("glwe_dimension"), arg("polynomial_size"))
+      .def_property_readonly(
+          "param",
+          [](LweSecretKey &lweSk) {
+            return LweSecretKeyParam{lweSk.getInfo()};
+          },
+          "Parameters associated to the key.")
+      .doc() = "Lwe secret key.";
 
-  pybind11::class_<::concretelang::clientlib::KeySet>(m, "KeySet")
-      .def_static("deserialize",
-                  [](const pybind11::bytes &buffer) {
-                    std::unique_ptr<::concretelang::clientlib::KeySet> result =
-                        keySetUnserialize(buffer);
-                    return result;
-                  })
-      .def("serialize",
-           [](::concretelang::clientlib::KeySet &keySet) {
-             return pybind11::bytes(keySetSerialize(keySet));
-           })
-      .def("get_lwe_secret_key",
-           [](::concretelang::clientlib::KeySet &keySet, size_t keyIndex) {
-             auto secretKeys = keySet.keyset.client.lweSecretKeys;
-             if (keyIndex >= secretKeys.size()) {
-               throw std::runtime_error(
-                   "keyIndex is bigger than the number of keys");
-             }
-             return secretKeys[keyIndex];
-           })
-      .def("get_evaluation_keys",
-           [](::concretelang::clientlib::KeySet &keySet) {
-             return ::concretelang::clientlib::EvaluationKeys{
-                 keySet.keyset.server};
-           });
+  // ------------------------------------------------------------------------------//
+  // KEYSET CACHE //
+  // ------------------------------------------------------------------------------//
 
-  pybind11::class_<::concretelang::clientlib::SharedScalarOrTensorData>(m,
-                                                                        "Value")
-      .def_static("deserialize",
-                  [](const pybind11::bytes &buffer) {
-                    return valueUnserialize(buffer);
-                  })
+  pybind11::class_<KeysetCache>(m, "KeysetCache")
+      .def(pybind11::init<std::string &>(), arg("backing_directory_path"))
+      .doc() = "Local keysets cache.";
+
+  // ------------------------------------------------------------------------------//
+  // SERVER KEYSET //
+  // ------------------------------------------------------------------------------//
+  pybind11::class_<ServerKeyset>(m, "ServerKeyset")
+      .def_static(
+          "deserialize",
+          [](const pybind11::bytes &buffer) {
+            auto serverKeysetProto = Message<concreteprotocol::ServerKeyset>();
+            auto maybeError = serverKeysetProto.readBinaryFromString(
+                buffer, mlir::concretelang::python::DESER_OPTIONS);
+            if (maybeError.has_failure()) {
+              throw std::runtime_error("Failed to deserialize server keyset." +
+                                       maybeError.as_failure().error().mesg);
+            }
+            return ServerKeyset::fromProto(serverKeysetProto);
+          },
+          "Deserialize a ServerKeyset from bytes.", arg("bytes"))
       .def(
           "serialize",
-          [](const ::concretelang::clientlib::SharedScalarOrTensorData &value) {
-            return pybind11::bytes(valueSerialize(value));
-          });
+          [](ServerKeyset &serverKeyset) {
+            auto serverKeysetSerialize = [](ServerKeyset &serverKeyset) {
+              auto serverKeysetProto = serverKeyset.toProto();
+              auto maybeBuffer = serverKeysetProto.writeBinaryToString();
+              if (maybeBuffer.has_failure()) {
+                throw std::runtime_error("Failed to serialize server keyset.");
+              }
+              return maybeBuffer.value();
+            };
+            return pybind11::bytes(serverKeysetSerialize(serverKeyset));
+          },
+          "Serialize a ServerKeyset to bytes.")
+      .doc() = "Server-side / Evaluation keyset";
 
-  pybind11::class_<ServerProgram>(m, "ServerProgram")
-      .def_static("load",
-                  [](LibrarySupport_Py &support, bool useSimulation) {
-                    GET_OR_THROW_EXPECTED(auto programInfo,
-                                          support.support.getProgramInfo());
-                    auto sharedLibPath = support.support.getSharedLibPath();
-                    GET_OR_THROW_RESULT(
-                        auto result,
-                        ServerProgram::load(programInfo.asReader(),
-                                            sharedLibPath, useSimulation));
-                    return result;
-                  })
-      .def("get_server_circuit", [](ServerProgram &program,
-                                    const std::string &circuitName) {
-        GET_OR_THROW_RESULT(auto result, program.getServerCircuit(circuitName));
-        return result;
-      });
+  // ------------------------------------------------------------------------------//
+  // CLIENT KEYSET //
+  // ------------------------------------------------------------------------------//
+  pybind11::class_<ClientKeyset>(m, "ClientKeyset")
+      .def("get_secret_keys",
+           [](ClientKeyset &keyset) { return keyset.lweSecretKeys; })
+      .doc() = "Client-side / Encryption keyset";
+
+  // ------------------------------------------------------------------------------//
+  // KEYSET //
+  // ------------------------------------------------------------------------------//
+
+  pybind11::class_<Keyset>(m, "Keyset")
+      .def(init([](ProgramInfo programInfo, std::optional<KeysetCache> cache,
+                   uint64_t secretSeedMsb, uint64_t secretSeedLsb,
+                   uint64_t encSeedMsb, uint64_t encSeedLsb,
+                   std::optional<std::map<uint32_t, LweSecretKey>>
+                       initialLweSecretKeys) {
+             SignalGuard const signalGuard;
+
+             auto secretSeed =
+                 (((__uint128_t)secretSeedMsb) << 64) | secretSeedLsb;
+             auto encryptionSeed =
+                 (((__uint128_t)encSeedMsb) << 64) | encSeedLsb;
+
+             if (!initialLweSecretKeys.has_value()) {
+               initialLweSecretKeys = std::map<uint32_t, LweSecretKey>();
+             }
+
+             if (cache) {
+               GET_OR_THROW_RESULT(
+                   Keyset keyset,
+                   (*cache).getKeyset(
+                       programInfo.programInfo.asReader().getKeyset(),
+                       secretSeed, encryptionSeed,
+                       initialLweSecretKeys.value()));
+               return std::make_unique<Keyset>(std::move(keyset));
+             } else {
+               ::concretelang::csprng::SecretCSPRNG secCsprng(secretSeed);
+               ::concretelang::csprng::EncryptionCSPRNG encCsprng(
+                   encryptionSeed);
+               auto keyset =
+                   Keyset(programInfo.programInfo.asReader().getKeyset(),
+                          secCsprng, encCsprng, initialLweSecretKeys.value());
+               return std::make_unique<Keyset>(std::move(keyset));
+             }
+           }),
+           arg("program_info"), arg("keyset_cache"), arg("secret_seed_msb") = 0,
+           arg("secret_seed_lsb") = 0, arg("encryption_seed_msb") = 0,
+           arg("encryption_seed_lsb") = 0,
+           arg("initial_lwe_secret_keys") = std::nullopt)
+      .def_static(
+          "deserialize",
+          [](const pybind11::bytes &buffer) {
+            auto keysetProto = Message<concreteprotocol::Keyset>();
+            auto maybeError = keysetProto.readBinaryFromString(
+                buffer, mlir::concretelang::python::DESER_OPTIONS);
+            if (maybeError.has_failure()) {
+              throw std::runtime_error("Failed to deserialize keyset." +
+                                       maybeError.as_failure().error().mesg);
+            }
+            auto keyset = Keyset::fromProto(keysetProto);
+            return std::make_unique<Keyset>(std::move(keyset));
+          },
+          "Deserialize a Keyset from bytes.", arg("bytes"))
+      .def(
+          "serialize",
+          [](Keyset &keySet) {
+            auto keySetSerialize = [](Keyset &keyset) {
+              auto keysetProto = keyset.toProto();
+              auto maybeBuffer = keysetProto.writeBinaryToString();
+              if (maybeBuffer.has_failure()) {
+                throw std::runtime_error("Failed to serialize keys.");
+              }
+              return maybeBuffer.value();
+            };
+            return pybind11::bytes(keySetSerialize(keySet));
+          },
+          "Serialize a Keyset to bytes.")
+      .def(
+          "serialize_lwe_secret_key_as_glwe",
+          [](Keyset &keyset, size_t keyIndex, size_t glwe_dimension,
+             size_t polynomial_size) {
+            auto secretKeys = keyset.client.lweSecretKeys;
+            if (keyIndex >= secretKeys.size()) {
+              throw std::runtime_error(
+                  "keyIndex is bigger than the number of keys");
+            }
+            auto secretKey = secretKeys[keyIndex];
+            auto skBuffer = secretKey.getBuffer();
+            auto buffer_size = concrete_cpu_glwe_secret_key_buffer_size_u64(
+                glwe_dimension, polynomial_size);
+            std::vector<uint8_t> buffer(buffer_size, 0);
+            buffer_size = concrete_cpu_serialize_glwe_secret_key_u64(
+                skBuffer.data(), glwe_dimension, polynomial_size, buffer.data(),
+                buffer_size);
+            if (buffer_size == 0) {
+              throw std::runtime_error("couldn't serialize the secret key");
+            }
+            auto bytes = pybind11::bytes((char *)buffer.data(), buffer_size);
+            return bytes;
+          },
+          "Serialize the `key_id` secret key as a tfhe-rs GLWE key with "
+          "parameters `glwe_dim` and `poly_size`.",
+          arg("key_id"), arg("glwe_dim"), arg("poly_size"))
+      .def(
+          "get_server_keys", [](Keyset &keyset) { return keyset.server; },
+          "Return the associated ServerKeyset.")
+      .def(
+          "get_client_keys", [](Keyset &keyset) { return keyset.client; },
+          "Return the associated ClientKeyset.")
+      .doc() =
+      "Complete keyset containing both client-side and server-side keys.";
+
+  // ------------------------------------------------------------------------------//
+  // LIBRARY //
+  // ------------------------------------------------------------------------------//
+
+  pybind11::class_<Library>(m, "Library")
+      .def(init([](std::string output_dir_path) -> Library {
+             return Library(output_dir_path);
+           }),
+           arg("output_dir_path"))
+      .def(
+          "get_program_info",
+          [](Library &library) {
+            GET_OR_THROW_RESULT(auto pi, library.getProgramInfo());
+            return ProgramInfo{pi};
+          },
+          "Return the program info associated to the library.")
+      .def(
+          "get_output_dir_path",
+          [](Library &library) { return library.getOutputDirPath(); },
+          "Return the path to library output directory.")
+      .def(
+          "get_shared_lib_path",
+          [](Library &library) { return library.getSharedLibraryPath(); },
+          "Return the path to the shared library.")
+      .def(
+          "get_program_info_path",
+          [](Library &library) { return library.getProgramInfoPath(); },
+          "Return the path to the program info file.")
+      .def(
+          "get_program_compilation_feedback",
+          [](Library &library) {
+            auto path = library.getCompilationFeedbackPath();
+            GET_OR_THROW_RESULT(auto feedback,
+                                ProgramCompilationFeedback::load(path));
+            return feedback;
+          },
+          "Return the associated program compilation feedback.")
+      .doc() = "Library object representing the output of a compilation.";
+
+  // ------------------------------------------------------------------------------//
+  // COMPILER //
+  // ------------------------------------------------------------------------------//
+
+  struct Compiler {
+    std::string outputPath;
+    std::string runtimeLibraryPath;
+    bool generateSharedLib;
+    bool generateStaticLib;
+    bool generateClientParameters;
+    bool generateCompilationFeedback;
+  };
+  pybind11::class_<Compiler>(m, "Compiler")
+      .def(init([](std::string outputPath, std::string runtimeLibraryPath,
+                   bool generateSharedLib, bool generateStaticLib,
+                   bool generateProgramInfo, bool generateCompilationFeedback) {
+             if (!std::filesystem::exists(outputPath)) {
+               std::filesystem::create_directory(outputPath);
+             }
+             return Compiler{outputPath.c_str(),  runtimeLibraryPath.c_str(),
+                             generateSharedLib,   generateStaticLib,
+                             generateProgramInfo, generateCompilationFeedback};
+           }),
+           arg("output_path"), arg("runtime_lib_path"),
+           arg("generate_shared_lib") = true, arg("generate_static_lib") = true,
+           arg("generate_program_info") = true,
+           arg("generate_compilation_feedback") = true)
+      .def(
+          "compile",
+          [](Compiler &support, std::string mlir_program,
+             mlir::concretelang::CompilationOptions options) {
+            SignalGuard signalGuard;
+            llvm::SourceMgr sm;
+            sm.AddNewSourceBuffer(
+                llvm::MemoryBuffer::getMemBuffer(mlir_program.c_str()),
+                llvm::SMLoc());
+
+            // Setup the compiler engine
+            auto context = CompilationContext::createShared();
+            concretelang::CompilerEngine engine(context);
+            engine.setCompilationOptions(options);
+
+            // Compile to a library
+            GET_OR_THROW_EXPECTED(
+                auto library,
+                engine.compile(
+                    sm, support.outputPath, support.runtimeLibraryPath,
+                    support.generateSharedLib, support.generateStaticLib,
+                    support.generateClientParameters,
+                    support.generateCompilationFeedback));
+            return library;
+          },
+          "Compile `mlir_program` using the `options` compilation options.",
+          arg("mlir_program"), arg("options"))
+      .def(
+          "compile",
+          [](Compiler &support, pybind11::object mlir_module,
+             mlir::concretelang::CompilationOptions options,
+             std::shared_ptr<mlir::concretelang::CompilationContext> context) {
+            SignalGuard signalGuard;
+            mlir::ModuleOp module =
+                unwrap(mlirPythonCapsuleToModule(mlir_module.ptr())).clone();
+
+            // Setup the compiler engine
+            concretelang::CompilerEngine engine(context);
+            engine.setCompilationOptions(options);
+
+            // Compile to a library
+            GET_OR_THROW_EXPECTED(
+                auto library,
+                engine.compile(
+                    module, support.outputPath, support.runtimeLibraryPath,
+                    support.generateSharedLib, support.generateStaticLib,
+                    support.generateClientParameters,
+                    support.generateCompilationFeedback));
+            return library;
+          },
+          "Compile the `mlir_module` module with `options` compilation "
+          "options, under the `context` compilation context.",
+          arg("mlir_module"), arg("options"), arg("context").none(false))
+      .doc() = "Provides compilation facility.";
+
+  // ------------------------------------------------------------------------------//
+  // TRANSPORT VALUE //
+  // ------------------------------------------------------------------------------//
+
+  pybind11::class_<TransportValue>(m, "TransportValue")
+      .def_static(
+          "deserialize",
+          [](const pybind11::bytes &buffer) {
+            auto inner = TransportValue();
+            if (inner
+                    .readBinaryFromString(
+                        buffer, mlir::concretelang::python::DESER_OPTIONS)
+                    .has_failure()) {
+              throw std::runtime_error("Failed to deserialize TransportValue");
+            }
+            return TransportValue{inner};
+          },
+          "Deserialize a TransportValue from bytes.", arg("bytes"))
+      .def(
+          "serialize",
+          [](const TransportValue &value) {
+            auto valueSerialize = [](const TransportValue &value) {
+              auto maybeString = value.writeBinaryToString();
+              if (maybeString.has_failure()) {
+                throw std::runtime_error("Failed to serialize TransportValue");
+              }
+              return maybeString.value();
+            };
+            return pybind11::bytes(valueSerialize(value));
+          },
+          "Serialize a TransportValue to bytes")
+      .doc() = "Public/Transportable value.";
+
+  // ------------------------------------------------------------------------------//
+  // VALUE //
+  // ------------------------------------------------------------------------------//
+
+  typedef std::variant<int8_t, int16_t, int32_t, int64_t, uint8_t, uint16_t,
+                       uint32_t, uint64_t, array>
+      PyValType;
+
+  pybind11::class_<Value>(m, "Value")
+      .def(init([](int64_t scalar) { return Value{Tensor<int64_t>(scalar)}; }),
+           arg("input"))
+      .def(
+          init([](uint64_t scalar) { return Value{Tensor<uint64_t>(scalar)}; }),
+          arg("input"))
+      .def(init([](int32_t scalar) { return Value{Tensor<int32_t>(scalar)}; }),
+           arg("input"))
+      .def(
+          init([](uint32_t scalar) { return Value{Tensor<uint32_t>(scalar)}; }),
+          arg("input"))
+      .def(init([](int16_t scalar) { return Value{Tensor<int16_t>(scalar)}; }),
+           arg("input"))
+      .def(
+          init([](uint16_t scalar) { return Value{Tensor<uint16_t>(scalar)}; }),
+          arg("input"))
+      .def(init([](int8_t scalar) { return Value{Tensor<int8_t>(scalar)}; }),
+           arg("input"))
+      .def(init([](uint8_t scalar) { return Value{Tensor<uint8_t>(scalar)}; }),
+           arg("input"))
+      .def(init([](array input) -> Value {
+             if (input.dtype().kind() == 'i') {
+               if (input.dtype().itemsize() == 1) {
+                 return Value{::arrayToTensor<int8_t>(input)};
+               }
+               if (input.dtype().itemsize() == 2) {
+                 return Value{::arrayToTensor<int16_t>(input)};
+               }
+               if (input.dtype().itemsize() == 4) {
+                 return Value{::arrayToTensor<int32_t>(input)};
+               }
+               if (input.dtype().itemsize() == 8) {
+                 return Value{::arrayToTensor<int64_t>(input)};
+               }
+             }
+             if (input.dtype().kind() == 'u') {
+               if (input.dtype().itemsize() == 1) {
+                 return Value{::arrayToTensor<uint8_t>(input)};
+               }
+               if (input.dtype().itemsize() == 2) {
+                 return Value{::arrayToTensor<uint16_t>(input)};
+               }
+               if (input.dtype().itemsize() == 4) {
+                 return Value{::arrayToTensor<uint32_t>(input)};
+               }
+               if (input.dtype().itemsize() == 8) {
+                 return Value{::arrayToTensor<uint64_t>(input)};
+               }
+             }
+             throw std::runtime_error(
+                 "Values can only be constructed from arrays "
+                 "of signed and unsigned integers.");
+           }),
+           arg("input"))
+      .def(init([](pybind11::object object) -> Value {
+             std::string message =
+                 "Failed to create value from input. Incompatible type: ";
+             message.append(std::string{pybind11::str(object.get_type())});
+             message.append(" . Expected int or np.ndarray.");
+             throw std::runtime_error(message);
+           }),
+           arg("input"))
+      .def(
+          "to_py_val",
+          [](Value &value) -> PyValType {
+            if (value.isScalar()) {
+              if (value.hasElementType<int8_t>()) {
+                return {value.getTensor<int8_t>()->values[0]};
+              }
+              if (value.hasElementType<int16_t>()) {
+                return {value.getTensor<int16_t>()->values[0]};
+              }
+              if (value.hasElementType<int32_t>()) {
+                return {value.getTensor<int32_t>()->values[0]};
+              }
+              if (value.hasElementType<int64_t>()) {
+                return {value.getTensor<int64_t>()->values[0]};
+              }
+              if (value.hasElementType<uint8_t>()) {
+                return {value.getTensor<uint8_t>()->values[0]};
+              }
+              if (value.hasElementType<uint16_t>()) {
+                return {value.getTensor<uint16_t>()->values[0]};
+              }
+              if (value.hasElementType<uint32_t>()) {
+                return {value.getTensor<uint32_t>()->values[0]};
+              }
+              if (value.hasElementType<uint64_t>()) {
+                return {value.getTensor<uint64_t>()->values[0]};
+              }
+            } else {
+              if (value.hasElementType<int8_t>()) {
+                return {tensorToArray(value.getTensor<int8_t>().value())};
+              }
+              if (value.hasElementType<int16_t>()) {
+                return {tensorToArray(value.getTensor<int16_t>().value())};
+              }
+              if (value.hasElementType<int32_t>()) {
+                return {tensorToArray(value.getTensor<int32_t>().value())};
+              }
+              if (value.hasElementType<int64_t>()) {
+                return {tensorToArray(value.getTensor<int64_t>().value())};
+              }
+              if (value.hasElementType<uint8_t>()) {
+                return {tensorToArray(value.getTensor<uint8_t>().value())};
+              }
+              if (value.hasElementType<uint16_t>()) {
+                return {tensorToArray(value.getTensor<uint16_t>().value())};
+              }
+              if (value.hasElementType<uint32_t>()) {
+                return {tensorToArray(value.getTensor<uint32_t>().value())};
+              }
+              if (value.hasElementType<uint64_t>()) {
+                return {tensorToArray(value.getTensor<uint64_t>().value())};
+              }
+            }
+            throw std::invalid_argument("Value has insupported scalar type.");
+          },
+          "Return the inner value as a python type.")
+      .def(
+          "is_scalar", [](Value &val) { return val.isScalar(); },
+          "Return whether the value is a scalar.")
+      .def(
+          "is_tensor", [](Value &val) { return !val.isScalar(); },
+          "Return whether the value is a tensor.")
+      .def(
+          "get_shape", [](Value &val) { return val.getDimensions(); },
+          "Return the shape of the value.")
+      .doc() = "Private / Runtime value.";
+
+  // ------------------------------------------------------------------------------//
+  // SERVER CIRCUIT //
+  // ------------------------------------------------------------------------------//
 
   pybind11::class_<ServerCircuit>(m, "ServerCircuit")
-      .def("call",
-           [](ServerCircuit &circuit,
-              ::concretelang::clientlib::PublicArguments &publicArguments,
-              ::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
-             SignalGuard signalGuard;
-             pybind11::gil_scoped_release release;
-             auto keyset = evaluationKeys.keyset;
-             auto values = publicArguments.values;
-             GET_OR_THROW_RESULT(auto output, circuit.call(keyset, values));
-             ::concretelang::clientlib::PublicResult res{output};
-             return std::make_unique<::concretelang::clientlib::PublicResult>(
-                 std::move(res));
-           })
-      .def("simulate",
-           [](ServerCircuit &circuit,
-              ::concretelang::clientlib::PublicArguments &publicArguments) {
-             pybind11::gil_scoped_release release;
-             auto values = publicArguments.values;
-             GET_OR_THROW_RESULT(auto output, circuit.simulate(values));
-             ::concretelang::clientlib::PublicResult res{output};
-             return std::make_unique<::concretelang::clientlib::PublicResult>(
-                 std::move(res));
-           });
+      .def(
+          "call",
+          [](ServerCircuit &circuit, std::vector<TransportValue> args,
+             ServerKeyset keyset) {
+            SignalGuard signalGuard;
+            pybind11::gil_scoped_release release;
+            GET_OR_THROW_RESULT(auto output, circuit.call(keyset, args));
+            return output;
+          },
+          "Perform circuit call with `args` arguments using the `keyset` "
+          "ServerKeyset.",
+          arg("args"), arg("keyset"))
+      .def(
+          "simulate",
+          [](ServerCircuit &circuit, std::vector<TransportValue> &args) {
+            pybind11::gil_scoped_release release;
+            GET_OR_THROW_RESULT(auto output, circuit.simulate(args));
+            return output;
+          },
+          "Perform circuit simulation with `args` arguments.", arg("args"))
+      .doc() = "Server-side / Evaluation circuit.";
 
-  pybind11::class_<::concretelang::clientlib::ValueExporter>(m, "ValueExporter")
-      .def_static(
-          "create",
-          [](::concretelang::clientlib::KeySet &keySet,
-             ::concretelang::clientlib::ClientParameters &clientParameters,
-             const std::string &circuitName) {
-            return createValueExporter(keySet, clientParameters, circuitName);
-          })
-      .def("export_scalar",
-           [](::concretelang::clientlib::ValueExporter &exporter,
-              size_t position, int64_t value) {
-             SignalGuard signalGuard;
-             pybind11::gil_scoped_release release;
+  // ------------------------------------------------------------------------------//
+  // SERVER PROGRAM //
+  // ------------------------------------------------------------------------------//
 
-             auto info = exporter.circuit.getCircuitInfo()
-                             .asReader()
-                             .getInputs()[position];
-             auto typeTransformer = getPythonTypeTransformer(info);
-             auto result = exporter.circuit.prepareInput(
-                 typeTransformer({Tensor<int64_t>(value)}), position);
+  pybind11::class_<ServerProgram>(m, "ServerProgram")
+      .def(init([](Library &library, bool useSimulation) {
+             auto sharedLibPath = library.getSharedLibraryPath();
 
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
+             GET_OR_THROW_RESULT(auto pi, library.getProgramInfo());
+             GET_OR_THROW_RESULT(
+                 auto result, ServerProgram::load(pi.asReader(), sharedLibPath,
+                                                  useSimulation));
+             return result;
+           }),
+           arg("library"), arg("use_simulation"))
+      .def(
+          "get_server_circuit",
+          [](ServerProgram &program, const std::string &circuitName) {
+            GET_OR_THROW_RESULT(auto result,
+                                program.getServerCircuit(circuitName));
+            return result;
+          },
+          "Return the `circuit` ServerCircuit.", arg("circuit"))
+      .doc() = "Server-side / Evaluation program.";
 
-             return ::concretelang::clientlib::SharedScalarOrTensorData{
-                 result.value()};
-           })
-      .def("export_tensor", [](::concretelang::clientlib::ValueExporter
-                                   &exporter,
-                               size_t position, std::vector<int64_t> values,
-                               std::vector<int64_t> shape) {
-        SignalGuard signalGuard;
-        pybind11::gil_scoped_release release;
-        std::vector<size_t> dimensions(shape.begin(), shape.end());
-        auto info =
-            exporter.circuit.getCircuitInfo().asReader().getInputs()[position];
-        auto typeTransformer = getPythonTypeTransformer(info);
-        auto result = exporter.circuit.prepareInput(
-            typeTransformer({Tensor<int64_t>(values, dimensions)}), position);
+  // ------------------------------------------------------------------------------//
+  // CLIENT CIRCUIT //
+  // ------------------------------------------------------------------------------//
 
-        if (result.has_error()) {
-          throw std::runtime_error(result.error().mesg);
-        }
-
-        return ::concretelang::clientlib::SharedScalarOrTensorData{
-            result.value()};
-      });
-
-  pybind11::class_<::concretelang::clientlib::SimulatedValueExporter>(
-      m, "SimulatedValueExporter")
-      .def_static(
-          "create",
-          [](::concretelang::clientlib::ClientParameters &clientParameters,
-             const std::string &circuitName) {
-            return createSimulatedValueExporter(clientParameters, circuitName);
-          })
-      .def("export_scalar",
-           [](::concretelang::clientlib::SimulatedValueExporter &exporter,
-              size_t position, int64_t value) {
-             SignalGuard signalGuard;
-             auto info = exporter.circuit.getCircuitInfo()
-                             .asReader()
-                             .getInputs()[position];
-             auto typeTransformer = getPythonTypeTransformer(info);
-             auto result = exporter.circuit.prepareInput(
-                 typeTransformer({Tensor<int64_t>(value)}), position);
-
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
-
-             return ::concretelang::clientlib::SharedScalarOrTensorData{
-                 result.value()};
-           })
-      .def("export_tensor", [](::concretelang::clientlib::SimulatedValueExporter
-                                   &exporter,
-                               size_t position, std::vector<int64_t> values,
-                               std::vector<int64_t> shape) {
-        SignalGuard signalGuard;
-        std::vector<size_t> dimensions(shape.begin(), shape.end());
-        auto info =
-            exporter.circuit.getCircuitInfo().asReader().getInputs()[position];
-        auto typeTransformer = getPythonTypeTransformer(info);
-        auto result = exporter.circuit.prepareInput(
-            typeTransformer({Tensor<int64_t>(values, dimensions)}), position);
-
-        if (result.has_error()) {
-          throw std::runtime_error(result.error().mesg);
-        }
-
-        return ::concretelang::clientlib::SharedScalarOrTensorData{
-            result.value()};
-      });
-
-  pybind11::class_<::concretelang::clientlib::ValueDecrypter>(m,
-                                                              "ValueDecrypter")
-      .def_static(
-          "create",
-          [](::concretelang::clientlib::KeySet &keySet,
-             ::concretelang::clientlib::ClientParameters &clientParameters,
-             const std::string &circuitName) {
-            return createValueDecrypter(keySet, clientParameters, circuitName);
-          })
-      .def("decrypt",
-           [](::concretelang::clientlib::ValueDecrypter &decrypter,
-              size_t position,
-              ::concretelang::clientlib::SharedScalarOrTensorData &value) {
-             SignalGuard signalGuard;
-             pybind11::gil_scoped_release release;
-
-             auto result =
-                 decrypter.circuit.processOutput(value.value, position);
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
-
-             return lambdaArgument{
-                 std::make_shared<mlir::concretelang::LambdaArgument>(
-                     mlir::concretelang::LambdaArgument{result.value()})};
-           });
-
-  pybind11::class_<::concretelang::clientlib::SimulatedValueDecrypter>(
-      m, "SimulatedValueDecrypter")
-      .def_static(
-          "create",
-          [](::concretelang::clientlib::ClientParameters &clientParameters,
-             const std::string &circuitName) {
-            return createSimulatedValueDecrypter(clientParameters, circuitName);
-          })
-      .def("decrypt",
-           [](::concretelang::clientlib::SimulatedValueDecrypter &decrypter,
-              size_t position,
-              ::concretelang::clientlib::SharedScalarOrTensorData &value) {
-             SignalGuard signalGuard;
-
-             auto result =
-                 decrypter.circuit.processOutput(value.value, position);
-             if (result.has_error()) {
-               throw std::runtime_error(result.error().mesg);
-             }
-
-             return lambdaArgument{
-                 std::make_shared<mlir::concretelang::LambdaArgument>(
-                     mlir::concretelang::LambdaArgument{result.value()})};
-           });
-
-  pybind11::class_<::concretelang::clientlib::PublicArguments,
-                   std::unique_ptr<::concretelang::clientlib::PublicArguments>>(
-      m, "PublicArguments")
-      .def_static(
-          "create",
-          [](const ::concretelang::clientlib::ClientParameters
-                 &clientParameters,
-             std::vector<::concretelang::clientlib::SharedScalarOrTensorData>
-                 &buffers) {
-            std::vector<TransportValue> vals;
-            for (auto buf : buffers) {
-              vals.push_back(buf.value);
+  pybind11::class_<ClientCircuit>(m, "ClientCircuit")
+      .def(
+          "prepare_input",
+          [](ClientCircuit &circuit, Value arg, size_t pos) {
+            if (pos > circuit.getCircuitInfo().asReader().getInputs().size()) {
+              throw std::runtime_error("Unknown position.");
             }
-            return ::concretelang::clientlib::PublicArguments{vals};
-          })
-      .def_static(
-          "deserialize",
-          [](::concretelang::clientlib::ClientParameters &clientParameters,
-             const pybind11::bytes &buffer) {
-            return publicArgumentsUnserialize(clientParameters, buffer);
-          })
-      .def("serialize",
-           [](::concretelang::clientlib::PublicArguments &publicArgument) {
-             return pybind11::bytes(publicArgumentsSerialize(publicArgument));
-           });
-  pybind11::class_<::concretelang::clientlib::PublicResult>(m, "PublicResult")
-      .def_static(
-          "deserialize",
-          [](::concretelang::clientlib::ClientParameters &clientParameters,
-             const pybind11::bytes &buffer) {
-            return publicResultUnserialize(clientParameters, buffer);
-          })
-      .def("serialize",
-           [](::concretelang::clientlib::PublicResult &publicResult) {
-             return pybind11::bytes(publicResultSerialize(publicResult));
-           })
-      .def("n_values",
-           [](const ::concretelang::clientlib::PublicResult &publicResult) {
-             return publicResult.values.size();
-           })
-      .def("get_value",
-           [](::concretelang::clientlib::PublicResult &publicResult,
-              size_t position) {
-             if (position >= publicResult.values.size()) {
-               throw std::runtime_error("Failed to get public result value.");
-             }
-             return ::concretelang::clientlib::SharedScalarOrTensorData{
-                 publicResult.values[position]};
-           });
+            auto info = circuit.getCircuitInfo().asReader().getInputs()[pos];
+            auto typeTransformer = getPythonTypeTransformer(info);
+            GET_OR_THROW_RESULT(
+                auto ok, circuit.prepareInput(typeTransformer(arg), pos));
+            return ok;
+          },
+          "Prepare a `pos` positional arguments `arg` to be sent to server. ",
+          arg("arg"), arg("pos"))
+      .def(
+          "process_output",
+          [](ClientCircuit &circuit, TransportValue result, size_t pos) {
+            GET_OR_THROW_RESULT(auto ok, circuit.processOutput(result, pos));
+            return ok;
+          },
+          "Process a `pos` positional result `result` retrieved from server. ",
+          arg("result"), arg("pos"))
+      .def(
+          "simulate_prepare_input",
+          [](ClientCircuit &circuit, Value arg, size_t pos) {
+            if (pos > circuit.getCircuitInfo().asReader().getInputs().size()) {
+              throw std::runtime_error("Unknown position.");
+            }
+            auto info = circuit.getCircuitInfo().asReader().getInputs()[pos];
+            auto typeTransformer = getPythonTypeTransformer(info);
+            GET_OR_THROW_RESULT(auto ok, circuit.simulatePrepareInput(
+                                             typeTransformer(arg), pos));
+            return ok;
+          },
+          "SIMULATE preparation of `pos` positional argument `arg` to be sent "
+          "to server. DOES NOT NCRYPT.",
+          arg("arg"), arg("pos"))
+      .def(
+          "simulate_process_output",
+          [](ClientCircuit &circuit, TransportValue result, size_t pos) {
+            GET_OR_THROW_RESULT(auto ok,
+                                circuit.simulateProcessOutput(result, pos));
+            return ok;
+          },
+          "SIMULATE processing of `pos` positional result `result` retrieved "
+          "from server.",
+          arg("result"), arg("pos"))
+      .doc() = "Client-side / Encryption circuit.";
 
-  pybind11::class_<::concretelang::clientlib::EvaluationKeys>(m,
-                                                              "EvaluationKeys")
-      .def_static("deserialize",
-                  [](const pybind11::bytes &buffer) {
-                    return evaluationKeysUnserialize(buffer);
-                  })
-      .def("serialize",
-           [](::concretelang::clientlib::EvaluationKeys &evaluationKeys) {
-             return pybind11::bytes(evaluationKeysSerialize(evaluationKeys));
-           });
+  // ------------------------------------------------------------------------------//
+  // CLIENT PROGRAM //
+  // ------------------------------------------------------------------------------//
 
-  pybind11::class_<lambdaArgument>(m, "LambdaArgument")
-      .def_static("from_tensor_u8",
-                  [](std::vector<uint8_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorU8(tensor, dims);
-                  })
-      .def_static("from_tensor_u16",
-                  [](std::vector<uint16_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorU16(tensor, dims);
-                  })
-      .def_static("from_tensor_u32",
-                  [](std::vector<uint32_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorU32(tensor, dims);
-                  })
-      .def_static("from_tensor_u64",
-                  [](std::vector<uint64_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorU64(tensor, dims);
-                  })
-      .def_static("from_tensor_i8",
-                  [](std::vector<int8_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorI8(tensor, dims);
-                  })
-      .def_static("from_tensor_i16",
-                  [](std::vector<int16_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorI16(tensor, dims);
-                  })
-      .def_static("from_tensor_i32",
-                  [](std::vector<int32_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorI32(tensor, dims);
-                  })
-      .def_static("from_tensor_i64",
-                  [](std::vector<int64_t> tensor, std::vector<int64_t> dims) {
-                    return lambdaArgumentFromTensorI64(tensor, dims);
-                  })
-      .def_static("from_scalar", lambdaArgumentFromScalar)
-      .def_static("from_signed_scalar", lambdaArgumentFromSignedScalar)
-      .def("is_tensor",
-           [](lambdaArgument &lambda_arg) {
-             return lambdaArgumentIsTensor(lambda_arg);
-           })
-      .def("get_tensor_data",
-           [](lambdaArgument &lambda_arg) {
-             return lambdaArgumentGetTensorData(lambda_arg);
-           })
-      .def("get_signed_tensor_data",
-           [](lambdaArgument &lambda_arg) {
-             return lambdaArgumentGetSignedTensorData(lambda_arg);
-           })
-      .def("get_tensor_shape",
-           [](lambdaArgument &lambda_arg) {
-             return lambdaArgumentGetTensorDimensions(lambda_arg);
-           })
-      .def("is_scalar",
-           [](lambdaArgument &lambda_arg) {
-             return lambdaArgumentIsScalar(lambda_arg);
-           })
-      .def("is_signed",
-           [](lambdaArgument &lambda_arg) {
-             return lambdaArgumentIsSigned(lambda_arg);
-           })
-      .def("get_scalar",
-           [](lambdaArgument &lambda_arg) {
-             return lambdaArgumentGetScalar(lambda_arg);
-           })
-      .def("get_signed_scalar", [](lambdaArgument &lambda_arg) {
-        return lambdaArgumentGetSignedScalar(lambda_arg);
-      });
+  pybind11::class_<ClientProgram>(m, "ClientProgram")
+      .def_static(
+          "create_encrypted",
+          [](ProgramInfo programInfo, Keyset keyset) {
+            GET_OR_THROW_RESULT(
+                auto clientProgram,
+                ClientProgram::createEncrypted(
+                    programInfo.programInfo, keyset.client,
+                    std::make_shared<EncryptionCSPRNG>(EncryptionCSPRNG(0))));
+            return clientProgram;
+          },
+          "Create an encrypted (as opposed to simulated) ClientProgram.",
+          arg("program_info"), arg("keyset"))
+      .def_static(
+          "create_simulated",
+          [](ProgramInfo &programInfo) {
+            GET_OR_THROW_RESULT(
+                auto clientProgram,
+                ClientProgram::createSimulated(
+                    programInfo.programInfo,
+                    std::make_shared<EncryptionCSPRNG>(EncryptionCSPRNG(0))));
+            return clientProgram;
+          },
+          "Create a simulated (as opposed to encrypted) ClientProgram. DOES "
+          "NOT PERFORM ENCRYPTION OF VALUES.",
+          arg("program_info"))
+      .def(
+          "get_client_circuit",
+          [](ClientProgram &program,
+             const std::string &circuitName) -> ClientCircuit {
+            GET_OR_THROW_RESULT(auto result,
+                                program.getClientCircuit(circuitName));
+            return result;
+          },
+          "Return the `circuit` ClientCircuit.", arg("circuit"))
+      .doc() = "Client-side / Encryption program";
+
+  m.def("import_tfhers_fheuint8",
+        [](const pybind11::bytes &serialized_fheuint,
+           TfhersFheIntDescription info, uint32_t encryptionKeyId,
+           double encryptionVariance) {
+          const std::string &buffer_str = serialized_fheuint;
+          std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
+          auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
+          auto valueOrError = ::concretelang::clientlib::importTfhersFheUint8(
+              arrayRef, info, encryptionKeyId, encryptionVariance);
+          if (valueOrError.has_error()) {
+            throw std::runtime_error(valueOrError.error().mesg);
+          }
+          return TransportValue{valueOrError.value()};
+        });
+
+  m.def("export_tfhers_fheuint8",
+        [](TransportValue fheuint, TfhersFheIntDescription info) {
+          auto result =
+              ::concretelang::clientlib::exportTfhersFheUint8(fheuint, info);
+          if (result.has_error()) {
+            throw std::runtime_error(result.error().mesg);
+          }
+          return result.value();
+        });
+
+  m.def("get_tfhers_fheuint8_description",
+        [](const pybind11::bytes &serialized_fheuint) {
+          const std::string &buffer_str = serialized_fheuint;
+          std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
+          auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
+          auto info =
+              ::concretelang::clientlib::getTfhersFheUint8Description(arrayRef);
+          if (info.has_error()) {
+            throw std::runtime_error(info.error().mesg);
+          }
+          return info.value();
+        });
 }

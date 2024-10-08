@@ -2,11 +2,13 @@
 Declaration of `tfhers.Bridge` class.
 """
 
-from typing import Dict, List, Optional, Union
+# pylint: disable=import-error,no-member,no-name-in-module
+from typing import Dict, List, Optional
 
 from concrete.compiler import LweSecretKey, TfhersExporter, TfhersFheIntDescription
 
 from concrete import fhe
+from concrete.fhe.compilation.value import Value
 
 from .dtypes import EncryptionKeyChoice, TFHERSIntegerType
 
@@ -22,6 +24,7 @@ class Bridge:
 
     circuit: "fhe.Circuit"
     input_types: List[Optional[TFHERSIntegerType]]
+
     output_types: List[Optional[TFHERSIntegerType]]
 
     def __init__(
@@ -57,7 +60,7 @@ class Bridge:
         return self.output_types[output_idx]
 
     def _input_keyid(self, input_idx: int) -> int:
-        return self.circuit.client.specs.client_parameters.input_keyid_at(
+        return self.circuit.client.specs.program_info.input_keyid_at(
             input_idx, self.circuit.function_name
         )
 
@@ -99,7 +102,7 @@ class Bridge:
             ks_first,
         )
 
-    def import_value(self, buffer: bytes, input_idx: int) -> "fhe.Value":
+    def import_value(self, buffer: bytes, input_idx: int) -> Value:
         """Import a serialized TFHErs integer as a Value.
 
         Args:
@@ -107,7 +110,7 @@ class Bridge:
             input_idx (int): the index of the input expecting this value
 
         Returns:
-            fhe.Value: imported value
+            fhe.TransportValue: imported value
         """
         input_type = self._input_type(input_idx)
         if input_type is None:  # pragma: no cover
@@ -122,9 +125,7 @@ class Bridge:
             if not signed:
                 keyid = self._input_keyid(input_idx)
                 variance = self._input_variance(input_idx)
-                return fhe.Value(
-                    TfhersExporter.import_fheuint8(buffer, fheint_desc, keyid, variance)
-                )
+                return Value(TfhersExporter.import_fheuint8(buffer, fheint_desc, keyid, variance))
 
         msg = (  # pragma: no cover
             f"importing {'signed' if signed else 'unsigned'} integers of {bit_width}bits is not"
@@ -132,11 +133,11 @@ class Bridge:
         )
         raise NotImplementedError(msg)  # pragma: no cover
 
-    def export_value(self, value: "fhe.Value", output_idx: int) -> bytes:
+    def export_value(self, value: Value, output_idx: int) -> bytes:
         """Export a value as a serialized TFHErs integer.
 
         Args:
-            value (fhe.Value): value to export
+            value (TransportValue): value to export
             output_idx (int): the index corresponding to this output
 
         Returns:
@@ -153,7 +154,9 @@ class Bridge:
         signed = output_type.is_signed
         if bit_width == 8:
             if not signed:
-                return TfhersExporter.export_fheuint8(value.inner, fheint_desc)
+                return TfhersExporter.export_fheuint8(
+                    value._inner, fheint_desc  # pylint: disable=protected-access
+                )
 
         msg = (  # pragma: no cover
             f"exporting value to {'signed' if signed else 'unsigned'} integers of {bit_width}bits"
@@ -172,7 +175,9 @@ class Bridge:
         """
         keyid = self._input_keyid(input_idx)
         # pylint: disable=protected-access
-        secret_key = self.circuit.client.keys._keyset.get_lwe_secret_key(keyid)  # type: ignore
+        keys = self.circuit.client.keys
+        assert keys is not None
+        secret_key = keys._keyset.get_client_keys().get_secret_keys()[keyid]  # type: ignore
         # pylint: enable=protected-access
         return secret_key.serialize()
 
@@ -200,9 +205,6 @@ class Bridge:
         Raises:
             RuntimeError: if failed to deserialize the key
         """
-        client_specs = self.circuit.keys.client_specs
-        assert isinstance(client_specs, fhe.ClientSpecs)
-
         initial_keys: Dict[int, LweSecretKey] = {}
         for input_idx in input_idx_to_key_buffer:
             key_id = self._input_keyid(input_idx)
@@ -211,7 +213,7 @@ class Bridge:
                 continue
 
             key_buffer = input_idx_to_key_buffer[input_idx]
-            param = client_specs.client_parameters.lwe_secret_key_param(key_id)
+            param = self.circuit.client.specs.program_info.secret_keys()[key_id]
             try:
                 initial_keys[key_id] = LweSecretKey.deserialize(key_buffer, param)
             except Exception as e:  # pragma: no cover

@@ -4,12 +4,16 @@ import shutil
 import tempfile
 
 from concrete.compiler import (
-    ClientSupport,
-    EvaluationKeys,
-    KeySet,
-    LibrarySupport,
-    PublicArguments,
-    PublicResult,
+    Compiler,
+    CompilationOptions,
+    lookup_runtime_lib,
+    Keyset,
+    ServerKeyset,
+    ClientProgram,
+    ServerProgram,
+    TransportValue,
+    Value,
+    Backend,
 )
 
 
@@ -27,26 +31,51 @@ module {
     """.strip()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        support = LibrarySupport.new(str(tmpdirname))
-        compilation_result = support.compile(mlir)
 
-        server_lambda = support.load_server_lambda(compilation_result, False)
-        client_parameters = support.load_client_parameters(compilation_result)
+        args = (5,)
+        expected_results = (25,)
 
-        keyset = ClientSupport.key_set(client_parameters)
-        evaluation_keys = keyset.get_evaluation_keys()
+        support = Compiler(
+            str(tmpdirname), lookup_runtime_lib(), generate_shared_lib=True
+        )
+        library = support.compile(mlir, CompilationOptions(Backend.CPU))
 
-        arg = 5
-        encrypted_args = ClientSupport.encrypt_arguments(
-            client_parameters, keyset, [arg]
+        program_info = library.get_program_info()
+        keyset = Keyset(program_info, None)
+        keyset = Keyset.deserialize(keyset.serialize())
+
+        evaluation_keys = keyset.get_server_keys()
+        evaluation_keys_serialized = evaluation_keys.serialize()
+        evaluation_keys_deserialized = ServerKeyset.deserialize(
+            evaluation_keys_serialized
         )
 
-        result = support.server_call(server_lambda, encrypted_args, evaluation_keys)
+        client_program = ClientProgram.create_encrypted(program_info, keyset)
+        client_circuit = client_program.get_client_circuit("main")
+        args_serialized = [
+            client_circuit.prepare_input(Value(arg), i).serialize()
+            for (i, arg) in enumerate(args)
+        ]
+        args_deserialized = [TransportValue.deserialize(arg) for arg in args_serialized]
 
-        serialized_keyset = keyset.serialize()
-        deserialized_keyset = KeySet.deserialize(serialized_keyset)
+        server_program = ServerProgram(library, False)
+        server_circuit = server_program.get_server_circuit("main")
 
-        output = ClientSupport.decrypt_result(
-            client_parameters, deserialized_keyset, result
+        results = server_circuit.call(
+            args_deserialized,
+            evaluation_keys_deserialized,
         )
-        assert output == arg**2
+        results_serialized = [result.serialize() for result in results]
+        results_deserialized = [
+            client_circuit.process_output(
+                TransportValue.deserialize(result), i
+            ).to_py_val()
+            for (i, result) in enumerate(results_serialized)
+        ]
+
+        assert all(
+            [
+                np.all(result == expected)
+                for (result, expected) in zip(results_deserialized, expected_results)
+            ]
+        )

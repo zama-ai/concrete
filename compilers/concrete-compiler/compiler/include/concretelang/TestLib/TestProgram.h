@@ -80,15 +80,16 @@ public:
       return outcome::success();
     }
     OUTCOME_TRY(auto lib, getLibrary());
+    OUTCOME_TRY(auto programInfo, lib.getProgramInfo());
     if (tryCache) {
       OUTCOME_TRY(keyset, getTestKeySetCachePtr()->getKeyset(
-                              lib.getProgramInfo().asReader().getKeyset(),
-                              secretSeed, encryptionSeed));
+                              programInfo.asReader().getKeyset(), secretSeed,
+                              encryptionSeed));
     } else {
       auto encryptionCsprng = csprng::EncryptionCSPRNG(encryptionSeed);
       auto secretCsprng = csprng::SecretCSPRNG(secretSeed);
       Message<concreteprotocol::KeysetInfo> keysetInfo =
-          lib.getProgramInfo().asReader().getKeyset();
+          programInfo.asReader().getKeyset();
       keyset = Keyset(keysetInfo, secretCsprng, encryptionCsprng);
     }
     return outcome::success();
@@ -110,6 +111,27 @@ public:
     for (size_t i = 0; i < processedOutputs.size(); i++) {
       OUTCOME_TRY(processedOutputs[i],
                   clientCircuit.processOutput(returns[i], i));
+    }
+    return processedOutputs;
+  }
+
+  Result<std::vector<Value>> simulate(std::vector<Value> inputs,
+                                      std::string name = "main") {
+    // preprocess arguments
+    auto preparedArgs = std::vector<TransportValue>();
+    OUTCOME_TRY(auto clientCircuit, getClientCircuit(name));
+    for (size_t i = 0; i < inputs.size(); i++) {
+      OUTCOME_TRY(auto preparedInput,
+                  clientCircuit.simulatePrepareInput(inputs[i], i));
+      preparedArgs.push_back(preparedInput);
+    }
+    // Call server
+    OUTCOME_TRY(auto returns, callServer(preparedArgs, name));
+    // postprocess arguments
+    std::vector<Value> processedOutputs(returns.size());
+    for (size_t i = 0; i < processedOutputs.size(); i++) {
+      OUTCOME_TRY(processedOutputs[i],
+                  clientCircuit.simulateProcessOutput(returns[i], i));
     }
     return processedOutputs;
   }
@@ -152,27 +174,34 @@ public:
   Result<ClientCircuit> getClientCircuit(std::string name = "main") {
     OUTCOME_TRY(auto lib, getLibrary());
     Keyset ks{};
+    OUTCOME_TRY(auto programInfo, lib.getProgramInfo());
+
     if (!isSimulation()) {
       OUTCOME_TRY(ks, getKeyset());
+      OUTCOME_TRY(auto clientProgram,
+                  ClientProgram::createEncrypted(programInfo, ks.client,
+                                                 encryptionCsprng));
+      OUTCOME_TRY(auto clientCircuit, clientProgram.getClientCircuit(name));
+      return clientCircuit;
+    } else {
+      OUTCOME_TRY(auto clientProgram, ClientProgram::createSimulated(
+                                          programInfo, encryptionCsprng));
+      OUTCOME_TRY(auto clientCircuit, clientProgram.getClientCircuit(name));
+      return clientCircuit;
     }
-    auto programInfo = lib.getProgramInfo();
-    OUTCOME_TRY(auto clientProgram,
-                ClientProgram::create(programInfo, ks.client, encryptionCsprng,
-                                      isSimulation()));
-    OUTCOME_TRY(auto clientCircuit, clientProgram.getClientCircuit(name));
-    return clientCircuit;
   }
 
   Result<ServerCircuit> getServerCircuit(std::string name = "main") {
     OUTCOME_TRY(auto lib, getLibrary());
-    auto programInfo = lib.getProgramInfo();
+    OUTCOME_TRY(auto programInfo, lib.getProgramInfo());
     OUTCOME_TRY(auto serverProgram,
-                ServerProgram::load(programInfo,
-                                    lib.getSharedLibraryPath(artifactDirectory),
+                ServerProgram::load(programInfo, lib.getSharedLibraryPath(),
                                     isSimulation()));
     OUTCOME_TRY(auto serverCircuit, serverProgram.getServerCircuit(name));
     return serverCircuit;
   }
+
+  bool isSimulation() { return compiler.getCompilationOptions().simulate; }
 
 private:
   std::string getArtifactDirectory() { return artifactDirectory; }
@@ -190,8 +219,6 @@ private:
     }
     return *keyset;
   }
-
-  bool isSimulation() { return compiler.getCompilationOptions().simulate; }
 
   std::string artifactDirectory;
   mlir::concretelang::CompilerEngine compiler;

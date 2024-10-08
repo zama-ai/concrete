@@ -41,6 +41,9 @@ class Circuit:
 
     @property
     def function_name(self) -> str:
+        """
+        Return the name of the circuit.
+        """
         return self._name
 
     def __str__(self):
@@ -112,10 +115,11 @@ class Circuit:
             Any:
                 result of the simulation
         """
+
         return self._function.simulate(*args)
 
     @property
-    def keys(self) -> Keys:
+    def keys(self) -> Optional[Keys]:
         """
         Get the keys of the circuit.
         """
@@ -271,14 +275,14 @@ class Circuit:
         return self._function.size_of_outputs  # pragma: no cover
 
     @property
-    def p_error(self) -> int:
+    def p_error(self) -> float:
         """
         Get probability of error for each simple TLU (on a scalar).
         """
         return self._module.p_error  # pragma: no cover
 
     @property
-    def global_p_error(self) -> int:
+    def global_p_error(self) -> float:
         """
         Get the probability of having at least one simple TLU error during the entire execution.
         """
@@ -292,7 +296,7 @@ class Circuit:
         return self._module.complexity  # pragma: no cover
 
     @property
-    def memory_usage_per_location(self) -> Dict[str, int]:
+    def memory_usage_per_location(self) -> Dict[str, Optional[int]]:
         """
         Get the memory usage of operations in the circuit per location.
         """

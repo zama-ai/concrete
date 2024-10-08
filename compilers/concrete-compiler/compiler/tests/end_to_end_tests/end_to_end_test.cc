@@ -58,7 +58,9 @@ public:
   void testOnce() {
     for (auto tests_rep = 0; tests_rep <= options.numberOfRetry; tests_rep++) {
       // We execute the circuit.
-      auto maybeRes = testCircuit->call(args);
+      auto maybeRes = testCircuit->isSimulation() ? testCircuit->simulate(args)
+                                                  : testCircuit->call(args);
+
       ASSERT_OUTCOME_HAS_VALUE(maybeRes);
       auto result = maybeRes.value();
 
@@ -96,7 +98,8 @@ public:
     auto nbError = 0;
     for (size_t i = 0; i < errorRate->nb_repetition; i++) {
       // We execute the circuit.
-      auto maybeRes = (*testCircuit).call(args);
+      auto maybeRes = testCircuit->isSimulation() ? testCircuit->simulate(args)
+                                                  : testCircuit->call(args);
       ASSERT_OUTCOME_HAS_VALUE(maybeRes);
       auto result = maybeRes.value();
 
