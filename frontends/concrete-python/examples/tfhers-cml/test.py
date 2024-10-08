@@ -107,6 +107,11 @@ def compile_concrete_function():
 def cli():
     pass
 
+def read_var_from_file(tfhers_bridge, filename, input_idx):
+    with open(filename, "rb") as f:
+        buff = f.read()
+    return tfhers_bridge.import_value(buff, input_idx=input_idx)
+
 
 @cli.command()
 @click.option("-s", "--secret-key", type=str, required=True)
@@ -153,27 +158,11 @@ def run(rust_ct_1: str, rust_ct_2: str, rust_ct_3: str, output_rust_ct: str, con
 
     circuit.client.keys.load(concrete_keyset_path)
 
-    # read tfhers int from file
-    with open(rust_ct_1, "rb") as f:
-        buff = f.read()
-    # import fheuint8 and get its description
-    tfhers_uint8_x = tfhers_bridge.import_value(buff, input_idx=0)
+    tfhers_uint8_x = read_var_from_file(tfhers_bridge, rust_ct_1, input_idx=0)
+    tfhers_uint8_y = read_var_from_file(tfhers_bridge, rust_ct_2, input_idx=1)
+    tfhers_uint8_z = read_var_from_file(tfhers_bridge, rust_ct_3, input_idx=2)
 
-    # read tfhers int from file
-    with open(rust_ct_2, "rb") as f:
-        buff = f.read()
-    # import fheuint8 and get its description
-    tfhers_uint8_y = tfhers_bridge.import_value(buff, input_idx=1)
-
-    # read tfhers int from file
-    with open(rust_ct_3, "rb") as f:
-        buff = f.read()
-    # import fheuint8 and get its description
-    tfhers_uint8_z = tfhers_bridge.import_value(buff, input_idx=2)
-
-    encrypted_x, encrypted_y, encrypted_z = tfhers_uint8_x, tfhers_uint8_y, tfhers_uint8_z
-
-    encrypted_result = circuit.run(encrypted_x, encrypted_y, encrypted_z)
+    encrypted_result = circuit.run(tfhers_uint8_x, tfhers_uint8_y, tfhers_uint8_z)
 
     # export fheuint8
     buff = tfhers_bridge.export_value(encrypted_result, output_idx=0)
