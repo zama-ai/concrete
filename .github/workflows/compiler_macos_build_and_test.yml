@@ -37,6 +37,7 @@ jobs:
           brew install ninja ccache
           pip3.10 install numpy pybind11==2.8 wheel delocate
           pip3.10 install pytest
+          pip3.10 install mypy
 
       - name: Cache compilation (push)
         if: github.event_name == 'push'

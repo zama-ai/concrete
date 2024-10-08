@@ -7,7 +7,7 @@ Declaration of `ClientSpecs` class.
 from typing import Any
 
 # mypy: disable-error-code=attr-defined
-from concrete.compiler import ClientParameters
+from concrete.compiler import ProgramInfo
 
 # pylint: enable=import-error,no-member,no-name-in-module
 
@@ -17,13 +17,13 @@ class ClientSpecs:
     ClientSpecs class, to create Client objects.
     """
 
-    client_parameters: ClientParameters
+    program_info: ProgramInfo
 
-    def __init__(self, client_parameters: ClientParameters):
-        self.client_parameters = client_parameters
+    def __init__(self, program_info: ProgramInfo):
+        self.program_info = program_info
 
     def __eq__(self, other: Any):  # pragma: no cover
-        return self.client_parameters.serialize() == other.client_parameters.serialize()
+        return self.program_info.serialize() == other.program_info.serialize()
 
     def serialize(self) -> bytes:
         """
@@ -34,7 +34,7 @@ class ClientSpecs:
                 serialized client specs
         """
 
-        return self.client_parameters.serialize()
+        return self.program_info.serialize()
 
     @staticmethod
     def deserialize(serialized_client_specs: bytes) -> "ClientSpecs":
@@ -50,5 +50,5 @@ class ClientSpecs:
                 deserialized client specs
         """
 
-        client_parameters = ClientParameters.deserialize(serialized_client_specs)
-        return ClientSpecs(client_parameters)
+        program_info = ProgramInfo.deserialize(serialized_client_specs)
+        return ClientSpecs(program_info)

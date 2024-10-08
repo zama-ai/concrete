@@ -79,10 +79,27 @@ ClientCircuit::create(const Message<concreteprotocol::CircuitInfo> &info,
     outputTransformers.push_back(transformer);
   }
 
-  return ClientCircuit(info, inputTransformers, outputTransformers);
+  return ClientCircuit(info, inputTransformers, outputTransformers,
+                       useSimulation);
+}
+
+Result<ClientCircuit> ClientCircuit::create_encrypted(
+    const Message<concreteprotocol::CircuitInfo> &info,
+    const ClientKeyset &keyset,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
+  return ClientCircuit::create(info, keyset, csprng, false);
+}
+
+Result<ClientCircuit> ClientCircuit::create_simulated(
+    const Message<concreteprotocol::CircuitInfo> &info,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
+  return ClientCircuit::create(info, ClientKeyset(), csprng, true);
 }
 
 Result<TransportValue> ClientCircuit::prepareInput(Value arg, size_t pos) {
+  if (simulated) {
+    return StringError("Called prepareInput on simulated client circuit.");
+  }
   if (pos >= inputTransformers.size()) {
     return StringError("Tried to prepare a Value for incorrect position.");
   }
@@ -90,6 +107,34 @@ Result<TransportValue> ClientCircuit::prepareInput(Value arg, size_t pos) {
 }
 
 Result<Value> ClientCircuit::processOutput(TransportValue result, size_t pos) {
+  if (simulated) {
+    return StringError("Called processOutput on simulated client circuit.");
+  }
+  if (pos >= outputTransformers.size()) {
+    return StringError(
+        "Tried to process a TransportValue for incorrect position.");
+  }
+  return outputTransformers[pos](result);
+}
+
+Result<TransportValue> ClientCircuit::simulatePrepareInput(Value arg,
+                                                           size_t pos) {
+  if (!simulated) {
+    return StringError(
+        "Called simulatePrepareInput on encrypted client circuit.");
+  }
+  if (pos >= inputTransformers.size()) {
+    return StringError("Tried to prepare a Value for incorrect position.");
+  }
+  return inputTransformers[pos](arg);
+}
+
+Result<Value> ClientCircuit::simulateProcessOutput(TransportValue result,
+                                                   size_t pos) {
+  if (!simulated) {
+    return StringError(
+        "Called simulateProcessOutput on encrypted client circuit.");
+  }
   if (pos >= outputTransformers.size()) {
     return StringError(
         "Tried to process a TransportValue for incorrect position.");
@@ -105,16 +150,26 @@ const Message<concreteprotocol::CircuitInfo> &ClientCircuit::getCircuitInfo() {
   return circuitInfo;
 }
 
-Result<ClientProgram>
-ClientProgram::create(const Message<concreteprotocol::ProgramInfo> &info,
-                      const ClientKeyset &keyset,
-                      std::shared_ptr<csprng::EncryptionCSPRNG> csprng,
-                      bool useSimulation) {
+Result<ClientProgram> ClientProgram::create_encrypted(
+    const Message<concreteprotocol::ProgramInfo> &info,
+    const ClientKeyset &keyset,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
   ClientProgram output;
   for (auto circuitInfo : info.asReader().getCircuits()) {
-    OUTCOME_TRY(
-        ClientCircuit clientCircuit,
-        ClientCircuit::create(circuitInfo, keyset, csprng, useSimulation));
+    OUTCOME_TRY(ClientCircuit clientCircuit,
+                ClientCircuit::create_encrypted(circuitInfo, keyset, csprng));
+    output.circuits.push_back(clientCircuit);
+  }
+  return output;
+}
+
+Result<ClientProgram> ClientProgram::create_simulated(
+    const Message<concreteprotocol::ProgramInfo> &info,
+    std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
+  ClientProgram output;
+  for (auto circuitInfo : info.asReader().getCircuits()) {
+    OUTCOME_TRY(ClientCircuit clientCircuit,
+                ClientCircuit::create_simulated(circuitInfo, csprng));
     output.circuits.push_back(clientCircuit);
   }
   return output;

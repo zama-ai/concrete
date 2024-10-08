@@ -98,6 +98,39 @@ def test_keys_load_if_exists_generate_and_save_otherwise(helpers):
         assert circuit2.decrypt(evaluation) == 25
 
 
+def test_keys_bad_seed(helpers):
+    """
+    Test serializing and deserializing keys.
+    """
+
+    @fhe.compiler({"x": "encrypted"})
+    def f(x):
+        return x**2
+
+    inputset = range(10)
+
+    circuit = f.compile(inputset, helpers.configuration())
+    server = circuit.server
+
+    client1 = fhe.Client(server.client_specs)
+
+    with pytest.raises(ValueError) as excinfo:
+        client1.keys.generate(secret_seed=-1)
+    assert str(excinfo.value) == "secret_seed must be a positive 128 bits integer"
+
+    with pytest.raises(ValueError) as excinfo:
+        client1.keys.generate(secret_seed=2**128)
+    assert str(excinfo.value) == "secret_seed must be a positive 128 bits integer"
+
+    with pytest.raises(ValueError) as excinfo:
+        client1.keys.generate(encryption_seed=2**128)
+    assert str(excinfo.value) == "encryption_seed must be a positive 128 bits integer"
+
+    with pytest.raises(ValueError) as excinfo:
+        client1.keys.generate(encryption_seed=-1)
+    assert str(excinfo.value) == "encryption_seed must be a positive 128 bits integer"
+
+
 def test_keys_serialize_deserialize(helpers):
     """
     Test serializing and deserializing keys.

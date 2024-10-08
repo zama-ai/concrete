@@ -1,5 +1,4 @@
 #include "../end_to_end_tests/end_to_end_test.h"
-#include "concretelang/Common/Compat.h"
 #include "concretelang/TestLib/TestProgram.h"
 #include <concretelang/Runtime/DFRuntime.hpp>
 

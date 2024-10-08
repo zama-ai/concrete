@@ -18,11 +18,10 @@ from mlir.ir import InsertionPoint as MlirInsertionPoint
 from mlir.ir import Location as MlirLocation
 from mlir.ir import Module as MlirModule
 
-from .. import tfhers
 from ..compilation.composition import CompositionRule
 from ..compilation.configuration import Configuration, Exactness, ParameterSelectionStrategy
 from ..representation import Graph, GraphProcessor, MultiGraphProcessor, Node, Operation
-from ..tfhers import TFHERSIntegerType
+from ..tfhers.dtypes import TFHERSIntegerType
 from .context import Context
 from .conversion import Conversion
 from .processors import *  # pylint: disable=wildcard-import
@@ -933,7 +932,7 @@ class Converter:
     def tfhers_to_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         tfhers_int = preds[0]
-        dtype: tfhers.TFHERSIntegerType = node.properties["attributes"]["type"]
+        dtype: TFHERSIntegerType = node.properties["attributes"]["type"]
         result_bit_width, carry_width, msg_width = (
             dtype.bit_width,
             dtype.carry_width,
@@ -965,7 +964,7 @@ class Converter:
 
     def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
-        dtype: tfhers.TFHERSIntegerType = node.properties["attributes"]["type"]
+        dtype: TFHERSIntegerType = node.properties["attributes"]["type"]
         input_bit_width, carry_width, msg_width = (
             dtype.bit_width,
             dtype.carry_width,

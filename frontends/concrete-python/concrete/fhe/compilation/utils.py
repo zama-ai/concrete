@@ -136,7 +136,7 @@ def validate_input_args(
         List[Optional[Union[int, np.ndarray]]]: ordered validated args
     """
 
-    functions_parameters = json.loads(client_specs.client_parameters.serialize())["circuits"]
+    functions_parameters = json.loads(client_specs.program_info.serialize())["circuits"]
     for function_parameters in functions_parameters:
         if function_parameters["name"] == function_name:
             client_parameters_json = function_parameters

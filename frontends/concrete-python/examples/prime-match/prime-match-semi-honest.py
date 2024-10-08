@@ -58,6 +58,7 @@ circuit = compiler.compile(inputset, configuration)
 
 print()
 start = time.time()
+assert circuit.keys is not None
 circuit.keys.generate()
 end = time.time()
 print(f"Key generation took: {end - start:.3f} seconds")

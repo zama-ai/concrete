@@ -65,7 +65,7 @@ class Compiler:
         compiler = Compiler(
             function,
             {
-                name: "encrypted" if value.is_encrypted else "clear"
+                name: EncryptionStatus.ENCRYPTED if value.is_encrypted else EncryptionStatus.CLEAR
                 for name, value in parameter_values.items()
             },
             composition=(

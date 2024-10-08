@@ -35,31 +35,10 @@ declare_mlir_python_sources(
   "${CMAKE_CURRENT_SOURCE_DIR}"
   SOURCES
   concrete/compiler/__init__.py
-  concrete/compiler/client_parameters.py
-  concrete/compiler/client_support.py
-  concrete/compiler/compilation_context.py
   concrete/compiler/compilation_feedback.py
-  concrete/compiler/compilation_options.py
-  concrete/compiler/key_set_cache.py
-  concrete/compiler/key_set.py
-  concrete/compiler/lambda_argument.py
-  concrete/compiler/library_compilation_result.py
-  concrete/compiler/library_support.py
-  concrete/compiler/library_lambda.py
-  concrete/compiler/lwe_secret_key.py
-  concrete/compiler/parameter.py
-  concrete/compiler/public_arguments.py
-  concrete/compiler/public_result.py
-  concrete/compiler/server_circuit.py
-  concrete/compiler/server_program.py
-  concrete/compiler/evaluation_keys.py
-  concrete/compiler/simulated_value_decrypter.py
-  concrete/compiler/simulated_value_exporter.py
+  concrete/compiler/compilation_context.py
   concrete/compiler/tfhers_int.py
   concrete/compiler/utils.py
-  concrete/compiler/value.py
-  concrete/compiler/value_decrypter.py
-  concrete/compiler/value_exporter.py
   concrete/compiler/wrapper.py
   concrete/__init__.py
   concrete/lang/__init__.py

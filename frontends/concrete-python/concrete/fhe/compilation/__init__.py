@@ -20,12 +20,13 @@ from .configuration import (
     MultivariateStrategy,
     ParameterSelectionStrategy,
 )
+from .evaluation_keys import EvaluationKeys
 from .keys import Keys
 from .module import FheFunction, FheModule
 from .module_compiler import FunctionDef, ModuleCompiler
 from .server import Server
 from .specs import ClientSpecs
 from .status import EncryptionStatus
-from .utils import get_terminal_size, inputset
+from .utils import inputset
 from .value import Value
 from .wiring import AllComposable, AllInputs, AllOutputs, Input, NotComposable, Output, Wire, Wired

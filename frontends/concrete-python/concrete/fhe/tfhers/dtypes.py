@@ -201,7 +201,7 @@ class TFHERSIntegerType(Integer):
 
         if len(value.shape) == 1:
             # lsb first
-            return sum(v << i * msg_width for i, v in enumerate(value))
+            return sum(int(v) << (i * msg_width) for i, v in enumerate(value))
 
         cts = value.reshape((-1, expected_ct_shape))
         return np.array([self.decode(ct) for ct in cts]).reshape(value.shape[:-1])

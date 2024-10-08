@@ -343,7 +343,7 @@ class ModuleCompiler:
             parameter_selection_strategy="multi",
         )
         self.functions = {function.name: function for function in functions}
-        self.compilation_context = CompilationContext.new()
+        self.compilation_context = CompilationContext()
         self.composition = composition
 
     def wire_pipeline(self, inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]]):
@@ -467,7 +467,7 @@ class ModuleCompiler:
 
     # pylint: enable=too-many-branches,too-many-statements
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> FunctionDef:
         if item not in list(self.functions.keys()):
             error = f"No attribute {item}"
             raise AttributeError(error)
