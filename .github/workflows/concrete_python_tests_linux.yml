@@ -60,7 +60,7 @@ jobs:
           shell: bash
           run: |
             set -e
-
+            ccache -z
             cd /workdir/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build DATAFLOW_EXECUTION_ENABLED=ON CCACHE=ON Python3_EXECUTABLE=$(which python3) python-bindings
 
