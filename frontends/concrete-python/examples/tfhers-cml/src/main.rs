@@ -85,15 +85,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         let mut rng = rand::thread_rng();
         let clear_a: u8 = rng.gen_range(0..128);
         let clear_b: u8 = rng.gen_range(0..128);
+        let clear_c: u8 = rng.gen_range(0..128);
 
-        println!("Encrypting {clear_a} and {clear_b}");
+        println!("Encrypting {clear_a} and {clear_b} and {clear_c}");
 
         let ciphertext_a = FheUint8::encrypt(clear_a, &client_key);
         let ciphertext_b = FheUint8::encrypt(clear_b, &client_key);
+        let ciphertext_c = FheUint8::encrypt(clear_c, &client_key);
 
         // Serialize ciphertexts and store them in a file
         serialize_fheuint8(ciphertext_a.clone(), "server_dir/ciphertext_a.txt");
         serialize_fheuint8(ciphertext_b.clone(), "server_dir/ciphertext_b.txt");
+        serialize_fheuint8(ciphertext_c.clone(), "server_dir/ciphertext_c.txt");
 
 
         // Step C: Computations in Concrete
@@ -107,6 +110,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                 .arg("server_dir/ciphertext_a.txt")
                 .arg("-c2")
                 .arg("server_dir/ciphertext_b.txt")
+                .arg("-c3")
+                .arg("server_dir/ciphertext_c.txt")
                 .arg("-o")
                 .arg("server_dir/ciphertext_r.txt")
                 .output()
@@ -131,7 +136,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         let decrypted_result: u8 = result.decrypt(&client_key);
 
         // Check the result was computed correctly
-        let clear_result = (clear_a + clear_b) % 47;
+        let clear_result_u16: u16 = (u16::from(clear_a) + u16::from(clear_b) + (2 * u16::from(clear_c))) % 47;
+        let clear_result: u8 = clear_result_u16 as u8;
 
         println!("Expecting {clear_result}. Got {decrypted_result}");
 
