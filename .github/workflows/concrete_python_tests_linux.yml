@@ -56,14 +56,14 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
+            -v ${{ github.workspace }}/artifacts:/artifacts
           shell: bash
           run: |
             set -e
 
             rustup toolchain install nightly-2024-09-30
             dnf -y install graphviz graphviz-devel
-
+            #rm -rf /build
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate
@@ -108,7 +108,8 @@ jobs:
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             export COMPILER_BUILD_DIRECTORY=/build
-            
+            rustup default nightly-2024-09-30
+            rustc --version
             mkdir ./KeySetCache
             KEY_CACHE_DIRECTORY=./KeySetCache make pytest
 
