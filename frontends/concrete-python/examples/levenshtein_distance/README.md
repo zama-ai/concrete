@@ -138,29 +138,33 @@ Successful end
 ```
 Typical performances for alphabet ACTG, with string of maximal length:
 
-    Computing Levenshtein between strings 'GCGA' and 'GTCA' - OK in 6.04 seconds
-    Computing Levenshtein between strings 'TCGA' and 'ACAA' - OK in 5.57 seconds
-    Computing Levenshtein between strings 'CAGT' and 'CGTT' - OK in 5.63 seconds
+    Computing Levenshtein between strings 'AGAC' and 'CACG' - OK in 6.22 seconds
+    Computing Levenshtein between strings 'CTGT' and 'TGGG' - OK in 5.43 seconds
+    Computing Levenshtein between strings 'GATC' and 'TGGA' - OK in 5.71 seconds
+
+Typical performances for alphabet name, with string of maximal length:
+
+    Computing Levenshtein between strings 'ZtyQ' and 'Pvhf' - OK in 32.72 seconds
+    Computing Levenshtein between strings 'wHpP' and 'CbYj' - OK in 30.37 seconds
+    Computing Levenshtein between strings 'Npur' and 'oOAI' - OK in 30.44 seconds
 
 Typical performances for alphabet string, with string of maximal length:
 
-    Computing Levenshtein between strings 'ctow' and 'qtor' - OK in 17.54 seconds
-    Computing Levenshtein between strings 'vwky' and 'enfh' - OK in 16.46 seconds
-    Computing Levenshtein between strings 'dqse' and 'spps' - OK in 16.49 seconds
+    Computing Levenshtein between strings 'plzn' and 'dctu' - OK in 30.90 seconds
+    Computing Levenshtein between strings 'pnux' and 'ssnz' - OK in 29.51 seconds
+    Computing Levenshtein between strings 'bfgf' and 'ngjd' - OK in 30.31 seconds
 
 Typical performances for alphabet STRING, with string of maximal length:
 
-    Computing Levenshtein between strings 'TQBW' and 'LKIZ' - OK in 16.62 seconds
-    Computing Levenshtein between strings 'HANA' and 'CFVO' - OK in 16.32 seconds
-    Computing Levenshtein between strings 'BEXY' and 'YAWM' - OK in 16.58 seconds
+    Computing Levenshtein between strings 'YPZL' and 'RBUI' - OK in 30.87 seconds
+    Computing Levenshtein between strings 'QFZS' and 'YRCD' - OK in 29.54 seconds
+    Computing Levenshtein between strings 'YOUF' and 'BWCZ' - OK in 30.24 seconds
 
 Typical performances for alphabet StRiNg, with string of maximal length:
 
-    Computing Levenshtein between strings 'iYmH' and 'ONnz' - OK in 30.56 seconds
-    Computing Levenshtein between strings 'hZyX' and 'vhHH' - OK in 30.11 seconds
-    Computing Levenshtein between strings 'sJdj' and 'strn' - OK in 30.48 seconds
-
-FIXME: to be updated, by launching on hpc7a
+    Computing Levenshtein between strings 'YZon' and 'jFEH' - OK in 30.43 seconds
+    Computing Levenshtein between strings 'sJpz' and 'JApP' - OK in 30.41 seconds
+    Computing Levenshtein between strings 'ZmdY' and 'yfuW' - OK in 30.34 seconds
 
 Successful end
 ```
@@ -183,34 +187,38 @@ it's only signed 3-bit PBS.
 
 ## Benchmarks on hpc7a
 
-The benchmarks were done using Concrete 2.7 on `hpc7a` machine on AWS, and give:
+The benchmarks were done using Concrete 2.8.1 on `hpc7a` machine on AWS, and give:
 
 ```
 Typical performances for alphabet ACTG, with string of maximal length:
 
-    Computing Levenshtein between strings 'AGTC' and 'TGGA' - OK in 6.00 seconds
-    Computing Levenshtein between strings 'GTAA' and 'AGAC' - OK in 5.51 seconds
-    Computing Levenshtein between strings 'TCTT' and 'CACG' - OK in 5.49 seconds
+    Computing Levenshtein between strings 'AGAC' and 'CACG' - OK in 6.22 seconds
+    Computing Levenshtein between strings 'CTGT' and 'TGGG' - OK in 5.43 seconds
+    Computing Levenshtein between strings 'GATC' and 'TGGA' - OK in 5.71 seconds
+
+Typical performances for alphabet name, with string of maximal length:
+
+    Computing Levenshtein between strings 'ZtyQ' and 'Pvhf' - OK in 32.72 seconds
+    Computing Levenshtein between strings 'wHpP' and 'CbYj' - OK in 30.37 seconds
+    Computing Levenshtein between strings 'Npur' and 'oOAI' - OK in 30.44 seconds
 
 Typical performances for alphabet string, with string of maximal length:
 
-    Computing Levenshtein between strings 'jqdk' and 'zqlf' - OK in 17.43 seconds
-    Computing Levenshtein between strings 'uquc' and 'qvvp' - OK in 16.50 seconds
-    Computing Levenshtein between strings 'vebm' and 'ybqo' - OK in 16.46 seconds
+    Computing Levenshtein between strings 'plzn' and 'dctu' - OK in 30.90 seconds
+    Computing Levenshtein between strings 'pnux' and 'ssnz' - OK in 29.51 seconds
+    Computing Levenshtein between strings 'bfgf' and 'ngjd' - OK in 30.31 seconds
 
 Typical performances for alphabet STRING, with string of maximal length:
 
-    Computing Levenshtein between strings 'UQES' and 'NWXQ' - OK in 16.53 seconds
-    Computing Levenshtein between strings 'LAJG' and 'NEGP' - OK in 16.26 seconds
-    Computing Levenshtein between strings 'OSQG' and 'OTEH' - OK in 16.52 seconds
+    Computing Levenshtein between strings 'YPZL' and 'RBUI' - OK in 30.87 seconds
+    Computing Levenshtein between strings 'QFZS' and 'YRCD' - OK in 29.54 seconds
+    Computing Levenshtein between strings 'YOUF' and 'BWCZ' - OK in 30.24 seconds
 
 Typical performances for alphabet StRiNg, with string of maximal length:
 
-    Computing Levenshtein between strings 'ixgu' and 'cOSy' - OK in 30.94 seconds
-    Computing Levenshtein between strings 'QGCj' and 'Lknx' - OK in 29.82 seconds
-    Computing Levenshtein between strings 'fKVC' and 'xqaI' - OK in 30.27 seconds
-
-FIXME: to be updated, by launching on hpc7a
+    Computing Levenshtein between strings 'YZon' and 'jFEH' - OK in 30.43 seconds
+    Computing Levenshtein between strings 'sJpz' and 'JApP' - OK in 30.41 seconds
+    Computing Levenshtein between strings 'ZmdY' and 'yfuW' - OK in 30.34 seconds
 
 Successful end
 ```
