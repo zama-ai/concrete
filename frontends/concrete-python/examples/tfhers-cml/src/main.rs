@@ -87,6 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         let mut rng = rand::thread_rng();
         let mut vec_clear = Vec::new();
         let mut j = 0;
+        let mut filenames_for_commandline: String = "".to_owned();
 
         while j < nb_parameters_in_function {
             // FIXME: remove the modulo 128
@@ -103,6 +104,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
             serialize_fheuint8(ciphertext.clone(), &filename);
 
             j = j + 1;
+            filenames_for_commandline = [filenames_for_commandline, filename].join(" ");
         }
 
         // Step C: Computations in Concrete
@@ -113,7 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                 .arg("-k")
                 .arg("server_dir/concrete_keyset.txt")
                 .arg("-c")
-                .arg("server_dir/ciphertext_0.txt server_dir/ciphertext_1.txt server_dir/ciphertext_2.txt")
+                .arg(filenames_for_commandline.clone())
                 .arg("-o")
                 .arg("server_dir/ciphertext_r.txt")
                 .output()
