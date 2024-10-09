@@ -16,6 +16,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Pass/PassManager.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/Pass.h"
@@ -205,6 +206,8 @@ struct FunctionToDag {
       index = addZeroNoise(zero);
     } else if (auto additive = asAdditiveNoise(op)) {
       index = addAdditiveNoise(additive, encrypted_inputs);
+    } else if (isMaxNoise(op)){
+      index = addMaxNoise(op, encrypted_inputs);
     } else {
       index = addLevelledOp(op, encrypted_inputs);
     }
@@ -336,22 +339,8 @@ struct FunctionToDag {
     auto val = op->getOpResult(0);
     auto outShape = getShape(val);
     auto loc = loc_to_location(op.getLoc());
-
-    // Trivial encrypted constants encoding
-    // There are converted to input + levelledop
     auto precision = fhe::utils::getEintPrecision(val);
-    auto opI = dagBuilder.add_input(precision, slice(outShape), *loc);
-    auto inputs = Inputs{opI};
-
-    // Default complexity is negligible
-    double const fixedCost = NEGLIGIBLE_COMPLEXITY;
-    double const lweDimCostFactor = NEGLIGIBLE_COMPLEXITY;
-    auto comment = std::string(op->getName().getStringRef()) + " " +
-                   loc_to_string(op.getLoc());
-    auto weights = std::vector<double>{1.};
-    index[val] = dagBuilder.add_levelled_op(slice(inputs), lweDimCostFactor,
-                                            fixedCost, slice(weights),
-                                            slice(outShape), comment, *loc);
+    index[val] = dagBuilder.add_zero(precision, slice(outShape), *loc);
     return index[val];
   }
 
@@ -376,6 +365,18 @@ struct FunctionToDag {
   loc_to_location(mlir::Location location) {
     return location_from_string(loc_to_string(location));
   }
+
+  concrete_optimizer::dag::OperatorIndex addMaxNoise(mlir::Operation &op,
+                                                     Inputs &inputs) {
+    auto val = op.getResult(0);
+    auto out_shape = getShape(val);
+    auto loc = loc_to_location(op.getLoc());
+    assert(!inputs.empty());
+
+    index[val] = dagBuilder.add_max(slice(inputs), slice(out_shape), *loc);
+    return index[val];
+  }
+
   concrete_optimizer::dag::OperatorIndex addLevelledOp(mlir::Operation &op,
                                                        Inputs &inputs) {
     auto val = op.getResult(0);
@@ -1000,6 +1001,10 @@ struct FunctionToDag {
 
   bool isArg(const mlir::Value &value) {
     return value.isa<mlir::BlockArgument>();
+  }
+
+  bool isMaxNoise(mlir::Operation &op) {
+    return llvm::isa<mlir::tensor::InsertSliceOp, mlir::tensor::InsertOp, mlir::tensor::ParallelInsertSliceOp>(op);
   }
 
   std::optional<std::vector<std::int64_t>>

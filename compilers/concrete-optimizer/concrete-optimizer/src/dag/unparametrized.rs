@@ -73,7 +73,10 @@ pub struct DagOperator<'dag> {
 impl<'dag> DagOperator<'dag> {
     /// Returns if the operator is an input.
     pub fn is_input(&self) -> bool {
-        matches!(self.operator, Operator::Input { .. })
+        matches!(
+            self.operator,
+            Operator::Input { .. } | Operator::Zero { .. }
+        )
     }
 
     /// Returns if the operator is an output.
@@ -163,6 +166,22 @@ impl<'dag> DagBuilder<'dag> {
         OperatorIndex(i)
     }
 
+    pub fn add_zero(
+        &mut self,
+        out_precision: Precision,
+        out_shape: impl Into<Shape>,
+        location: Location,
+    ) -> OperatorIndex {
+        let out_shape = out_shape.into();
+        self.add_operator(
+            Operator::Zero {
+                out_precision,
+                out_shape,
+            },
+            location,
+        )
+    }
+
     pub fn add_input(
         &mut self,
         out_precision: Precision,
@@ -238,6 +257,18 @@ impl<'dag> DagBuilder<'dag> {
             out_shape,
             comment,
         };
+        self.add_operator(op, location)
+    }
+
+    pub fn add_max(
+        &mut self,
+        inputs: impl Into<Vec<OperatorIndex>>,
+        out_shape: impl Into<Shape>,
+        location: Location,
+    ) -> OperatorIndex {
+        let inputs = inputs.into();
+        let out_shape = out_shape.into();
+        let op = Operator::Max { inputs, out_shape };
         self.add_operator(op, location)
     }
 
@@ -433,9 +464,10 @@ impl<'dag> DagBuilder<'dag> {
 
     fn infer_out_shape(&self, op: &Operator) -> Shape {
         match op {
-            Operator::Input { out_shape, .. } | Operator::LevelledOp { out_shape, .. } => {
-                out_shape.clone()
-            }
+            Operator::Input { out_shape, .. }
+            | Operator::LevelledOp { out_shape, .. }
+            | Operator::Zero { out_shape, .. }
+            | Operator::Max { out_shape, .. } => out_shape.clone(),
             Operator::Lut { input, .. }
             | Operator::UnsafeCast { input, .. }
             | Operator::Round { input, .. }
@@ -468,12 +500,13 @@ impl<'dag> DagBuilder<'dag> {
     fn infer_out_precision(&self, op: &Operator) -> Precision {
         match op {
             Operator::Input { out_precision, .. }
+            | Operator::Zero { out_precision, .. }
             | Operator::Lut { out_precision, .. }
             | Operator::UnsafeCast { out_precision, .. }
             | Operator::Round { out_precision, .. } => *out_precision,
-            Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
-                self.dag.out_precisions[inputs[0].0]
-            }
+            Operator::Dot { inputs, .. }
+            | Operator::LevelledOp { inputs, .. }
+            | Operator::Max { inputs, .. } => self.dag.out_precisions[inputs[0].0],
             Operator::ChangePartition { input, .. } => self.dag.out_precisions[input.0],
         }
     }
@@ -591,6 +624,15 @@ impl Dag {
             .add_input(out_precision, out_shape, Location::Unknown)
     }
 
+    pub fn add_zero(
+        &mut self,
+        out_precision: Precision,
+        out_shape: impl Into<Shape>,
+    ) -> OperatorIndex {
+        self.builder(DEFAULT_CIRCUIT)
+            .add_zero(out_precision, out_shape, Location::Unknown)
+    }
+
     pub fn add_lut(
         &mut self,
         input: OperatorIndex,
@@ -640,6 +682,15 @@ impl Dag {
             comment,
             Location::Unknown,
         )
+    }
+
+    pub fn add_max(
+        &mut self,
+        inputs: impl Into<Vec<OperatorIndex>>,
+        out_shape: impl Into<Shape>,
+    ) -> OperatorIndex {
+        self.builder(DEFAULT_CIRCUIT)
+            .add_max(inputs, out_shape, Location::Unknown)
     }
 
     pub fn add_unsafe_cast(
