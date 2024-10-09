@@ -1,4 +1,6 @@
 import os
+import json
+import math
 from functools import partial
 
 import click
@@ -32,17 +34,28 @@ def get_tfhers_params_and_type_and_int(precision):
 
     return tfhers_params, tfhers_type, tfhers_int
 
+# Read crypto parameters from TFHE-rs
+with open('server_dir/crypto_params.json') as f:
+    tfhe_rs_crypto_param_dic = json.load(f)
+
+pretty_json = json.dumps(tfhe_rs_crypto_param_dic, indent=4)
+print(pretty_json)
+
+def int_log2(x):
+    return int(math.log2(x))
+
 # FIXME Params: users shouldn't change them, should we hide it
-LWE_DIM = 909
-GLWE_DIM = 1
-POLY_SIZE = 4096
-PBS_BASE_LOG = 15
-PBS_LEVEL = 2
-MSG_WIDTH = 2
-CARRY_WIDTH = 3
+pbs_tfhe_rs_crypto_param_dic = tfhe_rs_crypto_param_dic["inner"]["block_parameters"]["PBS"]
+LWE_DIM = pbs_tfhe_rs_crypto_param_dic["lwe_dimension"]
+GLWE_DIM = pbs_tfhe_rs_crypto_param_dic["glwe_dimension"]
+POLY_SIZE = pbs_tfhe_rs_crypto_param_dic["polynomial_size"]
+PBS_BASE_LOG = pbs_tfhe_rs_crypto_param_dic["pbs_base_log"]
+PBS_LEVEL = pbs_tfhe_rs_crypto_param_dic["pbs_level"]
+MSG_WIDTH = int_log2(pbs_tfhe_rs_crypto_param_dic["message_modulus"])
+CARRY_WIDTH = int_log2(pbs_tfhe_rs_crypto_param_dic["carry_modulus"])
 ENCRYPTION_KEY_CHOICE = tfhers.EncryptionKeyChoice.BIG
-LWE_NOISE_DISTR = 0
-GLWE_NOISE_DISTR = 2.168404344971009e-19
+LWE_NOISE_DISTR = pbs_tfhe_rs_crypto_param_dic["lwe_noise_distribution"]["Gaussian"]["std"]
+GLWE_NOISE_DISTR = pbs_tfhe_rs_crypto_param_dic["glwe_noise_distribution"]["Gaussian"]["std"]
 
 assert GLWE_DIM == 1, "glwe dim must be 1"
 

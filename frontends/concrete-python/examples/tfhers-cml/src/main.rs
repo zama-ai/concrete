@@ -5,12 +5,23 @@ use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice};
 use tfhe::prelude::*;
 use std::path::Path;
 use std::fs;
+use std::fs::File;
 use std::io::Cursor;
 use std::process::Command;
 use std::io::{self, Write};
 use rand::Rng;
+use serde::Serialize;
+use serde_json;
 
 const BLOCK_PARAMS: ClassicPBSParameters = tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS;
+
+fn write_json_to_file<T: Serialize>(value: &T, filename: &str) {
+    let json_string = serde_json::to_string(value).unwrap();
+
+    let path = Path::new(filename);
+    let mut file = File::create(path).unwrap();
+    file.write_all(json_string.as_bytes()).unwrap();
+}
 
 fn serialize_lwesecretkey(lwe_secret_key: LweSecretKey<Vec<u64>>, lwe_secret_key_path: &str) {
     let mut serialized_lwe_secret_key = Vec::new();
@@ -49,6 +60,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let (glwe_secret_key, _, _) = shortint_ck.into_raw_parts();
     let lwe_secret_key = glwe_secret_key.into_lwe_secret_key();
 
+    // Save the crypto params to file, for Concrete to read and use them
+    write_json_to_file(&config, "server_dir/crypto_params.json");
+
     // Save the LWE secret key, for a compatible keygen to be possible in Concrete
     serialize_lwesecretkey(lwe_secret_key.clone(),  "client_dir/tfhers_sk.txt");
 
@@ -63,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
             .output()
             .expect("command failed to start");
 
-    if output_keygen.status.code() != Some(0)
+    // if output_keygen.status.code() != Some(0)
     {
         println!("status: {}", output_keygen.status);
         io::stdout().write_all(&output_keygen.stdout).unwrap();
