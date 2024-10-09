@@ -45,7 +45,7 @@ fn deserialize_fheuint8(path: &str) -> FheUint8 {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>>{
-    let config = ConfigBuilder::with_custom_parameters(BLOCK_PARAMS).build();
+    let config = ConfigBuilder::with_custom_parameters(BLOCK_PARAMS, None).build();
 
     // Step A: Key Generation
     // This is done only once, on the client side
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let (client_key, _) = generate_keys(config);
 
     // Get lwe_secret_key, to be reused to generate the server key in Concrete format
-    let (integer_ck, _, _) = client_key.clone().into_raw_parts();
+    let (integer_ck, _, _, _) = client_key.clone().into_raw_parts();
     let shortint_ck = integer_ck.into_raw_parts();
     assert!(BLOCK_PARAMS.encryption_key_choice == EncryptionKeyChoice::Big);
     let (glwe_secret_key, _, _) = shortint_ck.into_raw_parts();
@@ -77,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
             .output()
             .expect("command failed to start");
 
-    // if output_keygen.status.code() != Some(0)
+    if output_keygen.status.code() != Some(0)
     {
         println!("status: {}", output_keygen.status);
         io::stdout().write_all(&output_keygen.stdout).unwrap();

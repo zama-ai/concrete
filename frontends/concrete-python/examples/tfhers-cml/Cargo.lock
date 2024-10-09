@@ -47,12 +47,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bumpalo"
-version = "3.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
-
-[[package]]
 name = "bytemuck"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -83,7 +77,8 @@ dependencies = [
 [[package]]
 name = "concrete-csprng"
 version = "0.4.1"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90518357249582c16a6b64d7410243dfb3109d5bf0ad1665c058c9a59f2fc4cc"
 dependencies = [
  "aes",
  "libc",
@@ -92,14 +87,13 @@ dependencies = [
 
 [[package]]
 name = "concrete-fft"
-version = "0.5.1"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86ff7397e00e903afb03f0adca6a5f3bec3a6e96a7cdb70bdc088e01b125e170"
+checksum = "3144f883422ee22c65d4f408c11b3406513eadc0d50b3d65bfadcb97852817e0"
 dependencies = [
  "aligned-vec",
  "bytemuck",
  "dyn-stack",
- "js-sys",
  "num-complex",
  "pulp",
  "serde",
@@ -107,9 +101,9 @@ dependencies = [
 
 [[package]]
 name = "concrete-ntt"
-version = "0.2.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bea708a14b4cfe650eec644eac11889a187404a3a0738a41a5524b0f548850a1"
+checksum = "b4f4643dbd5de069e099122ae6c2bbd3db70d69ffec348dfc228448d635f949e"
 dependencies = [
  "aligned-vec",
  "pulp",
@@ -171,9 +165,9 @@ dependencies = [
 
 [[package]]
 name = "dyn-stack"
-version = "0.10.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56e53799688f5632f364f8fb387488dd05db9fe45db7011be066fc20e7027f8b"
+checksum = "7fe7f8d7bcc523381d3c437b82cf74805de3931de0da69309ae0fe1bdf7a256e"
 dependencies = [
  "bytemuck",
  "reborrow",
@@ -231,15 +225,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
-name = "js-sys"
-version = "0.3.70"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1868808506b929d7b0cfa8f75951347aa71bb21144b7791bae35d9bccfcfe37a"
-dependencies = [
- "wasm-bindgen",
-]
-
-[[package]]
 name = "keccak"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -259,12 +244,6 @@ name = "libm"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
-
-[[package]]
-name = "log"
-version = "0.4.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "memchr"
@@ -293,25 +272,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "once_cell"
-version = "1.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82881c4be219ab5faaf2ad5e5e5ecdff8c66bd7402ca3160975c93b24961afd1"
-dependencies = [
- "portable-atomic",
-]
-
-[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
-
-[[package]]
-name = "portable-atomic"
-version = "1.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc9c68a3f6da06753e9335d63e27f6b9754dd1920d941135b7ea8224f141adb2"
 
 [[package]]
 name = "ppv-lite86"
@@ -333,9 +297,9 @@ dependencies = [
 
 [[package]]
 name = "pulp"
-version = "0.18.22"
+version = "0.18.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0a01a0dc67cf4558d279f0c25b0962bd08fc6dec0137699eae304103e882fe6"
+checksum = "0ec8d02258294f59e4e223b41ad7e81c874aa6b15bc4ced9ba3965826da0eed5"
 dependencies = [
  "bytemuck",
  "libm",
@@ -469,8 +433,9 @@ dependencies = [
 
 [[package]]
 name = "tfhe"
-version = "0.8.0-alpha.3"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d73a5cbb0897d2b2549012f8962ec1a21f549aec80a7a790d7544a8c15d9e4a"
 dependencies = [
  "aligned-vec",
  "bincode",
@@ -492,7 +457,8 @@ dependencies = [
 [[package]]
 name = "tfhe-versionable"
 version = "0.2.1"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c7f9c9ef59d138c8ee539da0e15daf73345f0969a718f48bfd78706e4948e92"
 dependencies = [
  "aligned-vec",
  "num-complex",
@@ -503,7 +469,8 @@ dependencies = [
 [[package]]
 name = "tfhe-versionable-derive"
 version = "0.2.1"
-source = "git+https://github.com/zama-ai/tfhe-rs.git?rev=cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7#cfb9532f6336c7e8fec754d2dbe2e1195b9c0de7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4709d2c6e0a39b45ed752f4b1151e261cc43c9681cacad00be4ecfc5df655e5c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -544,61 +511,6 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
-
-[[package]]
-name = "wasm-bindgen"
-version = "0.2.93"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a82edfc16a6c469f5f44dc7b571814045d60404b55a0ee849f9bcfa2e63dd9b5"
-dependencies = [
- "cfg-if",
- "once_cell",
- "wasm-bindgen-macro",
-]
-
-[[package]]
-name = "wasm-bindgen-backend"
-version = "0.2.93"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9de396da306523044d3302746f1208fa71d7532227f15e347e2d93e4145dd77b"
-dependencies = [
- "bumpalo",
- "log",
- "once_cell",
- "proc-macro2",
- "quote",
- "syn",
- "wasm-bindgen-shared",
-]
-
-[[package]]
-name = "wasm-bindgen-macro"
-version = "0.2.93"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "585c4c91a46b072c92e908d99cb1dcdf95c5218eeb6f3bf1efa991ee7a68cccf"
-dependencies = [
- "quote",
- "wasm-bindgen-macro-support",
-]
-
-[[package]]
-name = "wasm-bindgen-macro-support"
-version = "0.2.93"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afc340c74d9005395cf9dd098506f7f44e38f2b4a21c6aaacf9a105ea5e1e836"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
- "wasm-bindgen-backend",
- "wasm-bindgen-shared",
-]
-
-[[package]]
-name = "wasm-bindgen-shared"
-version = "0.2.93"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c62a0a307cb4a311d3a07867860911ca130c3494e8c2719593806c08bc5d0484"
 
 [[package]]
 name = "zerocopy"
