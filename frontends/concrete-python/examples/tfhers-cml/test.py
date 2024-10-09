@@ -99,12 +99,12 @@ def function_to_run_in_concrete(tfhers_vars_0, tfhers_vars_1, tfhers_vars_2, tfh
 # This is where we compile the function with Concrete: user doesn't have to
 # change this, except to add more inputs (ie, tfhers_z etc)
 def compile_concrete_function():
-    compiler = fhe.Compiler(function_to_run_in_concrete,
-        {"tfhers_vars_0": "encrypted",
-         "tfhers_vars_1": "encrypted",
-         "tfhers_vars_2": "encrypted",
-         "tfhers_vars_3": "encrypted",
-         })
+    dic_compilation = {}
+
+    for i in range(4):
+        dic_compilation[f"tfhers_vars_{i}"] = "encrypted"
+
+    compiler = fhe.Compiler(function_to_run_in_concrete, dic_compilation)
 
     circuit = compiler.compile(inputset_of_tfhe_rs_inputs)
 
