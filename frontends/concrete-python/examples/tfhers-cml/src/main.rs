@@ -105,22 +105,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
             j = j + 1;
         }
 
-        let clear_a: u8 = rng.gen_range(0..128);
-        let clear_b: u8 = rng.gen_range(0..128);
-        let clear_c: u8 = rng.gen_range(0..128);
-
-        println!("Encrypting {clear_a} and {clear_b} and {clear_c}");
-
-        let ciphertext_a = FheUint8::encrypt(clear_a, &client_key);
-        let ciphertext_b = FheUint8::encrypt(clear_b, &client_key);
-        let ciphertext_c = FheUint8::encrypt(clear_c, &client_key);
-
-        // Serialize ciphertexts and store them in a file
-        serialize_fheuint8(ciphertext_a.clone(), "server_dir/ciphertext_a.txt");
-        serialize_fheuint8(ciphertext_b.clone(), "server_dir/ciphertext_b.txt");
-        serialize_fheuint8(ciphertext_c.clone(), "server_dir/ciphertext_c.txt");
-
-
         // Step C: Computations in Concrete
         // Computations are done on the server side
         let output_run = Command::new("python")
@@ -129,11 +113,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                 .arg("-k")
                 .arg("server_dir/concrete_keyset.txt")
                 .arg("-c1")
-                .arg("server_dir/ciphertext_a.txt")
+                .arg("server_dir/ciphertext_0.txt")
                 .arg("-c2")
-                .arg("server_dir/ciphertext_b.txt")
+                .arg("server_dir/ciphertext_1.txt")
                 .arg("-c3")
-                .arg("server_dir/ciphertext_c.txt")
+                .arg("server_dir/ciphertext_2.txt")
                 .arg("-o")
                 .arg("server_dir/ciphertext_r.txt")
                 .output()
@@ -158,6 +142,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         let decrypted_result: u8 = result.decrypt(&client_key);
 
         // Check the result was computed correctly
+        let clear_a = vec_clear[0];
+        let clear_b = vec_clear[1];
+        let clear_c = vec_clear[2];
+
         let clear_result_u16: u16 = (u16::from(clear_a) + u16::from(clear_b) + (2 * u16::from(clear_c))) % 47;
         let clear_result: u8 = clear_result_u16 as u8;
 
