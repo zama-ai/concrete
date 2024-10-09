@@ -52,14 +52,15 @@ FHEUINT_PRECISION = 8
 tfhers_params, tfhers_type, tfhers_int = get_tfhers_params_and_type_and_int(FHEUINT_PRECISION)
 
 # Describe the function you want to apply, on Concrete ciphertexts
-def server_side_function_in_concrete(concrete_0, concrete_1, concrete_2, concrete_3):
-    t = (concrete_0 + concrete_1) % 47
-    t = t + ((2 * concrete_2) % 47)
-    t = (t + 47 - concrete_3) % 47
+def server_side_function_in_concrete(concrete_vars):
+    t = (concrete_vars[0] + concrete_vars[1]) % 47
+    t = t + ((2 * concrete_vars[2]) % 47)
+    t = (t + 47 - (concrete_vars[3] % 47)) % 47
     return t
 
 # The user must specify the range of the TFHE-rs inputs
 # FIXME: why can't we set the limit at 256? It's needed for FHEUint8
+# FIXME(vectorisation): make that we can use a tensor here
 inputset_of_tfhe_rs_inputs = [(tfhers_int(randint(128)),
                                tfhers_int(randint(128)),
                                tfhers_int(randint(128)),
@@ -69,21 +70,23 @@ inputset_of_tfhe_rs_inputs = [(tfhers_int(randint(128)),
 
 # This is the compiled function: user doesn't have to change this, except to
 # add more inputs (ie, tfhers_z etc)
+# FIXME(vectorisation): make that we can use a tensor here
 def function_to_run_in_concrete(tfhers_vars_0, tfhers_vars_1, tfhers_vars_2, tfhers_vars_3):
 
     # Here, tfhers_x and tfhers_y are in TFHE-rs format
+
+    # FIXME(vectorisation): make that we can use a tensor here
     tfhers_vars = (tfhers_vars_0, tfhers_vars_1, tfhers_vars_2, tfhers_vars_3)
+
     concrete_vars = []
 
     for v in tfhers_vars:
         concrete_vars.append(tfhers.to_native(v))
 
-    concrete_vars = tuple(concrete_vars)
-
     # Here, concrete_vars are in Concrete format
 
     # Here we can apply whatever function we want in Concrete
-    concrete_res = server_side_function_in_concrete(*concrete_vars)
+    concrete_res = server_side_function_in_concrete(concrete_vars)
 
     # Here, concrete_res is in Concrete format
 
@@ -101,6 +104,7 @@ def function_to_run_in_concrete(tfhers_vars_0, tfhers_vars_1, tfhers_vars_2, tfh
 def compile_concrete_function():
     dic_compilation = {}
 
+    # FIXME(vectorisation): make that we can use a tensor here
     for i in range(4):
         dic_compilation[f"tfhers_vars_{i}"] = "encrypted"
 
