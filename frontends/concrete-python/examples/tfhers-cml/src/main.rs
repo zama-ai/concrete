@@ -76,7 +76,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     // This is done on the client side, several times
     let mut i = 0;
 
-    while i < 3 {
+    let nb_samples = 1;
+    let nb_parameters_in_function = 3;
+
+    while i < nb_samples {
 
         i = i + 1;
 
@@ -84,28 +87,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         // FIXME: remove the modulo 128
         let mut rng = rand::thread_rng();
         let mut vec_clear = Vec::new();
-        let mut vec_ciphertext = Vec::new();
-
         let mut j = 0;
 
-        while j < 3 {
-            vec_clear.push(rng.gen_range(0..128) as u8);
-            j = j + 1;
-        }
+        while j < nb_parameters_in_function {
+            let clear: u8 = rng.gen_range(0..128);
 
-        let v_iter = vec_clear.iter();
+            println!("Encrypting: {clear}");
 
-        for val in v_iter {
-            println!("Encrypting: {val}");
-            vec_ciphertext.push(FheUint8::encrypt(*val, &client_key));
-        }
+            vec_clear.push(clear);
 
-        let v_iter = vec_ciphertext.iter();
+            let ciphertext = FheUint8::encrypt(clear, &client_key);
 
-        j = 0;
+            let filename = format!("server_dir/ciphertext_{}.txt", j);
 
-        for val in v_iter {
-            serialize_fheuint8(val.clone(), "server_dir/ciphertext_{j}.txt");
+            serialize_fheuint8(ciphertext.clone(), &filename);
+
             j = j + 1;
         }
 
