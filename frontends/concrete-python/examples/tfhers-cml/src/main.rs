@@ -77,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let mut i = 0;
 
     let nb_samples = 1;
-    let nb_parameters_in_function = 3;
+    let nb_parameters_in_function = 4;
 
     while i < nb_samples {
 
@@ -142,7 +142,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         // Check the result was computed correctly
         let clear_result_u16: u16 = (u16::from(vec_clear[0]) +
                                      u16::from(vec_clear[1]) +
-                                     (2 * u16::from(vec_clear[2]))
+                                     (2 * u16::from(vec_clear[2])) -
+                                     u16::from(vec_clear[3])
                                     ) % 47;
         let clear_result: u8 = clear_result_u16 as u8;
 

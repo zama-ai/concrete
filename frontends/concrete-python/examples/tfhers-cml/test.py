@@ -52,12 +52,16 @@ FHEUINT_PRECISION = 8
 tfhers_params, tfhers_type, tfhers_int = get_tfhers_params_and_type_and_int(FHEUINT_PRECISION)
 
 # Describe the function you want to apply, on Concrete ciphertexts
-def server_side_function_in_concrete(concrete_x, concrete_y, concrete_z):
-    return (((concrete_x + concrete_y) % 47) + (2 * concrete_z) % 47) % 47
+def server_side_function_in_concrete(concrete_0, concrete_1, concrete_2, concrete_3):
+    t = (concrete_0 + concrete_1) % 47
+    t = t + ((2 * concrete_2) % 47)
+    t = (t + 47 - concrete_3) % 47
+    return t
 
 # The user must specify the range of the TFHE-rs inputs
 # FIXME: why can't we set the limit at 256? It's needed for FHEUint8
 inputset_of_tfhe_rs_inputs = [(tfhers_int(randint(128)),
+                               tfhers_int(randint(128)),
                                tfhers_int(randint(128)),
                                tfhers_int(randint(128))) for _ in range(100)]
 
@@ -65,18 +69,19 @@ inputset_of_tfhe_rs_inputs = [(tfhers_int(randint(128)),
 
 # This is the compiled function: user doesn't have to change this, except to
 # add more inputs (ie, tfhers_z etc)
-def function_to_run_in_concrete(tfhers_x, tfhers_y, tfhers_z):
+def function_to_run_in_concrete(tfhers_0, tfhers_1, tfhers_2, tfhers_3):
 
     # Here, tfhers_x and tfhers_y are in TFHE-rs format
 
-    concrete_x = tfhers.to_native(tfhers_x)
-    concrete_y = tfhers.to_native(tfhers_y)
-    concrete_z = tfhers.to_native(tfhers_z)
+    concrete_0 = tfhers.to_native(tfhers_0)
+    concrete_1 = tfhers.to_native(tfhers_1)
+    concrete_2 = tfhers.to_native(tfhers_2)
+    concrete_3 = tfhers.to_native(tfhers_3)
 
     # Here, concrete_'s variables are in Concrete format
 
     # Here we can apply whatever function we want in Concrete
-    concrete_res = server_side_function_in_concrete(concrete_x, concrete_y, concrete_z)
+    concrete_res = server_side_function_in_concrete(concrete_0, concrete_1, concrete_2, concrete_3)
 
     # Here, concrete_res is in Concrete format
 
@@ -93,9 +98,10 @@ def function_to_run_in_concrete(tfhers_x, tfhers_y, tfhers_z):
 # change this, except to add more inputs (ie, tfhers_z etc)
 def compile_concrete_function():
     compiler = fhe.Compiler(function_to_run_in_concrete,
-        {"tfhers_x": "encrypted",
-         "tfhers_y": "encrypted",
-         "tfhers_z": "encrypted"})
+        {"tfhers_0": "encrypted",
+         "tfhers_1": "encrypted",
+         "tfhers_2": "encrypted",
+         "tfhers_3": "encrypted"})
 
     circuit = compiler.compile(inputset_of_tfhe_rs_inputs)
 
@@ -156,17 +162,17 @@ def run(rust_ct: str, output_rust_ct: str, concrete_keyset_path: str):
 
     circuit.client.keys.load(concrete_keyset_path)
 
-    rust_ct_1, rust_ct_2, rust_ct_3 = rust_ct.split()
+    rust_ct_0, rust_ct_1, rust_ct_2, rust_ct_3 = rust_ct.split()
 
-    tfhers_uint8_x = read_var_from_file(tfhers_bridge, rust_ct_1, input_idx=0)
-    tfhers_uint8_y = read_var_from_file(tfhers_bridge, rust_ct_2, input_idx=1)
-    tfhers_uint8_z = read_var_from_file(tfhers_bridge, rust_ct_3, input_idx=2)
+    tfhers_uint8_0 = read_var_from_file(tfhers_bridge, rust_ct_0, input_idx=0)
+    tfhers_uint8_1 = read_var_from_file(tfhers_bridge, rust_ct_1, input_idx=1)
+    tfhers_uint8_2 = read_var_from_file(tfhers_bridge, rust_ct_2, input_idx=2)
+    tfhers_uint8_3 = read_var_from_file(tfhers_bridge, rust_ct_3, input_idx=3)
 
-    encrypted_result = circuit.run(tfhers_uint8_x, tfhers_uint8_y, tfhers_uint8_z)
+    encrypted_result = circuit.run(tfhers_uint8_0, tfhers_uint8_1, tfhers_uint8_2, tfhers_uint8_3)
 
-    # export fheuint8
+    # Export the result
     buff = tfhers_bridge.export_value(encrypted_result, output_idx=0)
-    # write it to file
     with open(output_rust_ct, "wb") as f:
         f.write(buff)
 
