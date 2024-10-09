@@ -72,16 +72,18 @@ inputset_of_tfhe_rs_inputs = [(tfhers_int(randint(128)),
 def function_to_run_in_concrete(tfhers_vars_0, tfhers_vars_1, tfhers_vars_2, tfhers_vars_3):
 
     # Here, tfhers_x and tfhers_y are in TFHE-rs format
+    tfhers_vars = (tfhers_vars_0, tfhers_vars_1, tfhers_vars_2, tfhers_vars_3)
+    concrete_vars = []
 
-    concrete_0 = tfhers.to_native(tfhers_vars_0)
-    concrete_1 = tfhers.to_native(tfhers_vars_1)
-    concrete_2 = tfhers.to_native(tfhers_vars_2)
-    concrete_3 = tfhers.to_native(tfhers_vars_3)
+    for v in tfhers_vars:
+        concrete_vars.append(tfhers.to_native(v))
 
-    # Here, concrete_'s variables are in Concrete format
+    concrete_vars = tuple(concrete_vars)
+
+    # Here, concrete_vars are in Concrete format
 
     # Here we can apply whatever function we want in Concrete
-    concrete_res = server_side_function_in_concrete(concrete_0, concrete_1, concrete_2, concrete_3)
+    concrete_res = server_side_function_in_concrete(*concrete_vars)
 
     # Here, concrete_res is in Concrete format
 
