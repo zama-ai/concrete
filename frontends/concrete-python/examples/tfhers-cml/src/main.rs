@@ -140,11 +140,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         let decrypted_result: u8 = result.decrypt(&client_key);
 
         // Check the result was computed correctly
-        let clear_a = vec_clear[0];
-        let clear_b = vec_clear[1];
-        let clear_c = vec_clear[2];
-
-        let clear_result_u16: u16 = (u16::from(clear_a) + u16::from(clear_b) + (2 * u16::from(clear_c))) % 47;
+        let clear_result_u16: u16 = (u16::from(vec_clear[0]) +
+                                     u16::from(vec_clear[1]) +
+                                     (2 * u16::from(vec_clear[2]))
+                                    ) % 47;
         let clear_result: u8 = clear_result_u16 as u8;
 
         println!("Expecting {clear_result}. Got {decrypted_result}");
