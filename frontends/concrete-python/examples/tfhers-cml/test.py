@@ -143,13 +143,11 @@ def keygen(secret_key: str, concrete_keyset_path: str):
 
 
 @cli.command()
-@click.option("-c1", "--rust-ct-1", type=str, required=True)
-@click.option("-c2", "--rust-ct-2", type=str, required=True)
-@click.option("-c3", "--rust-ct-3", type=str, required=True)
+@click.option("-c", "--rust-ct", type=str, required=True)
 @click.option("-o", "--output-rust-ct", type=str, required=True)
 @click.option("-k", "--concrete-keyset-path", type=str, required=True)
 # This is the actual FHE computation, on the server side
-def run(rust_ct_1: str, rust_ct_2: str, rust_ct_3: str, output_rust_ct: str, concrete_keyset_path: str):
+def run(rust_ct: str, output_rust_ct: str, concrete_keyset_path: str):
     """Run circuit"""
     circuit, tfhers_bridge = compile_concrete_function()
 
@@ -157,6 +155,8 @@ def run(rust_ct_1: str, rust_ct_2: str, rust_ct_3: str, output_rust_ct: str, con
         raise RuntimeError("cannot find keys, you should run keygen before")
 
     circuit.client.keys.load(concrete_keyset_path)
+
+    rust_ct_1, rust_ct_2, rust_ct_3 = rust_ct.split()
 
     tfhers_uint8_x = read_var_from_file(tfhers_bridge, rust_ct_1, input_idx=0)
     tfhers_uint8_y = read_var_from_file(tfhers_bridge, rust_ct_2, input_idx=1)
