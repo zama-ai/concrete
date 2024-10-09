@@ -124,6 +124,7 @@ struct Config {
   bool cache_on_disk;
   uint32_t ciphertext_modulus_log;
   uint32_t fft_precision;
+  concrete_optimizer::ParameterRestrictions parameter_restrictions;
   std::vector<CompositionRule> composition_rules;
   bool composable;
 };
@@ -141,6 +142,7 @@ const Config DEFAULT_CONFIG = {UNSPECIFIED_P_ERROR,
                                DEFAULT_CACHE_ON_DISK,
                                DEFAULT_CIPHERTEXT_MODULUS_LOG,
                                DEFAULT_FFT_PRECISION,
+                               concrete_optimizer::ParameterRestrictions {},
                                DEFAULT_COMPOSITION_RULES,
                                DEFAULT_COMPOSABLE};
 

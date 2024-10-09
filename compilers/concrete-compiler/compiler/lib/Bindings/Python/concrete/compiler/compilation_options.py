@@ -291,6 +291,161 @@ class CompilationOptions(WrapperCpp):
             raise TypeError("can't set security_level to a non-int value")
         self.cpp().set_security_level(security_level)
 
+    def set_glwe_pbs_restrictions(
+        self,
+        log2_polynomial_size_min: int | None,
+        log2_polynomial_size_max: int | None,
+        glwe_dimension_min: int | None,
+        glwe_dimension_max: int | None,
+    ):
+        """Set the GLWE PBS parameter restrictions.
+
+        Args:
+            log2_polynomial_size_min (int): Minimum log2 polynomial size
+            log2_polynomial_size_max (int): Maximum log2 polynomial size
+            glwe_dimension_min (int): Minimum glwe dimension
+            glwe_dimension_max (int): Maximum glwe dimension
+
+        Raises:
+            TypeError: if parameters are not of type int | None
+        """
+        if not isinstance(log2_polynomial_size_min, int) and log2_polynomial_size_min != None:
+            raise TypeError("log2_polynomial_size_min need to be an integer or None")
+        if not isinstance(log2_polynomial_size_max, int) and log2_polynomial_size_max != None:
+            raise TypeError("log2_polynomial_size_max need to be an integer or None")
+        if not isinstance(glwe_dimension_min, int) and glwe_dimension_min != None:
+            raise TypeError("glwe_dimension_min need to be an integer or None")
+        if not isinstance(glwe_dimension_max, int) and glwe_dimension_max != None:
+            raise TypeError("glwe_dimension_max need to be an integer or None")
+        self.cpp().set_glwe_pbs_restrictions(
+            log2_polynomial_size_min,
+            log2_polynomial_size_max,
+            glwe_dimension_min,
+            glwe_dimension_max,
+        )
+
+    def set_free_glwe_restrictions(
+        self,
+        log2_polynomial_size_min: int | None,
+        log2_polynomial_size_max: int | None,
+        glwe_dimension_min: int | None,
+        glwe_dimension_max: int | None,
+    ):
+        """Set the free GLWE parameter restrictions.
+
+        Args:
+            log2_polynomial_size_min (int): Minimum log2 polynomial size
+            log2_polynomial_size_max (int): Maximum log2 polynomial size
+            glwe_dimension_min (int): Minimum glwe dimension
+            glwe_dimension_max (int): Maximum glwe dimension
+
+        Raises:
+            TypeError: if parameters are not of type int | None
+        """
+        if not isinstance(log2_polynomial_size_min, int) and log2_polynomial_size_min != None:
+            raise TypeError("log2_polynomial_size_min need to be an integer or None")
+        if not isinstance(log2_polynomial_size_max, int) and log2_polynomial_size_max != None:
+            raise TypeError("log2_polynomial_size_max need to be an integer or None")
+        if not isinstance(glwe_dimension_min, int) and glwe_dimension_min != None:
+            raise TypeError("glwe_dimension_min need to be an integer or None")
+        if not isinstance(glwe_dimension_max, int) and glwe_dimension_max != None:
+            raise TypeError("glwe_dimension_max need to be an integer or None")
+        self.cpp().set_free_glwe_restrictions(
+            log2_polynomial_size_min,
+            log2_polynomial_size_max,
+            glwe_dimension_min,
+            glwe_dimension_max,
+        )
+
+    def set_br_decomposition_restrictions(
+        self,
+        log2_base_min: int | None,
+        log2_base_max: int | None,
+        level_min: int | None,
+        level_max: int | None,
+    ):
+        """Set the BR decomposition parameter restrictions.
+
+        Args:
+            log2_base_min (int): Minimum log2 base
+            log2_base_max (int): Maximum log2 base
+            level_min (int): Minimum decomposition level
+            level_max (int): Maximum decomposition level
+
+        Raises:
+            TypeError: if parameters are not of type int | None
+        """
+        if not isinstance(log2_base_min, int) and log2_base_min != None:
+            raise TypeError("log2_base_min need to be an integer or None")
+        if not isinstance(log2_base_max, int) and log2_base_max != None:
+            raise TypeError("log2_base_max need to be an integer or None")
+        if not isinstance(level_min, int) and level_min != None:
+            raise TypeError("level_min need to be an integer or None")
+        if not isinstance(level_max, int) and level_max != None:
+            raise TypeError("level_max need to be an integer or None")
+        self.cpp().set_br_decomposition_restrictions(
+            log2_base_min,
+            log2_base_max,
+            level_min,
+            level_max,
+        )
+
+    def set_ks_decomposition_restrictions(
+        self,
+        log2_base_min: int | None,
+        log2_base_max: int | None,
+        level_min: int | None,
+        level_max: int | None,
+    ):
+        """Set the KS decomposition parameter restrictions.
+
+        Args:
+            log2_base_min (int): Minimum log2 base
+            log2_base_max (int): Maximum log2 base
+            level_min (int): Minimum decomposition level
+            level_max (int): Maximum decomposition level
+
+        Raises:
+            TypeError: if parameters are not of type int | None
+        """
+        if not isinstance(log2_base_min, int) and log2_base_min != None:
+            raise TypeError("log2_base_min need to be an integer or None")
+        if not isinstance(log2_base_max, int) and log2_base_max != None:
+            raise TypeError("log2_base_max need to be an integer or None")
+        if not isinstance(level_min, int) and level_min != None:
+            raise TypeError("level_min need to be an integer or None")
+        if not isinstance(level_max, int) and level_max != None:
+            raise TypeError("level_max need to be an integer or None")
+        self.cpp().set_ks_decomposition_restrictions(
+            log2_base_min,
+            log2_base_max,
+            level_min,
+            level_max,
+        )
+
+    def set_free_lwe_restrictions(
+        self,
+        free_lwe_min: int | None,
+        free_lwe_max: int | None,
+    ):
+        """Set the free LWE parameter restrictions.
+
+        Args:
+            free_lwe_min (int): Minimum free LWE
+            free_lwe_max (int): Maximum free LWE
+
+        Raises:
+            TypeError: if parameters are not of type int | None
+        """
+        if not isinstance(free_lwe_min, int) and free_lwe_min != None:
+            raise TypeError("free_lwe_min need to be an integer or None")
+        if not isinstance(free_lwe_max, int) and free_lwe_max != None:
+            raise TypeError("free_lwe_max need to be an integer or None")
+        self.cpp().set_free_lwe_restrictions(
+            free_lwe_min,
+            free_lwe_max,
+        )
+
     def set_v0_parameter(
         self,
         glwe_dim: int,
