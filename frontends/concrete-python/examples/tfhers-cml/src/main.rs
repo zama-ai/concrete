@@ -83,13 +83,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
         i = i + 1;
 
-        // Pick random UInt8
-        // FIXME: remove the modulo 128
+        // Pick random UInt8's
         let mut rng = rand::thread_rng();
         let mut vec_clear = Vec::new();
         let mut j = 0;
 
         while j < nb_parameters_in_function {
+            // FIXME: remove the modulo 128
             let clear: u8 = rng.gen_range(0..128);
 
             println!("Encrypting: {clear}");
@@ -112,12 +112,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                 .arg("run")
                 .arg("-k")
                 .arg("server_dir/concrete_keyset.txt")
-                .arg("-c1")
-                .arg("server_dir/ciphertext_0.txt")
-                .arg("-c2")
-                .arg("server_dir/ciphertext_1.txt")
-                .arg("-c3")
-                .arg("server_dir/ciphertext_2.txt")
+                .arg("-c")
+                .arg("server_dir/ciphertext_0.txt server_dir/ciphertext_1.txt server_dir/ciphertext_2.txt")
                 .arg("-o")
                 .arg("server_dir/ciphertext_r.txt")
                 .output()
