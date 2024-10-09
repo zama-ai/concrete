@@ -60,23 +60,23 @@ def server_side_function_in_concrete(concrete_0, concrete_1, concrete_2, concret
 
 # The user must specify the range of the TFHE-rs inputs
 # FIXME: why can't we set the limit at 256? It's needed for FHEUint8
-inputset_of_tfhe_rs_inputs = [np.array([tfhers_int(randint(128)),
+inputset_of_tfhe_rs_inputs = [(tfhers_int(randint(128)),
                                tfhers_int(randint(128)),
                                tfhers_int(randint(128)),
-                               tfhers_int(randint(128))]) for _ in range(100)]
+                               tfhers_int(randint(128))) for _ in range(100)]
 
 # End of options
 
 # This is the compiled function: user doesn't have to change this, except to
 # add more inputs (ie, tfhers_z etc)
-def function_to_run_in_concrete(tfhers_vars):
+def function_to_run_in_concrete(tfhers_vars_0, tfhers_vars_1, tfhers_vars_2, tfhers_vars_3):
 
     # Here, tfhers_x and tfhers_y are in TFHE-rs format
 
-    concrete_0 = tfhers.to_native(tfhers_vars[0])
-    concrete_1 = tfhers.to_native(tfhers_vars[1])
-    concrete_2 = tfhers.to_native(tfhers_vars[2])
-    concrete_3 = tfhers.to_native(tfhers_vars[3])
+    concrete_0 = tfhers.to_native(tfhers_vars_0)
+    concrete_1 = tfhers.to_native(tfhers_vars_1)
+    concrete_2 = tfhers.to_native(tfhers_vars_2)
+    concrete_3 = tfhers.to_native(tfhers_vars_3)
 
     # Here, concrete_'s variables are in Concrete format
 
@@ -98,9 +98,12 @@ def function_to_run_in_concrete(tfhers_vars):
 # change this, except to add more inputs (ie, tfhers_z etc)
 def compile_concrete_function():
     compiler = fhe.Compiler(function_to_run_in_concrete,
-        {"tfhers_vars": "encrypted"})
+        {"tfhers_vars_0": "encrypted",
+         "tfhers_vars_1": "encrypted",
+         "tfhers_vars_2": "encrypted",
+         "tfhers_vars_3": "encrypted",
+         })
 
-    print(f"{inputset_of_tfhe_rs_inputs=}")
     circuit = compiler.compile(inputset_of_tfhe_rs_inputs)
 
     tfhers_bridge = tfhers.new_bridge(circuit=circuit)
@@ -167,7 +170,7 @@ def run(rust_ct: str, output_rust_ct: str, concrete_keyset_path: str):
     tfhers_uint8_2 = read_var_from_file(tfhers_bridge, rust_ct_2, input_idx=2)
     tfhers_uint8_3 = read_var_from_file(tfhers_bridge, rust_ct_3, input_idx=3)
 
-    tfhers_vars = np.array([tfhers_uint8_0, tfhers_uint8_1, tfhers_uint8_2, tfhers_uint8_3])
+    tfhers_vars = (tfhers_uint8_0, tfhers_uint8_1, tfhers_uint8_2, tfhers_uint8_3)
 
     encrypted_result = circuit.run(tfhers_vars)
 
