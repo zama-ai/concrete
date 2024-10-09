@@ -165,14 +165,12 @@ def run(rust_ct: str, output_rust_ct: str, concrete_keyset_path: str):
 
     circuit.client.keys.load(concrete_keyset_path)
 
-    rust_ct_0, rust_ct_1, rust_ct_2, rust_ct_3 = rust_ct.split()
+    tfhers_vars = []
 
-    tfhers_uint8_0 = read_var_from_file(tfhers_bridge, rust_ct_0, input_idx=0)
-    tfhers_uint8_1 = read_var_from_file(tfhers_bridge, rust_ct_1, input_idx=1)
-    tfhers_uint8_2 = read_var_from_file(tfhers_bridge, rust_ct_2, input_idx=2)
-    tfhers_uint8_3 = read_var_from_file(tfhers_bridge, rust_ct_3, input_idx=3)
+    for i, rust_ct_i in enumerate(rust_ct.split()):
+        tfhers_vars.append(read_var_from_file(tfhers_bridge, rust_ct_i, input_idx=i))
 
-    tfhers_vars = (tfhers_uint8_0, tfhers_uint8_1, tfhers_uint8_2, tfhers_uint8_3)
+    tfhers_vars = tuple(tfhers_vars)
 
     encrypted_result = circuit.run(tfhers_vars)
 
