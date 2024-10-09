@@ -83,6 +83,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         // Pick random UInt8
         // FIXME: remove the modulo 128
         let mut rng = rand::thread_rng();
+        let mut vec_clear = Vec::new();
+        let mut vec_ciphertext = Vec::new();
+
+        let mut j = 0;
+
+        while j < 3 {
+            vec_clear.push(rng.gen_range(0..128) as u8);
+            j = j + 1;
+        }
+
+        let v_iter = vec_clear.iter();
+
+        for val in v_iter {
+            println!("Encrypting: {val}");
+            vec_ciphertext.push(FheUint8::encrypt(*val, &client_key));
+        }
+
+        let v_iter = vec_ciphertext.iter();
+
+        j = 0;
+
+        for val in v_iter {
+            serialize_fheuint8(val.clone(), "server_dir/ciphertext_{j}.txt");
+            j = j + 1;
+        }
+
         let clear_a: u8 = rng.gen_range(0..128);
         let clear_b: u8 = rng.gen_range(0..128);
         let clear_c: u8 = rng.gen_range(0..128);
