@@ -10,7 +10,7 @@ from concrete.ml.sklearn import LogisticRegression
 X, y = load_breast_cancer(return_X_y=True)
 x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=23)
 
-model = LogisticRegression(n_bits=8)
+model = LogisticRegression(n_bits=7)
 model.fit(x_train, y_train)
 
 y_pred = model.predict(x_test)
