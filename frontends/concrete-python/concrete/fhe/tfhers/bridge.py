@@ -121,11 +121,13 @@ class Bridge:
 
         bit_width = input_type.bit_width
         signed = input_type.is_signed
+        keyid = self._input_keyid(input_idx)
+        variance = self._input_variance(input_idx)
         if bit_width == 8:
             if not signed:
-                keyid = self._input_keyid(input_idx)
-                variance = self._input_variance(input_idx)
                 return Value(TfhersExporter.import_fheuint8(buffer, fheint_desc, keyid, variance))
+            else:
+                return Value(TfhersExporter.import_fheint8(buffer, fheint_desc, keyid, variance))
 
         msg = (  # pragma: no cover
             f"importing {'signed' if signed else 'unsigned'} integers of {bit_width}bits is not"
@@ -155,6 +157,10 @@ class Bridge:
         if bit_width == 8:
             if not signed:
                 return TfhersExporter.export_fheuint8(
+                    value._inner, fheint_desc  # pylint: disable=protected-access
+                )
+            else:
+                return TfhersExporter.export_fheint8(
                     value._inner, fheint_desc  # pylint: disable=protected-access
                 )
 
