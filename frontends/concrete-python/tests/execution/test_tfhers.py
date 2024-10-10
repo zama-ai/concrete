@@ -56,7 +56,7 @@ def is_input_and_output_tfhers(
     tfhers_outs: List[int],
 ) -> bool:
     """Check if inputs and outputs description match tfhers parameters"""
-    params = json.loads(circuit.client.specs.client_parameters.serialize())
+    params = json.loads(circuit.client.specs.serialize())
     main_circuit = params["circuits"][0]
     # check all encrypted input/output have the correct lwe_dim
     ins = main_circuit["inputs"]

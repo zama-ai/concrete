@@ -339,7 +339,7 @@ class ModuleDebugArtifacts:
         """
 
         return (
-            self._execution_runtime.val.client.specs.client_parameters.serialize()
+            self._execution_runtime.val.client.specs.program_info.serialize()
             if self._execution_runtime is not None
             else None
         )

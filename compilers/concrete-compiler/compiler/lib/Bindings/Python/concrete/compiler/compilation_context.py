@@ -1,65 +1,29 @@
 #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 #  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
 
-"""CompilationContext.
+"""Compilation context."""
 
-CompilationContext holds the MLIR Context supposed to be used during IR generation.
-"""
-
-# pylint: disable=no-name-in-module,import-error
+# pylint: disable=no-name-in-module,import-error,too-many-instance-attributes
 from mlir._mlir_libs._concretelang._compiler import (
-    CompilationContext as _CompilationContext,
+    CompilationContext as CompilationContext_,
 )
 from mlir.ir import Context as MlirContext
 
-# pylint: enable=no-name-in-module,import-error
-from .wrapper import WrapperCpp
 
-
-class CompilationContext(WrapperCpp):
-    """Support class for compilation context.
-
-    CompilationContext is meant to outlive mlir_context().
-    Do not use the mlir_context after deleting the CompilationContext.
+class CompilationContext(CompilationContext_):
+    """
+    Compilation context.
     """
 
-    def __init__(self, compilation_context: _CompilationContext):
-        """Wrap the native Cpp object.
-
-        Args:
-            compilation_context (_CompilationContext): object to wrap
-
-        Raises:
-            TypeError: if compilation_context is not of type _CompilationContext
-        """
-        if not isinstance(compilation_context, _CompilationContext):
-            raise TypeError(
-                f"compilation_context must be of type _CompilationContext, not "
-                f"{type(compilation_context)}"
-            )
-        super().__init__(compilation_context)
-
-    # pylint: disable=arguments-differ
     @staticmethod
     def new() -> "CompilationContext":
-        """Build a CompilationContext.
-
-        Returns:
-            CompilationContext
         """
-        return CompilationContext.wrap(_CompilationContext())
-
-    def mlir_context(
-        self,
-    ) -> MlirContext:
+        Creates a new CompilationContext.
         """
-        Get the MLIR context used by the compilation context.
+        return CompilationContext()
 
-        The Compilation Context should outlive the mlir_context.
-
-        Returns:
-            MlirContext: MLIR context of the compilation context
+    def mlir_context(self) -> MlirContext:
         """
-        # pylint: disable=protected-access
-        return MlirContext._CAPICreate(self.cpp().mlir_context())
-        # pylint: enable=protected-access
+        Returns the associated mlir context.
+        """
+        return MlirContext._CAPICreate(CompilationContext_.mlir_context(self)) # pyling: disable=protected-access

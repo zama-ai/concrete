@@ -8,13 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
-from concrete.compiler import (
-    CompilationContext,
-    LweSecretKey,
-    Parameter,
-    SimulatedValueDecrypter,
-    SimulatedValueExporter,
-)
+from concrete.compiler import CompilationContext, LweSecretKey, Parameter
 from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
@@ -24,7 +18,7 @@ from .composition import CompositionRule
 from .configuration import Configuration
 from .keys import Keys
 from .server import Server
-from .utils import Lazy, validate_input_args
+from .utils import Lazy
 from .value import Value
 
 # pylint: enable=import-error,no-member,no-name-in-module
@@ -44,6 +38,7 @@ class SimulationRt(NamedTuple):
     Runtime object class for simulation.
     """
 
+    client: Client
     server: Server
 
 
@@ -124,6 +119,29 @@ class FheFunction:
     def __repr__(self) -> str:
         return f"FheFunction(name={self.name})"
 
+    def _simulate_encrypt(
+        self,
+        *args: Optional[Union[int, np.ndarray, List]],
+    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
+
+        return self.simulation_runtime.val.client.simulate_encrypt(*args, function_name=self.name)
+
+    def _simulate_run(
+        self,
+        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+    ) -> Union[Value, Tuple[Value, ...]]:
+
+        return self.simulation_runtime.val.server.run(*args, function_name=self.name)
+
+    def _simulate_decrypt(
+        self,
+        *results: Union[Value, Tuple[Value, ...]],
+    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+
+        return self.simulation_runtime.val.client.simulate_decrypt(
+            *results, function_name=self.name
+        )
+
     def simulate(self, *args: Any) -> Any:
         """
         Simulate execution of the function.
@@ -137,42 +155,11 @@ class FheFunction:
                 result of the simulation
         """
 
-        ordered_validated_args = validate_input_args(
-            self.simulation_runtime.val.server.client_specs,
-            *args,
-            function_name=self.name,
-        )
-
-        exporter = SimulatedValueExporter.new(
-            self.simulation_runtime.val.server.client_specs.client_parameters, self.name
-        )
-        exported = [
-            (
-                None
-                if arg is None
-                else Value(
-                    exporter.export_tensor(position, arg.flatten().tolist(), list(arg.shape))
-                    if isinstance(arg, np.ndarray) and arg.shape != ()
-                    else exporter.export_scalar(position, int(arg))
-                )
-            )
-            for position, arg in enumerate(ordered_validated_args)
-        ]
-
-        results = self.simulation_runtime.val.server.run(*exported, function_name=self.name)
-        if not isinstance(results, tuple):
-            results = (results,)
-
-        decrypter = SimulatedValueDecrypter.new(
-            self.simulation_runtime.val.server.client_specs.client_parameters, self.name
-        )
-        decrypted = tuple(
-            decrypter.decrypt(position, result.inner) for position, result in enumerate(results)
-        )
-        return decrypted if len(decrypted) != 1 else decrypted[0]
+        return self._simulate_decrypt(self._simulate_run(self._simulate_encrypt(*args)))
 
     def encrypt(
-        self, *args: Optional[Union[int, np.ndarray, List]]
+        self,
+        *args: Optional[Union[int, np.ndarray, List]],
     ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
@@ -187,8 +174,7 @@ class FheFunction:
         """
 
         if self.configuration.simulate_encrypt_run_decrypt:
-            return args if len(args) != 1 else args[0]  # type: ignore
-
+            return tuple(args) if len(args) > 1 else args[0]  # type: ignore
         return self.execution_runtime.val.client.encrypt(*args, function_name=self.name)
 
     def run(
@@ -208,8 +194,7 @@ class FheFunction:
         """
 
         if self.configuration.simulate_encrypt_run_decrypt:
-            return self.simulate(*args)
-
+            return self._simulate_decrypt(self._simulate_run(*args))  # type: ignore
         return self.execution_runtime.val.server.run(
             *args,
             evaluation_keys=self.execution_runtime.val.client.evaluation_keys,
@@ -233,7 +218,7 @@ class FheFunction:
         """
 
         if self.configuration.simulate_encrypt_run_decrypt:
-            return results if len(results) != 1 else results[0]  # type: ignore
+            return tuple(results) if len(results) > 1 else results[0]  # type: ignore
 
         return self.execution_runtime.val.client.decrypt(*results, function_name=self.name)
 
@@ -612,7 +597,8 @@ class FheModule:
                 is_simulated=True,
                 compilation_context=self.compilation_context,
             )
-            return SimulationRt(simulation_server)
+            simulation_client = Client(simulation_server.client_specs, is_simulated=True)
+            return SimulationRt(simulation_client, simulation_server)
 
         self.simulation_runtime = Lazy(init_simulation)
         if configuration.fhe_simulation:
@@ -624,13 +610,16 @@ class FheModule:
                 self.configuration.fork(fhe_simulation=False),
                 compilation_context=self.compilation_context,
                 composition_rules=composition_rules,
+                is_simulated=False,
             )
             keyset_cache_directory = None
             if self.configuration.use_insecure_key_cache:
                 assert_that(self.configuration.enable_unsafe_features)
                 assert_that(self.configuration.insecure_key_cache_location is not None)
                 keyset_cache_directory = self.configuration.insecure_key_cache_location
-            execution_client = Client(execution_server.client_specs, keyset_cache_directory)
+            execution_client = Client(
+                execution_server.client_specs, keyset_cache_directory, is_simulated=False
+            )
             return ExecutionRt(execution_client, execution_server)
 
         self.execution_runtime = Lazy(init_execution)
@@ -647,7 +636,7 @@ class FheModule:
         return str(self.mlir_module).strip()
 
     @property
-    def keys(self) -> Keys:
+    def keys(self) -> Optional[Keys]:
         """
         Get the keys of the module.
         """
@@ -717,14 +706,14 @@ class FheModule:
         return self.execution_runtime.val.server.size_of_keyswitch_keys  # pragma: no cover
 
     @property
-    def p_error(self) -> int:
+    def p_error(self) -> float:
         """
         Get probability of error for each simple TLU (on a scalar).
         """
         return self.execution_runtime.val.server.p_error  # pragma: no cover
 
     @property
-    def global_p_error(self) -> int:
+    def global_p_error(self) -> float:
         """
         Get the probability of having at least one simple TLU error during the entire execution.
         """
@@ -799,7 +788,7 @@ class FheModule:
         """
         return len(self.graphs)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> FheFunction:
         if item not in list(self.graphs.keys()):
             error = f"No attribute {item}"
             raise AttributeError(error)

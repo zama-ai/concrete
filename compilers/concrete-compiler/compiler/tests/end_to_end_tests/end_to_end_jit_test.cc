@@ -499,6 +499,6 @@ func.func @main(%arg0: !FHE.eint<3>) -> !FHE.eint<3> {
   return %arg0: !FHE.eint<3>
 }
 )XXX"));
-  ASSERT_ASSIGN_OUTCOME_VALUE(result, circuit.call({Tensor<uint64_t>(7)}));
+  ASSERT_ASSIGN_OUTCOME_VALUE(result, circuit.simulate({Tensor<uint64_t>(7)}));
   ASSERT_EQ(result[0].getTensor<uint64_t>().value()[0], (uint64_t)(7));
 }
