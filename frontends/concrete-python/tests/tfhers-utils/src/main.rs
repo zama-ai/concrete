@@ -4,9 +4,9 @@ use serde::de::DeserializeOwned;
 use std::fs;
 use std::path::Path;
 use tfhe::core_crypto::prelude::LweSecretKey;
-use tfhe::{prelude::*};
+use tfhe::prelude::*;
 use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice};
-use tfhe::{generate_keys, set_server_key, ClientKey, ConfigBuilder, FheUint8, ServerKey};
+use tfhe::{generate_keys, set_server_key, ClientKey, ConfigBuilder, FheInt8, FheUint8, ServerKey};
 
 use serde::Serialize;
 use tfhe::named::Named;
@@ -48,25 +48,55 @@ fn set_server_key_from_file(path: &String) {
     set_server_key(sk);
 }
 
-fn encrypt_with_key(value: u8, client_key: ClientKey, path: &String) {
+fn encrypt_with_key_u8(
+    value: u8,
+    client_key: ClientKey,
+    ciphertext_path: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
     let ct = FheUint8::encrypt(value, &client_key);
-    safe_save(path, &ct)
+
+    safe_save(ciphertext_path, &ct);
+
+    Ok(())
+}
+
+fn encrypt_with_key_i8(
+    value: i8,
+    client_key: ClientKey,
+    ciphertext_path: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let ct = FheInt8::encrypt(value, &client_key);
+
+    safe_save(ciphertext_path, &ct);
+
+    Ok(())
 }
 
 fn decrypt_with_key(
     client_key: ClientKey,
     ciphertext_path: &String,
     plaintext_path: Option<&String>,
-) {
-    let fheuint: FheUint8 = safe_load(ciphertext_path);
-    let result: u8 = fheuint.decrypt(&client_key);
+    signed: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let string_result: String;
+
+    if signed {
+        let fheint: FheInt8 = safe_load(ciphertext_path);
+        let result: i8 = fheint.decrypt(&client_key);
+        string_result = result.to_string();
+    } else {
+        let fheuint: FheUint8 = safe_load(ciphertext_path);
+        let result: u8 = fheuint.decrypt(&client_key);
+        string_result = result.to_string();
+    }
 
     if let Some(path) = plaintext_path {
         let pt_path: &Path = Path::new(path);
-        fs::write(pt_path, result.to_string()).unwrap();
+        fs::write(pt_path, string_result)?;
     } else {
-        println!("result: {}", result);
+        println!("result: {}", string_result);
     }
+    Ok(())
 }
 
 fn sum(cts_paths: Vec<&String>, out_ct_path: &String) {
@@ -102,11 +132,7 @@ fn write_keys(
     }
 }
 
-fn keygen(
-    client_key_path: &String,
-    server_key_path: &String,
-    output_lwe_path: &String,
-) {
+fn keygen(client_key_path: &String, server_key_path: &String, output_lwe_path: &String) {
     let config = ConfigBuilder::with_custom_parameters(BLOCK_PARAMS).build();
 
     let (client_key, server_key) = generate_keys(config);
@@ -154,6 +180,12 @@ fn main() {
                         .num_args(1),
                 )
                 .arg(
+                    Arg::new("signed")
+                        .long("signed")
+                        .help("encrypt as a signed integer")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
                     Arg::new("ciphertext")
                         .short('c')
                         .long("ciphertext")
@@ -186,6 +218,12 @@ fn main() {
                 .short_flag('d')
                 .long_flag("decrypt")
                 .about("Decrypt a ciphertext with a given key.")
+                .arg(
+                    Arg::new("signed")
+                        .long("signed")
+                        .help("decrypt as a signed integer")
+                        .action(ArgAction::SetTrue),
+                )
                 .arg(
                     Arg::new("ciphertext")
                         .short('c')
@@ -300,8 +338,8 @@ fn main() {
     match matches.subcommand() {
         Some(("encrypt-with-key", encrypt_matches)) => {
             let value_str = encrypt_matches.get_one::<String>("value").unwrap();
-            let value: u8 = value_str.parse().unwrap();
             let ciphertext_path = encrypt_matches.get_one::<String>("ciphertext").unwrap();
+            let signed = encrypt_matches.get_flag("signed");
 
             let client_key: ClientKey;
             if let Some(lwe_sk_path) = encrypt_matches.get_one::<String>("lwe-sk") {
@@ -312,11 +350,18 @@ fn main() {
                 panic!("no key specified");
             }
 
-            encrypt_with_key(value, client_key, ciphertext_path)
+            if signed {
+                let value: i8 = value_str.parse().unwrap();
+                encrypt_with_key_i8(value, client_key, ciphertext_path).unwrap()
+            } else {
+                let value: u8 = value_str.parse().unwrap();
+                encrypt_with_key_u8(value, client_key, ciphertext_path).unwrap()
+            }
         }
         Some(("decrypt-with-key", decrypt_mtches)) => {
             let ciphertext_path = decrypt_mtches.get_one::<String>("ciphertext").unwrap();
             let plaintext_path = decrypt_mtches.get_one::<String>("plaintext");
+            let signed = decrypt_mtches.get_flag("signed");
 
             let client_key: ClientKey;
             if let Some(lwe_sk_path) = decrypt_mtches.get_one::<String>("lwe-sk") {
@@ -326,7 +371,7 @@ fn main() {
             } else {
                 panic!("no key specified");
             }
-            decrypt_with_key(client_key, ciphertext_path, plaintext_path)
+            decrypt_with_key(client_key, ciphertext_path, plaintext_path, signed).unwrap()
         }
         Some(("add", add_mtches)) => {
             let server_key_path = add_mtches.get_one::<String>("server-key").unwrap();
