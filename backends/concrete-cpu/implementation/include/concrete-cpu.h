@@ -369,6 +369,11 @@ void concrete_cpu_keyswitch_lwe_ciphertext_u64(uint64_t *ct_out,
                                                size_t input_dimension,
                                                size_t output_dimension);
 
+size_t concrete_cpu_lwe_array_to_tfhers_int8(const uint64_t *lwe_vec_buffer,
+                                             uint8_t *fheuint_buffer,
+                                             size_t fheuint_buffer_size,
+                                             struct TfhersFheIntDescription fheuint_desc);
+
 size_t concrete_cpu_lwe_array_to_tfhers_uint8(const uint64_t *lwe_vec_buffer,
                                               uint8_t *buffer,
                                               size_t buffer_len,
@@ -414,6 +419,11 @@ size_t concrete_cpu_serialize_lwe_secret_key_u64(const uint64_t *lwe_sk,
                                                  size_t out_buffer_len);
 
 size_t concrete_cpu_tfhers_fheint_buffer_size_u64(size_t lwe_size, size_t n_cts);
+
+int64_t concrete_cpu_tfhers_int8_to_lwe_array(const uint8_t *serialized_data_ptr,
+                                              size_t serialized_data_len,
+                                              uint64_t *lwe_vec_buffer,
+                                              struct TfhersFheIntDescription desc);
 
 int64_t concrete_cpu_tfhers_uint8_to_lwe_array(const uint8_t *buffer,
                                                size_t buffer_len,

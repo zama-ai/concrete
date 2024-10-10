@@ -280,8 +280,25 @@ def lut_add_lut(x, y):
     return lut[x + y]
 
 
-TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
+TFHERS_UINT_8_3_2_4096 = tfhers.TFHERSIntegerType(
     False,
+    bit_width=8,
+    carry_width=3,
+    msg_width=2,
+    params=tfhers.CryptoParams(
+        lwe_dimension=909,
+        glwe_dimension=1,
+        polynomial_size=4096,
+        pbs_base_log=15,
+        pbs_level=2,
+        lwe_noise_distribution=0,
+        glwe_noise_distribution=2.168404344971009e-19,
+        encryption_key_choice=tfhers.EncryptionKeyChoice.BIG,
+    ),
+)
+
+TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
+    True,
     bit_width=8,
     carry_width=3,
     msg_width=2,
@@ -307,8 +324,17 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
                 "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
                 "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + y",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [-(2**6), -2], "status": "encrypted"},
+                "y": {"range": [0, 2**6 - 1], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(x) + signed(y)",
         ),
         pytest.param(
             lambda x, y: x - y,
@@ -316,8 +342,17 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
                 "x": {"range": [2**4, 2**7 - 1], "status": "encrypted"},
                 "y": {"range": [0, 2**4 - 1], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x - y",
+        ),
+        pytest.param(
+            lambda x, y: x - y,
+            {
+                "x": {"range": [-(2**3), -2], "status": "encrypted"},
+                "y": {"range": [-(2**3), -2], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(x) - signed(y)",
         ),
         pytest.param(
             lambda x, y: x * y,
@@ -325,7 +360,7 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
                 "x": {"range": [0, 2**3 - 1], "status": "encrypted"},
                 "y": {"range": [0, 2**3 - 1], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x * y",
         ),
         pytest.param(
@@ -334,7 +369,7 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
                 "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
                 "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="lut_add_lut",
         ),
     ],
@@ -412,20 +447,20 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     # encrypt inputs and incremnt them by one in TFHErs
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v 1 -c {ct_one_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value=1 -c {ct_one_path} --client-key {client_key_path}"
         )
         == 0
     )
     sample = [s + 1 for s in sample]
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value={ct1} -c {ct1_path} --client-key {client_key_path}"
         )
         == 0
     )
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value={ct2} -c {ct2_path} --client-key {client_key_path}"
         )
         == 0
     )
@@ -468,7 +503,9 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} --lwe-sk {key_path} -p {pt_path}"
+            f"{tfhers_utils} decrypt-with-key"
+            f"{' --signed ' if dtype.is_signed else ''}"
+            f" -c {ct_out_path} --lwe-sk {key_path} -p {pt_path}"
         )
         == 0
     )
@@ -496,8 +533,26 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [0, 2**7], "status": "encrypted"},
                 "y": {"range": [0, 2**7], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + y",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [-(2**6), -2], "status": "encrypted"},
+                "y": {"range": [0, 2**6 - 1], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(-x) + signed(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**6 - 1], "status": "encrypted"},
+                "y": {"range": [-(2**6), -2], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(x) + signed(-y)",
         ),
         pytest.param(
             lambda x, y: x + y,
@@ -505,8 +560,26 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [0, 2**7], "status": "encrypted"},
                 "y": {"range": [0, 2**7], "status": "clear"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + clear(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [-(2**6), -2], "status": "encrypted"},
+                "y": {"range": [0, 2**6 - 1], "status": "clear"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(-x) + clear(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**6 - 1], "status": "encrypted"},
+                "y": {"range": [-(2**6), -2], "status": "clear"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(x) + clear(-y)",
         ),
         pytest.param(
             lambda x, y: x + y,
@@ -514,7 +587,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [2**6, 2**7 - 1], "status": "encrypted"},
                 "y": {"range": [2**6, 2**7 - 1], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + y big values",
         ),
         pytest.param(
@@ -523,7 +596,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [2**6, 2**7 - 1], "status": "encrypted"},
                 "y": {"range": [2**6, 2**7 - 1], "status": "clear"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + clear(y) big values",
         ),
         pytest.param(
@@ -532,8 +605,17 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
                 "y": {"range": [0, 2**4], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x - y",
+        ),
+        pytest.param(
+            lambda x, y: x - y,
+            {
+                "x": {"range": [-(2**3), -2], "status": "encrypted"},
+                "y": {"range": [-(2**3), -2], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(x) - signed(y)",
         ),
         pytest.param(
             lambda x, y: x - y,
@@ -541,7 +623,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
                 "y": {"range": [0, 2**4], "status": "clear"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x - clear(y)",
         ),
         pytest.param(
@@ -550,7 +632,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [0, 2**3], "status": "encrypted"},
                 "y": {"range": [0, 2**3], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x * y",
         ),
         pytest.param(
@@ -559,7 +641,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [0, 2**3], "status": "encrypted"},
                 "y": {"range": [0, 2**3], "status": "clear"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x * clear(y)",
         ),
         pytest.param(
@@ -568,7 +650,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
                 "x": {"range": [0, 2**7], "status": "encrypted"},
                 "y": {"range": [0, 2**7], "status": "encrypted"},
             },
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="lut_add_lut(x , y)",
         ),
     ],
@@ -633,7 +715,9 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} --lwe-sk {key_path}")
+        os.system(
+            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value={ct1} -c {ct1_path} --lwe-sk {key_path}"
+        )
         == 0
     )
 
@@ -660,7 +744,9 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} decrypt-with-key" f" -c {ct_out_path} --lwe-sk {key_path} -p {pt_path}"
+            f"{tfhers_utils} decrypt-with-key"
+            f"{' --signed ' if dtype.is_signed else ''}"
+            f" -c {ct_out_path} --lwe-sk {key_path} -p {pt_path}"
         )
         == 0
     )
@@ -686,7 +772,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
                 "y": {"range": [0, 2**6], "status": "encrypted"},
             },
             [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + y",
         ),
         pytest.param(
@@ -696,7 +782,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
                 "y": {"range": [0, 2**4], "status": "encrypted"},
             },
             [0, 2**3],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x - y",
         ),
         pytest.param(
@@ -706,7 +792,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
                 "y": {"range": [0, 2**3], "status": "encrypted"},
             },
             [0, 2**2],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x * y",
         ),
         pytest.param(
@@ -716,7 +802,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
                 "y": {"range": [0, 2**6], "status": "encrypted"},
             },
             [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="lut_add_lut",
         ),
     ],
@@ -804,10 +890,12 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key -v {ct1} -c {ct1_path} --lwe-sk {sk_path}") == 0
+        os.system(f"{tfhers_utils} encrypt-with-key --value={ct1} -c {ct1_path} --lwe-sk {sk_path}")
+        == 0
     )
     assert (
-        os.system(f"{tfhers_utils} encrypt-with-key -v {ct2} -c {ct2_path} --lwe-sk {sk_path}") == 0
+        os.system(f"{tfhers_utils} encrypt-with-key --value={ct2} -c {ct2_path} --lwe-sk {sk_path}")
+        == 0
     )
 
     # import ciphertexts and run
@@ -853,7 +941,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     random_value = np.random.randint(*tfhers_value_range)
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v {random_value} -c {random_ct_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} --client-key {client_key_path}"
         )
         == 0
     )
@@ -898,7 +986,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [0, 2**6], "status": "encrypted"},
             },
             [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + y",
         ),
         pytest.param(
@@ -908,7 +996,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [0, 2**6], "status": "clear"},
             },
             [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + clear(y)",
         ),
         pytest.param(
@@ -918,7 +1006,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [2**5, 2**6], "status": "encrypted"},
             },
             [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + y big values",
         ),
         pytest.param(
@@ -928,7 +1016,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [2**5, 2**6], "status": "clear"},
             },
             [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x + clear(y) big values",
         ),
         pytest.param(
@@ -938,7 +1026,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [0, 2**4], "status": "encrypted"},
             },
             [0, 2**3],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x - y",
         ),
         pytest.param(
@@ -948,7 +1036,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [0, 2**4], "status": "clear"},
             },
             [0, 2**3],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x - clear(y)",
         ),
         pytest.param(
@@ -958,7 +1046,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [0, 2**3], "status": "encrypted"},
             },
             [0, 2**2],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x * y",
         ),
         pytest.param(
@@ -968,7 +1056,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [0, 2**3], "status": "clear"},
             },
             [0, 2**2],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="x * clear(y)",
         ),
         pytest.param(
@@ -978,7 +1066,7 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
                 "y": {"range": [0, 2**6], "status": "encrypted"},
             },
             [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
+            TFHERS_UINT_8_3_2_4096,
             id="lut_add_lut(x , y)",
         ),
     ],
@@ -1064,7 +1152,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v {pt1} -c {ct1_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value={pt1} -c {ct1_path} --client-key {client_key_path}"
         )
         == 0
     )
@@ -1109,7 +1197,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     random_value = np.random.randint(*tfhers_value_range)
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key -v {random_value} -c {random_ct_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} --client-key {client_key_path}"
         )
         == 0
     )
@@ -1178,6 +1266,15 @@ def test_tfhers_integer_eq(lhs, rhs, is_equal):
                 [2, 3, 1, 0, 0, 0, 0, 0],
             ],
         ),
+        pytest.param(
+            tfhers.int8_2_2,
+            [-128, 0, 127],
+            [
+                [0, 0, 0, 2],
+                [0, 0, 0, 0],
+                [3, 3, 3, 1],
+            ],
+        ),
     ],
 )
 def test_tfhers_integer_encode(dtype, value, encoded):
@@ -1222,6 +1319,15 @@ def test_tfhers_integer_bad_encode(dtype, value, expected_error, expected_messag
                 [2, 3, 1, 0, 0, 0, 0, 0],
             ],
             [10, 20, 30],
+        ),
+        pytest.param(
+            tfhers.int8_2_2,
+            [
+                [2, 1, 0, 2],
+                [0, 3, 1, 0],
+                [2, 1, 0, 1],
+            ],
+            [-122, 28, 70],
         ),
     ],
 )
