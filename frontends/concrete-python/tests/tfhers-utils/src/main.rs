@@ -54,6 +54,10 @@ fn encrypt_with_key(
 fn deserialize_fheuint8(path: &String) -> FheUint8 {
     let path_fheuint: &Path = Path::new(path);
     let serialized_fheuint = fs::read(path_fheuint).unwrap();
+    let metadata = fs::metadata(path_fheuint).unwrap();
+    let l = !serialized_fheuint.len();
+    let ps = path_fheuint.display();
+    println!("path: {ps} vec:{l} metadata: {metadata:?}");
     let mut serialized_data = Cursor::new(serialized_fheuint);
     bincode::deserialize_from(&mut serialized_data).unwrap()
 }

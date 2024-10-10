@@ -6,3 +6,4 @@ runs:
       with:
         toolchain: nightly-2024-09-30
         override: true
+        default: true

@@ -1,3 +1,17 @@
+[backend.aws.cpu-test]
+region = "eu-west-1"
+image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
+instance_type = "m7i.16xlarge"
+security_group = ["sg-0e55cc31dfda0d8a7", ]
+
+[backend.aws.gpu-test]
+region = "us-east-1"
+image_id = "ami-0257c6ad39f902b5e"
+instance_type = "p3.2xlarge"
+subnet_id = "subnet-8123c9e7"
+security_group= ["sg-017afab1f328af917", ]
+
+
 # This is the new version of Slab that handles multi backend providers.
 [backend.aws.m7i-cpu-bench]
 region = "eu-west-1"
@@ -5,10 +19,12 @@ image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
 instance_type = "m7i.48xlarge"
 security_group = ["sg-0e55cc31dfda0d8a7", ]
 
+
+
 [profile.m7i-cpu-bench]
 region = "eu-west-1"
 image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
-instance_type = "m7i.48xlarge"
+instance_type = "m7i.16xlarge"
 security_group= ["sg-0e55cc31dfda0d8a7", ]
 
 [profile.m7i-cpu-test]
