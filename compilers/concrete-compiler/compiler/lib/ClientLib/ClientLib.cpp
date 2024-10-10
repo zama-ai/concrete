@@ -259,5 +259,76 @@ exportTfhersFheUint8(TransportValue value, TfhersFheIntDescription desc) {
   return buffer;
 }
 
+Result<TransportValue>
+importTfhersFheInt8(llvm::ArrayRef<uint8_t> serializedFheUint8,
+                    TfhersFheIntDescription desc, uint32_t encryptionKeyId,
+                    double encryptionVariance) {
+  if (desc.width != 8 || desc.is_signed == false) {
+    return StringError(
+        "trying to import FheInt8 but description doesn't match this type");
+  }
+
+  auto dims = std::vector({desc.n_cts, desc.lwe_size});
+  auto outputTensor = Tensor<uint64_t>::fromDimensions(dims);
+  auto err = concrete_cpu_tfhers_int8_to_lwe_array(
+      serializedFheUint8.data(), serializedFheUint8.size(),
+      outputTensor.values.data(), desc);
+  if (err) {
+    return StringError("couldn't convert fheint to lwe array");
+  }
+
+  auto value = Value{outputTensor}.intoRawTransportValue();
+  auto lwe = value.asBuilder().initTypeInfo().initLweCiphertext();
+  lwe.setIntegerPrecision(64);
+  // dimensions
+  lwe.initAbstractShape().setDimensions({(uint32_t)desc.n_cts});
+  lwe.initConcreteShape().setDimensions(
+      {(uint32_t)desc.n_cts, (uint32_t)desc.lwe_size});
+  // encryption
+  auto encryption = lwe.initEncryption();
+  encryption.setLweDimension((uint32_t)desc.lwe_size - 1);
+  encryption.initModulus().initMod().initNative();
+  encryption.setKeyId(encryptionKeyId);
+  encryption.setVariance(encryptionVariance);
+  // Encoding
+  auto encoding = lwe.initEncoding();
+  auto integer = encoding.initInteger();
+  integer.setIsSigned(false);
+  integer.setWidth(std::log2(desc.message_modulus * desc.carry_modulus));
+  integer.initMode().initNative();
+
+  return value;
+}
+
+Result<std::vector<uint8_t>> exportTfhersFheInt8(TransportValue value,
+                                                 TfhersFheIntDescription desc) {
+  if (desc.width != 8 || desc.is_signed == false) {
+    return StringError(
+        "trying to export FheInt8 but description doesn't match this type");
+  }
+
+  auto fheuint = Value::fromRawTransportValue(value);
+  if (fheuint.isScalar()) {
+    return StringError("expected a tensor, but value is a scalar");
+  }
+  auto tensorOrError = fheuint.getTensor<uint64_t>();
+  if (!tensorOrError.has_value()) {
+    return StringError("couldn't get tensor from value");
+  }
+  size_t buffer_size =
+      concrete_cpu_tfhers_fheint_buffer_size_u64(desc.lwe_size, desc.n_cts);
+  std::vector<uint8_t> buffer(buffer_size, 0);
+  auto flat_data = tensorOrError.value().values;
+  auto size = concrete_cpu_lwe_array_to_tfhers_int8(
+      flat_data.data(), buffer.data(), buffer.size(), desc);
+  if (size == 0) {
+    return StringError("couldn't convert lwe array to fheint8");
+  }
+  // we truncate to the serialized data
+  assert(size <= buffer.size());
+  buffer.resize(size, 0);
+  return buffer;
+}
+
 } // namespace clientlib
 } // namespace concretelang

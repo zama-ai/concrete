@@ -40,6 +40,12 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
                      double encryptionVariance);
 Result<std::vector<uint8_t>> exportTfhersFheUint8(TransportValue value,
                                                   TfhersFheIntDescription info);
+Result<TransportValue>
+importTfhersFheInt8(llvm::ArrayRef<uint8_t> serializedFheUint8,
+                    TfhersFheIntDescription desc, uint32_t encryptionKeyId,
+                    double encryptionVariance);
+Result<std::vector<uint8_t>> exportTfhersFheInt8(TransportValue value,
+                                                 TfhersFheIntDescription info);
 
 class ClientCircuit {
 
