@@ -4,9 +4,9 @@ use std::fs;
 use std::io::Cursor;
 use std::path::Path;
 use tfhe::core_crypto::prelude::LweSecretKey;
+use tfhe::prelude::*;
 use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice};
-use tfhe::{generate_keys, set_server_key, ClientKey, FheUint8, ServerKey};
-use tfhe::{prelude::*, ConfigBuilder};
+use tfhe::{generate_keys, set_server_key, ClientKey, ConfigBuilder, FheInt8, FheUint8, ServerKey};
 
 const BLOCK_PARAMS: ClassicPBSParameters = tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS;
 
@@ -39,7 +39,14 @@ fn serialize_fheuint8(fheuint: FheUint8, ciphertext_path: &String) {
     fs::write(path_ct, serialized_ct).unwrap();
 }
 
-fn encrypt_with_key(
+fn serialize_fheint8(fheuint: FheInt8, ciphertext_path: &String) {
+    let mut serialized_ct = Vec::new();
+    bincode::serialize_into(&mut serialized_ct, &fheuint).unwrap();
+    let path_ct: &Path = Path::new(ciphertext_path);
+    fs::write(path_ct, serialized_ct).unwrap();
+}
+
+fn encrypt_with_key_u8(
     value: u8,
     client_key: ClientKey,
     ciphertext_path: &String,
@@ -51,7 +58,26 @@ fn encrypt_with_key(
     Ok(())
 }
 
+fn encrypt_with_key_i8(
+    value: i8,
+    client_key: ClientKey,
+    ciphertext_path: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let ct = FheInt8::encrypt(value, &client_key);
+
+    serialize_fheint8(ct, ciphertext_path);
+
+    Ok(())
+}
+
 fn deserialize_fheuint8(path: &String) -> FheUint8 {
+    let path_fheuint: &Path = Path::new(path);
+    let serialized_fheuint = fs::read(path_fheuint).unwrap();
+    let mut serialized_data = Cursor::new(serialized_fheuint);
+    bincode::deserialize_from(&mut serialized_data).unwrap()
+}
+
+fn deserialize_fheint8(path: &String) -> FheInt8 {
     let path_fheuint: &Path = Path::new(path);
     let serialized_fheuint = fs::read(path_fheuint).unwrap();
     let mut serialized_data = Cursor::new(serialized_fheuint);
@@ -62,16 +88,25 @@ fn decrypt_with_key(
     client_key: ClientKey,
     ciphertext_path: &String,
     plaintext_path: Option<&String>,
+    signed: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let fheuint = deserialize_fheuint8(ciphertext_path);
+    let string_result: String;
 
-    let result: u8 = fheuint.decrypt(&client_key);
+    if signed {
+        let fheint = deserialize_fheint8(ciphertext_path);
+        let result: i8 = fheint.decrypt(&client_key);
+        string_result = result.to_string();
+    } else {
+        let fheuint = deserialize_fheuint8(ciphertext_path);
+        let result: u8 = fheuint.decrypt(&client_key);
+        string_result = result.to_string();
+    }
 
     if let Some(path) = plaintext_path {
         let pt_path: &Path = Path::new(path);
-        fs::write(pt_path, result.to_string())?;
+        fs::write(pt_path, string_result)?;
     } else {
-        println!("result: {}", result);
+        println!("result: {}", string_result);
     }
 
     Ok(())
@@ -177,6 +212,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .num_args(1),
                 )
                 .arg(
+                    Arg::new("signed")
+                        .long("signed")
+                        .help("encrypt as a signed integer")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
                     Arg::new("ciphertext")
                         .short('c')
                         .long("ciphertext")
@@ -209,6 +250,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .short_flag('d')
                 .long_flag("decrypt")
                 .about("Decrypt a ciphertext with a given key.")
+                .arg(
+                    Arg::new("signed")
+                        .long("signed")
+                        .help("decrypt as a signed integer")
+                        .action(ArgAction::SetTrue),
+                )
                 .arg(
                     Arg::new("ciphertext")
                         .short('c')
@@ -323,8 +370,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match matches.subcommand() {
         Some(("encrypt-with-key", encrypt_matches)) => {
             let value_str = encrypt_matches.get_one::<String>("value").unwrap();
-            let value: u8 = value_str.parse().unwrap();
             let ciphertext_path = encrypt_matches.get_one::<String>("ciphertext").unwrap();
+            let signed = encrypt_matches.get_flag("signed");
 
             let client_key: ClientKey;
             if let Some(lwe_sk_path) = encrypt_matches.get_one::<String>("lwe-sk") {
@@ -335,11 +382,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 panic!("no key specified");
             }
 
-            encrypt_with_key(value, client_key, ciphertext_path)
+            if signed {
+                let value: i8 = value_str.parse().unwrap();
+                encrypt_with_key_i8(value, client_key, ciphertext_path)
+            } else {
+                let value: u8 = value_str.parse().unwrap();
+                encrypt_with_key_u8(value, client_key, ciphertext_path)
+            }
         }
         Some(("decrypt-with-key", decrypt_mtches)) => {
             let ciphertext_path = decrypt_mtches.get_one::<String>("ciphertext").unwrap();
             let plaintext_path = decrypt_mtches.get_one::<String>("plaintext");
+            let signed = decrypt_mtches.get_flag("signed");
 
             let client_key: ClientKey;
             if let Some(lwe_sk_path) = decrypt_mtches.get_one::<String>("lwe-sk") {
@@ -349,7 +403,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 panic!("no key specified");
             }
-            decrypt_with_key(client_key, ciphertext_path, plaintext_path)
+            decrypt_with_key(client_key, ciphertext_path, plaintext_path, signed)
         }
         Some(("add", add_mtches)) => {
             let server_key_path = add_mtches.get_one::<String>("server-key").unwrap();
