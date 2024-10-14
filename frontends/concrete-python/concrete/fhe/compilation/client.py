@@ -294,7 +294,9 @@ Provide a `function_name` keyword argument to disambiguate."
         decrypted = tuple(
             client_circuit.process_output(
                 result._inner, position  # pylint: disable=protected-access
-            ).to_py_val()
+            )
+            .to_py_val()
+            .astype("int64")
             for position, result in enumerate(flattened_results)
         )
 
@@ -344,7 +346,9 @@ Provide a `function_name` keyword argument to disambiguate."
         decrypted = tuple(
             client_circuit.simulate_process_output(
                 result._inner, position  # pylint: disable=protected-access
-            ).to_py_val()
+            )
+            .to_py_val()
+            .astype("int64")
             for position, result in enumerate(flattened_results)
         )
 
