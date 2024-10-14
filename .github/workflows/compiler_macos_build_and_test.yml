@@ -41,7 +41,7 @@ jobs:
 
       - name: Cache compilation (push)
         if: github.event_name == 'push'
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         with:
           path: /Users/runner/Library/Caches/ccache
           key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.sha }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Cache compilation (pull_request)
         if: github.event_name == 'pull_request'
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         with:
           path: /Users/runner/Library/Caches/ccache
           key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.event.pull_request.base.sha }}
