@@ -294,11 +294,10 @@ Provide a `function_name` keyword argument to disambiguate."
         decrypted = tuple(
             client_circuit.process_output(
                 result._inner, position  # pylint: disable=protected-access
-            )
-            .to_py_val()
-            .astype("int64")
+            ).to_py_val()
             for position, result in enumerate(flattened_results)
         )
+        decrypted = tuple(d.astype("int64") if isinstance(d, np.ndarray) else d for d in decrypted)
 
         return decrypted if len(decrypted) != 1 else decrypted[0]
 
@@ -346,11 +345,10 @@ Provide a `function_name` keyword argument to disambiguate."
         decrypted = tuple(
             client_circuit.simulate_process_output(
                 result._inner, position  # pylint: disable=protected-access
-            )
-            .to_py_val()
-            .astype("int64")
+            ).to_py_val()
             for position, result in enumerate(flattened_results)
         )
+        decrypted = tuple(d.astype("int64") if isinstance(d, np.ndarray) else d for d in decrypted)
 
         return decrypted if len(decrypted) != 1 else decrypted[0]
 
