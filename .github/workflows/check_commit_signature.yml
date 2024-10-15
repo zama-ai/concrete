@@ -1,0 +1,11 @@
+name: Check Commit Signatures
+
+on:
+  pull_request:
+
+jobs:
+  check-commit-signatures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check commit signatures
+        uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52
