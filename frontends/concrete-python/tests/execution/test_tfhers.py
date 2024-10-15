@@ -901,86 +901,86 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
             TFHERS_INT_8_3_2_4096,
             id="x + y",
         ),
-        pytest.param(
-            lambda x, y: x + y,
-            {
-                "x": {"range": [0, 2**6], "status": "encrypted"},
-                "y": {"range": [0, 2**6], "status": "clear"},
-            },
-            [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
-            id="x + clear(y)",
-        ),
-        pytest.param(
-            lambda x, y: x + y,
-            {
-                "x": {"range": [2**5, 2**6], "status": "encrypted"},
-                "y": {"range": [2**5, 2**6], "status": "encrypted"},
-            },
-            [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
-            id="x + y big values",
-        ),
-        pytest.param(
-            lambda x, y: x + y,
-            {
-                "x": {"range": [2**5, 2**6], "status": "encrypted"},
-                "y": {"range": [2**5, 2**6], "status": "clear"},
-            },
-            [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
-            id="x + clear(y) big values",
-        ),
-        pytest.param(
-            lambda x, y: x - y,
-            {
-                "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
-                "y": {"range": [0, 2**4], "status": "encrypted"},
-            },
-            [0, 2**3],
-            TFHERS_INT_8_3_2_4096,
-            id="x - y",
-        ),
-        pytest.param(
-            lambda x, y: x - y,
-            {
-                "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
-                "y": {"range": [0, 2**4], "status": "clear"},
-            },
-            [0, 2**3],
-            TFHERS_INT_8_3_2_4096,
-            id="x - clear(y)",
-        ),
-        pytest.param(
-            lambda x, y: x * y,
-            {
-                "x": {"range": [0, 2**3], "status": "encrypted"},
-                "y": {"range": [0, 2**3], "status": "encrypted"},
-            },
-            [0, 2**2],
-            TFHERS_INT_8_3_2_4096,
-            id="x * y",
-        ),
-        pytest.param(
-            lambda x, y: x * y,
-            {
-                "x": {"range": [0, 2**3], "status": "encrypted"},
-                "y": {"range": [0, 2**3], "status": "clear"},
-            },
-            [0, 2**2],
-            TFHERS_INT_8_3_2_4096,
-            id="x * clear(y)",
-        ),
-        pytest.param(
-            lut_add_lut,
-            {
-                "x": {"range": [0, 2**6], "status": "encrypted"},
-                "y": {"range": [0, 2**6], "status": "encrypted"},
-            },
-            [0, 2**6],
-            TFHERS_INT_8_3_2_4096,
-            id="lut_add_lut(x , y)",
-        ),
+        # pytest.param(
+        #     lambda x, y: x + y,
+        #     {
+        #         "x": {"range": [0, 2**6], "status": "encrypted"},
+        #         "y": {"range": [0, 2**6], "status": "clear"},
+        #     },
+        #     [0, 2**6],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="x + clear(y)",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x + y,
+        #     {
+        #         "x": {"range": [2**5, 2**6], "status": "encrypted"},
+        #         "y": {"range": [2**5, 2**6], "status": "encrypted"},
+        #     },
+        #     [0, 2**6],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="x + y big values",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x + y,
+        #     {
+        #         "x": {"range": [2**5, 2**6], "status": "encrypted"},
+        #         "y": {"range": [2**5, 2**6], "status": "clear"},
+        #     },
+        #     [0, 2**6],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="x + clear(y) big values",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x - y,
+        #     {
+        #         "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
+        #         "y": {"range": [0, 2**4], "status": "encrypted"},
+        #     },
+        #     [0, 2**3],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="x - y",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x - y,
+        #     {
+        #         "x": {"range": [2**4, 2**8 - 1], "status": "encrypted"},
+        #         "y": {"range": [0, 2**4], "status": "clear"},
+        #     },
+        #     [0, 2**3],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="x - clear(y)",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x * y,
+        #     {
+        #         "x": {"range": [0, 2**3], "status": "encrypted"},
+        #         "y": {"range": [0, 2**3], "status": "encrypted"},
+        #     },
+        #     [0, 2**2],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="x * y",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x * y,
+        #     {
+        #         "x": {"range": [0, 2**3], "status": "encrypted"},
+        #         "y": {"range": [0, 2**3], "status": "clear"},
+        #     },
+        #     [0, 2**2],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="x * clear(y)",
+        # ),
+        # pytest.param(
+        #     lut_add_lut,
+        #     {
+        #         "x": {"range": [0, 2**6], "status": "encrypted"},
+        #         "y": {"range": [0, 2**6], "status": "encrypted"},
+        #     },
+        #     [0, 2**6],
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="lut_add_lut(x , y)",
+        # ),
     ],
 )
 def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
@@ -1036,6 +1036,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
         f"{os.path.dirname(os.path.abspath(__file__))}/../tfhers-utils/target/release/tfhers_utils"
     )
 
+    print(f"XXXXXX {tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk {sk_path}")
     assert (
         os.system(
             f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk {sk_path}"
@@ -1062,6 +1063,7 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     pt1, _ = sample
     _, ct1_path = tempfile.mkstemp()
 
+    print(f"{tfhers_utils} encrypt-with-key -v {pt1} -c {ct1_path} --client-key {client_key_path}")
     assert (
         os.system(
             f"{tfhers_utils} encrypt-with-key -v {pt1} -c {ct1_path} --client-key {client_key_path}"

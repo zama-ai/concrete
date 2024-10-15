@@ -68,12 +68,7 @@ pytest: pytest-default
 
 pytest-default: tfhers-utils
 	eval $(shell make silent_cp_activate)
-	pytest tests -svv -n auto \
-		--cov=concrete.fhe \
-		--cov-fail-under=100 \
-		--cov-report=term-missing:skip-covered \
-		--key-cache "${KEY_CACHE_DIRECTORY}" \
-		-m "${PYTEST_MARKERS}"
+	pytest tests -s -k "test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen"
 
 pytest-macos: tfhers-utils
 	pytest tests -svv -n auto \

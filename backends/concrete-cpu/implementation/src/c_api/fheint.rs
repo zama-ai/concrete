@@ -1,6 +1,5 @@
 use super::utils::nounwind;
 use core::slice;
-use std::io::Cursor;
 use tfhe::core_crypto::prelude::*;
 use tfhe::integer::ciphertext::Expandable;
 use tfhe::integer::IntegerCiphertext;
@@ -129,48 +128,19 @@ pub fn tfhers_uint8_description(fheuint: FheUint8) -> TfhersFheIntDescription {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_description(
-    serialized_data_ptr: *const u8,
-    serialized_data_len: usize,
-) -> TfhersFheIntDescription {
-    nounwind(|| {
-        // deserialize fheuint8
-        let mut serialized_data = Cursor::new(slice::from_raw_parts(
-            serialized_data_ptr,
-            serialized_data_len,
-        ));
-        let fheuint: FheUint8 = match bincode::deserialize_from(&mut serialized_data) {
-            Ok(value) => value,
-            Err(_) => {
-                return TfhersFheIntDescription::zero();
-            }
-        };
-        tfhers_uint8_description(fheuint)
-    })
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_to_lwe_array(
-    serialized_data_ptr: *const u8,
-    serialized_data_len: usize,
+    buffer: *const u8,
+    buffer_len: usize,
     lwe_vec_buffer: *mut u64,
     desc: TfhersFheIntDescription,
 ) -> i64 {
     nounwind(|| {
-        // deserialize fheuint8
-        let mut serialized_data = Cursor::new(slice::from_raw_parts(
-            serialized_data_ptr,
-            serialized_data_len,
-        ));
-        // TODO: can we have a generic deserialize?
-        let fheuint: FheUint8 = match bincode::deserialize_from(&mut serialized_data) {
-            Ok(value) => value,
-            Err(_) => {
-                return 1;
-            }
-        };
+        let fheuint: FheUint8 = super::utils::safe_deserialize(buffer, buffer_len);
+        // TODO - Use conformance check
         let fheuint_desc = tfhers_uint8_description(fheuint.clone());
-
+        println!("Check desc");
+        //println!("{fheuint_desc:?}");
+        //println!("{desc:?}");
         if !fheuint_desc.is_similar(&desc) {
             return 1;
         }
@@ -178,12 +148,14 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_uint8_to_lwe_array(
         // collect LWEs from fheuint
         let (radix, _, _) = fheuint.into_raw_parts();
         let blocks = radix.blocks();
+        println!("Check first_ct");
         let first_ct = match blocks.first() {
             Some(value) => &value.ct,
             None => return 1,
         };
         let lwe_size = first_ct.lwe_size().0;
         let n_cts = blocks.len();
+        println!("Copy to c buffers");
         // copy LWEs to C buffer. Note that lsb is cts[0]
         let lwe_vector: &mut [u64] = slice::from_raw_parts_mut(lwe_vec_buffer, n_cts * lwe_size);
         for (i, block) in blocks.iter().enumerate() {
@@ -204,14 +176,14 @@ pub extern "C" fn concrete_cpu_tfhers_fheint_buffer_size_u64(
     let meta_ct = core::mem::size_of::<Ciphertext>();
 
     // FheUint[metadata, ciphertexts[ciphertext[metadata, lwe_buffer] * n_cts]]
-    meta_fheuint + (meta_ct + lwe_size * 8/*u64*/) * n_cts
+    (meta_fheuint + (meta_ct + lwe_size * 8/*u64*/) * n_cts) * 2
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_uint8(
     lwe_vec_buffer: *const u64,
-    fheuint_buffer: *mut u8,
-    fheuint_buffer_size: usize,
+    buffer: *mut u8,
+    buffer_len: usize,
     fheuint_desc: TfhersFheIntDescription,
 ) -> usize {
     nounwind(|| {
@@ -240,11 +212,11 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_uint8(
         }
         let fheuint = match FheUint8::from_expanded_blocks(blocks, fheuint_desc.data_kind()) {
             Ok(value) => value,
-            Err(_) => {
+            Err(e) => {
+                println!("Error!!! {}", e);
                 return 0;
             }
         };
-
-        super::utils::serialize(&fheuint, fheuint_buffer, fheuint_buffer_size)
+        return super::utils::safe_serialize(&fheuint, buffer, buffer_len);
     })
 }

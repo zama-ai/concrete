@@ -40,8 +40,6 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
                      double encryptionVariance);
 Result<std::vector<uint8_t>> exportTfhersFheUint8(TransportValue value,
                                                   TfhersFheIntDescription info);
-Result<TfhersFheIntDescription>
-getTfhersFheUint8Description(llvm::ArrayRef<uint8_t> serializedFheUint8);
 
 class ClientCircuit {
 
@@ -66,7 +64,7 @@ private:
                 std::vector<InputTransformer> inputTransformers,
                 std::vector<OutputTransformer> outputTransformers)
       : circuitInfo(circuitInfo), inputTransformers(inputTransformers),
-        outputTransformers(outputTransformers){};
+        outputTransformers(outputTransformers) {};
 
 private:
   Message<concreteprotocol::CircuitInfo> circuitInfo;

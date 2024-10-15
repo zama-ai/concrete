@@ -754,19 +754,6 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           return result.value();
         });
 
-  m.def("get_tfhers_fheuint8_description",
-        [](const pybind11::bytes &serialized_fheuint) {
-          const std::string &buffer_str = serialized_fheuint;
-          std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
-          auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
-          auto info =
-              ::concretelang::clientlib::getTfhersFheUint8Description(arrayRef);
-          if (info.has_error()) {
-            throw std::runtime_error(info.error().mesg);
-          }
-          return info.value();
-        });
-
   pybind11::class_<TfhersFheIntDescription>(m, "TfhersFheIntDescription")
       .def(pybind11::init([](size_t width, bool is_signed,
                              size_t message_modulus, size_t carry_modulus,
