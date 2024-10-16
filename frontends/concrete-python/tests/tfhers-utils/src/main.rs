@@ -1,95 +1,84 @@
 use clap::{Arg, ArgAction, Command};
 use core::panic;
+use serde::de::DeserializeOwned;
 use std::fs;
-use std::io::Cursor;
 use std::path::Path;
 use tfhe::core_crypto::prelude::LweSecretKey;
+use tfhe::{prelude::*};
 use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice};
-use tfhe::{generate_keys, set_server_key, ClientKey, FheUint8, ServerKey};
-use tfhe::{prelude::*, ConfigBuilder};
+use tfhe::{generate_keys, set_server_key, ClientKey, ConfigBuilder, FheUint8, ServerKey};
+
+use serde::Serialize;
+use tfhe::named::Named;
+use tfhe::{Unversionize, Versionize};
+
+use tfhe::safe_serialization::{safe_deserialize, safe_serialize};
 
 const BLOCK_PARAMS: ClassicPBSParameters = tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS;
+const SERIALIZE_SIZE_LIMIT: u64 = 1_000_000_000;
 
-fn load_lwe_sk(lwe_sk_path: &String) -> LweSecretKey<Vec<u64>> {
-    let path_sk: &Path = Path::new(lwe_sk_path);
-    let serialized_sk = fs::read(path_sk).unwrap();
-    let mut serialized_data = Cursor::new(serialized_sk);
-    bincode::deserialize_from(&mut serialized_data).unwrap()
+// safe_save write to a path a value that implement the tfhe-rs safe serialization
+fn safe_save<T: Serialize + Versionize + Named>(path: &String, value: &T) {
+    let file = fs::File::create(path).unwrap();
+    safe_serialize(value, file, SERIALIZE_SIZE_LIMIT).unwrap()
 }
 
-fn set_server_key_from_file(server_key_path: &String) {
-    let serialized_sk = fs::read(Path::new(server_key_path)).unwrap();
-    let mut serialized_data = Cursor::new(serialized_sk);
-    let sk: ServerKey = bincode::deserialize_from(&mut serialized_data).unwrap();
+// safe_load read from a path a value that implement the tfhe-rs safe serialization
+fn safe_load<T: DeserializeOwned + Unversionize + Named>(path: &String) -> T {
+    let file = fs::File::open(path).unwrap();
+    safe_deserialize(file, SERIALIZE_SIZE_LIMIT).unwrap()
+}
+
+// unsafe_save write to a path a value that NOT implement the tfhe-rs safe serialization
+// TODO: Remove me when all object implemennt tfhe-rs safe serialization
+fn unsafe_save<T: Serialize>(path: &String, value: &T) {
+    let file = fs::File::create(path).unwrap();
+    bincode::serialize_into(file, value).unwrap()
+}
+
+// unsafe_load read from a path a value that NOT implement the tfhe-rs safe serialization
+// TODO: Remove me when all object implemennt tfhe-rs safe serialization
+fn unsafe_load<T: DeserializeOwned>(path: &String) -> T {
+    let file = fs::File::open(path).unwrap();
+    bincode::deserialize_from(file).unwrap()
+}
+
+fn set_server_key_from_file(path: &String) {
+    let sk: ServerKey = safe_load(path);
     set_server_key(sk);
 }
 
-fn load_client_key(client_path: &String) -> ClientKey {
-    let path_key: &Path = Path::new(client_path);
-    let serialized_key = fs::read(path_key).unwrap();
-    let mut serialized_data = Cursor::new(serialized_key);
-    let client_key: ClientKey = bincode::deserialize_from(&mut serialized_data).unwrap();
-    client_key
-}
-
-fn serialize_fheuint8(fheuint: FheUint8, ciphertext_path: &String) {
-    let mut serialized_ct = Vec::new();
-    bincode::serialize_into(&mut serialized_ct, &fheuint).unwrap();
-    let path_ct: &Path = Path::new(ciphertext_path);
-    fs::write(path_ct, serialized_ct).unwrap();
-}
-
-fn encrypt_with_key(
-    value: u8,
-    client_key: ClientKey,
-    ciphertext_path: &String,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn encrypt_with_key(value: u8, client_key: ClientKey, path: &String) {
     let ct = FheUint8::encrypt(value, &client_key);
-
-    serialize_fheuint8(ct, ciphertext_path);
-
-    Ok(())
-}
-
-fn deserialize_fheuint8(path: &String) -> FheUint8 {
-    let path_fheuint: &Path = Path::new(path);
-    let serialized_fheuint = fs::read(path_fheuint).unwrap();
-    let mut serialized_data = Cursor::new(serialized_fheuint);
-    bincode::deserialize_from(&mut serialized_data).unwrap()
+    safe_save(path, &ct)
 }
 
 fn decrypt_with_key(
     client_key: ClientKey,
     ciphertext_path: &String,
     plaintext_path: Option<&String>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let fheuint = deserialize_fheuint8(ciphertext_path);
-
+) {
+    let fheuint: FheUint8 = safe_load(ciphertext_path);
     let result: u8 = fheuint.decrypt(&client_key);
 
     if let Some(path) = plaintext_path {
         let pt_path: &Path = Path::new(path);
-        fs::write(pt_path, result.to_string())?;
+        fs::write(pt_path, result.to_string()).unwrap();
     } else {
         println!("result: {}", result);
     }
-
-    Ok(())
 }
 
-fn sum(cts_paths: Vec<&String>, out_ct_path: &String) -> Result<(), Box<dyn std::error::Error>> {
+fn sum(cts_paths: Vec<&String>, out_ct_path: &String) {
     if cts_paths.is_empty() {
         panic!("can't call sum with 0 ciphertexts");
     }
-    let mut acc = deserialize_fheuint8(cts_paths[0]);
+    let mut acc: FheUint8 = safe_load(cts_paths[0]);
     for ct_path in cts_paths[1..].iter() {
-        let fheuint = deserialize_fheuint8(ct_path);
+        let fheuint: FheUint8 = safe_load(ct_path);
         acc += fheuint;
     }
-
-    serialize_fheuint8(acc, out_ct_path);
-
-    Ok(())
+    safe_save(out_ct_path, &acc)
 }
 
 fn write_keys(
@@ -99,36 +88,25 @@ fn write_keys(
     client_key: Option<ClientKey>,
     server_key: Option<ServerKey>,
     lwe_secret_key: Option<LweSecretKey<Vec<u64>>>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) {
     if let Some(ck) = client_key {
-        let mut serialized_client_key = Vec::new();
-        bincode::serialize_into(&mut serialized_client_key, &ck)?;
-        let path_client_key: &Path = Path::new(client_key_path);
-        fs::write(path_client_key, serialized_client_key).unwrap();
+        safe_save(client_key_path, &ck)
     }
 
     if let Some(sk) = server_key {
-        let mut serialized_server_key = Vec::new();
-        bincode::serialize_into(&mut serialized_server_key, &sk)?;
-        let path_server_key: &Path = Path::new(server_key_path);
-        fs::write(path_server_key, serialized_server_key).unwrap();
+        safe_save(server_key_path, &sk)
     }
 
     if let Some(lwe_sk) = lwe_secret_key {
-        let mut serialized_lwe_key = Vec::new();
-        bincode::serialize_into(&mut serialized_lwe_key, &lwe_sk)?;
-        let path_lwe_key: &Path = Path::new(output_lwe_path);
-        fs::write(path_lwe_key, serialized_lwe_key).unwrap();
+        unsafe_save(output_lwe_path, &lwe_sk)
     }
-
-    Ok(())
 }
 
 fn keygen(
     client_key_path: &String,
     server_key_path: &String,
     output_lwe_path: &String,
-) -> Result<(), Box<dyn std::error::Error>> {
+) {
     let config = ConfigBuilder::with_custom_parameters(BLOCK_PARAMS).build();
 
     let (client_key, server_key) = generate_keys(config);
@@ -145,19 +123,18 @@ fn keygen(
         Some(client_key),
         Some(server_key),
         Some(lwe_secret_key),
-    )?;
-    Ok(())
+    )
 }
 
 fn keygen_from_lwe(lwe_sk_path: &String) -> ClientKey {
-    let lwe_sk = load_lwe_sk(lwe_sk_path);
+    let lwe_sk = unsafe_load(lwe_sk_path);
 
     let shortint_key =
         tfhe::shortint::ClientKey::try_from_lwe_encryption_key(lwe_sk, BLOCK_PARAMS).unwrap();
     ClientKey::from_raw_parts(shortint_key.into(), None, None, tfhe::Tag::default())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     let matches = Command::new("tfhers-utils")
         .about("TFHErs utilities")
         .subcommand_required(true)
@@ -330,7 +307,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(lwe_sk_path) = encrypt_matches.get_one::<String>("lwe-sk") {
                 client_key = keygen_from_lwe(lwe_sk_path);
             } else if let Some(client_key_path) = encrypt_matches.get_one::<String>("client-key") {
-                client_key = load_client_key(client_key_path);
+                client_key = safe_load(client_key_path);
             } else {
                 panic!("no key specified");
             }
@@ -345,7 +322,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(lwe_sk_path) = decrypt_mtches.get_one::<String>("lwe-sk") {
                 client_key = keygen_from_lwe(lwe_sk_path);
             } else if let Some(client_key_path) = decrypt_mtches.get_one::<String>("client-key") {
-                client_key = load_client_key(client_key_path);
+                client_key = safe_load(client_key_path);
             } else {
                 panic!("no key specified");
             }
@@ -369,7 +346,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(lwe_sk_path) = keygen_mtches.get_one::<String>("lwe-sk") {
                 let client_key = keygen_from_lwe(lwe_sk_path);
                 let server_key = client_key.generate_server_key();
-                let lwe_secret_key = load_lwe_sk(lwe_sk_path);
+                let lwe_secret_key = unsafe_load(lwe_sk_path);
                 write_keys(
                     client_key_path,
                     server_key_path,

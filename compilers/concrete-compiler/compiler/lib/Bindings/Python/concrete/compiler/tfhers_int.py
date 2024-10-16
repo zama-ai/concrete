@@ -5,7 +5,6 @@
 from mlir._mlir_libs._concretelang._compiler import (
     import_tfhers_fheuint8 as _import_tfhers_fheuint8,
     export_tfhers_fheuint8 as _export_tfhers_fheuint8,
-    get_tfhers_fheuint8_description as _get_tfhers_fheuint8_description,
     TfhersFheIntDescription as _TfhersFheIntDescription,
     TransportValue,
 )
@@ -177,24 +176,6 @@ class TfhersFheIntDescription(WrapperCpp):
             f"lwe_size={self.lwe_size}, n_cts={self.n_cts}, noise_level={self.noise_level} "
             f"ks_first={self.ks_first}>"
         )
-
-    @staticmethod
-    def from_serialized_fheuint8(buffer: bytes) -> "TfhersFheIntDescription":
-        """Get the description of a serialized TFHErs fheuint8.
-
-        Args:
-            buffer (bytes): serialized fheuint8
-
-        Raises:
-            TypeError: buffer is not of type bytes
-
-        Returns:
-            TfhersFheIntDescription: description of the serialized fheuint8
-        """
-        if not isinstance(buffer, bytes):
-            raise TypeError(f"buffer must be of type bytes, not {type(buffer)}")
-        return TfhersFheIntDescription.wrap(_get_tfhers_fheuint8_description(buffer))
-
 
 class TfhersExporter:
     """A helper class to import and export TFHErs big integers."""
