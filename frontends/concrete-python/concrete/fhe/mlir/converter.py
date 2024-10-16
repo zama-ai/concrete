@@ -959,7 +959,10 @@ class Converter:
         # sum will remove the last dim which is the dim of ciphertexts
         result_shape = tfhers_int.shape[:-1]
         # if result_shape is () then ctx.tensor would return a scalar type
-        result_type = ctx.tensor(ctx.eint(result_bit_width), result_shape)
+        result_type = ctx.tensor(
+            ctx.esint(result_bit_width) if dtype.is_signed else ctx.eint(result_bit_width),
+            result_shape,
+        )
         return ctx.sum(result_type, mapped, axes=-1)
 
     def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
