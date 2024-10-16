@@ -187,15 +187,6 @@ Result<ClientCircuit> ClientProgram::getClientCircuit(std::string circuitName) {
                      "`");
 }
 
-Result<TfhersFheIntDescription>
-getTfhersFheUint8Description(llvm::ArrayRef<uint8_t> serializedFheUint8) {
-  auto fheUintDesc = concrete_cpu_tfhers_uint8_description(
-      serializedFheUint8.data(), serializedFheUint8.size());
-  if (fheUintDesc.width == 0)
-    return StringError("couldn't get fheuint info");
-  return fheUintDesc;
-}
-
 Result<TransportValue>
 importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
                      TfhersFheIntDescription desc, uint32_t encryptionKeyId,
@@ -211,7 +202,8 @@ importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
       serializedFheUint8.data(), serializedFheUint8.size(),
       outputTensor.values.data(), desc);
   if (err) {
-    return StringError("couldn't convert fheuint to lwe array");
+    return StringError("couldn't convert fheuint to lwe array: err()")
+           << err << ")";
   }
 
   auto value = Value{outputTensor}.intoRawTransportValue();
