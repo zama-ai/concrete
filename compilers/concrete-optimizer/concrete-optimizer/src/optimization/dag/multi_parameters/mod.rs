@@ -3,12 +3,13 @@ mod complexity;
 mod fast_keyswitch;
 mod feasible;
 pub mod keys_spec;
-mod operations_value;
 pub mod optimize;
 pub mod optimize_generic;
 pub mod partition_cut;
 mod partitionning;
 mod partitions;
-mod symbolic_variance;
 mod union_find;
 pub(crate) mod variance_constraint;
+
+mod noise_expression;
+mod symbolic;

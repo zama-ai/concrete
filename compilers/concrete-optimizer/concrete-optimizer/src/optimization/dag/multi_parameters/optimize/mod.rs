@@ -8,7 +8,6 @@ use crate::optimization::config::{Config, NoiseBoundConfig, SearchSpace};
 use crate::optimization::dag::multi_parameters::analyze::{analyze, AnalyzedDag};
 use crate::optimization::dag::multi_parameters::fast_keyswitch;
 use crate::optimization::dag::multi_parameters::fast_keyswitch::FksComplexityNoise;
-use crate::optimization::dag::multi_parameters::operations_value::OperationsValue;
 use crate::optimization::dag::solo_key::analyze::lut_count_from_dag;
 use crate::optimization::dag::solo_key::optimize::optimize as optimize_mono;
 use crate::optimization::decomposition::cmux::CmuxComplexityNoise;
@@ -16,14 +15,20 @@ use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::{cmux, keyswitch, DecompCaches, PersistDecompCaches};
 use crate::parameters::GlweParameters;
 
-use crate::optimization::dag::multi_parameters::complexity::Complexity;
+use crate::optimization::dag::multi_parameters::complexity::ComplexityExpression;
 use crate::optimization::dag::multi_parameters::feasible::Feasible;
 use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::multi_parameters::{analyze, keys_spec};
 
+use super::complexity::ComplexityValues;
 use super::feasible::Feasibility;
 use super::keys_spec::InstructionKeys;
+use super::noise_expression::{
+    bootstrap_noise, fast_keyswitch_noise, input_noise, keyswitch_noise, modulus_switching_noise,
+    NoiseValues,
+};
+use super::symbolic::{bootstrap, fast_keyswitch, keyswitch};
 
 const DEBUG: bool = false;
 
@@ -64,8 +69,8 @@ pub struct Parameters {
 
 #[derive(Debug, Clone)]
 struct OperationsCV {
-    variance: OperationsValue,
-    cost: OperationsValue,
+    variance: NoiseValues,
+    cost: ComplexityValues,
 }
 
 type KsSrc = PartitionIndex;
@@ -80,12 +85,13 @@ fn optimize_1_ks(
     ks_pareto: &[KsComplexityNoise],
     operations: &mut OperationsCV,
     feasible: &Feasible,
-    complexity: &Complexity,
+    complexity: &ComplexityExpression,
     cut_complexity: f64,
 ) -> Option<KsComplexityNoise> {
     // find the first feasible (and less complex)
     let ks_max_variance = feasible.ks_max_feasible_variance(&operations.variance, ks_src, ks_dst);
-    let ks_max_cost = complexity.ks_max_cost(cut_complexity, &operations.cost, ks_src, ks_dst);
+    let ks_max_cost =
+        complexity.evaluate_ks_max_cost(cut_complexity, &operations.cost, ks_src, ks_dst);
     for &ks_quantity in ks_pareto {
         // variance is decreasing, complexity is increasing
         let ks_cost = ks_quantity.complexity(ks_input_lwe_dim);
@@ -94,8 +100,10 @@ fn optimize_1_ks(
             return None;
         }
         if ks_variance <= ks_max_variance {
-            *operations.variance.ks(ks_src, ks_dst) = ks_variance;
-            *operations.cost.ks(ks_src, ks_dst) = ks_cost;
+            operations
+                .variance
+                .set_variance(keyswitch_noise(ks_src, ks_dst), ks_variance);
+            operations.cost.set_cost(keyswitch(ks_src, ks_dst), ks_cost);
             return Some(ks_quantity);
         }
     }
@@ -109,7 +117,7 @@ fn optimize_many_independant_ks(
     ks_used: &[Vec<bool>],
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &Complexity,
+    complexity: &ComplexityExpression,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
 ) -> Option<(Vec<(KsDst, KsComplexityNoise)>, OperationsCV)> {
@@ -120,7 +128,7 @@ fn optimize_many_independant_ks(
     // we know there a feasible solution and a better complexity solution
     // we just need to check if both properties at the same time occur
     debug_assert!(feasible.feasible(&operations.variance));
-    debug_assert!(complexity.complexity(&operations.cost) <= cut_complexity);
+    debug_assert!(complexity.evaluate_total_cost(&operations.cost) <= cut_complexity);
     let mut operations = operations.clone();
     let mut ks_bests = Vec::with_capacity(macro_parameters.len());
     for (ks_dst, macro_dst) in macro_parameters.iter().enumerate() {
@@ -158,7 +166,7 @@ fn optimize_1_fks_and_all_compatible_ks(
     fks_dst: PartitionIndex,
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &Complexity,
+    complexity: &ComplexityExpression,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
@@ -184,7 +192,7 @@ fn optimize_1_fks_and_all_compatible_ks(
     let fks_max_variance =
         feasible.fks_max_feasible_variance(&operations.variance, fks_src, fks_dst);
     let mut fks_max_cost =
-        complexity.fks_max_cost(cut_complexity, &operations.cost, fks_src, fks_dst);
+        complexity.evaluate_fks_max_cost(cut_complexity, &operations.cost, fks_src, fks_dst);
     for &ks_quantity in &ks_pareto {
         // OPT: add a pareto cache for fks
         let fks_quantity = if same_dim {
@@ -234,8 +242,12 @@ fn optimize_1_fks_and_all_compatible_ks(
             continue;
         }
 
-        *operations.cost.fks(fks_src, fks_dst) = fks_quantity.complexity;
-        *operations.variance.fks(fks_src, fks_dst) = fks_quantity.noise;
+        operations
+            .cost
+            .set_cost(fast_keyswitch(fks_src, fks_dst), fks_quantity.complexity);
+        operations
+            .variance
+            .set_variance(fast_keyswitch_noise(fks_src, fks_dst), fks_quantity.noise);
 
         let sol = optimize_many_independant_ks(
             macro_parameters,
@@ -252,12 +264,13 @@ fn optimize_1_fks_and_all_compatible_ks(
             continue;
         }
         let (best_many_ks, operations) = sol.unwrap();
-        let cost = complexity.complexity(&operations.cost);
+        let cost = complexity.evaluate_total_cost(&operations.cost);
         if cost > cut_complexity {
             continue;
         }
         cut_complexity = cost;
-        fks_max_cost = complexity.fks_max_cost(cut_complexity, &operations.cost, fks_src, fks_dst);
+        fks_max_cost =
+            complexity.evaluate_fks_max_cost(cut_complexity, &operations.cost, fks_src, fks_dst);
         // COULD: handle complexity tie
         let bests = Best1FksAndManyKs {
             fks: Some((fks_src, fks_quantity)),
@@ -277,7 +290,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
     ks_used: &[Vec<bool>],
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &Complexity,
+    complexity: &ComplexityExpression,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
@@ -337,7 +350,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     ks_used: &[Vec<bool>],
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &Complexity,
+    complexity: &ComplexityExpression,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     best_p_error: f64,
@@ -357,8 +370,8 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
 
         // Lower bounds cuts
         let pbs_cost = cmux_quantity.complexity_br(internal_dim);
-        *operations.cost.pbs(partition) = pbs_cost;
-        let lower_cost = complexity.complexity(&operations.cost);
+        operations.cost.set_cost(bootstrap(partition), pbs_cost);
+        let lower_cost = complexity.evaluate_total_cost(&operations.cost);
         if lower_cost > best_sol_complexity {
             continue;
         }
@@ -368,7 +381,9 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
             continue;
         }
 
-        *operations.variance.pbs(partition) = pbs_variance;
+        operations
+            .variance
+            .set_variance(bootstrap_noise(partition), pbs_variance);
         let sol = optimize_dst_exclusive_fks_subset_and_all_ks(
             macro_parameters,
             fks_paretos,
@@ -386,7 +401,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
         }
 
         let (best_fks_ks, operations) = sol.unwrap();
-        let cost = complexity.complexity(&operations.cost);
+        let cost = complexity.evaluate_total_cost(&operations.cost);
         if cost > best_sol_complexity {
             continue;
         };
@@ -440,8 +455,14 @@ fn apply_all_ks_lower_bound(
         let out_internal_dim = macro_parameters[dst.0].internal_dim;
         let ks_pareto = caches.pareto_quantities(out_internal_dim);
         let in_lwe_dim = in_glwe_params.sample_extract_lwe_dimension();
-        *operations.variance.ks(src, dst) = keyswitch::lowest_noise_ks(ks_pareto, in_lwe_dim);
-        *operations.cost.ks(src, dst) = keyswitch::lowest_complexity_ks(ks_pareto, in_lwe_dim);
+        operations.variance.set_variance(
+            keyswitch_noise(src, dst),
+            keyswitch::lowest_noise_ks(ks_pareto, in_lwe_dim),
+        );
+        operations.cost.set_cost(
+            keyswitch(src, dst),
+            keyswitch::lowest_complexity_ks(ks_pareto, in_lwe_dim),
+        );
     }
 }
 
@@ -463,18 +484,25 @@ fn apply_fks_variance_and_cost_or_lower_bound(
         let input_glwe = &macro_parameters[src.0].glwe_params;
         let output_glwe = &macro_parameters[dst.0].glwe_params;
         if input_glwe == output_glwe {
-            *operations.variance.fks(src, dst) = 0.0;
-            *operations.cost.fks(src, dst) = 0.0;
+            operations
+                .variance
+                .set_variance(fast_keyswitch_noise(src, dst), 0.0);
+            operations.cost.set_cost(fast_keyswitch(src, dst), 0.0);
             continue;
         }
         // if an optimized fks is applicable and is not to be optimized
         // we use the already optimized fks instead of a lower bound
-        if let Some(fks) = initial_fks[src.0][dst.0] {
+        if let Some(this_fks) = initial_fks[src.0][dst.0] {
             let to_be_optimized = fks_to_optimize[src.0].map_or(false, |fdst| dst == fdst);
             if !to_be_optimized {
-                if input_glwe == &fks.src_glwe_param && output_glwe == &fks.dst_glwe_param {
-                    *operations.variance.fks(src, dst) = fks.noise;
-                    *operations.cost.fks(src, dst) = fks.complexity;
+                if input_glwe == &this_fks.src_glwe_param && output_glwe == &this_fks.dst_glwe_param
+                {
+                    operations
+                        .variance
+                        .set_variance(fast_keyswitch_noise(src, dst), this_fks.noise);
+                    operations
+                        .cost
+                        .set_cost(fast_keyswitch(src, dst), this_fks.complexity);
                 }
                 continue;
             }
@@ -488,7 +516,7 @@ fn apply_fks_variance_and_cost_or_lower_bound(
         } else {
             keyswitch::lowest_complexity_ks(ks_pareto, input_glwe.sample_extract_lwe_dimension())
         };
-        *operations.cost.fks(src, dst) = cost;
+        operations.cost.set_cost(fast_keyswitch(src, dst), cost);
         let mut variance_min = f64::INFINITY;
         // TODO: use a pareto front to avoid that loop
         if use_fast_ks {
@@ -506,7 +534,9 @@ fn apply_fks_variance_and_cost_or_lower_bound(
             variance_min =
                 keyswitch::lowest_noise_ks(ks_pareto, input_glwe.sample_extract_lwe_dimension());
         }
-        *operations.variance.fks(src, dst) = variance_min;
+        operations
+            .variance
+            .set_variance(fast_keyswitch_noise(src, dst), variance_min);
     }
 }
 
@@ -535,8 +565,12 @@ fn apply_partitions_input_and_modulus_variance_and_cost(
                 );
                 (input_variance, variance_modulus_switching)
             };
-        *operations.variance.input(i) = input_variance;
-        *operations.variance.modulus_switching(i) = variance_modulus_switching;
+        operations
+            .variance
+            .set_variance(input_noise(i), input_variance);
+        operations
+            .variance
+            .set_variance(modulus_switching_noise(i), variance_modulus_switching);
     }
 }
 
@@ -548,21 +582,27 @@ fn apply_pbs_variance_and_cost_or_lower_bounds(
     operations: &mut OperationsCV,
 ) {
     // setting already chosen pbs and lower bounds
-    for (i, pbs) in initial_pbs.iter().enumerate() {
+    for (i, this_pbs) in initial_pbs.iter().enumerate() {
         let i = PartitionIndex(i);
-        let pbs = if i == partition { &None } else { pbs };
-        if let Some(pbs) = pbs {
+        let this_pbs = if i == partition { &None } else { this_pbs };
+        if let Some(this_pbs) = this_pbs {
             let internal_dim = macro_parameters[i.0].internal_dim;
-            *operations.variance.pbs(i) = pbs.noise_br(internal_dim);
-            *operations.cost.pbs(i) = pbs.complexity_br(internal_dim);
+            operations
+                .variance
+                .set_variance(bootstrap_noise(i), this_pbs.noise_br(internal_dim));
+            operations
+                .cost
+                .set_cost(bootstrap(i), this_pbs.complexity_br(internal_dim));
         } else {
             // OPT: Most values could be shared on first optimize_macro
             let in_internal_dim = macro_parameters[i.0].internal_dim;
             let out_glwe_params = macro_parameters[i.0].glwe_params;
             let variance_min =
                 cmux::lowest_noise_br(caches.pareto_quantities(out_glwe_params), in_internal_dim);
-            *operations.variance.pbs(i) = variance_min;
-            *operations.cost.pbs(i) = 0.0;
+            operations
+                .variance
+                .set_variance(bootstrap_noise(i), variance_min);
+            operations.cost.set_cost(bootstrap(i), 0.0);
         }
     }
 }
@@ -627,7 +667,7 @@ fn optimize_macro(
     used_tlu_keyswitch: &[Vec<bool>],
     used_conversion_keyswitch: &[Vec<bool>],
     feasible: &Feasible,
-    complexity: &Complexity,
+    complexity: &ComplexityExpression,
     caches: &mut DecompCaches,
     init_parameters: &Parameters,
     best_complexity: f64,
@@ -651,8 +691,8 @@ fn optimize_macro(
 
     let fks_to_optimize = fks_to_optimize(nb_partitions, used_conversion_keyswitch, partition);
     let operations = OperationsCV {
-        variance: feasible.zero_variance(),
-        cost: complexity.zero_cost(),
+        variance: NoiseValues::new(),
+        cost: ComplexityValues::new(),
     };
     let partition_feasible = feasible.filter_constraints(partition);
 
@@ -717,7 +757,7 @@ fn optimize_macro(
                 break;
             }
 
-            if complexity.complexity(&operations.cost) > best_complexity {
+            if complexity.evaluate_total_cost(&operations.cost) > best_complexity {
                 continue;
             }
 
@@ -757,7 +797,7 @@ fn optimize_macro(
                 continue;
             }
 
-            if complexity.complexity(&operations.cost) > best_complexity {
+            if complexity.evaluate_total_cost(&operations.cost) > best_complexity {
                 continue;
             }
 
@@ -803,7 +843,7 @@ fn optimize_macro(
                 continue;
             }
 
-            if complexity.complexity(&operations.cost) > best_complexity {
+            if complexity.evaluate_total_cost(&operations.cost) > best_complexity {
                 continue;
             }
 
@@ -933,8 +973,8 @@ pub fn optimize(
 
     let mut caches = persistent_caches.caches();
 
-    let feasible = Feasible::of(&dag.variance_constraints, kappa, None).compressed();
-    let complexity = Complexity::of(&dag.operations_count).compressed();
+    let feasible = Feasible::of(&dag.variance_constraints, kappa, None);
+    let complexity = ComplexityExpression::from(&dag.operations_count);
     let used_tlu_keyswitch = used_tlu_keyswitch(&dag);
     let used_conversion_keyswitch = used_conversion_keyswitch(&dag);
 
@@ -1076,8 +1116,8 @@ fn used_tlu_keyswitch(dag: &AnalyzedDag) -> Vec<Vec<bool>> {
     for (src_partition, dst_partition) in cross_partition(dag.nb_partitions) {
         for constraint in &dag.variance_constraints {
             if constraint
-                .variance
-                .coeff_keyswitch_to_small(src_partition, dst_partition)
+                .noise_expression
+                .coeff(keyswitch_noise(src_partition, dst_partition))
                 != 0.0
             {
                 result[src_partition.0][dst_partition.0] = true;
@@ -1093,8 +1133,8 @@ fn used_conversion_keyswitch(dag: &AnalyzedDag) -> Vec<Vec<bool>> {
     for (src_partition, dst_partition) in cross_partition(dag.nb_partitions) {
         for constraint in &dag.variance_constraints {
             if constraint
-                .variance
-                .coeff_partition_keyswitch_to_big(src_partition, dst_partition)
+                .noise_expression
+                .coeff(fast_keyswitch_noise(src_partition, dst_partition))
                 != 0.0
             {
                 result[src_partition.0][dst_partition.0] = true;
@@ -1113,7 +1153,7 @@ fn sanity_check(
     ciphertext_modulus_log: u32,
     security_level: u64,
     feasible: &Feasible,
-    complexity: &Complexity,
+    complexity: &ComplexityExpression,
 ) {
     assert!(params.is_feasible.is_feasible());
     assert!(
@@ -1122,8 +1162,8 @@ fn sanity_check(
     );
     let nb_partitions = params.macro_params.len();
     let mut operations = OperationsCV {
-        variance: feasible.zero_variance(),
-        cost: complexity.zero_cost(),
+        variance: NoiseValues::new(),
+        cost: ComplexityValues::new(),
     };
     let micro_params = &params.micro_params;
     for partition in PartitionIndex::range(0, nb_partitions) {
@@ -1136,48 +1176,79 @@ fn sanity_check(
             glwe_param.log2_polynomial_size,
             ciphertext_modulus_log,
         );
-        *operations.variance.input(partition) = input_variance;
-        *operations.variance.modulus_switching(partition) = variance_modulus_switching;
-        if let Some(pbs) = micro_params.pbs[partition.0] {
-            *operations.variance.pbs(partition) = pbs.noise_br(internal_dim);
-            *operations.cost.pbs(partition) = pbs.complexity_br(internal_dim);
+        operations
+            .variance
+            .set_variance(input_noise(partition), input_variance);
+        operations.variance.set_variance(
+            modulus_switching_noise(partition),
+            variance_modulus_switching,
+        );
+        if let Some(this_pbs) = micro_params.pbs[partition.0] {
+            operations
+                .variance
+                .set_variance(bootstrap_noise(partition), this_pbs.noise_br(internal_dim));
+            operations
+                .cost
+                .set_cost(bootstrap(partition), this_pbs.complexity_br(internal_dim));
         } else {
-            *operations.variance.pbs(partition) = f64::MAX;
-            *operations.cost.pbs(partition) = f64::MAX;
+            operations
+                .variance
+                .set_variance(bootstrap_noise(partition), f64::MAX);
+            operations.cost.set_cost(bootstrap(partition), f64::MAX);
         }
         for src_partition in PartitionIndex::range(0, nb_partitions) {
             let src_partition_macro = params.macro_params[src_partition.0].unwrap();
             let src_glwe_param = src_partition_macro.glwe_params;
             let src_lwe_dim = src_glwe_param.sample_extract_lwe_dimension();
-            if let Some(ks) = micro_params.ks[src_partition.0][partition.0] {
+            if let Some(this_ks) = micro_params.ks[src_partition.0][partition.0] {
                 assert!(
                     used_tlu_keyswitch[src_partition.0][partition.0],
                     "Superflous ks[{src_partition}->{partition}]"
                 );
-                *operations.variance.ks(src_partition, partition) = ks.noise(src_lwe_dim);
-                *operations.cost.ks(src_partition, partition) = ks.complexity(src_lwe_dim);
+                operations.variance.set_variance(
+                    keyswitch_noise(src_partition, partition),
+                    this_ks.noise(src_lwe_dim),
+                );
+                operations.cost.set_cost(
+                    keyswitch(src_partition, partition),
+                    this_ks.complexity(src_lwe_dim),
+                );
             } else {
                 assert!(
                     !used_tlu_keyswitch[src_partition.0][partition.0],
                     "Missing ks[{src_partition}->{partition}]"
                 );
-                *operations.variance.ks(src_partition, partition) = f64::MAX;
-                *operations.cost.ks(src_partition, partition) = f64::MAX;
+                operations
+                    .variance
+                    .set_variance(keyswitch_noise(src_partition, partition), f64::MAX);
+                operations
+                    .cost
+                    .set_cost(keyswitch(src_partition, partition), f64::MAX);
             }
-            if let Some(fks) = micro_params.fks[src_partition.0][partition.0] {
+            if let Some(this_fks) = micro_params.fks[src_partition.0][partition.0] {
                 assert!(
                     used_conversion_keyswitch[src_partition.0][partition.0],
                     "Superflous fks[{src_partition}->{partition}]"
                 );
-                *operations.variance.fks(src_partition, partition) = fks.noise;
-                *operations.cost.fks(src_partition, partition) = fks.complexity;
+                operations.variance.set_variance(
+                    fast_keyswitch_noise(src_partition, partition),
+                    this_fks.noise,
+                );
+                operations.cost.set_cost(
+                    fast_keyswitch(src_partition, partition),
+                    this_fks.complexity,
+                );
             } else {
                 assert!(
                     !used_conversion_keyswitch[src_partition.0][partition.0],
                     "Missing fks[{src_partition}->{partition}]"
                 );
-                *operations.variance.fks(src_partition, partition) = f64::MAX;
-                *operations.cost.fks(src_partition, partition) = f64::MAX;
+                operations
+                    .variance
+                    .set_variance(fast_keyswitch_noise(src_partition, partition), f64::MAX);
+                operations
+                    .cost
+                    .set_cost(fast_keyswitch(src_partition, partition), f64::MAX);
             }
         }
     }
@@ -1185,7 +1256,7 @@ fn sanity_check(
     {
         assert!(feasible.feasible(&operations.variance));
         assert!(params.p_error == feasible.p_error(&operations.variance));
-        assert!(params.complexity == complexity.complexity(&operations.cost));
+        assert!(params.complexity == complexity.evaluate_total_cost(&operations.cost));
         assert!(params.global_p_error == feasible.global_p_error(&operations.variance));
     }
 }

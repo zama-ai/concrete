@@ -51,14 +51,16 @@ fn extract_levelled_block(dag: &unparametrized::Dag) -> Blocks {
     for (op_i, op) in dag.operators.iter().enumerate() {
         match op {
             // Block entry point
-            Operator::Input { .. } => (),
+            Operator::Input { .. } | Operator::ZeroNoise { .. } => (),
             // Block entry point and pre-exit point
             Op::Lut { .. } => (),
             // Connectors
             Op::UnsafeCast { input, .. } | Op::ChangePartition { input, .. } => {
                 uf.union(input.0, op_i);
             }
-            Op::LevelledOp { inputs, .. } | Op::Dot { inputs, .. } => {
+            Op::LinearNoise { inputs, .. }
+            | Op::Dot { inputs, .. }
+            | Op::MaxNoise { inputs, .. } => {
                 for input in inputs {
                     uf.union(input.0, op_i);
                 }
@@ -119,13 +121,15 @@ fn only_1_partition(dag: &unparametrized::Dag) -> Partitions {
         vec![InstructionPartition::new(PartitionIndex::FIRST); dag.operators.len()];
     for (op_i, op) in dag.operators.iter().enumerate() {
         match op {
-            Op::Dot { inputs, .. } | Op::LevelledOp { inputs, .. } => {
+            Op::Dot { inputs, .. }
+            | Op::LinearNoise { inputs, .. }
+            | Op::MaxNoise { inputs, .. } => {
                 instrs_partition[op_i].inputs_transition = vec![None; inputs.len()];
             }
             Op::Lut { .. } | Op::UnsafeCast { .. } | Operator::ChangePartition { .. } => {
                 instrs_partition[op_i].inputs_transition = vec![None];
             }
-            Op::Input { .. } => (),
+            Op::Input { .. } | Op::ZeroNoise { .. } => (),
             Op::Round { .. } => unreachable!(),
         }
     }
@@ -216,7 +220,9 @@ fn resolve_by_levelled_block(
                         HashSet::from([group_partition]);
                 }
             }
-            Op::LevelledOp { inputs, .. } | Op::Dot { inputs, .. } => {
+            Op::LinearNoise { inputs, .. }
+            | Op::Dot { inputs, .. }
+            | Op::MaxNoise { inputs, .. } => {
                 instrs_p[op_i].instruction_partition = group_partition;
                 instrs_p[op_i].inputs_transition = vec![None; inputs.len()];
                 for (i, input) in inputs.iter().enumerate() {
@@ -239,7 +245,9 @@ fn resolve_by_levelled_block(
                     })]
                 }
             }
-            Operator::Input { .. } => instrs_p[op_i].instruction_partition = group_partition,
+            Operator::Input { .. } | Operator::ZeroNoise { .. } => {
+                instrs_p[op_i].instruction_partition = group_partition
+            }
             Op::Round { .. } => unreachable!("Round should have been expanded"),
         }
     }
@@ -479,7 +487,7 @@ pub mod tests {
         let external_input = dag.add_input(16, Shape::number());
         let other_input = dag.add_input(16, Shape::number());
         let other_lut = dag.add_lut(other_input, FunctionTable::UNKWOWN, 16);
-        let mix_add = dag.add_levelled_op(
+        let mix_add = dag.add_linear_noise(
             [external_input, other_lut],
             LevelledComplexity::ADDITION,
             [1.0, 1.0],
