@@ -30,9 +30,6 @@ CONCRETE_VERSION?="" # empty mean latest
 venv:
 	$(PYTHON) -m venv .venv
 	. .venv/bin/activate
-ifeq (,$(wildcard ${RUNTIME_LIBRARY}))
-	$(PIP) install --extra-index-url https://pypi.zama.ai/cpu "concrete-python$(CONCRETE_VERSION)"
-endif
 	$(PIP) install -r requirements.dev.txt
 	$(PIP) install -r requirements.extra-full.txt
 	$(PIP) install -r requirements.txt

@@ -1,13 +1,10 @@
-# Check commit and PR compliance
-name: Check commit message compliance
+name: check commit compliance
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
 
 jobs:
-  check-commit-pr:
-    name: Check commit and PR
-    runs-on: ubuntu-20.04
+  format:
+    runs-on: ubuntu-latest
     steps:
       - name: Check first line
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee # v2.0.0
@@ -19,3 +16,13 @@ jobs:
           excludeTitle: 'true' # optional: this excludes the title of a pull request
           checkAllCommitMessages: 'true' # optional: this checks all commits associated with a pull request
           accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
+      - name: checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - name: linelint
+        uses: fernandrone/linelint@8136e0fa9997122d80f5f793e0bb9a45e678fbb1 # 0.0.4
+        id: linelint
+      - name: markdown-link-check
+        uses: gaurav-nelson/github-action-markdown-link-check@5c5dfc0ac2e225883c0e5f03a85311ec2830d368 # v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'

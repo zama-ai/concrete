@@ -1,0 +1,79 @@
+# This workflows should be runned after that releases has been validated and ready to push to pypi.org and docker hub.
+name: concrete-python finalize-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'version of concrete-python to push to pypi and docker hub'
+        required: true
+        type: string
+
+jobs:
+  publish-to-pypi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull wheels from S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
+        run: |
+          mkdir wheels
+          aws s3 cp s3://${S3_BUCKET_NAME}/cpu/concrete-python/ ./wheels/ --recursive --exclude "*" --include "concrete_python-${{ inputs.version }}-*"
+          echo "============== Downloaded wheels ==============="
+          ls -la ./wheels/
+      - name: Push wheels to public PyPI (public)
+        run: |
+          pip install twine==4.0.2
+          twine upload wheels/concrete_python-${{ inputs.version }}*.whl \
+            -u "${{ secrets.PUBLIC_PYPI_USER }}" \
+            -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" \
+            -r pypi
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "test-linux-x86 (${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})" 
+
+  publish-to-dockerhub:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE_NAME: zamafhe/concrete-python
+      DOCKER_FILE: docker/Dockerfile.concrete-python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Get version from tag
+        run: |
+          # remove leading 'v' and '-' from tag
+          export VERSION=`echo ${{ inputs.tag }} | sed "s/^v*//g" | sed "s/-//g"`
+          echo "VERSION=$VERSION" >> "${GITHUB_ENV}"
+          echo "NAME_TAG=${{ env.DOCKER_IMAGE_NAME }}:v$VERSION" >> "${GITHUB_ENV}"
+      - name: Build image
+        run: |
+          mkdir empty_context
+          docker image build -t ${{ env.NAME_TAG }} --build-arg version=${{ env.VERSION }} -f ${{ env.DOCKER_FILE }} empty_context
+
+      # disabled because of https://github.com/aquasecurity/trivy/discussions/7668
+      # - name: Run Trivy vulnerability scanner
+      #   uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
+      #   with:
+      #     image-ref: '${{ env.NAME_TAG }}'
+      #     format: 'table'
+      #     exit-code: '1'
+      #     ignore-unfixed: true
+      #     vuln-type: 'os,library'
+      #     severity: 'CRITICAL,HIGH'
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image
+        run: docker image push ${{ env.NAME_TAG }}

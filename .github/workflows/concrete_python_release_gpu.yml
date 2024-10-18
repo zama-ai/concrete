@@ -1,61 +1,58 @@
-name: Concrete Python Release (GPU)
-
+name: concrete-python release-gpu
 on:
   workflow_dispatch:
-    inputs:
-      instance_id:
-        description: 'Instance ID'
-        type: string
-      instance_image_id:
-        description: 'Instance AMI ID'
-        type: string
-      instance_type:
-        description: 'Instance product type'
-        type: string
-      runner_name:
-        description: 'Action runner name'
-        type: string
-      request_id:
-        description: 'Slab request ID'
-        type: string
-      user_inputs:
-        description: 'either "nightly" or "public" or "private" to specify the release type'
-        required: true
-        default: 'nightly'
-        type: string
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  schedule:
+    # Nightly Release @ 3AM after each work day
+    - cron: "0 3 * * 2-6"
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
   CUDA_PATH: /usr/local/cuda-11.8
-  GCC_VERSION: 11
-  RELEASE_TYPE: ${{ inputs.user_inputs }}
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  RELEASE_TYPE: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && 'public' || 'nightly' }}
+
+concurrency:
+  group: concrete_python_release_gpu_${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  setup-instance:
+    runs-on: ubuntu-latest
+    outputs:
+      runner-name: ${{ steps.start-instance.outputs.label }}
+    steps:
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: release
+
   build-linux-x86:
+    needs: setup-instance
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-    runs-on: ${{ github.event.inputs.runner_name }}
     steps:
-      - name: Log instance configuration
-        run: |
-          echo "IDs: ${{ inputs.instance_id }}"
-          echo "AMI: ${{ inputs.instance_image_id }}"
-          echo "Type: ${{ inputs.instance_type }}"
-          echo "Request ID: ${{ inputs.request_id }}"
-          echo "User Inputs: ${{ inputs.user_inputs }}"
-
       - name: Set up GitHub environment
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
-
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
           fetch-depth: 0
-
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: |
@@ -65,14 +62,11 @@ jobs:
           echo "__version__ = \"${LATEST_RELEASE_VERSION}-dev${NIGHTLY_VERSION_ONE_NUMBER}\"" >| frontends/concrete-python/version.txt
           git tag nightly-$NIGHTLY_VERSION || true
           git push origin nightly-$NIGHTLY_VERSION || true
-
       - name: Set release version (public)
         if: ${{ env.RELEASE_TYPE == 'public' }}
         run: echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" >| frontends/concrete-python/version.txt
-
       - name: Expose release version from Python
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
-
       - name: Build wheel
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler-bindings
@@ -84,29 +78,23 @@ jobs:
           options: >-
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
-            -e SSH_AUTH_SOCK=/ssh.socket
           shell: bash
           run: |
             set -e
 
-            rustup toolchain install nightly-2024-09-30
-            pip install mypy
             rm -rf /build/*
-            
+
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
             echo "Using $PYTHON"
 
-            dnf -y install graphviz graphviz-devel
-            
             cd /concrete/frontends/concrete-python
             make PYTHON=$PYTHON venv
             source .venv/bin/activate
-            
+
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=OFF Python3_EXECUTABLE=$(which python) \
               CUDA_SUPPORT=ON TIMING_ENABLED=ON CUDA_PATH=${{ env.CUDA_PATH }} python-bindings
-            
+
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
@@ -114,37 +102,62 @@ jobs:
 
             export COMPILER_BUILD_DIRECTORY="/build"
             make whl
-            
-            deactivate
 
+            deactivate
       - name: Upload wheel
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
           retention-days: 3
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "build-linux-x86 (${{matrix.python-version}}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
-  push:
+  teardown-instance:
+    needs: [ setup-instance, build-linux-x86 ]
+    if: ${{ always() && needs.setup-instance.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@c0e7168795bd78f61f61146951ed9d0c73c9b701
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-instance.outputs.runner-name }}
+
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Instance teardown finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+
+  push-wheels:
     needs: [build-linux-x86]
     runs-on: ubuntu-latest
     outputs:
       wheel_version: ${{ steps.version.outputs.wheel_version }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           path: wheels
           merge-multiple: true
-
-      - name: Install aws-cli if not present
+      - name: Install aws-cli
         run: |
           aws --version || (curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
             unzip awscliv2.zip && \
             sudo ./aws/install)
-
       - name: Upload wheels to S3
-        if: ${{ env.RELEASE_TYPE == 'public' || env.RELEASE_TYPE == 'nightly' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_IAM_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
@@ -157,18 +170,92 @@ jobs:
           aws s3 sync ./wheels/ s3://${S3_BUCKET_NAME}/gpu/concrete-python
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
-
       - name: Output Wheel Version
         id: version
         run: |
           export VERSION=`ls ./wheels/*manylinux* | head -n1 |  cut -d "-" -f2`
           echo "VERSION=$VERSION"
           echo "wheel_version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "push-wheels finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
-  test-gpu-wheel:
-    needs: [push]
-    uses: ./.github/workflows/start_slab.yml
-    secrets: inherit
-    with:
-      command: concrete-python-test-gpu-wheel
-      user_inputs: "${{ needs.push.outputs.wheel_version }}"
+  setup-test-instance:
+    runs-on: ubuntu-latest
+    needs: [push-wheels]
+    outputs:
+      runner-name: ${{ steps.start-instance.outputs.label }}
+    steps:
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: gpu-test
+
+  test-linux-x86:
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+      fail-fast: false
+    needs: [setup-test-instance, push-wheels]
+    runs-on: ${{ needs.setup-test-instance.outputs.runner-name }}
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install concrete-python
+        run: pip install --pre --extra-index-url https://pypi.zama.ai/gpu/ "concrete-python==${{ needs.push-wheels.outputs.wheel_version }}"
+
+      - name: Checkout the repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: repo
+
+      - name: Test wheel
+        run: |
+          CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
+
+          # Install extra requirements for tests
+          sudo apt update -y
+          sudo apt install -y graphviz libgraphviz-dev
+          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
+          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
+
+          # Running tests
+          cd $CONCRETE_PYTHON
+          make pytest-gpu
+
+
+  teardown-test-instance:
+    needs: [ setup-test-instance, test-linux-x86 ]
+    if: ${{ always() && needs.setup-test-instance.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@c0e7168795bd78f61f61146951ed9d0c73c9b701
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-test-instance.outputs.runner-name }}
+
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Instance teardown finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"

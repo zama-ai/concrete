@@ -1,37 +1,46 @@
-name: Concrete Python Release
+name: concrete-python release-cpu
+
 on:
   workflow_dispatch:
-    inputs:
-      instance_id:
-        description: 'Instance ID'
-        type: string
-      instance_image_id:
-        description: 'Instance AMI ID'
-        type: string
-      instance_type:
-        description: 'Instance product type'
-        type: string
-      runner_name:
-        description: 'Action runner name'
-        type: string
-      request_id:
-        description: 'Slab request ID'
-        type: string
-      user_inputs:
-        description: 'either "nightly" or "public" or "private" to specify the release type'
-        required: true
-        default: 'nightly'
-        type: string
-
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  schedule:
+    # Nightly Release @ 3AM after each work day
+    - cron: "0 3 * * 2-6"
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-  GLIB_VER: 2_28
-  RELEASE_TYPE: ${{ inputs.user_inputs }}
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  RELEASE_TYPE: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && 'public' || 'nightly' }}
+
+concurrency:
+  group: concrete_python_release_cpu_${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  setup-instance:
+    runs-on: ubuntu-latest
+    outputs:
+      runner-name: ${{ steps.start-instance.outputs.label }}
+    steps:
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@447a2d0fd2d1a9d647aa0d0723a6e9255372f261
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: release
+
   release-checks:
-    runs-on: ${{ github.event.inputs.runner_name }}
+    needs: setup-instance
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -40,32 +49,29 @@ jobs:
           fetch-depth: 0
       - name: Check python api doc is up to date
         run: ci/scripts/make_apidocs.sh
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "release-checks finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   build-linux-x86:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-    runs-on: ${{ github.event.inputs.runner_name }}
+    needs: setup-instance
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
-      - name: Log instance configuration
-        run: |
-          echo "IDs: ${{ inputs.instance_id }}"
-          echo "AMI: ${{ inputs.instance_image_id }}"
-          echo "Type: ${{ inputs.instance_type }}"
-          echo "Request ID: ${{ inputs.request_id }}"
-          echo "User Inputs: ${{ inputs.user_inputs }}"
-
       - name: Set up GitHub environment
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
-
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
           fetch-depth: 0
-
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: |
@@ -75,14 +81,11 @@ jobs:
           echo "__version__ = \"${LATEST_RELEASE_VERSION}-dev${NIGHTLY_VERSION_ONE_NUMBER}\"" >| frontends/concrete-python/version.txt
           git tag nightly-$NIGHTLY_VERSION || true
           git push origin nightly-$NIGHTLY_VERSION || true
-
       - name: Set release version (public)
         if: ${{ env.RELEASE_TYPE == 'public' }}
         run: echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" >| frontends/concrete-python/version.txt
-
       - name: Expose release version from Python
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
-
       - name: Build wheel
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler-bindings
@@ -94,15 +97,10 @@ jobs:
           options: >-
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
-            -v ${{ env.SSH_AUTH_SOCK }}:/ssh.socket
-            -e SSH_AUTH_SOCK=/ssh.socket
-            ${{ env.DOCKER_GPU_OPTION }}
           shell: bash
           run: |
             set -e
 
-            rustup toolchain install nightly-2024-09-30
-            pip install mypy
             rm -rf /build/*
 
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
@@ -126,20 +124,25 @@ jobs:
             make whl
 
             deactivate
-
       - name: Upload wheel
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
           retention-days: 3
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "build-linux-x86 finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   build-macos:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
-
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout
@@ -147,14 +150,11 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-
       - name: Install OS Dependencies
         run: |
           brew install ninja ccache
-
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
-
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: |
@@ -162,14 +162,11 @@ jobs:
           NIGHTLY_VERSION_ONE_NUMBER=$(date +"%Y%m%d")
           LATEST_RELEASE_VERSION=`git tag -l |grep "v.*" |sort |tail -n 1 | grep -e '[0-9].*' -o`
           echo "__version__ = \"${LATEST_RELEASE_VERSION}-dev${NIGHTLY_VERSION_ONE_NUMBER}\"" >| frontends/concrete-python/version.txt
-
       - name: Set release version (public)
         if: ${{ env.RELEASE_TYPE == 'public' }}
         run: echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" >| frontends/concrete-python/version.txt
-
       - name: Expose release version from Python
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
-
       - name: Build wheel
         run: |
           export CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
@@ -203,13 +200,19 @@ jobs:
           delocate-wheel -v dist/*macos*.whl
 
           deactivate
-
       - name: Upload wheel
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
           path: frontends/concrete-python/dist/*macos*.whl
           retention-days: 3
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "build-macos finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   hash:
     # Generate hashes for the wheels, used later for provenance.
@@ -279,28 +282,24 @@ jobs:
           aws s3 sync ./wheels/ s3://${S3_BUCKET_NAME}/cpu/concrete-python
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
-
-      - name: Start pushing Docker images
-        if: ${{ env.RELEASE_TYPE == 'public' }}
-        run: |
-          export TAG=$(git describe --tags --abbrev=0)
-          curl -L \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/zama-ai/concrete/actions/workflows/concrete_python_push_docker_image.yml/dispatches \
-            -d "{\"ref\": \"$TAG\", \"inputs\": {\"tag\":\"v$TAG\"}}"
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "push finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   test-linux-x86:
-    needs: [build-linux-x86]
+    needs: [setup-instance, build-linux-x86]
     continue-on-error: true
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-    runs-on: ${{ github.event.inputs.runner_name }}
+    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
-      - uses: actions-rust-lang/setup-rust-toolchain@11df97af8e8102fd60b60a77dfbf58d40cd843b8 # v1.10.1
+      - name: Install rust
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
       - name: Setup Python
         uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
         with:
@@ -343,6 +342,36 @@ jobs:
           # Running tests
           make tfhers-utils
           pytest tests -svv -n auto
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "test-linux-x86 (${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+
+  teardown-instance:
+    needs: [ setup-instance, test-linux-x86 ]
+    if: ${{ always() && needs.setup-instance.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@c0e7168795bd78f61f61146951ed9d0c73c9b701
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-instance.outputs.runner-name }}
+
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Instance teardown finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   test-macos:
     needs: [build-macos]
@@ -396,8 +425,14 @@ jobs:
           make tfhers-utils
           mkdir ./KeySetCache
           pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
-
       - name: Cleanup host
         if: success() || failure()
         run: |
           rm -rf $TEST_TMP_DIR
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "test-macos (${{matrix.runs-on}}/${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
