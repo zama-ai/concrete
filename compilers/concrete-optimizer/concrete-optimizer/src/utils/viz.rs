@@ -92,14 +92,20 @@ impl<'dag> Viz for crate::dag::unparametrized::DagOperator<'dag> {
             Operator::Input { out_precision, .. } => {
                 format!("{index} [label =\"{{%{index} = Input({input_string}) |{{out_precision:|{out_precision:?}}} | {{loc:|{location}}}}}\" fillcolor={color}];")
             }
+            Operator::ZeroNoise { out_precision, .. } => {
+                format!("{index} [label =\"{{%{index} = Zero({input_string}) |{{out_precision:|{out_precision:?}}} | {{loc:|{location}}}}}\" fillcolor={color}];")
+            }
             Operator::Lut { out_precision, .. } => {
                 format!("{index} [label = \"{{%{index} = Lut({input_string}) |{{out_precision:|{out_precision:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];")
             }
             Operator::Dot { .. } => {
                 format!("{index} [label = \"{{%{index} = Dot({input_string})| {{loc:|{location}}}}}\" fillcolor={color}];")
             }
-            Operator::LevelledOp { weights, .. } => {
+            Operator::LinearNoise { weights, .. } => {
                 format!("{index} [label = \"{{%{index} = LevelledOp({input_string}) |{{weights:|{weights:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];")
+            }
+            Operator::MaxNoise { .. } => {
+                format!("{index} [label = \"{{%{index} = Max({input_string}) | {{loc:|{location}}}}}\" fillcolor={color}];")
             }
             Operator::UnsafeCast { out_precision, .. } => format!(
                 "{index} [label = \"{{%{index} = UnsafeCast({input_string}) |{{out_precision:|{out_precision:?}}}| {{loc:|{location}}}}}\" fillcolor={color}];"
