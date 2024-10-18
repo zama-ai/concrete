@@ -1,8 +1,3 @@
-inputs:
-  ssh_private_key:
-    description: 'A ssh key to access private github repository'
-    required: true
-
 runs:
   using: "composite"
   steps:
@@ -10,6 +5,8 @@ runs:
       uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
       with:
         toolchain: stable
+        default: true
+        override: true
 
     - name: Download cargo cache
       uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3
