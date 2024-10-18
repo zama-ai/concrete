@@ -32,7 +32,8 @@ jobs:
           job-secret: ${{ secrets.JOB_SECRET }}
           backend: aws
           profile: cpu-test
-  concrete-compiler-build-python-bindings:
+
+  build-python-bindings:
     name: Build concrete-compiler python bindings
     needs: setup-instance
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
@@ -80,9 +81,10 @@ jobs:
           path: |
             build/lib/libConcretelangRuntime.so
             build/tools/concretelang/python_packages/concretelang_core/
-  concrete-python-test-pytest:
+
+  test-pytest:
     name: Test concrete-python pytest
-    needs: [setup-instance, concrete-compiler-build-python-bindings]
+    needs: [setup-instance, build-python-bindings]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
       - name: Download concrete-compiler python-bindings
@@ -110,9 +112,10 @@ jobs:
             export KEY_CACHE_DIRECTORY=./key-set-cache
             mkdir $KEY_CACHE_DIRECTORY
             make pytest
-  concrete-python-test-notebooks:
+
+  test-notebooks:
     name: Test concrete-python notebooks
-    needs: [setup-instance, concrete-compiler-build-python-bindings]
+    needs: [setup-instance, build-python-bindings]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
       - name: Download concrete-compiler python-bindings
@@ -137,10 +140,11 @@ jobs:
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             make test-notebooks
+
   teardown-instance:
     name: Teardown instance
     if: ${{ always() && needs.setup-instance.result != 'skipped' }}
-    needs: [ setup-instance, concrete-python-test-pytest, concrete-python-test-notebooks ]
+    needs: [ setup-instance, test-pytest, test-notebooks ]
     runs-on: ubuntu-latest
     steps:
       - name: Stop instance
