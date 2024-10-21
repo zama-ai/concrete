@@ -185,21 +185,18 @@ pub fn write_to_file(
         intem,
     } in res.iter()
     {
-        match intem {
-            Some((solution, cost)) => {
-                writeln!(
-                    writer,
-                    " {:2},     {:2}, {:2},  {:4},   {:2},  {:2},   {:6}",
-                    precision,
-                    log_norm,
-                    solution.glwe_dim,
-                    solution.log_poly_size,
-                    solution.level_pbs,
-                    solution.base_log_pbs,
-                    cost
-                )?;
-            }
-            None => {}
+        if let Some((solution, cost)) = intem {
+            writeln!(
+                writer,
+                " {:2},     {:2}, {:2},  {:4},   {:2},  {:2},   {:6}",
+                precision,
+                log_norm,
+                solution.glwe_dim,
+                solution.log_poly_size,
+                solution.level_pbs,
+                solution.base_log_pbs,
+                cost
+            )?;
         }
     }
     Ok(())
