@@ -624,12 +624,13 @@ getSqMANP(mlir::tensor::ExpandShapeOp op,
 static std::optional<llvm::APInt>
 getSqMANP(mlir::concretelang::FHELinalg::SumOp op,
           llvm::ArrayRef<const MANPLattice *> operandMANPs) {
+  llvm::APInt result = llvm::APInt(1, 1, false);
 
   auto inputType = op.getOperand().getType().dyn_cast<mlir::TensorType>();
 
   uint64_t numberOfElementsInTheInput = inputType.getNumElements();
   if (numberOfElementsInTheInput == 0) {
-    return llvm::APInt{1, 1, false};
+    return result;
   }
 
   uint64_t numberOfElementsAddedTogetherInEachOutputCell = 1;
@@ -659,9 +660,8 @@ getSqMANP(mlir::concretelang::FHELinalg::SumOp op,
          "Missing squared Minimal Arithmetic Noise Padding for encrypted "
          "operands");
 
-  llvm::APInt operandMANP = operandMANPs[0]->getValue().getMANP().value();
-
-  return APIntWidthExtendUMul(noiseMultiplier, operandMANP);
+  result = operandMANPs[0]->getValue().getMANP().value();
+  return APIntWidthExtendUMul(noiseMultiplier, result);
 }
 
 static std::optional<llvm::APInt>
@@ -755,10 +755,11 @@ public:
         debug(debug) {}
 
   void setToEntryState(MANPLattice *lattice) override {
+    auto baseMANP = llvm::APInt(1, 1);
     if (isEncryptedFunctionParameter(lattice->getPoint())) {
       // Set minimal MANP for encrypted function arguments
-      propagateIfChanged(lattice, lattice->join(MANPLatticeValue{
-                                      std::optional{llvm::APInt(1, 1)}}));
+      propagateIfChanged(
+          lattice, lattice->join(MANPLatticeValue{std::optional{baseMANP}}));
     }
     // In case of block arguments used in the block of a linalg.genric
     // operation: map the MANP values of the operands into the block arguments
@@ -781,8 +782,8 @@ public:
           operandRange = genericOp.getOutputs();
         }
         auto v = operandRange[argIndex];
-        auto manp = this->getLatticeElement(v)->getValue().getMANP().value_or(
-            llvm::APInt(1, 1));
+        auto manp =
+            this->getLatticeElement(v)->getValue().getMANP().value_or(baseMANP);
         propagateIfChanged(lattice, lattice->join(MANPLatticeValue{manp}));
       }
     } else {
