@@ -39,7 +39,7 @@ RUN ln -s /opt/python/${python_tag}/bin/pip /bin/pip
 RUN ln -s /opt/python/${python_tag}/bin/python /bin/python
 ENV PYTHON_EXEC=/opt/python/${python_tag}/bin/python
 # Install python deps
-RUN pip install numpy pybind11==2.8 PyYAML pytest wheel auditwheel
+RUN pip install numpy pybind11==2.8 PyYAML pytest wheel auditwheel mypy
 # Setup and build compiler
 COPY / /workdir
 WORKDIR /workdir/compilers/concrete-compiler/compiler
