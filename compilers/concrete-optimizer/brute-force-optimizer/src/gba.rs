@@ -477,9 +477,8 @@ pub fn write_to_file(
         intem,
     } in res.iter()
     {
-        match intem {
-            Some((solution, cost)) => {
-                writeln!(
+        if let Some((solution, cost)) = intem {
+            writeln!(
                     writer,
                     " {:2},     {:2}, {:2}, {:2}, {:4},   {:2},  {:2},   {:2},  {:2},    {:2},  {:2}, {:6}",
                     nb_inputs * precision,
@@ -495,8 +494,6 @@ pub fn write_to_file(
                     solution.base_log_fpks,
                     cost
                 )?;
-            }
-            None => {}
         }
     }
     Ok(())
