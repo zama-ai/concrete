@@ -53,6 +53,14 @@ def AdditiveNoise : OpInterface<"AdditiveNoise"> {
     let cppNamespace = "mlir::concretelang::FHE";
 }
 
+def MaxNoise : OpInterface<"MaxNoise"> {
+    let description = [{
+        An n-ary operation whose output noise is the max of all input noises.
+    }];
+
+    let cppNamespace = "mlir::concretelang::FHE";
+}
+
 def UnaryEint : OpInterface<"UnaryEint"> {
     let description = [{
         A unary operation on scalars, with the operand encrypted.

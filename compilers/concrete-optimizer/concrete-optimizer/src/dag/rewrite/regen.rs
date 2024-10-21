@@ -5,12 +5,14 @@ use crate::dag::unparametrized::{Dag, DagBuilder, DagOperator};
 fn reindex_op_inputs(op: &Operator, old_index_to_new: &[usize]) -> Operator {
     let mut op = op.clone();
     match &mut op {
-        Operator::Input { .. } => (),
+        Operator::Input { .. } | Operator::ZeroNoise { .. } => (),
         Operator::Lut { input, .. }
         | Operator::UnsafeCast { input, .. }
         | Operator::Round { input, .. }
         | Operator::ChangePartition { input, .. } => input.0 = old_index_to_new[input.0],
-        Operator::Dot { inputs, .. } | Operator::LevelledOp { inputs, .. } => {
+        Operator::Dot { inputs, .. }
+        | Operator::LinearNoise { inputs, .. }
+        | Operator::MaxNoise { inputs, .. } => {
             for input in inputs {
                 input.0 = old_index_to_new[input.0];
             }

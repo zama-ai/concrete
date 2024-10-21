@@ -1,4 +1,4 @@
-use std::ops::{Deref, Index, IndexMut};
+use std::ops::{Add, Deref, Index, IndexMut};
 
 use crate::dag::operator::{DotKind, LevelledComplexity, Operator, OperatorIndex, Precision};
 use crate::dag::rewrite::round::expand_round_and_index_map;
@@ -9,14 +9,17 @@ use crate::optimization::dag::multi_parameters::partitionning::partitionning_wit
 use crate::optimization::dag::multi_parameters::partitions::{
     InstructionPartition, PartitionIndex, Transition,
 };
-use crate::optimization::dag::multi_parameters::symbolic_variance::SymbolicVariance;
 use crate::optimization::dag::solo_key::analyze::safe_noise_bound;
 use crate::optimization::{Err, Result};
 
 use super::complexity::OperationsCount;
 use super::keys_spec;
-use super::operations_value::OperationsValue;
+use super::noise_expression::{
+    bootstrap_noise, fast_keyswitch_noise, input_noise, keyswitch_noise, modulus_switching_noise,
+    NoiseExpression,
+};
 use super::partitions::Partitions;
+use super::symbolic::{bootstrap, fast_keyswitch, keyswitch, SymbolMap};
 use super::variance_constraint::VarianceConstraint;
 use crate::utils::square;
 
@@ -33,16 +36,14 @@ impl PartitionedDag {
         let vars = self
             .dag
             .get_operators_iter()
-            .map(|op| {
-                if op.is_input() {
-                    let mut var = OperatorVariance::nan(self.partitions.nb_partitions);
-                    let partition = self.partitions[op.id].instruction_partition;
-                    var[partition] =
-                        SymbolicVariance::input(self.partitions.nb_partitions, partition);
-                    var
-                } else {
-                    OperatorVariance::nan(self.partitions.nb_partitions)
+            .map(|op| match op.operator {
+                Operator::Input { .. } => {
+                    let mut output = OperatorVariance::zero(self.partitions.nb_partitions);
+                    let op_partition = self.partitions[op.id].instruction_partition;
+                    output[op_partition] += 1.0 * input_noise(op_partition);
+                    output
                 }
+                _ => OperatorVariance::zero(self.partitions.nb_partitions),
             })
             .collect();
         Variances { vars }
@@ -192,7 +193,6 @@ impl VariancedDag {
             if let Operator::Input { .. } = op {
                 let partition_index = self.partitions.instrs_partition[i].instruction_partition;
                 if p_cut.is_external_partition(&partition_index) {
-                    let partitions = self.partitions.clone();
                     let external_partition =
                         &p_cut.external_partitions[p_cut.external_partition_index(partition_index)];
                     let max_variance = external_partition.max_variance;
@@ -200,11 +200,8 @@ impl VariancedDag {
 
                     let mut input = self.get_operator_mut(OperatorIndex(i));
                     let mut variances = input.variance().clone();
-                    variances.vars[partition_index.0] = SymbolicVariance::from_external_partition(
-                        partitions.nb_partitions,
-                        partition_index,
-                        max_variance / variance,
-                    );
+                    variances.vars[partition_index.0] = NoiseExpression::zero()
+                        + (max_variance / variance) * bootstrap_noise(partition_index);
                     *(input.variance_mut()) = variances;
                 }
             }
@@ -230,17 +227,14 @@ impl VariancedDag {
                 .max_variance;
 
                 let variances = &self.get_operator(op.id).variance().vars.clone();
-                for (i, variance) in variances.iter().enumerate() {
-                    if variance.coeffs.is_nan() {
-                        assert!(i != partition_index.0);
-                        continue;
-                    }
+                for variance in variances.iter() {
                     let constraint = VarianceConstraint {
                         precision: *out_precision,
+                        nb_partitions: self.partitions.nb_partitions,
                         partition: partition_index,
                         nb_constraints: out_shape.flat_size(),
                         safe_variance_bound: max_variance,
-                        variance: variance.clone(),
+                        noise_expression: variance.clone(),
                         location: op.location.clone(),
                     };
                     self.external_variance_constraints.push(constraint);
@@ -271,17 +265,14 @@ impl VariancedDag {
             .max_variance;
 
             let variances = &self.get_operator(op_index).variance().vars.clone();
-            for (i, variance) in variances.iter().enumerate() {
-                if variance.coeffs.is_nan() {
-                    assert!(i != partition_index.0);
-                    continue;
-                }
+            for variance in variances.iter() {
                 let constraint = VarianceConstraint {
                     precision: *out_precision,
+                    nb_partitions: self.partitions.nb_partitions,
                     partition: partition_index,
                     nb_constraints: out_shape.flat_size(),
                     safe_variance_bound: max_variance,
-                    variance: variance.clone(),
+                    noise_expression: variance.clone(),
                     location: dag_op.location.clone(),
                 };
                 self.external_variance_constraints.push(constraint);
@@ -302,52 +293,34 @@ impl VariancedDag {
             if operator.operator().is_input() {
                 continue;
             }
+
             // Operator variance will be used to override the noise
-            let mut operator_variance = OperatorVariance::nan(nb_partitions);
+            let mut operator_variance = OperatorVariance::zero(nb_partitions);
+            let operator_partition = operator.partition().instruction_partition;
+
             // We first compute the noise in the partition of the operator
             operator_variance[operator.partition().instruction_partition] = match operator
                 .operator()
                 .operator
             {
-                Operator::Input { .. } => unreachable!(),
-                Operator::Lut { .. } => SymbolicVariance::after_pbs(
-                    nb_partitions,
-                    operator.partition().instruction_partition,
-                ),
-                Operator::LevelledOp { weights, .. } => operator
-                    .get_inputs_iter()
-                    .zip(weights)
-                    .fold(SymbolicVariance::ZERO, |acc, (inp, &weight)| {
-                        acc + inp.variance()[operator.partition().instruction_partition].clone()
-                            * square(weight)
-                    }),
-                Operator::Dot {
-                    kind: DotKind::CompatibleTensor { .. },
-                    ..
-                } => todo!("TODO"),
-                Operator::Dot {
-                    kind: DotKind::Unsupported { .. },
-                    ..
-                } => panic!("Unsupported"),
-                Operator::Dot {
-                    inputs,
-                    weights,
-                    kind: DotKind::Simple | DotKind::Tensor | DotKind::Broadcast { .. },
-                } if inputs.len() == 1 => {
-                    let var = operator
+                Operator::Lut { .. } => {
+                    NoiseExpression::zero() + 1.0 * bootstrap_noise(operator_partition)
+                }
+                Operator::MaxNoise { .. } => {
+                    operator
                         .get_inputs_iter()
-                        .next()
-                        .unwrap()
-                        .variance()
-                        .clone();
-                    weights
-                        .values
-                        .iter()
-                        .fold(SymbolicVariance::ZERO, |acc, weight| {
-                            acc + var[operator.partition().instruction_partition].clone()
-                                * square(*weight as f64)
+                        .fold(NoiseExpression::zero(), |acc, inp| {
+                            let inp_noise = inp.variance()[operator_partition].clone();
+                            NoiseExpression::max(&acc, &inp_noise)
                         })
                 }
+                Operator::LinearNoise { weights, .. } => operator
+                    .get_inputs_iter()
+                    .zip(weights)
+                    .fold(NoiseExpression::zero(), |acc, (inp, &weight)| {
+                        let inp_noise = inp.variance()[operator_partition].clone();
+                        acc + inp_noise * square(weight)
+                    }),
                 Operator::Dot {
                     weights,
                     kind: DotKind::Simple | DotKind::Tensor | DotKind::Broadcast { .. },
@@ -356,15 +329,24 @@ impl VariancedDag {
                     .values
                     .iter()
                     .zip(operator.get_inputs_iter().map(|n| n.variance().clone()))
-                    .fold(SymbolicVariance::ZERO, |acc, (weight, var)| {
-                        acc + var[operator.partition().instruction_partition].clone()
-                            * square(*weight as f64)
+                    .fold(NoiseExpression::zero(), |acc, (weight, var)| {
+                        let inp_var = var[operator_partition].clone();
+                        acc + inp_var * square(*weight as f64)
                     }),
                 Operator::UnsafeCast { .. } | Operator::ChangePartition { .. } => {
-                    operator.get_inputs_iter().next().unwrap().variance()
-                        [operator.partition().instruction_partition]
+                    operator.get_inputs_iter().next().unwrap().variance()[operator_partition]
                         .clone()
                 }
+                Operator::Input { .. } | Operator::ZeroNoise { .. } => unreachable!(),
+
+                Operator::Dot {
+                    kind: DotKind::CompatibleTensor { .. },
+                    ..
+                } => todo!("TODO"),
+                Operator::Dot {
+                    kind: DotKind::Unsupported { .. },
+                    ..
+                } => panic!("Unsupported"),
                 Operator::Round { .. } => {
                     unreachable!("Round should have been either expanded or integrated to a lut")
                 }
@@ -375,12 +357,9 @@ impl VariancedDag {
                 .alternative_output_representation
                 .iter()
                 .for_each(|index| {
-                    operator_variance[*index] = operator_variance
-                        [operator.partition().instruction_partition]
-                        .after_partition_keyswitch_to_big(
-                            operator.partition().instruction_partition,
-                            *index,
-                        );
+                    let noise_in_operator_partition = operator_variance[operator_partition].clone();
+                    operator_variance[*index] = noise_in_operator_partition
+                        + 1.0 * fast_keyswitch_noise(operator_partition, *index);
                 });
             // We override the noise
             *operator.variance_mut() = operator_variance;
@@ -457,7 +436,11 @@ pub fn analyze(
     let undominated_variance_constraints =
         VarianceConstraint::remove_dominated(&variance_constraints);
     let operations_count_per_instrs = collect_operations_count(&varianced_dag);
-    let operations_count = sum_operations_count(&operations_count_per_instrs);
+    let operations_count = operations_count_per_instrs
+        .clone()
+        .into_iter()
+        .reduce(Add::add)
+        .unwrap();
     Ok(AnalyzedDag {
         operators: varianced_dag.dag.operators,
         instruction_rewrite_index,
@@ -548,11 +531,11 @@ pub fn original_instrs_partition(
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct OperatorVariance {
-    pub(crate) vars: Vec<SymbolicVariance>,
+    pub(crate) vars: Vec<NoiseExpression>,
 }
 
 impl Index<PartitionIndex> for OperatorVariance {
-    type Output = SymbolicVariance;
+    type Output = NoiseExpression;
 
     fn index(&self, index: PartitionIndex) -> &Self::Output {
         &self.vars[index.0]
@@ -566,7 +549,7 @@ impl IndexMut<PartitionIndex> for OperatorVariance {
 }
 
 impl Deref for OperatorVariance {
-    type Target = [SymbolicVariance];
+    type Target = [NoiseExpression];
 
     fn deref(&self) -> &Self::Target {
         &self.vars
@@ -574,12 +557,16 @@ impl Deref for OperatorVariance {
 }
 
 impl OperatorVariance {
-    pub fn nan(nb_partitions: usize) -> Self {
+    pub fn zero(nb_partitions: usize) -> Self {
         Self {
             vars: (0..nb_partitions)
-                .map(|_| SymbolicVariance::nan(nb_partitions))
+                .map(|_| NoiseExpression::zero())
                 .collect(),
         }
+    }
+
+    pub fn nb_partitions(&self) -> usize {
+        self.vars.len()
     }
 
     pub fn partition_wise_max(&self, other: &Self) -> Self {
@@ -587,7 +574,7 @@ impl OperatorVariance {
             .vars
             .iter()
             .zip(other.vars.iter())
-            .map(|(s, o)| s.max(o))
+            .map(|(s, o)| NoiseExpression::max(s, o))
             .collect();
         Self { vars }
     }
@@ -597,11 +584,11 @@ impl OperatorVariance {
             .iter()
             .enumerate()
             .flat_map(|(var_i, var)| {
-                PartitionIndex::range(0, var.nb_partitions())
-                    .map(move |part_i| (var_i, part_i, var.coeff_input(part_i)))
+                PartitionIndex::range(0, self.nb_partitions())
+                    .map(move |part_i| (var_i, part_i, var.coeff(input_noise(part_i))))
             })
             .try_for_each(|(var, partition, coeff)| {
-                if !coeff.is_nan() && coeff > 1.0 {
+                if coeff > 1.0 {
                     Result::Err(Err::NotComposable(format!(
                         "The noise of the node {var} is contaminated by noise coming straight from the input (partition: {partition}, coeff: {coeff:.2})"
                     )))
@@ -643,10 +630,11 @@ impl Deref for Variances {
 fn variance_constraint(
     dag: &Dag,
     noise_config: &NoiseBoundConfig,
+    nb_partitions: usize,
     partition: PartitionIndex,
     op_i: usize,
     precision: Precision,
-    variance: SymbolicVariance,
+    noise: NoiseExpression,
 ) -> VarianceConstraint {
     let nb_constraints = dag.out_shapes[op_i].flat_size();
     let safe_variance_bound = safe_noise_bound(precision, noise_config);
@@ -656,7 +644,8 @@ fn variance_constraint(
         partition,
         nb_constraints,
         safe_variance_bound,
-        variance,
+        nb_partitions,
+        noise_expression: noise,
         location,
     }
 }
@@ -690,19 +679,19 @@ fn collect_all_variance_constraints(
                     assert!(src_partition != dst_partition);
                     let variance = &variances[*input][dst_partition];
                     assert!(
-                        variance.coeff_partition_keyswitch_to_big(src_partition, dst_partition)
-                            == 1.0
+                        variance.coeff(fast_keyswitch_noise(src_partition, dst_partition)) == 1.0
                     );
                     dst_partition
                 }
             };
-            let variance = &variances[*input][src_partition].clone();
+            let variance = variances[*input][src_partition].clone();
             let variance = variance
-                .after_partition_keyswitch_to_small(src_partition, dst_partition)
-                .after_modulus_switching(partition);
+                + 1.0 * keyswitch_noise(src_partition, dst_partition)
+                + 1.0 * modulus_switching_noise(partition);
             constraints.push(variance_constraint(
                 dag,
                 noise_config,
+                partitions.nb_partitions,
                 partition,
                 op.id.0,
                 precision,
@@ -715,6 +704,7 @@ fn collect_all_variance_constraints(
             constraints.push(variance_constraint(
                 dag,
                 noise_config,
+                partitions.nb_partitions,
                 partition,
                 op.id.0,
                 precision,
@@ -733,21 +723,21 @@ fn operations_counts(
     nb_partitions: usize,
     instr_partition: &InstructionPartition,
 ) -> OperationsCount {
-    let mut counts = OperationsValue::zero(nb_partitions);
+    let mut counts = SymbolMap::new();
     if let Operator::Lut { input, .. } = op {
         let partition = instr_partition.instruction_partition;
-        let nb_lut = dag.out_shapes[input.0].flat_size() as f64;
+        let nb_lut = dag.out_shapes[input.0].flat_size() as usize;
         let src_partition = match instr_partition.inputs_transition[0] {
             Some(Transition::Internal { src_partition }) => src_partition,
             Some(Transition::Additional { .. }) | None => partition,
         };
-        *counts.ks(src_partition, partition) += nb_lut;
-        *counts.pbs(partition) += nb_lut;
+        counts.update(keyswitch(src_partition, partition), |a| a + nb_lut);
+        counts.update(bootstrap(partition), |a| a + nb_lut);
         for &conv_partition in &instr_partition.alternative_output_representation {
-            *counts.fks(partition, conv_partition) += nb_lut;
+            counts.update(fast_keyswitch(partition, conv_partition), |a| a + nb_lut);
         }
     }
-    OperationsCount { counts }
+    OperationsCount(counts)
 }
 
 #[allow(unused)]
@@ -765,15 +755,6 @@ fn collect_operations_count(dag: &VariancedDag) -> Vec<OperationsCount> {
             )
         })
         .collect()
-}
-
-#[allow(unused)]
-fn sum_operations_count(all_counts: &[OperationsCount]) -> OperationsCount {
-    let mut sum_counts = OperationsValue::zero(all_counts[0].counts.nb_partitions());
-    for OperationsCount { counts } in all_counts {
-        sum_counts += counts;
-    }
-    OperationsCount { counts: sum_counts }
 }
 
 #[cfg(test)]
@@ -807,11 +788,7 @@ pub mod tests {
     ) {
         for symbolic_variance_partition in [LOW_PRECISION_PARTITION, HIGH_PRECISION_PARTITION] {
             let sb = dag.instrs_variances[op_i][partition].clone();
-            let coeff = if sb == SymbolicVariance::ZERO {
-                0.0
-            } else {
-                sb.coeff_input(symbolic_variance_partition)
-            };
+            let coeff = sb.coeff(input_noise(symbolic_variance_partition));
             if symbolic_variance_partition == partition {
                 assert!(
                     coeff == expected_coeff,
@@ -845,11 +822,7 @@ pub mod tests {
             let sb = dag.instrs_variances[op_i][partition].clone();
             eprintln!("{:?}", dag.instrs_variances[op_i]);
             eprintln!("{:?}", dag.instrs_variances[op_i][partition]);
-            let coeff = if sb == SymbolicVariance::ZERO {
-                0.0
-            } else {
-                sb.coeff_pbs(symbolic_variance_partition)
-            };
+            let coeff = sb.coeff(bootstrap_noise(symbolic_variance_partition));
             if symbolic_variance_partition == partition {
                 assert!(
                     coeff == expected_coeff,
@@ -877,7 +850,7 @@ pub mod tests {
     fn test_decreasing_panics() {
         let mut dag = unparametrized::Dag::new();
         let inp = dag.add_input(1, Shape::number());
-        let oup = dag.add_levelled_op(
+        let oup = dag.add_linear_noise(
             [inp],
             LevelledComplexity::ZERO,
             [0.5],
@@ -893,7 +866,7 @@ pub mod tests {
     fn test_composition_with_nongrowing_inputs_only() {
         let mut dag = unparametrized::Dag::new();
         let inp = dag.add_input(1, Shape::number());
-        let oup = dag.add_levelled_op(
+        let oup = dag.add_linear_noise(
             [inp],
             LevelledComplexity::ZERO,
             [1.0],
@@ -917,7 +890,7 @@ pub mod tests {
     fn test_composition_with_growing_inputs_panics() {
         let mut dag = unparametrized::Dag::new();
         let inp = dag.add_input(1, Shape::number());
-        let oup = dag.add_levelled_op(
+        let oup = dag.add_linear_noise(
             [inp],
             LevelledComplexity::ZERO,
             [1.1],
@@ -969,7 +942,7 @@ pub mod tests {
         let expected_constraint_strings = vec![
             "1σ²Br[0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
             "1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
-            "1σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "1σ²Br[0] + 1σ²Br[1] + 1σ²K[0] + 1σ²FK[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
             "1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
         ];
         assert_eq!(actual_constraint_strings, expected_constraint_strings);
@@ -1010,11 +983,11 @@ pub mod tests {
             .map(ToString::to_string)
             .collect::<Vec<String>>();
         let expected_constraint_strings = vec![
-            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "1σ²Br[0] + 1σ²Br[2] + 1σ²K[1→0] + 1σ²FK[0→1] + 1σ²FK[2→1] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
             "1σ²Br[0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-10 (6bits partition:1 count:1, dom=20)",
-            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→2] + 1σ²M[2] < (2²)**-17 (13bits partition:2 count:1, dom=34)",
+            "1σ²Br[0] + 1σ²Br[1] + 1σ²Br[2] + 1σ²K[1→2] + 1σ²FK[0→1] + 1σ²FK[2→1] + 1σ²M[2] < (2²)**-17 (13bits partition:2 count:1, dom=34)",
             "1σ²Br[2] < (2²)**-7 (3bits partition:2 count:1, dom=14)",
-            "1σ²Br[0] + 1σ²FK[0→1] + 1σ²Br[1] + 1σ²Br[2] + 1σ²FK[2→1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
+            "1σ²Br[0] + 1σ²Br[1] + 1σ²Br[2] + 1σ²K[1→0] + 1σ²FK[0→1] + 1σ²FK[2→1] + 1σ²M[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
             "1σ²Br[0] < (2²)**-7 (3bits partition:0 count:1, dom=14)",
         ];
         assert_eq!(actual_constraint_strings, expected_constraint_strings);
@@ -1080,7 +1053,7 @@ pub mod tests {
         let input1 = dag.add_input(8, Shape::number());
         let input2 = dag.add_input(8, Shape::number());
         let lut1 = dag.add_lut(input1, FunctionTable::UNKWOWN, 8);
-        let _levelled = dag.add_levelled_op(
+        let _levelled = dag.add_linear_noise(
             [lut1, input2],
             LevelledComplexity::ZERO,
             [manp, manp],
@@ -1089,10 +1062,6 @@ pub mod tests {
         );
         let dag = analyze(&dag);
         assert!(dag.nb_partitions == 1);
-    }
-
-    fn nan_symbolic_variance(sb: &SymbolicVariance) -> bool {
-        sb.coeffs[0].is_nan()
     }
 
     #[allow(clippy::float_cmp)]
@@ -1113,22 +1082,19 @@ pub mod tests {
         for op_i in input1.0..lut1.0 {
             let p = LOW_PRECISION_PARTITION;
             let sb = &dag.instrs_variances[op_i][p];
-            assert!(sb.coeff_input(p) >= 1.0 || sb.coeff_pbs(p) >= 1.0);
-            assert!(nan_symbolic_variance(
-                &dag.instrs_variances[op_i][HIGH_PRECISION_PARTITION]
-            ));
+            assert!(sb.coeff(input_noise(p)) >= 1.0 || sb.coeff(bootstrap_noise(p)) >= 1.0);
         }
         // First lut is HIGH_PRECISION_PARTITION and immedialtely converted to LOW_PRECISION_PARTITION
         let p = HIGH_PRECISION_PARTITION;
         let sb = &dag.instrs_variances[lut1.0][p];
-        assert!(sb.coeff_input(p) == 0.0);
-        assert!(sb.coeff_pbs(p) == 1.0);
+        assert!(sb.coeff(input_noise(p)) == 0.0);
+        assert!(sb.coeff(bootstrap_noise(p)) == 1.0);
         let sb_after_fast_ks = &dag.instrs_variances[lut1.0][LOW_PRECISION_PARTITION];
         assert!(
-            sb_after_fast_ks.coeff_partition_keyswitch_to_big(
+            sb_after_fast_ks.coeff(fast_keyswitch_noise(
                 HIGH_PRECISION_PARTITION,
                 LOW_PRECISION_PARTITION
-            ) == 1.0
+            )) == 1.0
         );
         // The next rounded is on LOW_PRECISION_PARTITION but base noise can comes from HIGH_PRECISION_PARTITION + FKS
         for op_i in (lut1.0 + 1)..lut2.0 {
@@ -1136,31 +1102,28 @@ pub mod tests {
             let p = LOW_PRECISION_PARTITION;
             let sb = &dag.instrs_variances[op_i][p];
             // The base noise is either from the other partition and shifted or from the current partition and 1
-            assert!(sb.coeff_input(LOW_PRECISION_PARTITION) == 0.0);
-            assert!(sb.coeff_input(HIGH_PRECISION_PARTITION) == 0.0);
-            if sb.coeff_pbs(HIGH_PRECISION_PARTITION) >= 1.0 {
+            assert!(sb.coeff(input_noise(LOW_PRECISION_PARTITION)) == 0.0);
+            assert!(sb.coeff(input_noise(HIGH_PRECISION_PARTITION)) == 0.0);
+            if sb.coeff(bootstrap_noise(HIGH_PRECISION_PARTITION)) >= 1.0 {
                 assert!(
-                    sb.coeff_pbs(HIGH_PRECISION_PARTITION)
-                        == sb.coeff_partition_keyswitch_to_big(
+                    sb.coeff(bootstrap_noise(HIGH_PRECISION_PARTITION))
+                        == sb.coeff(fast_keyswitch_noise(
                             HIGH_PRECISION_PARTITION,
                             LOW_PRECISION_PARTITION
-                        )
+                        ))
                 );
             } else {
-                assert!(sb.coeff_pbs(LOW_PRECISION_PARTITION) == 1.0);
+                assert!(sb.coeff(bootstrap_noise(LOW_PRECISION_PARTITION)) == 1.0);
                 assert!(
-                    sb.coeff_partition_keyswitch_to_big(
+                    sb.coeff(fast_keyswitch_noise(
                         HIGH_PRECISION_PARTITION,
                         LOW_PRECISION_PARTITION
-                    ) == 0.0
+                    )) == 0.0
                 );
             }
         }
-        assert!(nan_symbolic_variance(
-            &dag.instrs_variances[lut2.0][LOW_PRECISION_PARTITION]
-        ));
         let sb = &dag.instrs_variances[lut2.0][HIGH_PRECISION_PARTITION];
-        assert!(sb.coeff_pbs(HIGH_PRECISION_PARTITION) >= 1.0);
+        assert!(sb.coeff(bootstrap_noise(HIGH_PRECISION_PARTITION)) >= 1.0);
     }
 
     #[allow(clippy::float_cmp, clippy::cognitive_complexity)]
@@ -1179,24 +1142,28 @@ pub mod tests {
         // First layer is fully HIGH_PRECISION_PARTITION
         assert!(
             dag.instrs_variances[free_input1.0][HIGH_PRECISION_PARTITION]
-                .coeff_input(HIGH_PRECISION_PARTITION)
+                .coeff(input_noise(HIGH_PRECISION_PARTITION))
                 == 1.0
         );
         // First layer tlu
         let sb = &dag.instrs_variances[input1.0][HIGH_PRECISION_PARTITION];
-        assert!(sb.coeff_input(LOW_PRECISION_PARTITION) == 0.0);
-        assert!(sb.coeff_pbs(HIGH_PRECISION_PARTITION) == 1.0);
+        assert!(sb.coeff(input_noise(LOW_PRECISION_PARTITION)) == 0.0);
+        assert!(sb.coeff(bootstrap_noise(HIGH_PRECISION_PARTITION)) == 1.0);
         assert!(
-            sb.coeff_partition_keyswitch_to_big(HIGH_PRECISION_PARTITION, LOW_PRECISION_PARTITION)
-                == 0.0
+            sb.coeff(fast_keyswitch_noise(
+                HIGH_PRECISION_PARTITION,
+                LOW_PRECISION_PARTITION
+            )) == 0.0
         );
         // The same cyphertext exists in another partition with additional noise due to fast keyswitch
         let sb = &dag.instrs_variances[input1.0][LOW_PRECISION_PARTITION];
-        assert!(sb.coeff_input(LOW_PRECISION_PARTITION) == 0.0);
-        assert!(sb.coeff_pbs(HIGH_PRECISION_PARTITION) == 1.0);
+        assert!(sb.coeff(input_noise(LOW_PRECISION_PARTITION)) == 0.0);
+        assert!(sb.coeff(bootstrap_noise(HIGH_PRECISION_PARTITION)) == 1.0);
         assert!(
-            sb.coeff_partition_keyswitch_to_big(HIGH_PRECISION_PARTITION, LOW_PRECISION_PARTITION)
-                == 1.0
+            sb.coeff(fast_keyswitch_noise(
+                HIGH_PRECISION_PARTITION,
+                LOW_PRECISION_PARTITION
+            )) == 1.0
         );
 
         // Second layer
@@ -1212,12 +1179,14 @@ pub mod tests {
                 let bit_erase = weights.values == [1, -1];
                 let first_bit_erase = bit_erase && !first_bit_erase_verified;
                 let input0_sb = &dag.instrs_variances[inputs[0].0][LOW_PRECISION_PARTITION];
-                let input0_coeff_pbs_high = input0_sb.coeff_pbs(HIGH_PRECISION_PARTITION);
-                let input0_coeff_pbs_low = input0_sb.coeff_pbs(LOW_PRECISION_PARTITION);
-                let input0_coeff_fks = input0_sb.coeff_partition_keyswitch_to_big(
+                let input0_coeff_pbs_high =
+                    input0_sb.coeff(bootstrap_noise(HIGH_PRECISION_PARTITION));
+                let input0_coeff_pbs_low =
+                    input0_sb.coeff(bootstrap_noise(LOW_PRECISION_PARTITION));
+                let input0_coeff_fks = input0_sb.coeff(fast_keyswitch_noise(
                     HIGH_PRECISION_PARTITION,
                     LOW_PRECISION_PARTITION,
-                );
+                ));
                 if bit_extract {
                     first_bit_extract_verified |= first_bit_extract;
                     assert!(input0_coeff_pbs_high >= 1.0);
@@ -1230,12 +1199,14 @@ pub mod tests {
                 } else if bit_erase {
                     first_bit_erase_verified |= first_bit_erase;
                     let input1_sb = &dag.instrs_variances[inputs[1].0][LOW_PRECISION_PARTITION];
-                    let input1_coeff_pbs_high = input1_sb.coeff_pbs(HIGH_PRECISION_PARTITION);
-                    let input1_coeff_pbs_low = input1_sb.coeff_pbs(LOW_PRECISION_PARTITION);
-                    let input1_coeff_fks = input1_sb.coeff_partition_keyswitch_to_big(
+                    let input1_coeff_pbs_high =
+                        input1_sb.coeff(bootstrap_noise(HIGH_PRECISION_PARTITION));
+                    let input1_coeff_pbs_low =
+                        input1_sb.coeff(bootstrap_noise(LOW_PRECISION_PARTITION));
+                    let input1_coeff_fks = input1_sb.coeff(fast_keyswitch_noise(
                         HIGH_PRECISION_PARTITION,
                         LOW_PRECISION_PARTITION,
-                    );
+                    ));
                     if first_bit_erase {
                         assert!(input0_coeff_pbs_low == 0.0);
                     } else {
@@ -1274,13 +1245,13 @@ pub mod tests {
             // First lut to force partition HIGH_PRECISION_PARTITION
             "1σ²In[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
             // 16384(shift) = (2**7)², for Br[1]
-            "16384σ²Br[1] + 16384σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
+            "16384σ²Br[1] + 1σ²K[0] + 16384σ²FK[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
             // 4096(shift) = (2**6)², 1(due to 1 erase bit) for Br[0] and 1 for Br[1]
-            "4096σ²Br[0] + 4096σ²Br[1] + 4096σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
+            "4096σ²Br[0] + 4096σ²Br[1] + 1σ²K[0] + 4096σ²FK[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
             // 1024(shift) = (2**5)², 2(due to 2 erase bit for Br[0] and 1 for Br[1]
-            "2048σ²Br[0] + 1024σ²Br[1] + 1024σ²FK[1→0] + 1σ²K[0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
+            "2048σ²Br[0] + 1024σ²Br[1] + 1σ²K[0] + 1024σ²FK[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
             // 3(erase bit) Br[0] and 1 initial Br[1]
-            "3σ²Br[0] + 1σ²Br[1] + 1σ²FK[1→0] + 1σ²K[0→1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
+            "3σ²Br[0] + 1σ²Br[1] + 1σ²K[0→1] + 1σ²FK[1→0] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
             // Last lut to close the cycle
             "1σ²Br[1] < (2²)**-8 (4bits partition:1 count:1, dom=16)",
         ];
@@ -1337,10 +1308,10 @@ pub mod tests {
             // 16384(shift) = (2**7)², for Br[1]
             "16384σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=22)",
             // 4096(shift) = (2**6)², 1(due to 1 erase bit) for Br[0] and 1 for Br[1]
-            "4096σ²Br[0] + 4096σ²FK[0→1] + 4096σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
+            "4096σ²Br[0] + 4096σ²Br[1] + 1σ²K[1→0] + 4096σ²FK[0→1] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=20)",
             // 1024(shift) = (2**5)², 2(due to 2 erase bit for Br[0] and 1 for Br[1]
-            "2048σ²Br[0] + 2048σ²FK[0→1] + 1024σ²Br[1] + 1σ²K[1→0] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
-            "3σ²Br[0] + 3σ²FK[0→1] + 1σ²Br[1] + 1σ²K[1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
+            "2048σ²Br[0] + 1024σ²Br[1] + 1σ²K[1→0] + 2048σ²FK[0→1] + 1σ²M[0] < (2²)**-4 (0bits partition:0 count:1, dom=19)",
+            "3σ²Br[0] + 1σ²Br[1] + 1σ²K[1] + 3σ²FK[0→1] + 1σ²M[1] < (2²)**-8 (4bits partition:1 count:1, dom=18)",
         ];
         for (c, ec) in constraints.iter().zip(expected_constraints) {
             assert!(
@@ -1390,24 +1361,24 @@ pub mod tests {
             .collect();
         #[rustfmt::skip] // nighlty and stable are inconsitent here
         let expected_counts = [
-            "ZERO x ¢",                     // free_input1
-            "1¢K[1] + 1¢Br[1] + 1¢FK[1→0]", // input1
-            "ZERO x ¢",                     // shift
-            "ZERO x ¢",                     // cast
-            "1¢K[0] + 1¢Br[0]",             // extract (lut)
-            "ZERO x ¢",                     // erase (dot)
-            "ZERO x ¢",                     // cast
-            "ZERO x ¢",                     // shift
-            "ZERO x ¢",                     // cast
-            "1¢K[0] + 1¢Br[0]",             // extract (lut)
-            "ZERO x ¢",                     // erase (dot)
-            "ZERO x ¢",                     // cast
-            "ZERO x ¢",                     // shift
-            "ZERO x ¢",                     // cast
-            "1¢K[0] + 1¢Br[0]",             // extract (lut)
-            "ZERO x ¢",                     // erase (dot)
-            "ZERO x ¢",                     // cast
-            "1¢K[0→1] + 1¢Br[1]",           // _lut1
+            "∅",                            // free_input1
+            "1¢Br[1] + 1¢K[1] + 1¢FK[1→0]", // input1
+            "∅",                            // shift
+            "∅",                            // cast
+            "1¢Br[0] + 1¢K[0]",             // extract (lut)
+            "∅",                            // erase (dot)
+            "∅",                            // cast
+            "∅",                            // shift
+            "∅",                            // cast
+            "1¢Br[0] + 1¢K[0]",             // extract (lut)
+            "∅",                            // erase (dot)
+            "∅",                            // cast
+            "∅",                            // shift
+            "∅",                            // cast
+            "1¢Br[0] + 1¢K[0]",             // extract (lut)
+            "∅",                            // erase (dot)
+            "∅",                            // cast
+            "1¢Br[1] + 1¢K[0→1]",           // _lut1
         ];
         for ((c, ec), op) in instrs_counts.iter().zip(expected_counts).zip(dag.operators) {
             assert!(
@@ -1418,7 +1389,7 @@ pub mod tests {
         eprintln!("{}", dag.operations_count);
         assert!(
             format!("{}", dag.operations_count)
-                == "3¢K[0] + 1¢K[0→1] + 1¢K[1] + 3¢Br[0] + 2¢Br[1] + 1¢FK[1→0]"
+                == "3¢Br[0] + 2¢Br[1] + 3¢K[0] + 1¢K[0→1] + 1¢K[1] + 1¢FK[1→0]"
         );
     }
 

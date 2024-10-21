@@ -1,134 +1,93 @@
-use std::fmt;
+use std::{fmt, ops::Add};
 
-use crate::utils::f64::f64_dot;
+use super::{
+    partitions::PartitionIndex,
+    symbolic::{fast_keyswitch, keyswitch, Symbol, SymbolMap},
+};
 
-use super::{operations_value::OperationsValue, partitions::PartitionIndex};
-
+/// A structure storing the number of times an fhe operation gets executed in a circuit.
 #[derive(Clone, Debug)]
-pub struct OperationsCount {
-    pub counts: OperationsValue,
-}
+pub struct OperationsCount(pub(super) SymbolMap<usize>);
 
-#[derive(Clone, Debug)]
-#[allow(dead_code)]
-pub struct OperationsCost {
-    pub costs: OperationsValue,
-}
+impl Add<OperationsCount> for OperationsCount {
+    type Output = OperationsCount;
 
-#[derive(Clone, Debug)]
-pub struct Complexity {
-    pub counts: OperationsValue,
+    fn add(self, rhs: OperationsCount) -> Self::Output {
+        let mut output = self;
+        for (s, v) in rhs.0.into_iter() {
+            output.0.update(s, |a| a + v);
+        }
+        output
+    }
 }
 
 impl fmt::Display for OperationsCount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut add_plus = "";
-        let counts = &self.counts;
-        let nb_partitions = counts.nb_partitions();
-        let index = &counts.index;
-        for src_partition in PartitionIndex::range(0, nb_partitions) {
-            for dst_partition in PartitionIndex::range(0, nb_partitions) {
-                let coeff = counts.values[index.keyswitch_to_small(src_partition, dst_partition)];
-                if coeff != 0.0 {
-                    if src_partition == dst_partition {
-                        write!(f, "{add_plus}{coeff}¢K[{src_partition}]")?;
-                    } else {
-                        write!(f, "{add_plus}{coeff}¢K[{src_partition}→{dst_partition}]")?;
-                    }
-                    add_plus = " + ";
-                }
-            }
-        }
-        for src_partition in PartitionIndex::range(0, nb_partitions) {
-            assert!(counts.values[index.input(src_partition)] == 0.0);
-            let coeff = counts.values[index.pbs(src_partition)];
-            if coeff != 0.0 {
-                write!(f, "{add_plus}{coeff}¢Br[{src_partition}]")?;
-                add_plus = " + ";
-            }
-            for dst_partition in PartitionIndex::range(0, nb_partitions) {
-                let coeff = counts.values[index.keyswitch_to_big(src_partition, dst_partition)];
-                if coeff != 0.0 {
-                    write!(f, "{add_plus}{coeff}¢FK[{src_partition}→{dst_partition}]")?;
-                    add_plus = " + ";
-                }
-            }
-        }
-
-        for partition in PartitionIndex::range(0, nb_partitions) {
-            assert!(counts.values[index.modulus_switching(partition)] == 0.0);
-        }
-        if add_plus.is_empty() {
-            write!(f, "ZERO x ¢")?;
-        }
-        Ok(())
+        self.0.fmt_with(f, "+", "¢")
     }
 }
 
-impl Complexity {
-    pub fn of(counts: &OperationsCount) -> Self {
-        Self {
-            counts: counts.counts.clone(),
-        }
+/// An ensemble of costs associated with fhe operation symbols.
+#[derive(Clone, Debug)]
+pub struct ComplexityValues(SymbolMap<f64>);
+
+impl ComplexityValues {
+    /// Returns an empty set of cost values.
+    pub fn new() -> Self {
+        ComplexityValues(SymbolMap::new())
     }
 
-    pub fn complexity(&self, costs: &OperationsValue) -> f64 {
-        f64_dot(&self.counts, costs)
+    /// Sets the cost associated with an fhe operation symbol.
+    pub fn set_cost(&mut self, source: Symbol, value: f64) {
+        self.0.set(source, value);
+    }
+}
+
+/// A complexity expression is a sum of complexity terms associating operation
+/// symbols with the number of time they gets executed in the circuit.
+#[derive(Clone, Debug)]
+pub struct ComplexityExpression(SymbolMap<usize>);
+
+impl ComplexityExpression {
+    /// Creates a complexity expression from a set of operation counts.
+    pub fn from(counts: &OperationsCount) -> Self {
+        Self(counts.0.clone())
     }
 
-    pub fn ks_max_cost(
+    /// Evaluates the total cost expression on a set of cost values.
+    pub fn evaluate_total_cost(&self, costs: &ComplexityValues) -> f64 {
+        self.0.iter().fold(0.0, |acc, (symbol, n_ops)| {
+            acc + (n_ops as f64) * costs.0.get(symbol)
+        })
+    }
+
+    /// Evaluates the max ks cost expression on a set of cost values.
+    pub fn evaluate_ks_max_cost(
         &self,
         complexity_cut: f64,
-        costs: &OperationsValue,
+        costs: &ComplexityValues,
         src_partition: PartitionIndex,
         dst_partition: PartitionIndex,
     ) -> f64 {
-        let ks_index = costs.index.keyswitch_to_small(src_partition, dst_partition);
-        let actual_ks_cost = costs.values[ks_index];
-        let ks_coeff = self.counts[self
-            .counts
-            .index
-            .keyswitch_to_small(src_partition, dst_partition)];
-        let actual_complexity = self.complexity(costs) - ks_coeff * actual_ks_cost;
-
-        (complexity_cut - actual_complexity) / ks_coeff
+        let actual_ks_cost = costs.0.get(keyswitch(src_partition, dst_partition));
+        let ks_coeff = self.0.get(keyswitch(src_partition, dst_partition));
+        let actual_complexity =
+            self.evaluate_total_cost(costs) - (ks_coeff as f64) * actual_ks_cost;
+        (complexity_cut - actual_complexity) / (ks_coeff as f64)
     }
 
-    pub fn fks_max_cost(
+    /// Evaluates the max fks cost expression on a set of cost values.
+    pub fn evaluate_fks_max_cost(
         &self,
         complexity_cut: f64,
-        costs: &OperationsValue,
+        costs: &ComplexityValues,
         src_partition: PartitionIndex,
         dst_partition: PartitionIndex,
     ) -> f64 {
-        let fks_index = costs.index.keyswitch_to_big(src_partition, dst_partition);
-        let actual_fks_cost = costs.values[fks_index];
-        let fks_coeff = self.counts[self
-            .counts
-            .index
-            .keyswitch_to_big(src_partition, dst_partition)];
-        let actual_complexity = self.complexity(costs) - fks_coeff * actual_fks_cost;
-
-        (complexity_cut - actual_complexity) / fks_coeff
-    }
-
-    pub fn compressed(self) -> Self {
-        let mut detect_used: Vec<bool> = vec![false; self.counts.len()];
-        for (i, &count) in self.counts.iter().enumerate() {
-            if count > 0.0 {
-                detect_used[i] = true;
-            }
-        }
-        Self {
-            counts: self.counts.compress(&detect_used),
-        }
-    }
-
-    pub fn zero_cost(&self) -> OperationsValue {
-        if self.counts.index.is_compressed() {
-            OperationsValue::zero_compressed(&self.counts.index)
-        } else {
-            OperationsValue::zero(self.counts.nb_partitions())
-        }
+        let actual_fks_cost = costs.0.get(fast_keyswitch(src_partition, dst_partition));
+        let fks_coeff = self.0.get(fast_keyswitch(src_partition, dst_partition));
+        let actual_complexity =
+            self.evaluate_total_cost(costs) - (fks_coeff as f64) * actual_fks_cost;
+        (complexity_cut - actual_complexity) / (fks_coeff as f64)
     }
 }
