@@ -10,11 +10,14 @@ on:
     branches:
       - 'main'
       - 'release/*'
+
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+
 concurrency:
   group: concrete_python_tests_linux_${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   setup-instance:
     name: Setup Instance
@@ -57,10 +60,6 @@ jobs:
             -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
-<<<<<<< HEAD
-            rustup toolchain install nightly-2024-09-30
-=======
->>>>>>> da3b9f9a (refactor ci)
             set -e
 
             rustup toolchain install nightly-2024-09-30
@@ -111,11 +110,22 @@ jobs:
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
             cd /concrete/frontends/concrete-python
-            make venv
             source .venv/bin/activate
             export KEY_CACHE_DIRECTORY=./key-set-cache
             mkdir $KEY_CACHE_DIRECTORY
             make pytest
+      # - name: Slack notification
+      #   if: ${{ failure() }} && github.ref == 'refs/heads/main'
+      #   continue-on-error: true
+      #   uses: rtCamp/action-slack-notify@65e6fc1ce697e2df8149d9ae9909acc5ec5599ce
+      #   env:
+      #     SLACK_COLOR: ${{ job.status }}
+      #     SLACK_MESSAGE: |
+      #       Test pytest fail status: ${{ job.status }}.\n
+      #       Merged by: ${{ github.actor }}\n
+      #       Last author: ${{ github.event.head_commit.author }}\n
+      #       Last commiter: ${{ github.event.head_commit.commiter }}\n
+      #       Action url: (${{ env.ACTION_RUN_URL }})"
 
   test-notebooks:
     name: Test concrete-python notebooks
@@ -144,6 +154,18 @@ jobs:
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             make test-notebooks
+      # - name: Slack notification
+      #   if: ${{ failure() }} && github.ref == 'refs/heads/main'
+      #   continue-on-error: true
+      #   uses: rtCamp/action-slack-notify@65e6fc1ce697e2df8149d9ae9909acc5ec5599ce
+      #   env:
+      #     SLACK_COLOR: ${{ job.status }}
+      #     SLACK_MESSAGE: |
+      #       Test notebooks fail status: ${{ job.status }}.\n
+      #       Merged by: ${{ github.actor }}\n
+      #       Last author: ${{ github.event.head_commit.author }}\n
+      #       Last commiter: ${{ github.event.head_commit.commiter }}\n
+      #       Action url: (${{ env.ACTION_RUN_URL }})"
 
   teardown-instance:
     name: Teardown instance
