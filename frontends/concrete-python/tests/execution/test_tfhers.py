@@ -363,12 +363,11 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
             TFHERS_UINT_8_3_2_4096,
             id="x * y",
         ),
-        # FIXME: doesn't work when mul bitwidth is smaller than tfhers bitwidth, and result is negative
         pytest.param(
             lambda x, y: x * y,
             {
-                "x": {"range": [-(2**3), 0], "status": "encrypted"},
-                "y": {"range": [-(2**3), 0], "status": "encrypted"},
+                "x": {"range": [-(2**3), 2**2], "status": "encrypted"},
+                "y": {"range": [-(2**2), 2**3], "status": "encrypted"},
             },
             TFHERS_INT_8_3_2_4096,
             id="signed(x) * signed(y)",
@@ -654,12 +653,11 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
             TFHERS_UINT_8_3_2_4096,
             id="x * clear(y)",
         ),
-        # FIXME: doesn't work when mul bitwidth is smaller than tfhers bitwidth, and result is negative
         pytest.param(
             lambda x, y: x * y,
             {
-                "x": {"range": [-(2**3), -(2**3)], "status": "encrypted"},
-                "y": {"range": [2**4, 2**4], "status": "encrypted"},
+                "x": {"range": [-(2**3), 2], "status": "encrypted"},
+                "y": {"range": [-2, 2**4], "status": "encrypted"},
             },
             TFHERS_INT_8_3_2_4096,
             id="signed(x) * signed(y)",

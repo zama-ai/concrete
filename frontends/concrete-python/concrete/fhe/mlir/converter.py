@@ -963,7 +963,31 @@ class Converter:
             ctx.esint(result_bit_width) if dtype.is_signed else ctx.eint(result_bit_width),
             result_shape,
         )
-        return ctx.sum(result_type, mapped, axes=-1)
+        sum_result = ctx.sum(result_type, mapped, axes=-1)
+
+        # we want to set the padding bit if the native type is signed
+        # and the ciphertext is negative (sign bit set to 1)
+        if dtype.is_signed:
+            # select MSBs of all tfhers ciphetexts
+            index = [slice(0, dim_size) for dim_size in tfhers_int.shape[:-1]] + [
+                -1,
+            ]
+            msbs = ctx.index(
+                ctx.tensor(ctx.eint(msg_width + carry_width), tfhers_int.shape[:-1]),
+                tfhers_int,
+                index=index,
+            )
+            # construct padding bits based on sign bits
+            padding_bit_table = [
+                0,
+            ] * 2 ** (msg_width - 1) + [
+                2**result_bit_width,
+            ] * (2 ** (carry_width + 1))
+            padding_bits_inc = ctx.tlu(result_type, msbs, padding_bit_table)
+            # set padding bits (where necessary) in the final result
+            return ctx.add(result_type, sum_result, padding_bits_inc)
+
+        return sum_result
 
     def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
