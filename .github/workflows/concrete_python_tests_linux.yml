@@ -108,9 +108,9 @@ jobs:
           shell: bash
           run: |
             set -e
-            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
             export KEY_CACHE_DIRECTORY=./key-set-cache
             mkdir $KEY_CACHE_DIRECTORY
             make pytest
@@ -150,9 +150,9 @@ jobs:
           shell: bash
           run: |
             set -e
-            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-notebooks
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
             make test-notebooks
       # - name: Slack notification
       #   if: ${{ failure() }} && github.ref == 'refs/heads/main'
