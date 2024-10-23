@@ -1,0 +1,43 @@
+name: Lint Dockerfiles
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+    - name: Lint Concrete Python
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      with:
+        dockerfile: ./docker/Dockerfile.concrete-python
+        config: ./.hadolint.yaml
+
+    - name: Lint Concrete Compiler Env
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      with:
+        dockerfile: ./docker/Dockerfile.concrete-compiler-env
+        config: ./.hadolint.yaml
+
+    - name: Lint HPX
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      with:
+        dockerfile: ./docker/Dockerfile.hpx-env
+        config: ./.hadolint.yaml
+
+    - name: Lint Cuda118
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      with:
+        dockerfile: ./docker/Dockerfile.cuda-118-env
+        config: ./.hadolint.yaml
+
+    - name: Lint Cuda123
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      with:
+        dockerfile: ./docker/Dockerfile.cuda-123-env
+        config: ./.hadolint.yaml
