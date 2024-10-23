@@ -370,9 +370,9 @@ void concrete_cpu_keyswitch_lwe_ciphertext_u64(uint64_t *ct_out,
                                                size_t output_dimension);
 
 size_t concrete_cpu_lwe_array_to_tfhers_int8(const uint64_t *lwe_vec_buffer,
-                                             uint8_t *fheuint_buffer,
-                                             size_t fheuint_buffer_size,
-                                             struct TfhersFheIntDescription fheuint_desc);
+                                             uint8_t *buffer,
+                                             size_t buffer_len,
+                                             struct TfhersFheIntDescription fheint_desc);
 
 size_t concrete_cpu_lwe_array_to_tfhers_uint8(const uint64_t *lwe_vec_buffer,
                                               uint8_t *buffer,

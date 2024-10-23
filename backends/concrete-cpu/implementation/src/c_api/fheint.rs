@@ -192,26 +192,16 @@ pub unsafe extern "C" fn concrete_cpu_tfhers_int8_to_lwe_array(
     desc: TfhersFheIntDescription,
 ) -> i64 {
     nounwind(|| {
-        // deserialize fheuint8
-        let mut serialized_data = Cursor::new(slice::from_raw_parts(
-            serialized_data_ptr,
-            serialized_data_len,
-        ));
-        // TODO: can we have a generic deserialize?
-        let fheuint: FheInt8 = match bincode::deserialize_from(&mut serialized_data) {
-            Ok(value) => value,
-            Err(_) => {
-                return 1;
-            }
-        };
-        let fheuint_desc = tfhers_int8_description(fheuint.clone());
-
-        if !fheuint_desc.is_similar(&desc) {
+        let fheint: FheInt8 =
+            super::utils::safe_deserialize(serialized_data_ptr, serialized_data_len);
+        // TODO - Use conformance check
+        let fheint_desc = tfhers_int8_description(fheint.clone());
+        if !fheint_desc.is_similar(&desc) {
             return 1;
         }
 
         // collect LWEs from fheuint
-        let (radix, _, _) = fheuint.into_raw_parts();
+        let (radix, _, _) = fheint.into_raw_parts();
         let blocks = radix.blocks();
         let first_ct = match blocks.first() {
             Some(value) => &value.ct,
@@ -287,24 +277,24 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_uint8(
 #[no_mangle]
 pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_int8(
     lwe_vec_buffer: *const u64,
-    fheuint_buffer: *mut u8,
-    fheuint_buffer_size: usize,
-    fheuint_desc: TfhersFheIntDescription,
+    buffer: *mut u8,
+    buffer_len: usize,
+    fheint_desc: TfhersFheIntDescription,
 ) -> usize {
     nounwind(|| {
         // we want to trigger a PBS on TFHErs side
         assert!(
-            fheuint_desc.noise_level == NoiseLevel::UNKNOWN.get(),
+            fheint_desc.noise_level == NoiseLevel::UNKNOWN.get(),
             "noise_level must be unknown"
         );
         // we want to use the max degree as we don't track it on Concrete side
         assert!(
-            fheuint_desc.degree == fheuint_desc.message_modulus - 1,
+            fheint_desc.degree == fheint_desc.message_modulus - 1,
             "degree must be the max value (msg_modulus - 1)"
         );
 
-        let lwe_size = fheuint_desc.lwe_size;
-        let n_cts = fheuint_desc.n_cts;
+        let lwe_size = fheint_desc.lwe_size;
+        let n_cts = fheint_desc.n_cts;
         // construct fheuint from LWEs
         let lwe_vector: &[u64] = slice::from_raw_parts(lwe_vec_buffer, n_cts * lwe_size);
         let mut blocks: Vec<Ciphertext> = Vec::new();
@@ -313,15 +303,15 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_int8(
                 lwe_vector[i * lwe_size..(i + 1) * lwe_size].to_vec(),
                 CiphertextModulus::new_native(),
             );
-            blocks.push(fheuint_desc.ct_from_lwe(lwe_ct));
+            blocks.push(fheint_desc.ct_from_lwe(lwe_ct));
         }
-        let fheuint = match FheInt8::from_expanded_blocks(blocks, fheuint_desc.data_kind()) {
+        let fheuint = match FheInt8::from_expanded_blocks(blocks, fheint_desc.data_kind()) {
             Ok(value) => value,
             Err(_) => {
                 return 0;
             }
         };
 
-        super::utils::serialize(&fheuint, fheuint_buffer, fheuint_buffer_size)
+        super::utils::safe_serialize(&fheuint, buffer, buffer_len)
     })
 }
