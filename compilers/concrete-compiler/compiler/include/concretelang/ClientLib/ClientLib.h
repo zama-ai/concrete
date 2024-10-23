@@ -47,9 +47,6 @@ importTfhersFheInt8(llvm::ArrayRef<uint8_t> serializedFheUint8,
 Result<std::vector<uint8_t>> exportTfhersFheInt8(TransportValue value,
                                                  TfhersFheIntDescription info);
 
-Result<TfhersFheIntDescription>
-getTfhersFheUint8Description(llvm::ArrayRef<uint8_t> serializedFheUint8);
-
 class ClientCircuit {
 
 public:
