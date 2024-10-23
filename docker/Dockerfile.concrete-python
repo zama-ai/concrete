@@ -3,6 +3,9 @@ FROM python:3.10-slim
 ARG version
 
 # provide the `ld` binary required by the compiler
-RUN apt update && apt install -y binutils graphviz
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install --no-install-recommends -y binutils graphviz \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.zama.ai/cpu/ concrete-python==${version}

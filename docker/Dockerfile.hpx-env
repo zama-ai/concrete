@@ -1,9 +1,9 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
+FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc as build
 
 RUN dnf update -y
-RUN dnf install -y ninja-build hwloc-devel
+RUN dnf install -y ninja-build hwloc-devel && dnf clean all
 # Setup gcc 11 (to be compatible with concrete-compiler image)
-RUN dnf install -y gcc-toolset-11
+RUN dnf install -y gcc-toolset-11 && dnf clean all
 ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
 # Install boost
@@ -15,17 +15,17 @@ RUN ./bootstrap.sh && ./b2 --with-filesystem install
 RUN git clone https://github.com/STEllAR-GROUP/hpx.git /hpx
 WORKDIR /hpx
 RUN git checkout v1.9.1
-RUN mkdir build
 # empty HPX_WITH_MAX_CPU_COUNT = dynamic
 # ref https://github.com/STEllAR-GROUP/hpx/blob/1.7.1/CMakeLists.txt#L759
-RUN cd build && cmake \
+WORKDIR /hpx/build
+RUN cmake \
 	-DCMAKE_C_COMPILER=${CC_COMPILER} \
 	-DCMAKE_CXX_COMPILER=${CXX_COMPILER} \
 	-DHPX_WITH_MAX_CPU_COUNT="" \
 	-DHPX_WITH_FETCH_ASIO=on \
 	-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
-	-DHPX_WITH_MALLOC=system ..
-RUN cd build && make -j2
+	-DHPX_WITH_MALLOC=system .. \
+	&& make -j2
 
 FROM scratch
-COPY --from=0 /hpx/ /hpx/
+COPY --from=build /hpx/ /hpx/
