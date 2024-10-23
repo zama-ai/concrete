@@ -256,7 +256,7 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_uint8(
         let n_cts = fheuint_desc.n_cts;
         // construct fheuint from LWEs
         let lwe_vector: &[u64] = slice::from_raw_parts(lwe_vec_buffer, n_cts * lwe_size);
-        let mut blocks: Vec<Ciphertext> = Vec::new();
+        let mut blocks: Vec<Ciphertext> = Vec::with_capacity(n_cts);
         for i in 0..n_cts {
             let lwe_ct = LweCiphertext::<Vec<u64>>::from_container(
                 lwe_vector[i * lwe_size..(i + 1) * lwe_size].to_vec(),
@@ -297,7 +297,7 @@ pub unsafe extern "C" fn concrete_cpu_lwe_array_to_tfhers_int8(
         let n_cts = fheint_desc.n_cts;
         // construct fheuint from LWEs
         let lwe_vector: &[u64] = slice::from_raw_parts(lwe_vec_buffer, n_cts * lwe_size);
-        let mut blocks: Vec<Ciphertext> = Vec::new();
+        let mut blocks: Vec<Ciphertext> = Vec::with_capacity(n_cts);
         for i in 0..n_cts {
             let lwe_ct = LweCiphertext::<Vec<u64>>::from_container(
                 lwe_vector[i * lwe_size..(i + 1) * lwe_size].to_vec(),

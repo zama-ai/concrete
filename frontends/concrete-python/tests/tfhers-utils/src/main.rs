@@ -99,16 +99,25 @@ fn decrypt_with_key(
     Ok(())
 }
 
-fn sum(cts_paths: Vec<&String>, out_ct_path: &String) {
+fn sum(cts_paths: Vec<&String>, out_ct_path: &String, signed: bool) {
     if cts_paths.is_empty() {
         panic!("can't call sum with 0 ciphertexts");
     }
-    let mut acc: FheUint8 = safe_load(cts_paths[0]);
-    for ct_path in cts_paths[1..].iter() {
-        let fheuint: FheUint8 = safe_load(ct_path);
-        acc += fheuint;
+    if signed {
+        let mut acc: FheInt8 = safe_load(cts_paths[0]);
+        for ct_path in cts_paths[1..].iter() {
+            let fheuint: FheInt8 = safe_load(ct_path);
+            acc += fheuint;
+        }
+        safe_save(out_ct_path, &acc)
+    } else {
+        let mut acc: FheUint8 = safe_load(cts_paths[0]);
+        for ct_path in cts_paths[1..].iter() {
+            let fheuint: FheUint8 = safe_load(ct_path);
+            acc += fheuint;
+        }
+        safe_save(out_ct_path, &acc)
     }
-    safe_save(out_ct_path, &acc)
 }
 
 fn write_keys(
@@ -275,6 +284,12 @@ fn main() {
                         .num_args(1),
                 )
                 .arg(
+                    Arg::new("signed")
+                        .long("signed")
+                        .help("consider ciphertexts as signed integers")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
                     Arg::new("ciphertexts")
                         .short('c')
                         .long("cts")
@@ -377,10 +392,11 @@ fn main() {
             let server_key_path = add_mtches.get_one::<String>("server-key").unwrap();
             let cts_path = add_mtches.get_many::<String>("ciphertexts").unwrap();
             let output_ct_path = add_mtches.get_one::<String>("output-ciphertext").unwrap();
+            let signed = add_mtches.get_flag("signed");
 
             set_server_key_from_file(server_key_path);
 
-            sum(cts_path.collect(), output_ct_path)
+            sum(cts_path.collect(), output_ct_path, signed)
         }
         Some(("keygen", keygen_mtches)) => {
             let client_key_path = keygen_mtches.get_one::<String>("client-key").unwrap();

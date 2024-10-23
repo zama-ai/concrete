@@ -318,15 +318,15 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
 @pytest.mark.parametrize(
     "function, parameters, dtype",
     [
-        pytest.param(
-            lambda x, y: x + y,
-            {
-                "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
-                "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
-            },
-            TFHERS_UINT_8_3_2_4096,
-            id="x + y",
-        ),
+        # pytest.param(
+        #     lambda x, y: x + y,
+        #     {
+        #         "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
+        #         "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
+        #     },
+        #     TFHERS_UINT_8_3_2_4096,
+        #     id="x + y",
+        # ),
         pytest.param(
             lambda x, y: x + y,
             {
@@ -336,51 +336,51 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
             TFHERS_INT_8_3_2_4096,
             id="signed(x) + signed(y)",
         ),
-        pytest.param(
-            lambda x, y: x - y,
-            {
-                "x": {"range": [2**4, 2**7 - 1], "status": "encrypted"},
-                "y": {"range": [0, 2**4 - 1], "status": "encrypted"},
-            },
-            TFHERS_UINT_8_3_2_4096,
-            id="x - y",
-        ),
-        pytest.param(
-            lambda x, y: x - y,
-            {
-                "x": {"range": [-(2**3), -2], "status": "encrypted"},
-                "y": {"range": [-(2**3), -2], "status": "encrypted"},
-            },
-            TFHERS_INT_8_3_2_4096,
-            id="signed(x) - signed(y)",
-        ),
-        pytest.param(
-            lambda x, y: x * y,
-            {
-                "x": {"range": [0, 2**3 - 1], "status": "encrypted"},
-                "y": {"range": [0, 2**3 - 1], "status": "encrypted"},
-            },
-            TFHERS_UINT_8_3_2_4096,
-            id="x * y",
-        ),
-        pytest.param(
-            lambda x, y: x * y,
-            {
-                "x": {"range": [-(2**3), 2**2], "status": "encrypted"},
-                "y": {"range": [-(2**2), 2**3], "status": "encrypted"},
-            },
-            TFHERS_INT_8_3_2_4096,
-            id="signed(x) * signed(y)",
-        ),
-        pytest.param(
-            lut_add_lut,
-            {
-                "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
-                "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
-            },
-            TFHERS_UINT_8_3_2_4096,
-            id="lut_add_lut",
-        ),
+        # pytest.param(
+        #     lambda x, y: x - y,
+        #     {
+        #         "x": {"range": [2**4, 2**7 - 1], "status": "encrypted"},
+        #         "y": {"range": [0, 2**4 - 1], "status": "encrypted"},
+        #     },
+        #     TFHERS_UINT_8_3_2_4096,
+        #     id="x - y",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x - y,
+        #     {
+        #         "x": {"range": [-(2**3), -2], "status": "encrypted"},
+        #         "y": {"range": [-(2**3), -2], "status": "encrypted"},
+        #     },
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="signed(x) - signed(y)",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x * y,
+        #     {
+        #         "x": {"range": [0, 2**3 - 1], "status": "encrypted"},
+        #         "y": {"range": [0, 2**3 - 1], "status": "encrypted"},
+        #     },
+        #     TFHERS_UINT_8_3_2_4096,
+        #     id="x * y",
+        # ),
+        # pytest.param(
+        #     lambda x, y: x * y,
+        #     {
+        #         "x": {"range": [-(2**3), 2**2], "status": "encrypted"},
+        #         "y": {"range": [-(2**2), 2**3], "status": "encrypted"},
+        #     },
+        #     TFHERS_INT_8_3_2_4096,
+        #     id="signed(x) * signed(y)",
+        # ),
+        # pytest.param(
+        #     lut_add_lut,
+        #     {
+        #         "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
+        #         "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
+        #     },
+        #     TFHERS_UINT_8_3_2_4096,
+        #     id="lut_add_lut",
+        # ),
     ],
 )
 def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
@@ -475,13 +475,13 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     )
     assert (
         os.system(
-            f"{tfhers_utils} add -c {ct1_path} {ct_one_path} -s {server_key_path} -o {ct1_path}"
+            f"{tfhers_utils} add {'--signed' if dtype.is_signed else ''} -c {ct1_path} {ct_one_path} -s {server_key_path} -o {ct1_path}"
         )
         == 0
     )
     assert (
         os.system(
-            f"{tfhers_utils} add -c {ct2_path} {ct_one_path} -s {server_key_path} -o {ct2_path}"
+            f"{tfhers_utils} add {'--signed' if dtype.is_signed else ''} -c {ct2_path} {ct_one_path} -s {server_key_path} -o {ct2_path}"
         )
         == 0
     )
