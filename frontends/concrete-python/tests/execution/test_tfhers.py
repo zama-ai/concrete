@@ -456,7 +456,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     # encrypt inputs and incremnt them by one in TFHErs
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key --value=1 -c {ct_one_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value=1 -c {ct_one_path} --client-key {client_key_path}"
         )
         == 0
     )
