@@ -106,7 +106,7 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
+            -v /compiler-artifacts-pytest:/compiler-artifacts-pytest
           shell: bash
           run: |
             ls -R /compiler-artifacts-pytest 
@@ -151,7 +151,7 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
+            -v /compiler-artifacts-pytest:/compiler-artifacts-pytest
           shell: bash
           run: |
             set -e
