@@ -63,6 +63,12 @@ tfhers-utils:
 
 pytest: pytest-default
 
+debug:
+	echo "Printing environment"
+	env
+	echo "ls -R ${BINDINGS_DIRECTORY}"
+	ls -R ${BINDINGS_DIRECTORY}
+
 pytest-default: tfhers-utils
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \

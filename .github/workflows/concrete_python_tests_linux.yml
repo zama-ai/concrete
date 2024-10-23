@@ -76,6 +76,8 @@ jobs:
 
             echo "Debug: ccache statistics (after the build):"
             ccache -s
+
+            ls -R /build/tools/concretelang/python_packages/concretelang_core/
       - name: Upload concrete-compiler python-bindings
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
@@ -107,12 +109,15 @@ jobs:
             -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
+            ls -R /compiler-artifacts-pytest 
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             export KEY_CACHE_DIRECTORY=./key-set-cache
             mkdir $KEY_CACHE_DIRECTORY
+            echo "DEBUG env"
+            make debug
             make pytest
       # - name: Slack notification
       #   if: ${{ failure() }} && github.ref == 'refs/heads/main'
