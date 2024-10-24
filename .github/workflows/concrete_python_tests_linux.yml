@@ -117,7 +117,7 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v compiler-artifacts:/compiler-artifacts
+            -v ${{ github.workspace }}/compiler-artifacts:/compiler-artifacts
           shell: bash
           run: |
             ls -R /compiler-artifacts
