@@ -2,25 +2,24 @@ FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
 
 # epel-release is for install ccache
 RUN dnf clean all
-RUN dnf install -y epel-release
+RUN dnf install -y epel-release && dnf clean all
 RUN dnf update -y
-RUN dnf install -y ninja-build hwloc-devel ccache ncurses-devel
-RUN dnf install -y openssh-clients graphviz graphviz-devel
+# hadolint ignore=DL3041
+RUN dnf install -y ninja-build hwloc-devel ccache ncurses-devel openssh-clients graphviz graphviz-devel && dnf clean all
 RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 # Setup gcc-11 (required for cuda11.8)
-RUN dnf install -y gcc-toolset-11
+RUN dnf install -y gcc-toolset-11 && dnf clean all
 ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
 ENV PATH "/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"
 ENV LD_LIBRARY_PATH "/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst:$LD_LIBRARY_PATH"
 # setup ccache with an unlimited amount of files and storage
-RUN ccache -M 0
-RUN ccache -F 0
+RUN ccache -M 0 && ccache -F 0
 # Install Rust
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
 RUN rustup install nightly-2024-09-30
-SHELL ["/bin/bash", "-c"]
 # Install boost
 ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
 RUN tar -xzvf /boost_1_71_0.tar.gz
@@ -35,16 +34,16 @@ ENV PATH "$PATH:/usr/local/cuda-11.8/bin"
 # Set the python path. Options: [cp37-cp37m, cp38-cp38, cp39-cp39, cp310-cp310]
 # Links and env would be available to use the appropriate python version
 ARG python_tag=cp38-cp38
-RUN ln -s /opt/python/${python_tag}/bin/pip /bin/pip
-RUN ln -s /opt/python/${python_tag}/bin/python /bin/python
+RUN ln -s /opt/python/${python_tag}/bin/pip /bin/pip && ln -s /opt/python/${python_tag}/bin/python /bin/python
 ENV PYTHON_EXEC=/opt/python/${python_tag}/bin/python
 # Install python deps
-RUN pip install numpy pybind11==2.8 PyYAML pytest wheel auditwheel mypy
+# hadolint ignore=DL3013
+RUN pip install --no-cache-dir numpy pybind11==2.8 PyYAML pytest wheel auditwheel mypy
 # Setup and build compiler
 COPY / /workdir
 WORKDIR /workdir/compilers/concrete-compiler/compiler
-RUN mkdir -p /build
-RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
+RUN mkdir -p /build && \
+    make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
     Python3_EXECUTABLE=${PYTHON_EXEC} \
     concretecompiler python-bindings
 ENV PYTHONPATH "$PYTHONPATH:/build/tools/concretelang/python_packages/concretelang_core"

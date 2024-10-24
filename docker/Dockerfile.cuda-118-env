@@ -1,14 +1,16 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
+FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc as build
 
-RUN dnf install -y kernel-devel kernel-headers
+RUN dnf install -y kernel-devel kernel-headers && dnf clean all
 RUN curl https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-rhel8-11-8-local-11.8.0_520.61.05-1.x86_64.rpm -o cuda.rpm
-RUN rpm -i cuda.rpm
-RUN dnf clean all
-RUN dnf install -y epel-release
-RUN dnf update -y
-RUN dnf -y module install nvidia-driver:latest-dkms
-RUN dnf -y install cuda
+RUN rpm -i cuda.rpm \
+    && dnf install -y epel-release \
+    && dnf clean all
+# hadolint ignore=DL3041
+RUN dnf update -y \
+    && dnf -y module install nvidia-driver:latest-dkms \
+    && dnf -y install cuda \
+    && dnf clean all
 
 FROM scratch
-COPY --from=0 /usr/local/cuda-11.8/ /usr/local/cuda-11.8/
-COPY --from=0 /usr/lib64/libcuda.so* /usr/lib64/
+COPY --from=build /usr/local/cuda-11.8/ /usr/local/cuda-11.8/
+COPY --from=build /usr/lib64/libcuda.so* /usr/lib64/
