@@ -118,22 +118,9 @@ class Bridge:
             raise ValueError(msg)
 
         fheint_desc = self._description_from_type(input_type)
-
-        bit_width = input_type.bit_width
-        signed = input_type.is_signed
         keyid = self._input_keyid(input_idx)
         variance = self._input_variance(input_idx)
-        if bit_width == 8:
-            if not signed:
-                return Value(TfhersExporter.import_fheuint8(buffer, fheint_desc, keyid, variance))
-            else:
-                return Value(TfhersExporter.import_fheint8(buffer, fheint_desc, keyid, variance))
-
-        msg = (  # pragma: no cover
-            f"importing {'signed' if signed else 'unsigned'} integers of {bit_width}bits is not"
-            " yet supported"
-        )
-        raise NotImplementedError(msg)  # pragma: no cover
+        return Value(TfhersExporter.import_int(buffer, fheint_desc, keyid, variance))
 
     def export_value(self, value: Value, output_idx: int) -> bytes:
         """Export a value as a serialized TFHErs integer.
@@ -151,24 +138,9 @@ class Bridge:
             raise ValueError(msg)
 
         fheint_desc = self._description_from_type(output_type)
-
-        bit_width = output_type.bit_width
-        signed = output_type.is_signed
-        if bit_width == 8:
-            if not signed:
-                return TfhersExporter.export_fheuint8(
-                    value._inner, fheint_desc  # pylint: disable=protected-access
-                )
-            else:
-                return TfhersExporter.export_fheint8(
-                    value._inner, fheint_desc  # pylint: disable=protected-access
-                )
-
-        msg = (  # pragma: no cover
-            f"exporting value to {'signed' if signed else 'unsigned'} integers of {bit_width}bits"
-            " is not yet supported"
+        return TfhersExporter.export_int(
+            value._inner, fheint_desc  # pylint: disable=protected-access
         )
-        raise NotImplementedError(msg)  # pragma: no cover
 
     def serialize_input_secret_key(self, input_idx: int) -> bytes:
         """Serialize secret key used for a specific input.
