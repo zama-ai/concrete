@@ -77,20 +77,17 @@ jobs:
             echo "Debug: ccache statistics (after the build):"
             ccache -s
 
-      - name: Debug directory
-        run: find ${{ github.workspace }}/build/tools/concretelang/python_packages/
+      - name: Create artifact archive
+        run: |
+            cd build
+            tar czvf artifacts.tgz lib/libConcretelangRuntime.so tools/concretelang/python_packages
       - name: Upload concrete-compiler python-bindings
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: concrete-compiler-python-bindings
           include-hidden-files: true
           retention-days: 3
-          path: |
-            ${{ github.workspace }}/build/lib/libConcretelangRuntime.so
-            ${{ github.workspace }}/build/tools/concretelang/python_packages/**.py
-            ${{ github.workspace }}/build/tools/concretelang/python_packages/**.so
-            ${{ github.workspace }}/build/tools/concretelang/python_packages/**.pyc
-            ${{ github.workspace }}/build/tools/concretelang/python_packages/**.pyi
+          path: build/artifacts.tgz
 
   test-pytest:
     name: Test concrete-python pytest
@@ -101,7 +98,11 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: concrete-compiler-python-bindings
-          path: /compiler-artifacts-pytest
+          path: compiler-artifacts
+      - name: Extract artifacts archive
+        run: |
+          cd compiler-artifacts
+          tar xzvf artifacts.tgz
       - name: Run pytest
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
@@ -111,12 +112,12 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v /compiler-artifacts-pytest:/compiler-artifacts-pytest
+            -v compiler-artifacts:/compiler-artifacts
           shell: bash
           run: |
-            find /compiler-artifacts-pytest 
+            find /compiler-artifacts
             set -e
-            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-pytest
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             export KEY_CACHE_DIRECTORY=./key-set-cache
@@ -146,7 +147,11 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: concrete-compiler-python-bindings
-          path: /compiler-artifacts-notebooks
+          path: /compiler-artifacts
+      - name: Extract artifacts archive
+        run: |
+          cd compiler-artifacts
+          tar xzvf artifacts.tgz
       - name: Run pytest
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
@@ -156,11 +161,11 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v /compiler-artifacts-notebooks:/compiler-artifacts-notebooks
+            -v /compiler-artifacts:/compiler-artifacts
           shell: bash
           run: |
             set -e
-            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts-notebooks
+            export COMPILER_BUILD_DIRECTORY=/compiler-artifacts
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             make test-notebooks
