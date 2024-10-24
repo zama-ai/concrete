@@ -146,7 +146,10 @@ class TFHERSIntegerType(Integer):
         bit_width = self.bit_width
         msg_width = self.msg_width
         if isinstance(value, (int, np.integer)):
-            value_bin = bin(value)[2:].zfill(bit_width)
+            if self.is_signed and value < 0:
+                value_bin = bin(2**bit_width + value)[2:].zfill(bit_width)
+            else:
+                value_bin = bin(value)[2:].zfill(bit_width)
             # lsb first
             return np.array(
                 [int(value_bin[i : i + msg_width], 2) for i in range(0, bit_width, msg_width)][::-1]
@@ -201,7 +204,10 @@ class TFHERSIntegerType(Integer):
 
         if len(value.shape) == 1:
             # lsb first
-            return sum(int(v) << (i * msg_width) for i, v in enumerate(value))
+            decoded = sum(int(v) << (i * msg_width) for i, v in enumerate(value))
+            if self.is_signed and decoded >= 2 ** (bit_width - 1):
+                decoded = decoded - 2**bit_width
+            return decoded
 
         cts = value.reshape((-1, expected_ct_shape))
         return np.array([self.decode(ct) for ct in cts]).reshape(value.shape[:-1])

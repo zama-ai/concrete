@@ -34,12 +34,13 @@ using concretelang::values::Value;
 namespace concretelang {
 namespace clientlib {
 
-Result<TransportValue>
-importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
-                     TfhersFheIntDescription desc, uint32_t encryptionKeyId,
-                     double encryptionVariance);
-Result<std::vector<uint8_t>> exportTfhersFheUint8(TransportValue value,
-                                                  TfhersFheIntDescription info);
+Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
+                                           TfhersFheIntDescription integerDesc,
+                                           uint32_t encryptionKeyId,
+                                           double encryptionVariance);
+
+Result<std::vector<uint8_t>>
+exportTfhersInteger(TransportValue value, TfhersFheIntDescription integerDesc);
 
 class ClientCircuit {
 
