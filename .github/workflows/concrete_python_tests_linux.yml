@@ -57,7 +57,7 @@ jobs:
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
             -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
+            #-v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
             set -e
@@ -103,6 +103,11 @@ jobs:
         run: |
           cd compiler-artifacts
           tar xzvf artifacts.tgz
+          cd ../
+          ls -R compiler-artifacts
+      - name: List artifacts archive
+        run: |
+          ls -R compiler-artifacts
       - name: Run pytest
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
@@ -115,15 +120,13 @@ jobs:
             -v compiler-artifacts:/compiler-artifacts
           shell: bash
           run: |
-            find /compiler-artifacts
+            ls -R /compiler-artifacts
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts
             cd /concrete/frontends/concrete-python
             source .venv/bin/activate
             export KEY_CACHE_DIRECTORY=./key-set-cache
             mkdir $KEY_CACHE_DIRECTORY
-            echo "DEBUG env"
-            make debug
             make pytest
       # - name: Slack notification
       #   if: ${{ failure() }} && github.ref == 'refs/heads/main'
