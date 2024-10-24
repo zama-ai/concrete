@@ -30,9 +30,6 @@ CONCRETE_VERSION?="" # empty mean latest
 venv:
 	$(PYTHON) -m venv .venv
 	. .venv/bin/activate
-ifeq (,$(wildcard ${RUNTIME_LIBRARY}))
-	$(PIP) install --extra-index-url https://pypi.zama.ai/cpu "concrete-python$(CONCRETE_VERSION)"
-endif
 	$(PIP) install -r requirements.dev.txt
 	$(PIP) install -r requirements.extra-full.txt
 	$(PIP) install -r requirements.txt
@@ -65,6 +62,12 @@ tfhers-utils:
 	cd ${TFHERS_UTILS_DIRECTORY} && $(MAKE) build
 
 pytest: pytest-default
+
+debug:
+	echo "Printing environment"
+	env
+	echo "ls -R ${BINDINGS_DIRECTORY}"
+	ls -R ${BINDINGS_DIRECTORY}
 
 pytest-default: tfhers-utils
 	eval $(shell make silent_cp_activate)

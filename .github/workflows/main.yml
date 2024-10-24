@@ -2,18 +2,18 @@
 name: Main
 
 on:
-  pull_request:
+#   pull_request:
   push:
     branches:
       - 'main'
-      - 'release/*'
-      - 'force-docker-images'
-      - 'private_release/*'
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
-  schedule:
-    # Nightly Release @ 3AM after each work day
-    - cron: "0 3 * * 2-6"
+#       - 'release/*'
+#       - 'force-docker-images'
+#       - 'private_release/*'
+#     tags:
+#       - 'v[0-9]+.[0-9]+.[0-9]+*'
+#   schedule:
+#     # Nightly Release @ 3AM after each work day
+#     - cron: "0 3 * * 2-6"
 
 jobs:
   # This jobs outputs for each modules of our mono-repo if it changed,
