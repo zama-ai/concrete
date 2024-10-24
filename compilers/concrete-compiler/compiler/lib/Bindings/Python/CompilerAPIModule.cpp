@@ -1881,14 +1881,14 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "Return the `circuit` ClientCircuit.", arg("circuit"))
       .doc() = "Client-side / Encryption program";
 
-  m.def("import_tfhers_fheuint8",
+  m.def("import_tfhers_int",
         [](const pybind11::bytes &serialized_fheuint,
            TfhersFheIntDescription info, uint32_t encryptionKeyId,
            double encryptionVariance) {
           const std::string &buffer_str = serialized_fheuint;
           std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
           auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
-          auto valueOrError = ::concretelang::clientlib::importTfhersFheUint8(
+          auto valueOrError = ::concretelang::clientlib::importTfhersInteger(
               arrayRef, info, encryptionKeyId, encryptionVariance);
           if (valueOrError.has_error()) {
             throw std::runtime_error(valueOrError.error().mesg);
@@ -1896,34 +1896,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           return TransportValue{valueOrError.value()};
         });
 
-  m.def("export_tfhers_fheuint8",
-        [](TransportValue fheuint, TfhersFheIntDescription info) {
-          auto result =
-              ::concretelang::clientlib::exportTfhersFheUint8(fheuint, info);
-          if (result.has_error()) {
-            throw std::runtime_error(result.error().mesg);
-          }
-          return result.value();
-        });
-
-  m.def("import_tfhers_fheint8",
-        [](const pybind11::bytes &serialized_fheuint,
-           TfhersFheIntDescription info, uint32_t encryptionKeyId,
-           double encryptionVariance) {
-          const std::string &buffer_str = serialized_fheuint;
-          std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
-          auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
-          auto valueOrError = ::concretelang::clientlib::importTfhersFheInt8(
-              arrayRef, info, encryptionKeyId, encryptionVariance);
-          if (valueOrError.has_error()) {
-            throw std::runtime_error(valueOrError.error().mesg);
-          }
-          return TransportValue{valueOrError.value()};
-        });
-
-  m.def("export_tfhers_fheint8", [](TransportValue fheuint,
-                                    TfhersFheIntDescription info) {
-    auto result = ::concretelang::clientlib::exportTfhersFheInt8(fheuint, info);
+  m.def("export_tfhers_int", [](TransportValue fheuint,
+                                TfhersFheIntDescription info) {
+    auto result = ::concretelang::clientlib::exportTfhersInteger(fheuint, info);
     if (result.has_error()) {
       throw std::runtime_error(result.error().mesg);
     }
