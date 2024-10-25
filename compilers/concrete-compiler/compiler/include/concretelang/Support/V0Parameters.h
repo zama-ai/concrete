@@ -142,7 +142,7 @@ const Config DEFAULT_CONFIG = {UNSPECIFIED_P_ERROR,
                                DEFAULT_CACHE_ON_DISK,
                                DEFAULT_CIPHERTEXT_MODULUS_LOG,
                                DEFAULT_FFT_PRECISION,
-                               concrete_optimizer::ParameterRestrictions {},
+                               concrete_optimizer::ParameterRestrictions{},
                                DEFAULT_COMPOSITION_RULES,
                                DEFAULT_COMPOSABLE};
 

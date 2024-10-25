@@ -1,21 +1,25 @@
 use charts::{draw, Serie};
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
-use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
+use concrete_optimizer::global_parameters::DEFAULT_DOMAINS;
 use concrete_optimizer::optimization::atomic_pattern::{self as optimize_atomic_pattern};
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::decomposition;
 use concrete_optimizer::optimization::wop_atomic_pattern::optimize as optimize_wop_atomic_pattern;
 
 pub const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
-const MIN_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS
-    .glwe_pbs_constrained
+const MIN_LOG_POLY_SIZE: u64 = DEFAULT_DOMAINS
+    .glwe_pbs_constrained_cpu
     .log2_polynomial_size
     .start;
-const MAX_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end - 1;
-pub const MAX_GLWE_DIM: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.end - 1;
-pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start;
-pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end - 1;
+const MAX_LOG_POLY_SIZE: u64 = DEFAULT_DOMAINS
+    .glwe_pbs_constrained_cpu
+    .log2_polynomial_size
+    .end
+    - 1;
+pub const MAX_GLWE_DIM: u64 = DEFAULT_DOMAINS.glwe_pbs_constrained_cpu.glwe_dimension.end - 1;
+pub const MIN_LWE_DIM: u64 = DEFAULT_DOMAINS.free_glwe.glwe_dimension.start;
+pub const MAX_LWE_DIM: u64 = DEFAULT_DOMAINS.free_glwe.glwe_dimension.end - 1;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sum_size = 4096;
@@ -31,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         glwe_log_polynomial_sizes,
         glwe_dimensions,
         internal_lwe_dimensions,
-        levelled_only_lwe_dimensions: DEFAUT_DOMAINS.free_lwe,
+        levelled_only_lwe_dimensions: DEFAULT_DOMAINS.free_lwe,
     };
 
     let precision = 8;

@@ -930,6 +930,9 @@ namespace concrete_optimizer {
   struct Weights;
   enum class Encoding : ::std::uint8_t;
   enum class MultiParamStrategy : ::std::uint8_t;
+  struct GlweParameterRestrictions;
+  struct DecompositionParameterRestrictions;
+  struct ParameterRestrictions;
   struct Options;
   namespace dag {
     struct OperatorIndex;
@@ -1125,6 +1128,8 @@ struct GlweParameterRestrictions final {
   ::std::shared_ptr<::std::uint64_t> log2_polynomial_size_max;
   ::std::shared_ptr<::std::uint64_t> glwe_dimension_min;
   ::std::shared_ptr<::std::uint64_t> glwe_dimension_max;
+
+  using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$GlweParameterRestrictions
 
@@ -1135,18 +1140,22 @@ struct DecompositionParameterRestrictions final {
   ::std::shared_ptr<::std::uint64_t> log2_base_max;
   ::std::shared_ptr<::std::uint64_t> level_min;
   ::std::shared_ptr<::std::uint64_t> level_max;
+
+  using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$DecompositionParameterRestrictions
 
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
 struct ParameterRestrictions final {
-  GlweParameterRestrictions glwe_pbs;
-  GlweParameterRestrictions free_glwe;
-  DecompositionParameterRestrictions br_decomposition;
-  DecompositionParameterRestrictions ks_decomposition;
+  ::concrete_optimizer::GlweParameterRestrictions glwe_pbs;
+  ::concrete_optimizer::GlweParameterRestrictions free_glwe;
+  ::concrete_optimizer::DecompositionParameterRestrictions br_decomposition;
+  ::concrete_optimizer::DecompositionParameterRestrictions ks_decomposition;
   ::std::shared_ptr<::std::uint64_t> free_lwe_min;
   ::std::shared_ptr<::std::uint64_t> free_lwe_max;
+
+  using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
 

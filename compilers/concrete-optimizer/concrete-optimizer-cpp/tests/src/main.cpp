@@ -30,6 +30,35 @@ concrete_optimizer::Options default_options() {
       .cache_on_disk = true,
       .ciphertext_modulus_log = CIPHERTEXT_MODULUS_LOG,
       .fft_precision = 53,
+      .parameter_restrictions = concrete_optimizer::ParameterRestrictions{
+          .glwe_pbs = concrete_optimizer::GlweParameterRestrictions{
+              .log2_polynomial_size_min = {},
+              .log2_polynomial_size_max = {},
+              .glwe_dimension_min = {},
+              .glwe_dimension_max = {},
+          },
+          .free_glwe = concrete_optimizer::GlweParameterRestrictions{
+                        .log2_polynomial_size_min = {},
+                        .log2_polynomial_size_max = {},
+                        .glwe_dimension_min = {},
+                        .glwe_dimension_max = {},
+        },
+
+          .br_decomposition = concrete_optimizer::DecompositionParameterRestrictions{
+              .log2_base_min = {},
+              .log2_base_max = {},
+              .level_min = {},
+              .level_max = {},
+          },
+          .ks_decomposition = concrete_optimizer::DecompositionParameterRestrictions{
+                        .log2_base_min = {},
+                        .log2_base_max = {},
+                        .level_min = {},
+                        .level_max = {},
+                    },
+         .free_lwe_min = {},
+         .free_lwe_max = {}
+      }
   };
 }
 

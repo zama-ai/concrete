@@ -10,7 +10,7 @@ use concrete_optimizer::dag::operator::{
     self, FunctionTable, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
 use concrete_optimizer::dag::unparametrized;
-use concrete_optimizer::global_parameters::{DEFAULT_DOMAINS, ParameterDomains};
+use concrete_optimizer::global_parameters::{ParameterDomains, DEFAULT_DOMAINS};
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::CircuitSolution;
@@ -48,7 +48,7 @@ fn caches_from(options: &ffi::Options) -> decomposition::PersistDecompCaches {
         let cache_dir = default_cache_dir();
         println!("optimizer: To clear the cache, remove directory {cache_dir}");
     }
-    let processing_unit = processing_unit(&options);
+    let processing_unit = processing_unit(options);
     decomposition::cache(
         options.security_level,
         processing_unit,
@@ -60,64 +60,184 @@ fn caches_from(options: &ffi::Options) -> decomposition::PersistDecompCaches {
 }
 
 fn calculate_parameter_domain(options: &ffi::Options) -> ParameterDomains {
-    let mut domains = DEFAULT_DOMAINS.clone();
+    let mut domains = DEFAULT_DOMAINS;
 
-    if !options.parameter_restrictions.glwe_pbs.log2_polynomial_size_min.is_null() {
-        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.start = *options.parameter_restrictions.glwe_pbs.log2_polynomial_size_min;
-        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.start = *options.parameter_restrictions.glwe_pbs.log2_polynomial_size_min;
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .log2_polynomial_size_min
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.start = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_min;
+        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.start = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_min;
     }
-    if !options.parameter_restrictions.glwe_pbs.log2_polynomial_size_max.is_null() {
-        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.end = *options.parameter_restrictions.glwe_pbs.log2_polynomial_size_max;
-        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.end = *options.parameter_restrictions.glwe_pbs.log2_polynomial_size_max;
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .log2_polynomial_size_max
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.end = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_max;
+        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.end = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_max;
     }
-    if !options.parameter_restrictions.glwe_pbs.glwe_dimension_min.is_null() {
-        domains.glwe_pbs_constrained_cpu.glwe_dimension.start = *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
-        domains.glwe_pbs_constrained_gpu.glwe_dimension.start = *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .glwe_dimension_min
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.glwe_dimension.start =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
+        domains.glwe_pbs_constrained_gpu.glwe_dimension.start =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
     }
-    if !options.parameter_restrictions.glwe_pbs.glwe_dimension_max.is_null() {
-        domains.glwe_pbs_constrained_cpu.glwe_dimension.end = *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
-        domains.glwe_pbs_constrained_gpu.glwe_dimension.end = *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .glwe_dimension_max
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.glwe_dimension.end =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
+        domains.glwe_pbs_constrained_gpu.glwe_dimension.end =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
     }
-    
-    if !options.parameter_restrictions.free_glwe.log2_polynomial_size_min.is_null() {
-        domains.free_glwe.log2_polynomial_size.start = *options.parameter_restrictions.free_glwe.log2_polynomial_size_min;
+
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .log2_polynomial_size_min
+        .is_null()
+    {
+        domains.free_glwe.log2_polynomial_size.start = *options
+            .parameter_restrictions
+            .free_glwe
+            .log2_polynomial_size_min;
     }
-    if !options.parameter_restrictions.free_glwe.log2_polynomial_size_max.is_null() {
-        domains.free_glwe.log2_polynomial_size.end = *options.parameter_restrictions.free_glwe.log2_polynomial_size_max;
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .log2_polynomial_size_max
+        .is_null()
+    {
+        domains.free_glwe.log2_polynomial_size.end = *options
+            .parameter_restrictions
+            .free_glwe
+            .log2_polynomial_size_max;
     }
-    if !options.parameter_restrictions.free_glwe.glwe_dimension_min.is_null() {
-        domains.free_glwe.glwe_dimension.start = *options.parameter_restrictions.free_glwe.glwe_dimension_min;
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .glwe_dimension_min
+        .is_null()
+    {
+        domains.free_glwe.glwe_dimension.start =
+            *options.parameter_restrictions.free_glwe.glwe_dimension_min;
     }
-    if !options.parameter_restrictions.free_glwe.glwe_dimension_max.is_null() {
-        domains.free_glwe.glwe_dimension.end = *options.parameter_restrictions.free_glwe.glwe_dimension_max;
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .glwe_dimension_max
+        .is_null()
+    {
+        domains.free_glwe.glwe_dimension.end =
+            *options.parameter_restrictions.free_glwe.glwe_dimension_max;
     }
-    
-    if !options.parameter_restrictions.br_decomposition.log2_base_min.is_null() {
-        domains.br_decomposition.log2_base.start = *options.parameter_restrictions.br_decomposition.log2_base_min;
+
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .log2_base_min
+        .is_null()
+    {
+        domains.br_decomposition.log2_base.start = *options
+            .parameter_restrictions
+            .br_decomposition
+            .log2_base_min;
     }
-    if !options.parameter_restrictions.br_decomposition.log2_base_max.is_null() {
-        domains.br_decomposition.log2_base.end = *options.parameter_restrictions.br_decomposition.log2_base_max;
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .log2_base_max
+        .is_null()
+    {
+        domains.br_decomposition.log2_base.end = *options
+            .parameter_restrictions
+            .br_decomposition
+            .log2_base_max;
     }
-    if !options.parameter_restrictions.br_decomposition.level_min.is_null() {
-        domains.br_decomposition.level.start = *options.parameter_restrictions.br_decomposition.level_min;
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .level_min
+        .is_null()
+    {
+        domains.br_decomposition.level.start =
+            *options.parameter_restrictions.br_decomposition.level_min;
     }
-    if !options.parameter_restrictions.br_decomposition.level_max.is_null() {
-        domains.br_decomposition.level.end = *options.parameter_restrictions.br_decomposition.level_max;
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .level_max
+        .is_null()
+    {
+        domains.br_decomposition.level.end =
+            *options.parameter_restrictions.br_decomposition.level_max;
     }
-    
-    if !options.parameter_restrictions.ks_decomposition.log2_base_min.is_null() {
-        domains.ks_decomposition.log2_base.start = *options.parameter_restrictions.ks_decomposition.log2_base_min;
+
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .log2_base_min
+        .is_null()
+    {
+        domains.ks_decomposition.log2_base.start = *options
+            .parameter_restrictions
+            .ks_decomposition
+            .log2_base_min;
     }
-    if !options.parameter_restrictions.ks_decomposition.log2_base_max.is_null() {
-        domains.ks_decomposition.log2_base.end = *options.parameter_restrictions.ks_decomposition.log2_base_max;
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .log2_base_max
+        .is_null()
+    {
+        domains.ks_decomposition.log2_base.end = *options
+            .parameter_restrictions
+            .ks_decomposition
+            .log2_base_max;
     }
-    if !options.parameter_restrictions.ks_decomposition.level_min.is_null() {
-        domains.ks_decomposition.level.start = *options.parameter_restrictions.ks_decomposition.level_min;
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .level_min
+        .is_null()
+    {
+        domains.ks_decomposition.level.start =
+            *options.parameter_restrictions.ks_decomposition.level_min;
     }
-    if !options.parameter_restrictions.ks_decomposition.level_max.is_null() {
-        domains.ks_decomposition.level.end = *options.parameter_restrictions.ks_decomposition.level_max;
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .level_max
+        .is_null()
+    {
+        domains.ks_decomposition.level.end =
+            *options.parameter_restrictions.ks_decomposition.level_max;
     }
-    
+
     if !options.parameter_restrictions.free_lwe_min.is_null() {
         domains.free_lwe.start = *options.parameter_restrictions.free_lwe_min;
     }
@@ -184,7 +304,7 @@ pub fn get_noise_br(
 
 fn optimize_bootstrap(precision: u64, noise_factor: f64, options: &ffi::Options) -> ffi::Solution {
     // Support composable since there is no dag
-    let processing_unit = processing_unit(&options);
+    let processing_unit = processing_unit(options);
 
     let config = Config {
         security_level: options.security_level,
@@ -197,7 +317,7 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: &ffi::Options)
 
     let sum_size = 1;
 
-    let parameter_restrictions = calculate_parameter_domain(&options);
+    let parameter_restrictions = calculate_parameter_domain(options);
     let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
 
     let result = concrete_optimizer::optimization::atomic_pattern::optimize_one(
@@ -638,7 +758,7 @@ impl Dag {
     }
 
     fn optimize(&self, options: &ffi::Options) -> ffi::DagSolution {
-        let processing_unit = processing_unit(&options);
+        let processing_unit = processing_unit(options);
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
@@ -648,7 +768,7 @@ impl Dag {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let parameter_restrictions = calculate_parameter_domain(&options);
+        let parameter_restrictions = calculate_parameter_domain(options);
         let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
 
         let encoding = options.encoding.into();
@@ -711,7 +831,7 @@ impl Dag {
     }
 
     fn optimize_multi(&self, options: &ffi::Options) -> ffi::CircuitSolution {
-        let processing_unit = processing_unit(&options);
+        let processing_unit = processing_unit(options);
         let config = Config {
             security_level: options.security_level,
             maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
@@ -720,7 +840,7 @@ impl Dag {
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
-        let parameter_restrictions = calculate_parameter_domain(&options);
+        let parameter_restrictions = calculate_parameter_domain(options);
         let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
 
         let encoding = options.encoding.into();

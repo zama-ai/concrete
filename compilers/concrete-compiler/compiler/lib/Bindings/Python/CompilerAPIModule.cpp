@@ -445,76 +445,115 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           },
           "Set security level.", arg("security_level"))
       .def("set_glwe_pbs_restrictions",
-           [](CompilationOptions &options, std::optional<uint64_t> log2_polynomial_size_min, std::optional<uint64_t> log2_polynomial_size_max,
-              std::optional<uint64_t> glwe_dimension_min, std::optional<uint64_t> glwe_dimension_max) {
+           [](CompilationOptions &options,
+              std::optional<uint64_t> log2_polynomial_size_min,
+              std::optional<uint64_t> log2_polynomial_size_max,
+              std::optional<uint64_t> glwe_dimension_min,
+              std::optional<uint64_t> glwe_dimension_max) {
              if (log2_polynomial_size_min) {
-              options.optimizerConfig.parameter_restrictions.glwe_pbs.log2_polynomial_size_min = std::make_shared<uint64_t>(*log2_polynomial_size_min);
+               options.optimizerConfig.parameter_restrictions.glwe_pbs
+                   .log2_polynomial_size_min =
+                   std::make_shared<uint64_t>(*log2_polynomial_size_min);
              }
              if (log2_polynomial_size_max) {
-              options.optimizerConfig.parameter_restrictions.glwe_pbs.log2_polynomial_size_max = std::make_shared<uint64_t>(*log2_polynomial_size_max);
+               options.optimizerConfig.parameter_restrictions.glwe_pbs
+                   .log2_polynomial_size_max =
+                   std::make_shared<uint64_t>(*log2_polynomial_size_max);
              }
              if (glwe_dimension_min) {
-              options.optimizerConfig.parameter_restrictions.glwe_pbs.glwe_dimension_min = std::make_shared<uint64_t>(*glwe_dimension_min);
+               options.optimizerConfig.parameter_restrictions.glwe_pbs
+                   .glwe_dimension_min =
+                   std::make_shared<uint64_t>(*glwe_dimension_min);
              }
              if (glwe_dimension_max) {
-              options.optimizerConfig.parameter_restrictions.glwe_pbs.glwe_dimension_max = std::make_shared<uint64_t>(*glwe_dimension_max);
+               options.optimizerConfig.parameter_restrictions.glwe_pbs
+                   .glwe_dimension_max =
+                   std::make_shared<uint64_t>(*glwe_dimension_max);
              }
            })
       .def("set_free_glwe_restrictions",
-           [](CompilationOptions &options, std::optional<uint64_t> log2_polynomial_size_min, std::optional<uint64_t> log2_polynomial_size_max,
-              std::optional<uint64_t> glwe_dimension_min, std::optional<uint64_t> glwe_dimension_max) {
+           [](CompilationOptions &options,
+              std::optional<uint64_t> log2_polynomial_size_min,
+              std::optional<uint64_t> log2_polynomial_size_max,
+              std::optional<uint64_t> glwe_dimension_min,
+              std::optional<uint64_t> glwe_dimension_max) {
              if (log2_polynomial_size_min) {
-              options.optimizerConfig.parameter_restrictions.free_glwe.log2_polynomial_size_min = std::make_shared<uint64_t>(*log2_polynomial_size_min);
+               options.optimizerConfig.parameter_restrictions.free_glwe
+                   .log2_polynomial_size_min =
+                   std::make_shared<uint64_t>(*log2_polynomial_size_min);
              }
              if (log2_polynomial_size_max) {
-              options.optimizerConfig.parameter_restrictions.free_glwe.log2_polynomial_size_max = std::make_shared<uint64_t>(*log2_polynomial_size_max);
+               options.optimizerConfig.parameter_restrictions.free_glwe
+                   .log2_polynomial_size_max =
+                   std::make_shared<uint64_t>(*log2_polynomial_size_max);
              }
              if (glwe_dimension_min) {
-              options.optimizerConfig.parameter_restrictions.free_glwe.glwe_dimension_min = std::make_shared<uint64_t>(*glwe_dimension_min);
+               options.optimizerConfig.parameter_restrictions.free_glwe
+                   .glwe_dimension_min =
+                   std::make_shared<uint64_t>(*glwe_dimension_min);
              }
              if (glwe_dimension_max) {
-              options.optimizerConfig.parameter_restrictions.free_glwe.glwe_dimension_max = std::make_shared<uint64_t>(*glwe_dimension_max);
+               options.optimizerConfig.parameter_restrictions.free_glwe
+                   .glwe_dimension_max =
+                   std::make_shared<uint64_t>(*glwe_dimension_max);
              }
            })
       .def("set_br_decomposition_restrictions",
-           [](CompilationOptions &options, std::optional<uint64_t> log2_base_min, std::optional<uint64_t> log2_base_max,
-              std::optional<uint64_t> level_min, std::optional<uint64_t> level_max) {
+           [](CompilationOptions &options,
+              std::optional<uint64_t> log2_base_min,
+              std::optional<uint64_t> log2_base_max,
+              std::optional<uint64_t> level_min,
+              std::optional<uint64_t> level_max) {
              if (log2_base_min) {
-              options.optimizerConfig.parameter_restrictions.br_decomposition.log2_base_min = std::make_shared<uint64_t>(*log2_base_min);
+               options.optimizerConfig.parameter_restrictions.br_decomposition
+                   .log2_base_min = std::make_shared<uint64_t>(*log2_base_min);
              }
              if (log2_base_max) {
-              options.optimizerConfig.parameter_restrictions.br_decomposition.log2_base_max = std::make_shared<uint64_t>(*log2_base_max);
+               options.optimizerConfig.parameter_restrictions.br_decomposition
+                   .log2_base_max = std::make_shared<uint64_t>(*log2_base_max);
              }
              if (level_min) {
-              options.optimizerConfig.parameter_restrictions.br_decomposition.level_min = std::make_shared<uint64_t>(*level_min);
+               options.optimizerConfig.parameter_restrictions.br_decomposition
+                   .level_min = std::make_shared<uint64_t>(*level_min);
              }
              if (level_max) {
-              options.optimizerConfig.parameter_restrictions.br_decomposition.level_max = std::make_shared<uint64_t>(*level_max);
+               options.optimizerConfig.parameter_restrictions.br_decomposition
+                   .level_max = std::make_shared<uint64_t>(*level_max);
              }
            })
       .def("set_ks_decomposition_restrictions",
-           [](CompilationOptions &options, std::optional<uint64_t> log2_base_min, std::optional<uint64_t> log2_base_max,
-              std::optional<uint64_t> level_min, std::optional<uint64_t> level_max) {
+           [](CompilationOptions &options,
+              std::optional<uint64_t> log2_base_min,
+              std::optional<uint64_t> log2_base_max,
+              std::optional<uint64_t> level_min,
+              std::optional<uint64_t> level_max) {
              if (log2_base_min) {
-              options.optimizerConfig.parameter_restrictions.ks_decomposition.log2_base_min = std::make_shared<uint64_t>(*log2_base_min);
+               options.optimizerConfig.parameter_restrictions.ks_decomposition
+                   .log2_base_min = std::make_shared<uint64_t>(*log2_base_min);
              }
              if (log2_base_max) {
-              options.optimizerConfig.parameter_restrictions.ks_decomposition.log2_base_max = std::make_shared<uint64_t>(*log2_base_max);
+               options.optimizerConfig.parameter_restrictions.ks_decomposition
+                   .log2_base_max = std::make_shared<uint64_t>(*log2_base_max);
              }
              if (level_min) {
-              options.optimizerConfig.parameter_restrictions.ks_decomposition.level_min = std::make_shared<uint64_t>(*level_min);
+               options.optimizerConfig.parameter_restrictions.ks_decomposition
+                   .level_min = std::make_shared<uint64_t>(*level_min);
              }
              if (level_max) {
-              options.optimizerConfig.parameter_restrictions.ks_decomposition.level_max = std::make_shared<uint64_t>(*level_max);
+               options.optimizerConfig.parameter_restrictions.ks_decomposition
+                   .level_max = std::make_shared<uint64_t>(*level_max);
              }
            })
       .def("set_free_lwe_restrictions",
-           [](CompilationOptions &options, std::optional<uint64_t> free_lwe_min, std::optional<uint64_t> free_lwe_max) {
+           [](CompilationOptions &options, std::optional<uint64_t> free_lwe_min,
+              std::optional<uint64_t> free_lwe_max) {
              if (free_lwe_min) {
-              options.optimizerConfig.parameter_restrictions.free_lwe_min = std::make_shared<uint64_t>(*free_lwe_min);
+               options.optimizerConfig.parameter_restrictions.free_lwe_min =
+                   std::make_shared<uint64_t>(*free_lwe_min);
              }
              if (free_lwe_max) {
-              options.optimizerConfig.parameter_restrictions.free_lwe_max = std::make_shared<uint64_t>(*free_lwe_max);
+               options.optimizerConfig.parameter_restrictions.free_lwe_max =
+                   std::make_shared<uint64_t>(*free_lwe_max);
              }
            })
       .def(
