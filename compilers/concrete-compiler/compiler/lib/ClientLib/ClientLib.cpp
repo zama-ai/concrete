@@ -187,53 +187,83 @@ Result<ClientCircuit> ClientProgram::getClientCircuit(std::string circuitName) {
                      "`");
 }
 
-Result<TransportValue>
-importTfhersFheUint8(llvm::ArrayRef<uint8_t> serializedFheUint8,
-                     TfhersFheIntDescription desc, uint32_t encryptionKeyId,
-                     double encryptionVariance) {
-  if (desc.width != 8 || desc.is_signed == true) {
-    return StringError(
-        "trying to import FheUint8 but description doesn't match this type");
+Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
+                                           TfhersFheIntDescription integerDesc,
+                                           uint32_t encryptionKeyId,
+                                           double encryptionVariance) {
+
+  // Select conversion function based on integer description
+  std::function<int64_t(const uint8_t *, size_t, uint64_t *,
+                        TfhersFheIntDescription)>
+      conversion_func;
+  if (integerDesc.width == 8) {
+    if (integerDesc.is_signed) { // fheint8
+      conversion_func = concrete_cpu_tfhers_int8_to_lwe_array;
+    } else { // fheuint8
+      conversion_func = concrete_cpu_tfhers_uint8_to_lwe_array;
+    }
+  } else {
+    std::ostringstream stringStream;
+    stringStream << "importTfhersInteger: no support for " << integerDesc.width
+                 << "bits " << (integerDesc.is_signed ? "signed" : "unsigned")
+                 << " integer";
+    std::string errorMsg = stringStream.str();
+    return StringError(errorMsg);
   }
 
-  auto dims = std::vector({desc.n_cts, desc.lwe_size});
+  auto dims = std::vector({integerDesc.n_cts, integerDesc.lwe_size});
   auto outputTensor = Tensor<uint64_t>::fromDimensions(dims);
-  auto err = concrete_cpu_tfhers_uint8_to_lwe_array(
-      serializedFheUint8.data(), serializedFheUint8.size(),
-      outputTensor.values.data(), desc);
+  auto err = conversion_func(buffer.data(), buffer.size(),
+                             outputTensor.values.data(), integerDesc);
   if (err) {
-    return StringError("couldn't convert fheuint to lwe array: err()")
-           << err << ")";
+    return StringError("couldn't convert fheint to lwe array");
   }
 
   auto value = Value{outputTensor}.intoRawTransportValue();
   auto lwe = value.asBuilder().initTypeInfo().initLweCiphertext();
   lwe.setIntegerPrecision(64);
   // dimensions
-  lwe.initAbstractShape().setDimensions({(uint32_t)desc.n_cts});
+  lwe.initAbstractShape().setDimensions({(uint32_t)integerDesc.n_cts});
   lwe.initConcreteShape().setDimensions(
-      {(uint32_t)desc.n_cts, (uint32_t)desc.lwe_size});
+      {(uint32_t)integerDesc.n_cts, (uint32_t)integerDesc.lwe_size});
   // encryption
   auto encryption = lwe.initEncryption();
-  encryption.setLweDimension((uint32_t)desc.lwe_size - 1);
+  encryption.setLweDimension((uint32_t)integerDesc.lwe_size - 1);
   encryption.initModulus().initMod().initNative();
   encryption.setKeyId(encryptionKeyId);
   encryption.setVariance(encryptionVariance);
   // Encoding
   auto encoding = lwe.initEncoding();
   auto integer = encoding.initInteger();
-  integer.setIsSigned(false);
-  integer.setWidth(std::log2(desc.message_modulus * desc.carry_modulus));
+  integer.setIsSigned(
+      false); // should always be unsigned as its for the radix encoded cts
+  integer.setWidth(
+      std::log2(integerDesc.message_modulus * integerDesc.carry_modulus));
   integer.initMode().initNative();
 
   return value;
 }
 
 Result<std::vector<uint8_t>>
-exportTfhersFheUint8(TransportValue value, TfhersFheIntDescription desc) {
-  if (desc.width != 8 || desc.is_signed == true) {
-    return StringError(
-        "trying to export FheUint8 but description doesn't match this type");
+exportTfhersInteger(TransportValue value, TfhersFheIntDescription integerDesc) {
+  // Select conversion function based on integer description
+  std::function<size_t(const uint64_t *, uint8_t *, size_t,
+                       TfhersFheIntDescription)>
+      conversion_func;
+  std::function<size_t(size_t, size_t)> buffer_size_func;
+  if (integerDesc.width == 8) {
+    if (integerDesc.is_signed) { // fheint8
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int8;
+    } else { // fheuint8
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint8;
+    }
+  } else {
+    std::ostringstream stringStream;
+    stringStream << "exportTfhersInteger: no support for " << integerDesc.width
+                 << "bits " << (integerDesc.is_signed ? "signed" : "unsigned")
+                 << " integer";
+    std::string errorMsg = stringStream.str();
+    return StringError(errorMsg);
   }
 
   auto fheuint = Value::fromRawTransportValue(value);
@@ -244,14 +274,14 @@ exportTfhersFheUint8(TransportValue value, TfhersFheIntDescription desc) {
   if (!tensorOrError.has_value()) {
     return StringError("couldn't get tensor from value");
   }
-  const size_t bufferSize =
-      concrete_cpu_tfhers_fheint_buffer_size_u64(desc.lwe_size, desc.n_cts);
-  std::vector<uint8_t> buffer(bufferSize, 0);
-  auto flatData = tensorOrError.value().values;
-  auto size = concrete_cpu_lwe_array_to_tfhers_uint8(
-      flatData.data(), buffer.data(), buffer.size(), desc);
+  size_t buffer_size = concrete_cpu_tfhers_fheint_buffer_size_u64(
+      integerDesc.lwe_size, integerDesc.n_cts);
+  std::vector<uint8_t> buffer(buffer_size, 0);
+  auto flat_data = tensorOrError.value().values;
+  auto size = conversion_func(flat_data.data(), buffer.data(), buffer.size(),
+                              integerDesc);
   if (size == 0) {
-    return StringError("couldn't convert lwe array to fheuint8");
+    return StringError("couldn't convert lwe array to fheint8");
   }
   // we truncate to the serialized data
   assert(size <= buffer.size());
