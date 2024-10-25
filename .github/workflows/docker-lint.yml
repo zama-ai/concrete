@@ -9,35 +9,10 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    container:
+      image: hadolint/hadolint@sha256:27173fe25e062448490a32de410c08491c626a0bef360aa2ce5d5bdd9384b50d #2.12.0-debian
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-    - name: Lint Concrete Python
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: ./docker/Dockerfile.concrete-python
-        config: ./.hadolint.yaml
-
-    - name: Lint Concrete Compiler Env
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: ./docker/Dockerfile.concrete-compiler-env
-        config: ./.hadolint.yaml
-
-    - name: Lint HPX
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: ./docker/Dockerfile.hpx-env
-        config: ./.hadolint.yaml
-
-    - name: Lint Cuda118
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: ./docker/Dockerfile.cuda-118-env
-        config: ./.hadolint.yaml
-
-    - name: Lint Cuda123
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: ./docker/Dockerfile.cuda-123-env
-        config: ./.hadolint.yaml
+      - name: Lint All Dockerfiles (except third_party)
+        run: hadolint -V `find -name "*Dockerfile*" -not -path "./third_party/*" |xargs `
