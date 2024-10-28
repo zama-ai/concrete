@@ -26,6 +26,7 @@
 #include <optional>
 #include <pybind11/cast.h>
 #include <pybind11/numpy.h>
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
@@ -269,6 +270,64 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .value("NATIVE", concrete_optimizer::Encoding::Native)
       .export_values();
 
+  // ------------------------------------------------------------------------------//
+  // RANGE RESTRICTION //
+  // ------------------------------------------------------------------------------//
+  pybind11::class_<concrete_optimizer::restriction::RangeRestriction>(
+      m, "RangeRestriction")
+      .def(pybind11::init(
+          []() { return concrete_optimizer::restriction::RangeRestriction(); }))
+      .def(
+          "add_available_glwe_log_polynomial_size",
+          [](concrete_optimizer::restriction::RangeRestriction &restriction,
+             uint64_t v) {
+            restriction.glwe_log_polynomial_sizes.push_back(v);
+          },
+          "Add an available glwe log poly size to the restriction")
+      .def(
+          "add_available_glwe_dimension",
+          [](concrete_optimizer::restriction::RangeRestriction &restriction,
+             uint64_t v) { restriction.glwe_dimensions.push_back(v); },
+          "Add an available glwe dimension to the restriction")
+      .def(
+          "add_available_internal_lwe_dimension",
+          [](concrete_optimizer::restriction::RangeRestriction &restriction,
+             uint64_t v) { restriction.internal_lwe_dimensions.push_back(v); },
+          "Add an available internal lwe dimension to the restriction")
+      .def(
+          "add_available_pbs_level_count",
+          [](concrete_optimizer::restriction::RangeRestriction &restriction,
+             uint64_t v) { restriction.pbs_level_count.push_back(v); },
+          "Add an available pbs level count to the restriction")
+      .def(
+          "add_available_pbs_base_log",
+          [](concrete_optimizer::restriction::RangeRestriction &restriction,
+             uint64_t v) { restriction.pbs_base_log.push_back(v); },
+          "Add an available pbs base log to the restriction")
+      .def(
+          "add_available_ks_level_count",
+          [](concrete_optimizer::restriction::RangeRestriction &restriction,
+             uint64_t v) { restriction.ks_level_count.push_back(v); },
+          "Add an available ks level count to the restriction")
+      .def(
+          "add_available_ks_base_log",
+          [](concrete_optimizer::restriction::RangeRestriction &restriction,
+             uint64_t v) { restriction.ks_base_log.push_back(v); },
+          "Add an available ks base log to the restriction")
+      .doc() = "Allow to restrict the optimizer parameter search space to a "
+               "set of values.";
+
+  // ------------------------------------------------------------------------------//
+  // KEYSET RESTRICTION //
+  // ------------------------------------------------------------------------------//
+  pybind11::class_<concrete_optimizer::restriction::KeysetRestriction>(
+      m, "KeysetRestriction")
+      .doc() = "Allow to restrict the optimizer search space to be compatible "
+               "with a keyset.";
+
+  // ------------------------------------------------------------------------------//
+  // COMPILATION OPTIONS //
+  // ------------------------------------------------------------------------------//
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
       .def(pybind11::init([](mlir::concretelang::Backend backend) {
              return CompilationOptions(backend);
@@ -373,117 +432,19 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             options.optimizerConfig.security = security_level;
           },
           "Set security level.", arg("security_level"))
-      .def("set_glwe_pbs_restrictions",
+      .def("set_range_restriction",
            [](CompilationOptions &options,
-              std::optional<uint64_t> log2_polynomial_size_min,
-              std::optional<uint64_t> log2_polynomial_size_max,
-              std::optional<uint64_t> glwe_dimension_min,
-              std::optional<uint64_t> glwe_dimension_max) {
-             if (log2_polynomial_size_min) {
-               options.optimizerConfig.parameter_restrictions.glwe_pbs
-                   .log2_polynomial_size_min =
-                   std::make_shared<uint64_t>(*log2_polynomial_size_min);
-             }
-             if (log2_polynomial_size_max) {
-               options.optimizerConfig.parameter_restrictions.glwe_pbs
-                   .log2_polynomial_size_max =
-                   std::make_shared<uint64_t>(*log2_polynomial_size_max);
-             }
-             if (glwe_dimension_min) {
-               options.optimizerConfig.parameter_restrictions.glwe_pbs
-                   .glwe_dimension_min =
-                   std::make_shared<uint64_t>(*glwe_dimension_min);
-             }
-             if (glwe_dimension_max) {
-               options.optimizerConfig.parameter_restrictions.glwe_pbs
-                   .glwe_dimension_max =
-                   std::make_shared<uint64_t>(*glwe_dimension_max);
-             }
+              concrete_optimizer::restriction::RangeRestriction restriction) {
+             options.optimizerConfig.range_restriction = std::make_shared<
+                 concrete_optimizer::restriction::RangeRestriction>(
+                 restriction);
            })
-      .def("set_free_glwe_restrictions",
+      .def("set_keyset_restriction",
            [](CompilationOptions &options,
-              std::optional<uint64_t> log2_polynomial_size_min,
-              std::optional<uint64_t> log2_polynomial_size_max,
-              std::optional<uint64_t> glwe_dimension_min,
-              std::optional<uint64_t> glwe_dimension_max) {
-             if (log2_polynomial_size_min) {
-               options.optimizerConfig.parameter_restrictions.free_glwe
-                   .log2_polynomial_size_min =
-                   std::make_shared<uint64_t>(*log2_polynomial_size_min);
-             }
-             if (log2_polynomial_size_max) {
-               options.optimizerConfig.parameter_restrictions.free_glwe
-                   .log2_polynomial_size_max =
-                   std::make_shared<uint64_t>(*log2_polynomial_size_max);
-             }
-             if (glwe_dimension_min) {
-               options.optimizerConfig.parameter_restrictions.free_glwe
-                   .glwe_dimension_min =
-                   std::make_shared<uint64_t>(*glwe_dimension_min);
-             }
-             if (glwe_dimension_max) {
-               options.optimizerConfig.parameter_restrictions.free_glwe
-                   .glwe_dimension_max =
-                   std::make_shared<uint64_t>(*glwe_dimension_max);
-             }
-           })
-      .def("set_br_decomposition_restrictions",
-           [](CompilationOptions &options,
-              std::optional<uint64_t> log2_base_min,
-              std::optional<uint64_t> log2_base_max,
-              std::optional<uint64_t> level_min,
-              std::optional<uint64_t> level_max) {
-             if (log2_base_min) {
-               options.optimizerConfig.parameter_restrictions.br_decomposition
-                   .log2_base_min = std::make_shared<uint64_t>(*log2_base_min);
-             }
-             if (log2_base_max) {
-               options.optimizerConfig.parameter_restrictions.br_decomposition
-                   .log2_base_max = std::make_shared<uint64_t>(*log2_base_max);
-             }
-             if (level_min) {
-               options.optimizerConfig.parameter_restrictions.br_decomposition
-                   .level_min = std::make_shared<uint64_t>(*level_min);
-             }
-             if (level_max) {
-               options.optimizerConfig.parameter_restrictions.br_decomposition
-                   .level_max = std::make_shared<uint64_t>(*level_max);
-             }
-           })
-      .def("set_ks_decomposition_restrictions",
-           [](CompilationOptions &options,
-              std::optional<uint64_t> log2_base_min,
-              std::optional<uint64_t> log2_base_max,
-              std::optional<uint64_t> level_min,
-              std::optional<uint64_t> level_max) {
-             if (log2_base_min) {
-               options.optimizerConfig.parameter_restrictions.ks_decomposition
-                   .log2_base_min = std::make_shared<uint64_t>(*log2_base_min);
-             }
-             if (log2_base_max) {
-               options.optimizerConfig.parameter_restrictions.ks_decomposition
-                   .log2_base_max = std::make_shared<uint64_t>(*log2_base_max);
-             }
-             if (level_min) {
-               options.optimizerConfig.parameter_restrictions.ks_decomposition
-                   .level_min = std::make_shared<uint64_t>(*level_min);
-             }
-             if (level_max) {
-               options.optimizerConfig.parameter_restrictions.ks_decomposition
-                   .level_max = std::make_shared<uint64_t>(*level_max);
-             }
-           })
-      .def("set_free_lwe_restrictions",
-           [](CompilationOptions &options, std::optional<uint64_t> free_lwe_min,
-              std::optional<uint64_t> free_lwe_max) {
-             if (free_lwe_min) {
-               options.optimizerConfig.parameter_restrictions.free_lwe_min =
-                   std::make_shared<uint64_t>(*free_lwe_min);
-             }
-             if (free_lwe_max) {
-               options.optimizerConfig.parameter_restrictions.free_lwe_max =
-                   std::make_shared<uint64_t>(*free_lwe_max);
-             }
+              concrete_optimizer::restriction::KeysetRestriction restriction) {
+             options.optimizerConfig.keyset_restriction = std::make_shared<
+                 concrete_optimizer::restriction::KeysetRestriction>(
+                 restriction);
            })
       .def(
           "set_v0_parameter",
@@ -934,6 +895,85 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .doc() = "Parameters of a packing keyswitch key.";
 
   // ------------------------------------------------------------------------------//
+  // KEYSET INFO //
+  // ------------------------------------------------------------------------------//
+  typedef Message<concreteprotocol::KeysetInfo> KeysetInfo;
+  pybind11::class_<KeysetInfo>(m, "KeysetInfo")
+      .def(
+          "secret_keys",
+          [](KeysetInfo &keysetInfo) {
+            auto secretKeys = std::vector<LweSecretKeyParam>();
+            for (auto key : keysetInfo.asReader().getLweSecretKeys()) {
+              secretKeys.push_back(LweSecretKeyParam{key});
+            }
+            return secretKeys;
+          },
+          "Return the parameters of the secret keys for this keyset.")
+      .def(
+          "bootstrap_keys",
+          [](KeysetInfo &keysetInfo) {
+            auto bootstrapKeys = std::vector<BootstrapKeyParam>();
+            for (auto key : keysetInfo.asReader().getLweBootstrapKeys()) {
+              bootstrapKeys.push_back(BootstrapKeyParam{key});
+            }
+            return bootstrapKeys;
+          },
+          "Return the parameters of the bootstrap keys for this keyset.")
+      .def(
+          "keyswitch_keys",
+          [](KeysetInfo &keysetInfo) {
+            auto keyswitchKeys = std::vector<KeyswitchKeyParam>();
+            for (auto key : keysetInfo.asReader().getLweKeyswitchKeys()) {
+              keyswitchKeys.push_back(KeyswitchKeyParam{key});
+            }
+            return keyswitchKeys;
+          },
+          "Return the parameters of the keyswitch keys for this keyset.")
+      .def(
+          "packing_keyswitch_keys",
+          [](KeysetInfo &keysetInfo) {
+            auto packingKeyswitchKeys = std::vector<PackingKeyswitchKeyParam>();
+            for (auto key : keysetInfo.asReader().getPackingKeyswitchKeys()) {
+              packingKeyswitchKeys.push_back(PackingKeyswitchKeyParam{key});
+            }
+            return packingKeyswitchKeys;
+          },
+          "Return the parameters of the packing keyswitch keys for this "
+          "keyset.")
+      .def(
+          "get_restriction",
+          [](KeysetInfo &keysetInfo) {
+            concrete_optimizer::restriction::KeysetInfo output;
+            for (auto key : keysetInfo.asReader().getLweSecretKeys()) {
+              output.lwe_secret_keys.push_back(
+                  concrete_optimizer::restriction::LweSecretKeyInfo{
+                      key.getParams().getLweDimension()});
+            }
+            for (auto key : keysetInfo.asReader().getLweBootstrapKeys()) {
+              output.lwe_bootstrap_keys.push_back(
+                  concrete_optimizer::restriction::LweBootstrapKeyInfo{
+                      key.getParams().getLevelCount(),
+                      key.getParams().getBaseLog(),
+                      key.getParams().getGlweDimension(),
+                      key.getParams().getPolynomialSize(),
+                      key.getParams().getInputLweDimension()});
+            }
+            for (auto key : keysetInfo.asReader().getLweKeyswitchKeys()) {
+              output.lwe_keyswitch_keys.push_back(
+                  concrete_optimizer::restriction::LweKeyswitchKeyInfo{
+                      key.getParams().getLevelCount(),
+                      key.getParams().getBaseLog(),
+                      key.getParams().getInputLweDimension(),
+                      key.getParams().getOutputLweDimension()});
+            }
+            return concrete_optimizer::restriction::KeysetRestriction{output};
+          },
+          "Return the search space restriction associated to this keyset info.")
+      .def(pybind11::self == pybind11::self)
+      .def(pybind11::self != pybind11::self)
+      .doc() = "Parameters of a complete keyset.";
+
+  // ------------------------------------------------------------------------------//
   // TYPE INFO //
   // ------------------------------------------------------------------------------//
   typedef Message<concreteprotocol::TypeInfo> TypeInfo;
@@ -1168,55 +1208,13 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             return result;
           },
           "Return the signedness of the input of the first circuit.")
+
       .def(
-          "secret_keys",
-          [](ProgramInfo &programInfo) {
-            auto secretKeys = std::vector<LweSecretKeyParam>();
-            for (auto key : programInfo.programInfo.asReader()
-                                .getKeyset()
-                                .getLweSecretKeys()) {
-              secretKeys.push_back(LweSecretKeyParam{key});
-            }
-            return secretKeys;
+          "get_keyset_info",
+          [](ProgramInfo &programInfo) -> KeysetInfo {
+            return programInfo.programInfo.asReader().getKeyset();
           },
-          "Return the parameters of the secret keys for this program.")
-      .def(
-          "bootstrap_keys",
-          [](ProgramInfo &programInfo) {
-            auto bootstrapKeys = std::vector<BootstrapKeyParam>();
-            for (auto key : programInfo.programInfo.asReader()
-                                .getKeyset()
-                                .getLweBootstrapKeys()) {
-              bootstrapKeys.push_back(BootstrapKeyParam{key});
-            }
-            return bootstrapKeys;
-          },
-          "Return the parameters of the bootstrap keys for this program.")
-      .def(
-          "keyswitch_keys",
-          [](ProgramInfo &programInfo) {
-            auto keyswitchKeys = std::vector<KeyswitchKeyParam>();
-            for (auto key : programInfo.programInfo.asReader()
-                                .getKeyset()
-                                .getLweKeyswitchKeys()) {
-              keyswitchKeys.push_back(KeyswitchKeyParam{key});
-            }
-            return keyswitchKeys;
-          },
-          "Return the parameters of the keyswitch keys for this program.")
-      .def(
-          "packing_keyswitch_keys",
-          [](ProgramInfo &programInfo) {
-            auto packingKeyswitchKeys = std::vector<PackingKeyswitchKeyParam>();
-            for (auto key : programInfo.programInfo.asReader()
-                                .getKeyset()
-                                .getPackingKeyswitchKeys()) {
-              packingKeyswitchKeys.push_back(PackingKeyswitchKeyParam{key});
-            }
-            return packingKeyswitchKeys;
-          },
-          "Return the parameters of the packing keyswitch keys for this "
-          "program.")
+          "Return the keyset info associated to the program.")
       .def(
           "get_circuits",
           [](ProgramInfo &programInfo) {
@@ -1297,7 +1295,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                 std::make_shared<std::vector<uint64_t>>(std::move(glwe_sk)),
                 params.info);
           },
-          "Deserialize an LweSecretKey from glwe encoded (tfhe-rs compatible) "
+          "Deserialize an LweSecretKey from glwe encoded (tfhe-rs "
+          "compatible) "
           "bytes and associated parameters.",
           arg("buffer"), arg("params"))
       .def(
@@ -1852,7 +1851,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             GET_OR_THROW_RESULT(auto ok, circuit.processOutput(result, pos));
             return ok;
           },
-          "Process a `pos` positional result `result` retrieved from server. ",
+          "Process a `pos` positional result `result` retrieved from "
+          "server. ",
           arg("result"), arg("pos"))
       .def(
           "simulate_prepare_input",
@@ -1866,7 +1866,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                                              typeTransformer(arg), pos));
             return ok;
           },
-          "SIMULATE preparation of `pos` positional argument `arg` to be sent "
+          "SIMULATE preparation of `pos` positional argument `arg` to be "
+          "sent "
           "to server. DOES NOT NCRYPT.",
           arg("arg"), arg("pos"))
       .def(

@@ -223,7 +223,7 @@ class Bridge:
                 continue
 
             key_buffer = input_idx_to_key_buffer[input_idx]
-            param = self.circuit.client.specs.program_info.secret_keys()[key_id]
+            param = self.circuit.client.specs.program_info.get_keyset_info().secret_keys()[key_id]
             try:
                 initial_keys[key_id] = LweSecretKey.deserialize(key_buffer, param)
             except Exception as e:  # pragma: no cover

@@ -36,7 +36,17 @@ concrete_optimizer::Options options_from_config(optimizer::Config config) {
       /* .cache_on_disk = */ config.cache_on_disk,
       /* .ciphertext_modulus_log = */ config.ciphertext_modulus_log,
       /* .fft_precision = */ config.fft_precision,
-      /* .parameter_restrictions = */ config.parameter_restrictions};
+      /* .range_restriction = */
+      std::shared_ptr<concrete_optimizer::restriction::RangeRestriction>(),
+      /* .keyset_restriction = */
+      std::shared_ptr<concrete_optimizer::restriction::KeysetRestriction>(),
+  };
+  if (config.range_restriction) {
+    options.range_restriction = config.range_restriction;
+  }
+  if (config.keyset_restriction) {
+    options.keyset_restriction = config.keyset_restriction;
+  }
   return options;
 }
 

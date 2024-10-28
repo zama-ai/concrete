@@ -100,13 +100,19 @@ class MoreCircuitCompilationFeedback:
                     continue
 
                 if key_type == KeyType.SECRET:
-                    parameter = program_info.secret_keys()[key_index]
+                    parameter = program_info.get_keyset_info().secret_keys()[key_index]
                 elif key_type == KeyType.BOOTSTRAP:
-                    parameter = program_info.bootstrap_keys()[key_index]
+                    parameter = program_info.get_keyset_info().bootstrap_keys()[
+                        key_index
+                    ]
                 elif key_type == KeyType.KEY_SWITCH:
-                    parameter = program_info.keyswitch_keys()[key_index]
+                    parameter = program_info.get_keyset_info().keyswitch_keys()[
+                        key_index
+                    ]
                 elif key_type == KeyType.PACKING_KEY_SWITCH:
-                    parameter = program_info.packing_keyswitch_keys()[key_index]
+                    parameter = program_info.get_keyset_info().packing_keyswitch_keys()[
+                        key_index
+                    ]
                 else:
                     assert False
                 if parameter not in result:
@@ -201,13 +207,23 @@ class MoreCircuitCompilationFeedback:
                         continue
 
                     if key_type == KeyType.SECRET:
-                        parameter = program_info.secret_keys()[key_index]
+                        parameter = program_info.get_keyset_info().secret_keys()[
+                            key_index
+                        ]
                     elif key_type == KeyType.BOOTSTRAP:
-                        parameter = program_info.bootstrap_keys()[key_index]
+                        parameter = program_info.get_keyset_info().bootstrap_keys()[
+                            key_index
+                        ]
                     elif key_type == KeyType.KEY_SWITCH:
-                        parameter = program_info.keyswitch_keys()[key_index]
+                        parameter = program_info.get_keyset_info().keyswitch_keys()[
+                            key_index
+                        ]
                     elif key_type == KeyType.PACKING_KEY_SWITCH:
-                        parameter = program_info.packing_keyswitch_keys()[key_index]
+                        parameter = (
+                            program_info.get_keyset_info().packing_keyswitch_keys()[
+                                key_index
+                            ]
+                        )
                     else:
                         assert False
 

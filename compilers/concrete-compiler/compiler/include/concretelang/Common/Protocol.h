@@ -114,6 +114,18 @@ template <typename MessageType> struct Message {
     return *this;
   }
 
+  bool operator==(Message const &other) const {
+    capnp::AnyStruct::Reader left = this->asReader();
+    capnp::AnyStruct::Reader right = other.asReader();
+    return left == right;
+  }
+
+  bool operator!=(Message const &other) const {
+    capnp::AnyStruct::Reader left = this->asReader();
+    capnp::AnyStruct::Reader right = other.asReader();
+    return left != right;
+  }
+
   Message(Message &&input) : message(nullptr) {
     regionBuilder = input.regionBuilder;
     message = input.message;
