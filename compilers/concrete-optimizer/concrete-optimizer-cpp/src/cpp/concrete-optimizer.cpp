@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <iterator>
+#include <memory>
 #include <new>
 #include <stdexcept>
 #include <string>
@@ -948,6 +949,9 @@ namespace concrete_optimizer {
   struct Weights;
   enum class Encoding : ::std::uint8_t;
   enum class MultiParamStrategy : ::std::uint8_t;
+  struct GlweParameterRestrictions;
+  struct DecompositionParameterRestrictions;
+  struct ParameterRestrictions;
   struct Options;
   namespace dag {
     struct OperatorIndex;
@@ -973,11 +977,11 @@ namespace concrete_optimizer {
 struct Dag final : public ::rust::Opaque {
   ::rust::Box<::concrete_optimizer::DagBuilder> builder(::rust::String circuit) noexcept;
   ::rust::String dump() const noexcept;
-  ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options options) const noexcept;
+  ::concrete_optimizer::dag::DagSolution optimize(::concrete_optimizer::Options const &options) const noexcept;
   void add_composition(::std::string const &from_func, ::std::size_t from_pos, ::std::string const &to_func, ::std::size_t to_pos) noexcept;
   void add_all_compositions() noexcept;
   ::std::size_t get_circuit_count() const noexcept;
-  ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options options) const noexcept;
+  ::concrete_optimizer::dag::CircuitSolution optimize_multi(::concrete_optimizer::Options const &options) const noexcept;
   ::rust::Vec<::concrete_optimizer::dag::OperatorIndex> get_input_indices() const noexcept;
   ::rust::Vec<::concrete_optimizer::dag::OperatorIndex> get_output_indices() const noexcept;
   ~Dag() = delete;
@@ -1136,6 +1140,44 @@ enum class MultiParamStrategy : ::std::uint8_t {
 };
 #endif // CXXBRIDGE1_ENUM_concrete_optimizer$MultiParamStrategy
 
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$GlweParameterRestrictions
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$GlweParameterRestrictions
+struct GlweParameterRestrictions final {
+  ::std::shared_ptr<::std::uint64_t> log2_polynomial_size_min;
+  ::std::shared_ptr<::std::uint64_t> log2_polynomial_size_max;
+  ::std::shared_ptr<::std::uint64_t> glwe_dimension_min;
+  ::std::shared_ptr<::std::uint64_t> glwe_dimension_max;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$GlweParameterRestrictions
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$DecompositionParameterRestrictions
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$DecompositionParameterRestrictions
+struct DecompositionParameterRestrictions final {
+  ::std::shared_ptr<::std::uint64_t> log2_base_min;
+  ::std::shared_ptr<::std::uint64_t> log2_base_max;
+  ::std::shared_ptr<::std::uint64_t> level_min;
+  ::std::shared_ptr<::std::uint64_t> level_max;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$DecompositionParameterRestrictions
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
+struct ParameterRestrictions final {
+  ::concrete_optimizer::GlweParameterRestrictions glwe_pbs;
+  ::concrete_optimizer::GlweParameterRestrictions free_glwe;
+  ::concrete_optimizer::DecompositionParameterRestrictions br_decomposition;
+  ::concrete_optimizer::DecompositionParameterRestrictions ks_decomposition;
+  ::std::shared_ptr<::std::uint64_t> free_lwe_min;
+  ::std::shared_ptr<::std::uint64_t> free_lwe_max;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
+
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Options
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$Options
 struct Options final {
@@ -1149,6 +1191,7 @@ struct Options final {
   bool cache_on_disk;
   ::std::uint32_t ciphertext_modulus_log;
   ::std::uint32_t fft_precision;
+  ::concrete_optimizer::ParameterRestrictions parameter_restrictions;
 
   using IsRelocatable = ::std::true_type;
 };
@@ -1305,7 +1348,7 @@ struct CircuitSolution final {
 
 namespace v0 {
 extern "C" {
-::concrete_optimizer::v0::Solution concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept;
+::concrete_optimizer::v0::Solution concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options const &options) noexcept;
 } // extern "C"
 } // namespace v0
 
@@ -1336,7 +1379,7 @@ extern "C" {
 
 ::concrete_optimizer::ExternalPartition *concrete_optimizer$utils$cxxbridge1$get_external_partition(::rust::String *name, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t internal_dim, double max_variance, double variance) noexcept;
 
-double concrete_optimizer$utils$cxxbridge1$get_noise_br(::concrete_optimizer::Options options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept;
+double concrete_optimizer$utils$cxxbridge1$get_noise_br(::concrete_optimizer::Options const &options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept;
 } // extern "C"
 } // namespace utils
 
@@ -1375,7 +1418,7 @@ void concrete_optimizer$cxxbridge1$DagBuilder$dump(::concrete_optimizer::DagBuil
 
 void concrete_optimizer$cxxbridge1$DagBuilder$tag_operator_as_output(::concrete_optimizer::DagBuilder &self, ::concrete_optimizer::dag::OperatorIndex op) noexcept;
 
-void concrete_optimizer$cxxbridge1$Dag$optimize(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
+void concrete_optimizer$cxxbridge1$Dag$optimize(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options const &options, ::concrete_optimizer::dag::DagSolution *return$) noexcept;
 
 void concrete_optimizer$cxxbridge1$Dag$add_composition(::concrete_optimizer::Dag &self, ::std::string const &from_func, ::std::size_t from_pos, ::std::string const &to_func, ::std::size_t to_pos) noexcept;
 
@@ -1406,7 +1449,7 @@ extern "C" {
 extern "C" {
 ::std::size_t concrete_optimizer$cxxbridge1$Dag$get_circuit_count(::concrete_optimizer::Dag const &self) noexcept;
 
-void concrete_optimizer$cxxbridge1$Dag$optimize_multi(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options options, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
+void concrete_optimizer$cxxbridge1$Dag$optimize_multi(::concrete_optimizer::Dag const &self, ::concrete_optimizer::Options const &options, ::concrete_optimizer::dag::CircuitSolution *return$) noexcept;
 
 void concrete_optimizer$cxxbridge1$Dag$get_input_indices(::concrete_optimizer::Dag const &self, ::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *return$) noexcept;
 
@@ -1416,7 +1459,7 @@ void concrete_optimizer$cxxbridge1$Dag$get_output_indices(::concrete_optimizer::
 } // extern "C"
 
 namespace v0 {
-::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options options) noexcept {
+::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options const &options) noexcept {
   return concrete_optimizer$v0$cxxbridge1$optimize_bootstrap(precision, noise_factor, options);
 }
 } // namespace v0
@@ -1480,7 +1523,7 @@ namespace utils {
   return ::rust::Box<::concrete_optimizer::ExternalPartition>::from_raw(concrete_optimizer$utils$cxxbridge1$get_external_partition(&name, log2_polynomial_size, glwe_dimension, internal_dim, max_variance, variance));
 }
 
-double get_noise_br(::concrete_optimizer::Options options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept {
+double get_noise_br(::concrete_optimizer::Options const &options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept {
   return concrete_optimizer$utils$cxxbridge1$get_noise_br(options, log2_polynomial_size, glwe_dimension, lwe_dim, pbs_level, pbs_log2_base);
 }
 } // namespace utils
@@ -1551,7 +1594,7 @@ void DagBuilder::tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex
   concrete_optimizer$cxxbridge1$DagBuilder$tag_operator_as_output(*this, op);
 }
 
-::concrete_optimizer::dag::DagSolution Dag::optimize(::concrete_optimizer::Options options) const noexcept {
+::concrete_optimizer::dag::DagSolution Dag::optimize(::concrete_optimizer::Options const &options) const noexcept {
   ::rust::MaybeUninit<::concrete_optimizer::dag::DagSolution> return$;
   concrete_optimizer$cxxbridge1$Dag$optimize(*this, options, &return$.value);
   return ::std::move(return$.value);
@@ -1601,7 +1644,7 @@ namespace weights {
   return concrete_optimizer$cxxbridge1$Dag$get_circuit_count(*this);
 }
 
-::concrete_optimizer::dag::CircuitSolution Dag::optimize_multi(::concrete_optimizer::Options options) const noexcept {
+::concrete_optimizer::dag::CircuitSolution Dag::optimize_multi(::concrete_optimizer::Options const &options) const noexcept {
   ::rust::MaybeUninit<::concrete_optimizer::dag::CircuitSolution> return$;
   concrete_optimizer$cxxbridge1$Dag$optimize_multi(*this, options, &return$.value);
   return ::std::move(return$.value);

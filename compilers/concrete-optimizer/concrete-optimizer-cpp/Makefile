@@ -37,7 +37,7 @@ $(INTERFACE_LIB): $(INTERFACE_LIB_ORIG)
 TESTS_SOURCES = tests/src/main.cpp
 TEST_DEP_LIBS = -l pthread -ldl
 tests/tests_exe: $(INTERFACE_LIB) $(INTERFACE_HEADER) $(INTERFACE_CPP) $(TESTS_SOURCES)
-	g++ -Wall -Werror -Wextra -o $@ $(TESTS_SOURCES) $(INTERFACE_CPP) $(INTERFACE_LIB) -I $(shell dirname $(INTERFACE_HEADER)) $(TEST_DEP_LIBS)
+	g++ -Wall -Werror -Wextra -std=c++17 -o $@ $(TESTS_SOURCES) $(INTERFACE_CPP) $(INTERFACE_LIB) -I $(shell dirname $(INTERFACE_HEADER)) $(TEST_DEP_LIBS)
 	chmod +x $@
 
 test: tests/tests_exe

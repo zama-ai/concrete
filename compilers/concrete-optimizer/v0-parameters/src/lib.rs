@@ -11,7 +11,7 @@
 use clap::Parser;
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
-use concrete_optimizer::global_parameters::DEFAUT_DOMAINS;
+use concrete_optimizer::global_parameters::DEFAULT_DOMAINS;
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::solo_key::optimize::{self as optimize_dag};
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::Solution;
@@ -24,14 +24,18 @@ use rayon_cond::CondIterator;
 use std::io::Write;
 
 pub const _4_SIGMA: f64 = 1.0 - 0.999_936_657_516;
-const MIN_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS
-    .glwe_pbs_constrained
+const MIN_LOG_POLY_SIZE: u64 = DEFAULT_DOMAINS
+    .glwe_pbs_constrained_cpu
     .log2_polynomial_size
     .start;
-const MAX_LOG_POLY_SIZE: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.log2_polynomial_size.end - 1;
-pub const MAX_GLWE_DIM: u64 = DEFAUT_DOMAINS.glwe_pbs_constrained.glwe_dimension.end - 1;
-pub const MIN_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.start;
-pub const MAX_LWE_DIM: u64 = DEFAUT_DOMAINS.free_glwe.glwe_dimension.end - 1;
+const MAX_LOG_POLY_SIZE: u64 = DEFAULT_DOMAINS
+    .glwe_pbs_constrained_cpu
+    .log2_polynomial_size
+    .end
+    - 1;
+pub const MAX_GLWE_DIM: u64 = DEFAULT_DOMAINS.glwe_pbs_constrained_cpu.glwe_dimension.end - 1;
+pub const MIN_LWE_DIM: u64 = DEFAULT_DOMAINS.free_glwe.glwe_dimension.start;
+pub const MAX_LWE_DIM: u64 = DEFAULT_DOMAINS.free_glwe.glwe_dimension.end - 1;
 
 /// Find parameters for classical PBS and new WoP-PBS
 #[derive(Parser, Debug)]
@@ -105,7 +109,7 @@ pub fn all_results(args: &Args) -> Vec<Vec<Option<Solution>>> {
         glwe_log_polynomial_sizes: (args.min_log_poly_size..=args.max_log_poly_size).collect(),
         glwe_dimensions: (args.min_glwe_dim..=args.max_glwe_dim).collect(),
         internal_lwe_dimensions: (args.min_intern_lwe_dim..=args.max_intern_lwe_dim).collect(),
-        levelled_only_lwe_dimensions: DEFAUT_DOMAINS.free_lwe,
+        levelled_only_lwe_dimensions: DEFAULT_DOMAINS.free_lwe,
     };
 
     let precisions = args.min_precision..=args.max_precision;

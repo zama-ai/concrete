@@ -428,6 +428,7 @@ pub(crate) mod tests {
     use crate::computing_cost::cpu::CpuComplexity;
     use crate::config;
     use crate::dag::operator::{FunctionTable, Precision, Shape, Weights};
+    use crate::global_parameters::DEFAULT_DOMAINS;
     use crate::noise_estimator::p_error::repeat_p_error;
     use crate::optimization::config::SearchSpace;
     use crate::optimization::{atomic_pattern, decomposition};
@@ -479,7 +480,7 @@ pub(crate) mod tests {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let search_space = SearchSpace::default_cpu();
+        let search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
 
         super::optimize(dag, config, &search_space, &SHARED_CACHES)
     }
@@ -511,7 +512,7 @@ pub(crate) mod tests {
     fn v0_parameter_ref(precision: u64, weight: u64, times: &mut Times) {
         let processing_unit = config::ProcessingUnit::Cpu;
 
-        let search_space = SearchSpace::default(processing_unit);
+        let search_space = SearchSpace::default(processing_unit, DEFAULT_DOMAINS);
 
         let sum_size = 1;
 
@@ -609,7 +610,7 @@ pub(crate) mod tests {
             assert_f64_eq(square(weight) as f64, constraint.pareto_in_lut[0].lut_coeff);
         }
 
-        let search_space = SearchSpace::default(processing_unit);
+        let search_space = SearchSpace::default(processing_unit, DEFAULT_DOMAINS);
 
         let config = Config {
             security_level,

@@ -10,6 +10,7 @@ use concrete_optimizer::dag::operator::{
     self, FunctionTable, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
 use concrete_optimizer::dag::unparametrized;
+use concrete_optimizer::global_parameters::{ParameterDomains, DEFAULT_DOMAINS};
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::CircuitSolution;
@@ -41,7 +42,7 @@ fn no_dag_solution() -> ffi::DagSolution {
     }
 }
 
-fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
+fn caches_from(options: &ffi::Options) -> decomposition::PersistDecompCaches {
     if !options.cache_on_disk {
         println!("optimizer: Using stateless cache.");
         let cache_dir = default_cache_dir();
@@ -56,6 +57,195 @@ fn caches_from(options: ffi::Options) -> decomposition::PersistDecompCaches {
         options.ciphertext_modulus_log,
         options.fft_precision,
     )
+}
+
+fn calculate_parameter_domain(options: &ffi::Options) -> ParameterDomains {
+    let mut domains = DEFAULT_DOMAINS;
+
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .log2_polynomial_size_min
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.start = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_min;
+        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.start = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_min;
+    }
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .log2_polynomial_size_max
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.end = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_max;
+        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.end = *options
+            .parameter_restrictions
+            .glwe_pbs
+            .log2_polynomial_size_max;
+    }
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .glwe_dimension_min
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.glwe_dimension.start =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
+        domains.glwe_pbs_constrained_gpu.glwe_dimension.start =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
+    }
+    if !options
+        .parameter_restrictions
+        .glwe_pbs
+        .glwe_dimension_max
+        .is_null()
+    {
+        domains.glwe_pbs_constrained_cpu.glwe_dimension.end =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
+        domains.glwe_pbs_constrained_gpu.glwe_dimension.end =
+            *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
+    }
+
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .log2_polynomial_size_min
+        .is_null()
+    {
+        domains.free_glwe.log2_polynomial_size.start = *options
+            .parameter_restrictions
+            .free_glwe
+            .log2_polynomial_size_min;
+    }
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .log2_polynomial_size_max
+        .is_null()
+    {
+        domains.free_glwe.log2_polynomial_size.end = *options
+            .parameter_restrictions
+            .free_glwe
+            .log2_polynomial_size_max;
+    }
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .glwe_dimension_min
+        .is_null()
+    {
+        domains.free_glwe.glwe_dimension.start =
+            *options.parameter_restrictions.free_glwe.glwe_dimension_min;
+    }
+    if !options
+        .parameter_restrictions
+        .free_glwe
+        .glwe_dimension_max
+        .is_null()
+    {
+        domains.free_glwe.glwe_dimension.end =
+            *options.parameter_restrictions.free_glwe.glwe_dimension_max;
+    }
+
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .log2_base_min
+        .is_null()
+    {
+        domains.br_decomposition.log2_base.start = *options
+            .parameter_restrictions
+            .br_decomposition
+            .log2_base_min;
+    }
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .log2_base_max
+        .is_null()
+    {
+        domains.br_decomposition.log2_base.end = *options
+            .parameter_restrictions
+            .br_decomposition
+            .log2_base_max;
+    }
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .level_min
+        .is_null()
+    {
+        domains.br_decomposition.level.start =
+            *options.parameter_restrictions.br_decomposition.level_min;
+    }
+    if !options
+        .parameter_restrictions
+        .br_decomposition
+        .level_max
+        .is_null()
+    {
+        domains.br_decomposition.level.end =
+            *options.parameter_restrictions.br_decomposition.level_max;
+    }
+
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .log2_base_min
+        .is_null()
+    {
+        domains.ks_decomposition.log2_base.start = *options
+            .parameter_restrictions
+            .ks_decomposition
+            .log2_base_min;
+    }
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .log2_base_max
+        .is_null()
+    {
+        domains.ks_decomposition.log2_base.end = *options
+            .parameter_restrictions
+            .ks_decomposition
+            .log2_base_max;
+    }
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .level_min
+        .is_null()
+    {
+        domains.ks_decomposition.level.start =
+            *options.parameter_restrictions.ks_decomposition.level_min;
+    }
+    if !options
+        .parameter_restrictions
+        .ks_decomposition
+        .level_max
+        .is_null()
+    {
+        domains.ks_decomposition.level.end =
+            *options.parameter_restrictions.ks_decomposition.level_max;
+    }
+
+    if !options.parameter_restrictions.free_lwe_min.is_null() {
+        domains.free_lwe.start = *options.parameter_restrictions.free_lwe_min;
+    }
+    if !options.parameter_restrictions.free_lwe_max.is_null() {
+        domains.free_lwe.end = *options.parameter_restrictions.free_lwe_max;
+    }
+
+    domains
 }
 
 #[derive(Clone)]
@@ -88,7 +278,7 @@ pub fn get_external_partition(
 }
 
 pub fn get_noise_br(
-    options: ffi::Options,
+    options: &ffi::Options,
     log2_polynomial_size: u64,
     glwe_dimension: u64,
     lwe_dim: u64,
@@ -112,7 +302,7 @@ pub fn get_noise_br(
     }
 }
 
-fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) -> ffi::Solution {
+fn optimize_bootstrap(precision: u64, noise_factor: f64, options: &ffi::Options) -> ffi::Solution {
     // Support composable since there is no dag
     let processing_unit = processing_unit(options);
 
@@ -127,7 +317,8 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: ffi::Options) 
 
     let sum_size = 1;
 
-    let search_space = SearchSpace::default(processing_unit);
+    let parameter_restrictions = calculate_parameter_domain(options);
+    let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
 
     let result = concrete_optimizer::optimization::atomic_pattern::optimize_one(
         sum_size,
@@ -566,7 +757,7 @@ impl Dag {
             .collect()
     }
 
-    fn optimize(&self, options: ffi::Options) -> ffi::DagSolution {
+    fn optimize(&self, options: &ffi::Options) -> ffi::DagSolution {
         let processing_unit = processing_unit(options);
         let config = Config {
             security_level: options.security_level,
@@ -577,7 +768,8 @@ impl Dag {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let search_space = SearchSpace::default(processing_unit);
+        let parameter_restrictions = calculate_parameter_domain(options);
+        let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
 
         let encoding = options.encoding.into();
 
@@ -638,7 +830,7 @@ impl Dag {
         self.0.add_compositions(froms, tos);
     }
 
-    fn optimize_multi(&self, options: ffi::Options) -> ffi::CircuitSolution {
+    fn optimize_multi(&self, options: &ffi::Options) -> ffi::CircuitSolution {
         let processing_unit = processing_unit(options);
         let config = Config {
             security_level: options.security_level,
@@ -648,7 +840,8 @@ impl Dag {
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
-        let search_space = SearchSpace::default(processing_unit);
+        let parameter_restrictions = calculate_parameter_domain(options);
+        let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
 
         let encoding = options.encoding.into();
         #[allow(clippy::wildcard_in_or_patterns)]
@@ -917,7 +1110,7 @@ mod ffi {
     extern "Rust" {
 
         #[namespace = "concrete_optimizer::v0"]
-        fn optimize_bootstrap(precision: u64, noise_factor: f64, options: Options) -> Solution;
+        fn optimize_bootstrap(precision: u64, noise_factor: f64, options: &Options) -> Solution;
 
         #[namespace = "concrete_optimizer::utils"]
         fn convert_to_dag_solution(solution: &Solution) -> DagSolution;
@@ -951,7 +1144,7 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::utils"]
         fn get_noise_br(
-            options: Options,
+            options: &Options,
             log2_polynomial_size: u64,
             glwe_dimension: u64,
             lwe_dim: u64,
@@ -1045,7 +1238,7 @@ mod ffi {
 
         unsafe fn tag_operator_as_output(self: &mut DagBuilder<'_>, op: OperatorIndex);
 
-        fn optimize(self: &Dag, options: Options) -> DagSolution;
+        fn optimize(self: &Dag, options: &Options) -> DagSolution;
 
         unsafe fn add_composition<'a>(
             self: &mut Dag,
@@ -1073,7 +1266,7 @@ mod ffi {
 
         fn get_circuit_count(self: &Dag) -> usize;
 
-        fn optimize_multi(self: &Dag, options: Options) -> CircuitSolution;
+        fn optimize_multi(self: &Dag, options: &Options) -> CircuitSolution;
 
         fn get_input_indices(self: &Dag) -> Vec<OperatorIndex>;
 
@@ -1143,7 +1336,36 @@ mod ffi {
     }
 
     #[namespace = "concrete_optimizer"]
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone)]
+    pub struct GlweParameterRestrictions {
+        pub log2_polynomial_size_min: SharedPtr<u64>,
+        pub log2_polynomial_size_max: SharedPtr<u64>,
+        pub glwe_dimension_min: SharedPtr<u64>,
+        pub glwe_dimension_max: SharedPtr<u64>,
+    }
+
+    #[namespace = "concrete_optimizer"]
+    #[derive(Debug, Clone)]
+    pub struct DecompositionParameterRestrictions {
+        pub log2_base_min: SharedPtr<u64>,
+        pub log2_base_max: SharedPtr<u64>,
+        pub level_min: SharedPtr<u64>,
+        pub level_max: SharedPtr<u64>,
+    }
+
+    #[namespace = "concrete_optimizer"]
+    #[derive(Debug, Clone)]
+    pub struct ParameterRestrictions {
+        pub glwe_pbs: GlweParameterRestrictions,
+        pub free_glwe: GlweParameterRestrictions,
+        pub br_decomposition: DecompositionParameterRestrictions,
+        pub ks_decomposition: DecompositionParameterRestrictions,
+        pub free_lwe_min: SharedPtr<u64>,
+        pub free_lwe_max: SharedPtr<u64>,
+    }
+
+    #[namespace = "concrete_optimizer"]
+    #[derive(Debug, Clone)]
     pub struct Options {
         pub security_level: u64,
         pub maximum_acceptable_error_probability: f64,
@@ -1155,6 +1377,7 @@ mod ffi {
         pub cache_on_disk: bool,
         pub ciphertext_modulus_log: u32,
         pub fft_precision: u32,
+        pub parameter_restrictions: ParameterRestrictions,
     }
 
     #[namespace = "concrete_optimizer::dag"]
@@ -1266,7 +1489,7 @@ mod ffi {
     }
 }
 
-fn processing_unit(options: ffi::Options) -> ProcessingUnit {
+fn processing_unit(options: &ffi::Options) -> ProcessingUnit {
     if options.use_gpu_constraints {
         config::ProcessingUnit::Gpu {
             pbs_type: config::GpuPbsType::Amortized,
