@@ -1,0 +1,16 @@
+name: Action Lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  action-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+      - name: actionlint
+        uses: raven-actions/actionlint@01fce4f43a270a612932cb1c64d40505a029f821 # v2.0.0
