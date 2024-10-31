@@ -64,6 +64,16 @@ jobs:
           DOCKER_BUILDKIT=1 docker build --no-cache \
             --label "commit-sha=${{ github.sha }}" -t ${{ matrix.image }} -f ${{ matrix.dockerfile }} .
 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
+        with:
+          image-ref: '${{ matrix.image }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
       - name: Tag and Publish Image
         run: |
           docker image tag ${{ matrix.image }} ${{ matrix.image }}:${{ github.sha }}
@@ -100,11 +110,24 @@ jobs:
         if: contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.hpx-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
 
-      - name: Build Tag and Publish
+      - name: Build
         if: ${{ steps.login.conclusion != 'skipped' }}
-        run: |
-          docker build -t "${IMAGE}" -f docker/Dockerfile.hpx-env .
-          docker push "${IMAGE}:latest"
+        run: docker build -t "${IMAGE}" -f docker/Dockerfile.hpx-env .
+
+      - name: Run Trivy vulnerability scanner
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
+        with:
+          image-ref: '${{ env.IMAGE }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Publish
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        run: docker push "${IMAGE}:latest"
 
   BuildAndPublishCUDADockerImage:
     name: Build & Publish CUDA Docker Image
@@ -148,6 +171,17 @@ jobs:
           docker build -t "${IMAGE}" -f ${{ matrix.dockerfile }} .
           docker image tag "${IMAGE}" "${IMAGE}:${{ matrix.tag }}"
           docker push "${IMAGE}:${{ matrix.tag }}"
+
+      - name: Run Trivy vulnerability scanner
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
+        with:
+          image-ref: '${{ env.IMAGE }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
       - name: Push Latest Image
         if: ${{ steps.login.conclusion != 'skipped' && matrix.tag == '11-8' }}
