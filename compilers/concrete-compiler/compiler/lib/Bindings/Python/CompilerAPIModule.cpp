@@ -1996,12 +1996,12 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   m.def("import_tfhers_int",
         [](const pybind11::bytes &serialized_fheuint,
            TfhersFheIntDescription info, uint32_t encryptionKeyId,
-           double encryptionVariance) {
+           double encryptionVariance, std::vector<size_t> shape) {
           const std::string &buffer_str = serialized_fheuint;
           std::vector<uint8_t> buffer(buffer_str.begin(), buffer_str.end());
           auto arrayRef = llvm::ArrayRef<uint8_t>(buffer);
           auto valueOrError = ::concretelang::clientlib::importTfhersInteger(
-              arrayRef, info, encryptionKeyId, encryptionVariance);
+              arrayRef, info, encryptionKeyId, encryptionVariance, shape);
           if (valueOrError.has_error()) {
             throw std::runtime_error(valueOrError.error().mesg);
           }

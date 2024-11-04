@@ -3,7 +3,7 @@ Declaration of `tfhers.Bridge` class.
 """
 
 # pylint: disable=import-error,no-member,no-name-in-module
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from concrete.compiler import LweSecretKey, TfhersExporter, TfhersFheIntDescription
 
@@ -20,22 +20,31 @@ class Bridge:
         a non-tfhers type
     output_types (List[Optional[TFHERSIntegerType]]): maps every output to a type. None means
         a non-tfhers type
+    input_shapes (List[Optional[Tuple[int, ...]]]): maps every input to a shape. None means
+        a non-tfhers type
+    output_shapes (List[Optional[Tuple[int, ...]]]): maps every output to a shape. None means
+        a non-tfhers type
     """
 
     circuit: "fhe.Circuit"
     input_types: List[Optional[TFHERSIntegerType]]
-
     output_types: List[Optional[TFHERSIntegerType]]
+    input_shapes: List[Optional[Tuple[int, ...]]]
+    output_shapes: List[Optional[Tuple[int, ...]]]
 
     def __init__(
         self,
         circuit: "fhe.Circuit",
         input_types: List[Optional[TFHERSIntegerType]],
         output_types: List[Optional[TFHERSIntegerType]],
+        input_shapes: List[Optional[Tuple[int, ...]]],
+        output_shapes: List[Optional[Tuple[int, ...]]],
     ):
         self.circuit = circuit
         self.input_types = input_types
         self.output_types = output_types
+        self.input_shapes = input_shapes
+        self.output_shapes = output_shapes
 
     def _input_type(self, input_idx: int) -> Optional[TFHERSIntegerType]:
         """Return the type of a certain input.
@@ -58,6 +67,28 @@ class Bridge:
             Optional[TFHERSIntegerType]: output type. None means a non-tfhers type
         """
         return self.output_types[output_idx]
+
+    def _input_shape(self, input_idx: int) -> Optional[Tuple[int, ...]]:
+        """Return the shape of a certain input.
+
+        Args:
+            input_idx (int): the input index to get the shape of
+
+        Returns:
+            Optional[Tuple[int, ...]]: input shape. None means a non-tfhers type
+        """
+        return self.input_shapes[input_idx]
+
+    def _output_shape(self, output_idx: int) -> Optional[Tuple[int, ...]]:  # pragma: no cover
+        """Return the shape of a certain output.
+
+        Args:
+            output_idx (int): the output index to get the shape of
+
+        Returns:
+            Optional[Tuple[int, ...]]: output shape. None means a non-tfhers type
+        """
+        return self.output_shapes[output_idx]
 
     def _input_keyid(self, input_idx: int) -> int:
         return self.circuit.client.specs.program_info.input_keyid_at(
@@ -113,14 +144,15 @@ class Bridge:
             fhe.TransportValue: imported value
         """
         input_type = self._input_type(input_idx)
-        if input_type is None:  # pragma: no cover
+        input_shape = self._input_shape(input_idx)
+        if input_type is None or input_shape is None:  # pragma: no cover
             msg = "input at 'input_idx' is not a TFHErs value"
             raise ValueError(msg)
 
         fheint_desc = self._description_from_type(input_type)
         keyid = self._input_keyid(input_idx)
         variance = self._input_variance(input_idx)
-        return Value(TfhersExporter.import_int(buffer, fheint_desc, keyid, variance))
+        return Value(TfhersExporter.import_int(buffer, fheint_desc, keyid, variance, input_shape))
 
     def export_value(self, value: Value, output_idx: int) -> bytes:
         """Export a value as a serialized TFHErs integer.
@@ -218,21 +250,24 @@ def new_bridge(circuit: "fhe.Circuit") -> Bridge:
     Returns:
         Bridge: TFHErs bridge
     """
-    input_types = [
-        (
-            input_node.output.dtype
-            if isinstance(input_node.output.dtype, TFHERSIntegerType)
-            else None
-        )
-        for input_node in circuit.graph.ordered_inputs()
-    ]
-    output_types = [
-        (
-            output_node.output.dtype
-            if isinstance(output_node.output.dtype, TFHERSIntegerType)
-            else None
-        )
-        for output_node in circuit.graph.ordered_outputs()
-    ]
+    input_types: List[Optional[TFHERSIntegerType]] = []
+    input_shapes: List[Optional[Tuple[int, ...]]] = []
+    for input_node in circuit.graph.ordered_inputs():
+        if isinstance(input_node.output.dtype, TFHERSIntegerType):
+            input_types.append(input_node.output.dtype)
+            input_shapes.append(input_node.output.shape)
+        else:
+            input_types.append(None)
+            input_shapes.append(None)
 
-    return Bridge(circuit, input_types, output_types)
+    output_types: List[Optional[TFHERSIntegerType]] = []
+    output_shapes: List[Optional[Tuple[int, ...]]] = []
+    for output_node in circuit.graph.ordered_outputs():
+        if isinstance(output_node.output.dtype, TFHERSIntegerType):
+            output_types.append(output_node.output.dtype)
+            output_shapes.append(output_node.output.shape)
+        else:  # pragma: no cover
+            output_types.append(None)
+            output_shapes.append(None)
+
+    return Bridge(circuit, input_types, output_types, input_shapes, output_shapes)

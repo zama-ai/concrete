@@ -1,5 +1,7 @@
 """Import and export TFHErs integers into Concrete."""
 
+from typing import Tuple
+
 # pylint: disable=no-name-in-module,import-error,
 
 from mlir._mlir_libs._concretelang._compiler import (
@@ -205,7 +207,11 @@ class TfhersExporter:
 
     @staticmethod
     def import_int(
-        buffer: bytes, info: TfhersFheIntDescription, keyid: int, variance: float
+        buffer: bytes,
+        info: TfhersFheIntDescription,
+        keyid: int,
+        variance: float,
+        shape: Tuple[int, ...],
     ) -> TransportValue:
         """Unserialize and convert from TFHErs to Concrete value.
 
@@ -214,6 +220,7 @@ class TfhersExporter:
             info (TfhersFheIntDescription): description of the TFHErs integer to import
             keyid (int): id of the key used for encryption
             variance (float): variance used for encryption
+            shape (Tuple[int, ...]): expected shape
 
         Raises:
             TypeError: if wrong input types
@@ -231,4 +238,6 @@ class TfhersExporter:
             raise TypeError(f"keyid must be of type int, not {type(keyid)}")
         if not isinstance(variance, float):
             raise TypeError(f"variance must be of type float, not {type(variance)}")
-        return _import_tfhers_int(buffer, info.cpp(), keyid, variance)
+        if not isinstance(shape, tuple):
+            raise TypeError(f"shape must be of type tuple(int, ...), not {type(shape)}")
+        return _import_tfhers_int(buffer, info.cpp(), keyid, variance, shape)
