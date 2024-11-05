@@ -400,15 +400,6 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
             id="signed(x) * signed(y)",
         ),
         pytest.param(
-            lambda x, y: x * y,
-            {
-                "x": {"range": [-(2**3), 2**2], "status": "encrypted"},
-                "y": {"range": [-(2**2), 2**3], "status": "encrypted"},
-            },
-            TFHERS_INT_8_3_2_4096,
-            id="signed(x) * signed(y)",
-        ),
-        pytest.param(
             lut_add_lut,
             {
                 "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
