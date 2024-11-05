@@ -121,7 +121,7 @@ class Bridge:
         # this should imply running a PBS on TFHErs side
         noise_level = TfhersFheIntDescription.get_unknown_noise_level()
 
-        return TfhersFheIntDescription.new(
+        return TfhersFheIntDescription(
             bit_width,
             signed,
             message_modulus,
