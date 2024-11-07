@@ -48,14 +48,30 @@ fn set_server_key_from_file(path: &String) {
     set_server_key(sk);
 }
 
-fn encrypt_with_key_u8(value: u8, client_key: ClientKey, ciphertext_path: &String) {
-    let ct = FheUint8::encrypt(value, &client_key);
-    safe_save(ciphertext_path, &ct)
+fn encrypt_with_key_u8(value: Vec<u8>, client_key: ClientKey, ciphertext_path: &String) {
+    if value.len() == 1 {
+        let ct = FheUint8::encrypt(value[0], &client_key);
+        safe_save(ciphertext_path, &ct)
+    } else {
+        let cts: Vec<FheUint8> = value
+            .iter()
+            .map(|v| FheUint8::encrypt(v.clone(), &client_key))
+            .collect();
+        unsafe_save(ciphertext_path, &cts);
+    }
 }
 
-fn encrypt_with_key_i8(value: i8, client_key: ClientKey, ciphertext_path: &String) {
-    let ct = FheInt8::encrypt(value, &client_key);
-    safe_save(ciphertext_path, &ct)
+fn encrypt_with_key_i8(value: Vec<i8>, client_key: ClientKey, ciphertext_path: &String) {
+    if value.len() == 1 {
+        let ct = FheInt8::encrypt(value[0], &client_key);
+        safe_save(ciphertext_path, &ct)
+    } else {
+        let cts: Vec<FheInt8> = value
+            .iter()
+            .map(|v| FheInt8::encrypt(v.clone(), &client_key))
+            .collect();
+        unsafe_save(ciphertext_path, &cts);
+    }
 }
 
 fn decrypt_with_key(
@@ -63,17 +79,38 @@ fn decrypt_with_key(
     ciphertext_path: &String,
     plaintext_path: Option<&String>,
     signed: bool,
+    tensor: bool,
 ) {
     let string_result: String;
 
-    if signed {
-        let fheint: FheInt8 = safe_load(ciphertext_path);
-        let result: i8 = fheint.decrypt(&client_key);
-        string_result = result.to_string();
+    if tensor {
+        if signed {
+            let fheint_array: Vec<FheInt8> = unsafe_load(ciphertext_path);
+            let results: Vec<i8> = fheint_array
+                .iter()
+                .map(|v| v.decrypt(&client_key))
+                .collect();
+            let results_str: Vec<String> = results.iter().map(|v| v.to_string()).collect();
+            string_result = results_str.join(",");
+        } else {
+            let fheint_array: Vec<FheUint8> = unsafe_load(ciphertext_path);
+            let results: Vec<u8> = fheint_array
+                .iter()
+                .map(|v| v.decrypt(&client_key))
+                .collect();
+            let results_str: Vec<String> = results.iter().map(|v| v.to_string()).collect();
+            string_result = results_str.join(",");
+        }
     } else {
-        let fheuint: FheUint8 = safe_load(ciphertext_path);
-        let result: u8 = fheuint.decrypt(&client_key);
-        string_result = result.to_string();
+        if signed {
+            let fheint: FheInt8 = safe_load(ciphertext_path);
+            let result: i8 = fheint.decrypt(&client_key);
+            string_result = result.to_string();
+        } else {
+            let fheuint: FheUint8 = safe_load(ciphertext_path);
+            let result: u8 = fheuint.decrypt(&client_key);
+            string_result = result.to_string();
+        }
     }
 
     if let Some(path) = plaintext_path {
@@ -84,24 +121,47 @@ fn decrypt_with_key(
     }
 }
 
-fn sum(cts_paths: Vec<&String>, out_ct_path: &String, signed: bool) {
+fn sum(cts_paths: Vec<&String>, out_ct_path: &String, signed: bool, tensor: bool) {
     if cts_paths.is_empty() {
         panic!("can't call sum with 0 ciphertexts");
     }
-    if signed {
-        let mut acc: FheInt8 = safe_load(cts_paths[0]);
-        for ct_path in cts_paths[1..].iter() {
-            let fheuint: FheInt8 = safe_load(ct_path);
-            acc += fheuint;
+    if tensor {
+        if signed {
+            let mut acc: Vec<FheInt8> = unsafe_load(cts_paths[0]);
+            for ct_path in cts_paths[1..].iter() {
+                let fheint_array: Vec<FheInt8> = unsafe_load(ct_path);
+                for (i, inc_value) in fheint_array.iter().enumerate() {
+                    acc[i] += inc_value;
+                }
+            }
+            unsafe_save(out_ct_path, &acc)
+        } else {
+            // fails here
+            let mut acc: Vec<FheUint8> = unsafe_load(cts_paths[0]);
+            for ct_path in cts_paths[1..].iter() {
+                let fheuint_array: Vec<FheUint8> = unsafe_load(ct_path);
+                for (i, inc_value) in fheuint_array.iter().enumerate() {
+                    acc[i] += inc_value;
+                }
+            }
+            unsafe_save(out_ct_path, &acc)
         }
-        safe_save(out_ct_path, &acc)
     } else {
-        let mut acc: FheUint8 = safe_load(cts_paths[0]);
-        for ct_path in cts_paths[1..].iter() {
-            let fheuint: FheUint8 = safe_load(ct_path);
-            acc += fheuint;
+        if signed {
+            let mut acc: FheInt8 = safe_load(cts_paths[0]);
+            for ct_path in cts_paths[1..].iter() {
+                let fheint: FheInt8 = safe_load(ct_path);
+                acc += fheint;
+            }
+            safe_save(out_ct_path, &acc)
+        } else {
+            let mut acc: FheUint8 = safe_load(cts_paths[0]);
+            for ct_path in cts_paths[1..].iter() {
+                let fheuint: FheUint8 = safe_load(ct_path);
+                acc += fheuint;
+            }
+            safe_save(out_ct_path, &acc)
         }
-        safe_save(out_ct_path, &acc)
     }
 }
 
@@ -171,7 +231,8 @@ fn main() {
                         .help("value to encrypt")
                         .action(ArgAction::Set)
                         .required(true)
-                        .num_args(1),
+                        .value_delimiter(',')
+                        .num_args(1..),
                 )
                 .arg(
                     Arg::new("signed")
@@ -216,6 +277,12 @@ fn main() {
                     Arg::new("signed")
                         .long("signed")
                         .help("decrypt as a signed integer")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
+                    Arg::new("tensor")
+                        .long("tensor")
+                        .help("decrypt as a tensor")
                         .action(ArgAction::SetTrue),
                 )
                 .arg(
@@ -275,6 +342,12 @@ fn main() {
                         .action(ArgAction::SetTrue),
                 )
                 .arg(
+                    Arg::new("tensor")
+                        .long("tensor")
+                        .help("consider ciphertexts as tensors")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
                     Arg::new("ciphertexts")
                         .short('c')
                         .long("cts")
@@ -309,7 +382,6 @@ fn main() {
                 .arg(
                     Arg::new("output-lwe-sk")
                         .long("output-lwe-sk")
-                        .default_value("lwe_secret_key")
                         .help("output lwe key path")
                         .action(ArgAction::Set)
                         .num_args(1),
@@ -337,7 +409,10 @@ fn main() {
 
     match matches.subcommand() {
         Some(("encrypt-with-key", encrypt_matches)) => {
-            let value_str = encrypt_matches.get_one::<String>("value").unwrap();
+            let value_str: Vec<&String> = encrypt_matches
+                .get_many::<String>("value")
+                .unwrap()
+                .collect();
             let ciphertext_path = encrypt_matches.get_one::<String>("ciphertext").unwrap();
             let signed = encrypt_matches.get_flag("signed");
 
@@ -351,10 +426,10 @@ fn main() {
             }
 
             if signed {
-                let value: i8 = value_str.parse().unwrap();
+                let value: Vec<i8> = value_str.iter().map(|v| v.parse().unwrap()).collect();
                 encrypt_with_key_i8(value, client_key, ciphertext_path)
             } else {
-                let value: u8 = value_str.parse().unwrap();
+                let value: Vec<u8> = value_str.iter().map(|v| v.parse().unwrap()).collect();
                 encrypt_with_key_u8(value, client_key, ciphertext_path)
             }
         }
@@ -362,6 +437,7 @@ fn main() {
             let ciphertext_path = decrypt_mtches.get_one::<String>("ciphertext").unwrap();
             let plaintext_path = decrypt_mtches.get_one::<String>("plaintext");
             let signed = decrypt_mtches.get_flag("signed");
+            let tensor = decrypt_mtches.get_flag("tensor");
 
             let client_key: ClientKey;
             if let Some(lwe_sk_path) = decrypt_mtches.get_one::<String>("lwe-sk") {
@@ -371,38 +447,39 @@ fn main() {
             } else {
                 panic!("no key specified");
             }
-            decrypt_with_key(client_key, ciphertext_path, plaintext_path, signed)
+            decrypt_with_key(client_key, ciphertext_path, plaintext_path, signed, tensor)
         }
         Some(("add", add_mtches)) => {
             let server_key_path = add_mtches.get_one::<String>("server-key").unwrap();
             let cts_path = add_mtches.get_many::<String>("ciphertexts").unwrap();
             let output_ct_path = add_mtches.get_one::<String>("output-ciphertext").unwrap();
             let signed = add_mtches.get_flag("signed");
+            let tensor = add_mtches.get_flag("tensor");
 
             set_server_key_from_file(server_key_path);
 
-            sum(cts_path.collect(), output_ct_path, signed)
+            sum(cts_path.collect(), output_ct_path, signed, tensor)
         }
         Some(("keygen", keygen_mtches)) => {
             let client_key_path = keygen_mtches.get_one::<String>("client-key").unwrap();
             let server_key_path = keygen_mtches.get_one::<String>("server-key").unwrap();
-            let output_lwe_path = keygen_mtches.get_one::<String>("output-lwe-sk").unwrap();
+            let output_lwe_path = keygen_mtches.get_one::<String>("output-lwe-sk");
 
             // we keygen based on an initial secret key if provided, otherwise we keygen from scratch
             if let Some(lwe_sk_path) = keygen_mtches.get_one::<String>("lwe-sk") {
                 let client_key = keygen_from_lwe(lwe_sk_path);
                 let server_key = client_key.generate_server_key();
-                let lwe_secret_key = unsafe_load(lwe_sk_path);
+                // we already have the initial lwe-sk, so no need to write it to output-lwe-sk
                 write_keys(
                     client_key_path,
                     server_key_path,
-                    output_lwe_path,
+                    &String::new(),
                     Some(client_key),
                     Some(server_key),
-                    Some(lwe_secret_key),
+                    None,
                 )
             } else {
-                keygen(client_key_path, server_key_path, output_lwe_path)
+                keygen(client_key_path, server_key_path, output_lwe_path.unwrap())
             }
         }
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachable

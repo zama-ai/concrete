@@ -7,11 +7,13 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <numeric>
 #include <optional>
 #include <string>
 #include <variant>
 
 #include "boost/outcome.h"
+#include "capnp/common.h"
 #include "concrete-cpu.h"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/ClientLib/ClientLib.h"
@@ -190,10 +192,11 @@ Result<ClientCircuit> ClientProgram::getClientCircuit(std::string circuitName) {
 Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
                                            TfhersFheIntDescription integerDesc,
                                            uint32_t encryptionKeyId,
-                                           double encryptionVariance) {
+                                           double encryptionVariance,
+                                           std::vector<size_t> shape) {
 
   // Select conversion function based on integer description
-  std::function<int64_t(const uint8_t *, size_t, uint64_t *,
+  std::function<int64_t(const uint8_t *, size_t, uint64_t *, size_t,
                         TfhersFheIntDescription)>
       conversion_func;
   if (integerDesc.width == 8) {
@@ -211,10 +214,19 @@ Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
     return StringError(errorMsg);
   }
 
-  auto dims = std::vector({integerDesc.n_cts, integerDesc.lwe_size});
+  // construct the different dimensions
+  size_t tensorFlatSize =
+      std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<size_t>());
+  std::vector<uint32_t> abstractDims(shape.begin(), shape.end());
+  abstractDims.push_back(integerDesc.n_cts);
+  std::vector<uint32_t> concreteDims(abstractDims.begin(), abstractDims.end());
+  concreteDims.push_back(integerDesc.lwe_size);
+  std::vector<size_t> dims(concreteDims.begin(), concreteDims.end());
+
   auto outputTensor = Tensor<uint64_t>::fromDimensions(dims);
-  auto err = conversion_func(buffer.data(), buffer.size(),
-                             outputTensor.values.data(), integerDesc);
+  auto err =
+      conversion_func(buffer.data(), buffer.size(), outputTensor.values.data(),
+                      tensorFlatSize, integerDesc);
   if (err) {
     return StringError("couldn't convert fheint to lwe array");
   }
@@ -223,9 +235,10 @@ Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
   auto lwe = value.asBuilder().initTypeInfo().initLweCiphertext();
   lwe.setIntegerPrecision(64);
   // dimensions
-  lwe.initAbstractShape().setDimensions({(uint32_t)integerDesc.n_cts});
+  lwe.initAbstractShape().setDimensions(
+      ::kj::ArrayPtr(abstractDims.data(), abstractDims.size()));
   lwe.initConcreteShape().setDimensions(
-      {(uint32_t)integerDesc.n_cts, (uint32_t)integerDesc.lwe_size});
+      ::kj::ArrayPtr(concreteDims.data(), concreteDims.size()));
   // encryption
   auto encryption = lwe.initEncryption();
   encryption.setLweDimension((uint32_t)integerDesc.lwe_size - 1);
@@ -247,10 +260,9 @@ Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
 Result<std::vector<uint8_t>>
 exportTfhersInteger(TransportValue value, TfhersFheIntDescription integerDesc) {
   // Select conversion function based on integer description
-  std::function<size_t(const uint64_t *, uint8_t *, size_t,
+  std::function<size_t(const uint64_t *, uint8_t *, size_t, size_t,
                        TfhersFheIntDescription)>
       conversion_func;
-  std::function<size_t(size_t, size_t)> buffer_size_func;
   if (integerDesc.width == 8) {
     if (integerDesc.is_signed) { // fheint8
       conversion_func = concrete_cpu_lwe_array_to_tfhers_int8;
@@ -274,12 +286,20 @@ exportTfhersInteger(TransportValue value, TfhersFheIntDescription integerDesc) {
   if (!tensorOrError.has_value()) {
     return StringError("couldn't get tensor from value");
   }
+  auto concreteShape = tensorOrError.value().dimensions;
+  assert(concreteShape.size() >= 2);
+  std::vector<size_t> tensorShape(concreteShape.begin(),
+                                  concreteShape.end() -
+                                      2 /* remove radix and lwe dims */);
+  size_t tensorFlatSize = std::accumulate(
+      tensorShape.begin(), tensorShape.end(), 1, std::multiplies<size_t>());
+  // TODO: compute new buffer size of tensor
   size_t buffer_size = concrete_cpu_tfhers_fheint_buffer_size_u64(
-      integerDesc.lwe_size, integerDesc.n_cts);
+      integerDesc.lwe_size, integerDesc.n_cts, tensorFlatSize);
   std::vector<uint8_t> buffer(buffer_size, 0);
   auto flat_data = tensorOrError.value().values;
   auto size = conversion_func(flat_data.data(), buffer.data(), buffer.size(),
-                              integerDesc);
+                              tensorFlatSize, integerDesc);
   if (size == 0) {
     return StringError("couldn't convert lwe array to fheint8");
   }

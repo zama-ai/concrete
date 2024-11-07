@@ -5,7 +5,7 @@ Tests execution of tfhers conversion operations.
 import json
 import os
 import tempfile
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import pytest
@@ -337,6 +337,33 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
             id="signed(x) + signed(y)",
         ),
         pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2,)},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="tensor(x) + tensor(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (3, 2)},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (3, 2)},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="tensor_2d(x) + tensor_2d(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [-(2**6), -2], "status": "encrypted", "shape": (3,)},
+                "y": {"range": [0, 2**6 - 1], "status": "encrypted", "shape": (3,)},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="tensor_signed(x) + tensor_signed(y)",
+        ),
+        pytest.param(
             lambda x, y: x - y,
             {
                 "x": {"range": [2**4, 2**7 - 1], "status": "encrypted"},
@@ -373,15 +400,6 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
             id="signed(x) * signed(y)",
         ),
         pytest.param(
-            lambda x, y: x * y,
-            {
-                "x": {"range": [-(2**3), 2**2], "status": "encrypted"},
-                "y": {"range": [-(2**2), 2**3], "status": "encrypted"},
-            },
-            TFHERS_INT_8_3_2_4096,
-            id="signed(x) * signed(y)",
-        ),
-        pytest.param(
             lut_add_lut,
             {
                 "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
@@ -389,6 +407,15 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
             },
             TFHERS_UINT_8_3_2_4096,
             id="lut_add_lut",
+        ),
+        pytest.param(
+            lut_add_lut,
+            {
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2, 2)},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2, 2)},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="tensor_lut_add_lut",
         ),
     ],
 )
@@ -402,6 +429,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     """
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+
+    is_tensor = all([param.get("shape") is not None for param in parameters.values()])
 
     # Only valid when running in multi
     if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
@@ -440,8 +469,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     # serialize key
     _, key_path = tempfile.mkstemp()
     serialized_key = tfhers_bridge.serialize_input_secret_key(input_idx=0)
-    with open(key_path, "wb") as f:
-        f.write(serialized_key)
+    with open(key_path, "wb") as fw:
+        fw.write(serialized_key)
 
     ct1, ct2 = sample
     _, ct1_path = tempfile.mkstemp()
@@ -462,46 +491,75 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
         == 0
     )
 
+    def prepare_value(concrete_value, repeat_int: int = 1) -> str:
+        if isinstance(concrete_value, (int, np.integer)):
+            assert repeat_int >= 1
+            values = [
+                concrete_value,
+            ] * repeat_int
+        elif isinstance(concrete_value, np.ndarray):
+            values = concrete_value.flatten().tolist()
+        else:
+            raise TypeError(
+                f"concrete_value should either be int or ndarray, not {type(concrete_value)}"
+            )
+        return "--value=" + ",".join(map(str, values))
+
     # encrypt inputs and incremnt them by one in TFHErs
+    repeat_int = 1
+    if is_tensor and isinstance(ct1, np.ndarray):
+        repeat_int = int(np.prod(ct1.shape))
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value=1 -c {ct_one_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key "
+            f"{'--signed' if dtype.is_signed else ''} "
+            f"{prepare_value(1, repeat_int)} -c {ct_one_path} --client-key {client_key_path}"
         )
         == 0
     )
     sample = [s + 1 for s in sample]
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value={ct1} -c {ct1_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key "
+            f"{'--signed' if dtype.is_signed else ''} "
+            f"{prepare_value(ct1)} -c {ct1_path} --client-key {client_key_path}"
         )
         == 0
     )
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value={ct2} -c {ct2_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key "
+            f"{'--signed' if dtype.is_signed else ''} "
+            f"{prepare_value(ct2)} -c {ct2_path} --client-key {client_key_path}"
         )
         == 0
     )
     assert (
         os.system(
-            f"{tfhers_utils} add {'--signed' if dtype.is_signed else ''} -c {ct1_path} {ct_one_path} -s {server_key_path} -o {ct1_path}"
+            f"{tfhers_utils} add "
+            f"{'--signed' if dtype.is_signed else ''} "
+            f"{'--tensor' if is_tensor else ''} "
+            f"-c {ct1_path} {ct_one_path} -s {server_key_path} -o {ct1_path}"
         )
         == 0
     )
     assert (
         os.system(
-            f"{tfhers_utils} add {'--signed' if dtype.is_signed else ''} -c {ct2_path} {ct_one_path} -s {server_key_path} -o {ct2_path}"
+            f"{tfhers_utils} add "
+            f"{'--signed' if dtype.is_signed else ''} "
+            f"{'--tensor' if is_tensor else ''} "
+            f"-c {ct2_path} {ct_one_path} -s {server_key_path} -o {ct2_path}"
         )
         == 0
     )
 
     # import ciphertexts and run
     cts = []
-    with open(ct1_path, "rb") as f:
-        buff = f.read()
+    with open(ct1_path, "rb") as fr:
+        buff = fr.read()
         cts.append(tfhers_bridge.import_value(buff, 0))
-    with open(ct2_path, "rb") as f:
-        buff = f.read()
+    with open(ct2_path, "rb") as fr:
+        buff = fr.read()
         cts.append(tfhers_bridge.import_value(buff, 1))
     os.remove(ct1_path)
     os.remove(ct2_path)
@@ -510,18 +568,21 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
 
     # concrete decryption should work
     decrypted = circuit.decrypt(tfhers_encrypted_result)
-    assert (dtype.decode(decrypted) == function(*sample)).all()  # type: ignore
+    assert isinstance(decrypted, (list, np.ndarray))
+    decoded = dtype.decode(decrypted)
+    assert (decoded == function(*sample)).all()  # type: ignore
 
     # tfhers decryption
     buff = tfhers_bridge.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
     _, ct_out_path = tempfile.mkstemp()
     _, pt_path = tempfile.mkstemp()
-    with open(ct_out_path, "wb") as f:
-        f.write(buff)
+    with open(ct_out_path, "wb") as fw:
+        fw.write(buff)
 
     assert (
         os.system(
             f"{tfhers_utils} decrypt-with-key"
+            f"{' --tensor ' if is_tensor else ''}"
             f"{' --signed ' if dtype.is_signed else ''}"
             f" -c {ct_out_path} --lwe-sk {key_path} -p {pt_path}"
         )
@@ -529,7 +590,13 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     )
 
     with open(pt_path, "r", encoding="utf-8") as f:
-        result = int(f.read())
+        result: Union[int, np.ndarray]
+        if is_tensor:
+            assert isinstance(decoded, np.ndarray)
+            result_raw = list(map(int, f.read().split(",")))
+            result = np.array(result_raw).reshape(decoded.shape)
+        else:
+            result = int(f.read())
 
     # close remaining tempfiles
     os.remove(key_path)
@@ -539,7 +606,10 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     os.remove(client_key_path)
     os.remove(server_key_path)
 
-    assert result == function(*sample)
+    if is_tensor:
+        assert (result == function(*sample)).all()
+    else:
+        assert result == function(*sample)
 
 
 @pytest.mark.parametrize(

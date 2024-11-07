@@ -10,9 +10,7 @@ crate-type = ["lib", "staticlib"]
 
 
 [dependencies]
-concrete-csprng = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "483a4fe", optional = true, features = [
-  "generator_fallback",
-] }
+concrete-csprng = { version = "0.4.1", optional = true, features = ["generator_fallback"] }
 concrete-cpu-noise-model = { path = "../noise-model/" }
 concrete-security-curves = { path = "../../../tools/parameter-curves/concrete-security-curves-rust" }
 libc = { version = "0.2", default-features = false }
@@ -31,16 +29,16 @@ serde = "~1"
 rayon = { version = "1.6", optional = true }
 once_cell = { version = "1.16", optional = true }
 
-tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "483a4fe", features = ["integer"] }
+tfhe = { version = "0.8.6", features = ["integer"] }
 
 [target.x86_64-unknown-unix-gnu.dependencies]
-tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "483a4fe", features = ["integer", "x86_64-unix"] }
+tfhe = { version = "0.8.6", features = ["integer", "x86_64-unix"] }
 
 [target.aarch64-unknown-unix-gnu.dependencies]
-tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "483a4fe", features = ["integer", "aarch64-unix"] }
+tfhe = { version = "0.8.6", features = ["integer", "aarch64-unix"] }
 
 [target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "483a4fe", features = ["integer", "x86_64"] }
+tfhe = { version = "0.8.6", features = ["integer", "x86_64"] }
 
 [features]
 default = ["parallel", "std", "csprng"]

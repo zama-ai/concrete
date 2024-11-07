@@ -39,7 +39,6 @@ declare_mlir_python_sources(
   concrete/compiler/compilation_context.py
   concrete/compiler/tfhers_int.py
   concrete/compiler/utils.py
-  concrete/compiler/wrapper.py
   concrete/__init__.py
   concrete/lang/__init__.py
   concrete/lang/dialects/__init__.py
