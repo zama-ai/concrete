@@ -236,9 +236,9 @@ Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
   lwe.setIntegerPrecision(64);
   // dimensions
   lwe.initAbstractShape().setDimensions(
-      ::kj::ArrayPtr(abstractDims.data(), abstractDims.size()));
+      ::kj::ArrayPtr<uint32_t>(abstractDims.data(), abstractDims.size()));
   lwe.initConcreteShape().setDimensions(
-      ::kj::ArrayPtr(concreteDims.data(), concreteDims.size()));
+      ::kj::ArrayPtr<uint32_t>(concreteDims.data(), concreteDims.size()));
   // encryption
   auto encryption = lwe.initEncryption();
   encryption.setLweDimension((uint32_t)integerDesc.lwe_size - 1);
