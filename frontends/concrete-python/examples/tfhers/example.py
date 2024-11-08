@@ -16,7 +16,9 @@ IS_SIGNED = False
 #######################################
 
 tfhers_type = tfhers.get_type_from_params(
-    TFHERS_PARAMS_FILE, IS_SIGNED, FHEUINT_PRECISION
+    TFHERS_PARAMS_FILE,
+    is_signed=IS_SIGNED,
+    precision=FHEUINT_PRECISION,
 )
 tfhers_int = partial(tfhers.TFHERSInteger, tfhers_type)
 

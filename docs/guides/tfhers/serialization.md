@@ -6,18 +6,19 @@ Concrete already has its serilization functions (e.g. `tfhers_bridge.export_valu
 
 ## Ciphertexts
 
-We can deserialize `FheUint8` (and similarly other types) using `bincode`
+We should deserialize `FheUint8` using safe serialization functions from TFHE-rs
 
 ```rust
 use tfhe::FheUint8;
+use tfhe::safe_serialization::{safe_deserialize, safe_serialize};
+
+const SERIALIZE_SIZE_LIMIT: u64 = 1_000_000_000;
 
 /// ...
 
 fn load_fheuint8(path: &String) -> FheUint8 {
-    let path_fheuint: &Path = Path::new(path);
-    let serialized_fheuint = fs::read(path_fheuint).unwrap();
-    let mut serialized_data = Cursor::new(serialized_fheuint);
-    bincode::deserialize_from(&mut serialized_data).unwrap()
+    let file = fs::File::open(path).unwrap();
+    safe_deserialize(file, SERIALIZE_SIZE_LIMIT).unwrap()
 }
 ```
 
@@ -25,16 +26,14 @@ To serialize
 
 ```rust
 fn save_fheuint8(fheuint: FheUint8, path: &String) {
-    let mut serialized_ct = Vec::new();
-    bincode::serialize_into(&mut serialized_ct, &fheuint).unwrap();
-    let path_ct: &Path = Path::new(path);
-    fs::write(path_ct, serialized_ct).unwrap();
+    let file = fs::File::create(path).unwrap();
+    safe_serialize(fheuint, file, SERIALIZE_SIZE_LIMIT).unwrap()
 }
 ```
 
 ## Secret Key
 
-We can deserialize `LweSecretKey` using `bincode`
+TFHE-rs safe serialization doesn't yet support this key so we should deserialize `LweSecretKey` using `bincode`
 
 ```rust
 use tfhe::core_crypto::prelude::LweSecretKey;
@@ -42,10 +41,8 @@ use tfhe::core_crypto::prelude::LweSecretKey;
 /// ...
 
 fn load_lwe_sk(path: &String) -> LweSecretKey<Vec<u64>> {
-    let path_sk: &Path = Path::new(path);
-    let serialized_lwe_key = fs::read(path_sk).unwrap();
-    let mut serialized_data = Cursor::new(serialized_lwe_key);
-    bincode::deserialize_from(&mut serialized_data).unwrap()
+    let file = fs::File::open(path).unwrap();
+    bincode::deserialize_from(file).unwrap()
 }
 ```
 
@@ -53,9 +50,7 @@ To serialize
 
 ```rust
 fn save_lwe_sk(lwe_sk: LweSecretKey<Vec<u64>>, path: &String) {
-    let mut serialized_lwe_key = Vec::new();
-    bincode::serialize_into(&mut serialized_lwe_key, &lwe_sk).unwrap();
-    let path_sk: &Path = Path::new(path);
-    fs::write(path_sk, serialized_lwe_key).unwrap();
+    let file = fs::File::create(path).unwrap();
+    bincode::serialize_into(file, lwe_sk).unwrap()
 }
 ```
