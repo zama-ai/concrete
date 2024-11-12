@@ -327,6 +327,16 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
             TFHERS_UINT_8_3_2_4096,
             id="x + y",
         ),
+        # make sure Concrete ciphertexts can use more than 8 bits
+        pytest.param(
+            lambda x, y: (x + y) % 213,
+            {
+                "x": {"range": [128, 255], "status": "encrypted"},
+                "y": {"range": [128, 255], "status": "encrypted"},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="mod(x + y)",
+        ),
         pytest.param(
             lambda x, y: x + y,
             {

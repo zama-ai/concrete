@@ -985,9 +985,20 @@ class Converter:
             ] * (2 ** (carry_width + msg_width) - 2 ** (msg_width - 1))
             padding_bits_inc = ctx.tlu(result_type, msbs, padding_bit_table)
             # set padding bits (where necessary) in the final result
-            return ctx.add(result_type, sum_result, padding_bits_inc)
+            result = ctx.add(result_type, sum_result, padding_bits_inc)
+        else:
+            result = sum_result
 
-        return sum_result
+        # even if TFHE-rs value are using non-variable bit-width, we want the output
+        # to be pluggable into the rest of the computation. For example, two 8bits TFHE-rs integers
+        # could be used in a 9bits addition. If we don't cast, it won't pass the bitwidth
+        # compatibility check.
+        output_bit_width = ctx.typeof(node).bit_width
+        casted_result_type = ctx.tensor(
+            ctx.esint(output_bit_width) if dtype.is_signed else ctx.eint(output_bit_width),
+            result_shape,
+        )
+        return ctx.cast(casted_result_type, result)
 
     def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
