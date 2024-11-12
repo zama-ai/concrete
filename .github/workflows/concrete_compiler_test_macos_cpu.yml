@@ -39,13 +39,14 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Setup rust toolchain for concrete-cpu
-        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
+        uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
       - name: Set python variables
         run: |
-          set -e
-          echo "PIP=${{ format('pip{0}', matrix.python-version) }}" >> "${GITHUB_ENV}"
-          echo "PYTHON=${{ format('python{0}', matrix.python-version) }}" >> "${GITHUB_ENV}"
-          echo "PYTHON_EXEC=$(which ${{ format('python{0}', matrix.python-version) }})" >> "${GITHUB_ENV}"
+          {
+            echo "PIP=${{ format('pip{0}', matrix.python-version) }}"
+            echo "PYTHON=${{ format('python{0}', matrix.python-version) }}"
+            echo "PYTHON_EXEC=$(which ${{ format('python{0}', matrix.python-version) }})"
+          } >> "${GITHUB_ENV}"
       - name: Install dependencies
         run: |
           brew install ninja ccache
@@ -56,30 +57,31 @@ jobs:
           cd compilers/concrete-compiler/compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
-          make Python3_EXECUTABLE=$PYTHON_EXEC all
+          make Python3_EXECUTABLE="${PYTHON_EXEC}" all
           echo "Debug: ccache statistics (after the build):"
           ccache -s
       - name: Enable complete tests on push to main
         if: github.ref == 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=OFF" >> $GITHUB_ENV
+        run: echo "MINIMAL_TESTS=OFF" >> "${GITHUB_ENV}"
       - name: Enable minimal tests otherwise
         if: github.ref != 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=ON" >> $GITHUB_ENV
+        run: echo "MINIMAL_TESTS=ON" >> "${GITHUB_ENV}"
       - name: Create keyset cache directory
         run: |
-          export KEY_CACHE_DIRECTORY=$(mktemp -d)/KeySetCache
-          echo "KEY_CACHE_DIRECTORY=$KEY_CACHE_DIRECTORY" >> "${GITHUB_ENV}"
-          mkdir $KEY_CACHE_DIRECTORY          
+          KEY_CACHE_DIRECTORY=$(mktemp -d)/KeySetCache
+          export KEY_CACHE_DIRECTORY
+          echo "KEY_CACHE_DIRECTORY=${KEY_CACHE_DIRECTORY}" >> "${GITHUB_ENV}"
+          mkdir "${KEY_CACHE_DIRECTORY}"
       - name: Test
         run: |
           set -e
           cd compilers/concrete-compiler/compiler
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
-          make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} Python3_EXECUTABLE=$PYTHON_EXEC run-tests
+          make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} Python3_EXECUTABLE="${PYTHON_EXEC}" run-tests
       - name: Cleanup host
         if: success() || failure()
         run: |
-         rm -rf $KEY_CACHE_DIRECTORY
+         rm -rf "${KEY_CACHE_DIRECTORY}"
       - name: Slack Notification
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true

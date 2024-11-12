@@ -1,3 +1,7 @@
+name: Setup rust toolchain for concrete-cpu
+
+description: Setup rust toolchain for concrete-cpu
+
 runs:
   using: "composite"
   steps:

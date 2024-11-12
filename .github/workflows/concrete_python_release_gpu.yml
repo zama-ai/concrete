@@ -58,13 +58,13 @@ jobs:
         run: |
           NIGHTLY_VERSION=$(date +"%Y.%m.%d")
           NIGHTLY_VERSION_ONE_NUMBER=$(date +"%Y%m%d")
-          LATEST_RELEASE_VERSION=`git tag -l |grep "v.*" |sort |tail -n 1 | grep -e '[0-9].*' -o`
+          LATEST_RELEASE_VERSION=$(git tag -l |grep "v.*" |sort |tail -n 1 | grep -e '[0-9].*' -o)
           echo "__version__ = \"${LATEST_RELEASE_VERSION}-dev${NIGHTLY_VERSION_ONE_NUMBER}\"" >| frontends/concrete-python/version.txt
-          git tag nightly-$NIGHTLY_VERSION || true
-          git push origin nightly-$NIGHTLY_VERSION || true
+          git tag nightly-"${NIGHTLY_VERSION}" || true
+          git push origin nightly-"${NIGHTLY_VERSION}" || true
       - name: Set release version (public)
         if: ${{ env.RELEASE_TYPE == 'public' }}
-        run: echo "__version__ = \"`git describe --tags --abbrev=0 | grep -e '[0-9].*' -o`\"" >| frontends/concrete-python/version.txt
+        run: echo "__version__ = \"$(git describe --tags --abbrev=0 | grep -e '[0-9].*' -o)\"" >| frontends/concrete-python/version.txt
       - name: Expose release version from Python
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
       - name: Build wheel
@@ -167,13 +167,13 @@ jobs:
         run: |
           pip install boto3 bigtree
           # upload wheels
-          aws s3 sync ./wheels/ s3://${S3_BUCKET_NAME}/gpu/concrete-python
+          aws s3 sync ./wheels/ s3://"${S3_BUCKET_NAME}"/gpu/concrete-python
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
       - name: Output Wheel Version
         id: version
         run: |
-          export VERSION=`ls ./wheels/*manylinux* | head -n1 |  cut -d "-" -f2`
+          VERSION=$(find ./wheels/ -name '*manylinux*' | head -n1 |  cut -d "-" -f2)
           echo "VERSION=$VERSION"
           echo "wheel_version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Slack Notification
@@ -229,11 +229,11 @@ jobs:
           # Install extra requirements for tests
           sudo apt update -y
           sudo apt install -y graphviz libgraphviz-dev
-          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
-          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
+          pip install -r "${CONCRETE_PYTHON}"/requirements.extra-full.txt
+          pip install -r "${CONCRETE_PYTHON}"/requirements.dev.txt
 
           # Running tests
-          cd $CONCRETE_PYTHON
+          cd "${CONCRETE_PYTHON}"
           make pytest-gpu
 
 

@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Lint All Dockerfiles (except third_party)
-        run: hadolint -V `find -name "*Dockerfile*" -not -path "./third_party/*" |xargs `
+        run: find  . -name "*Dockerfile*" -not -path "./third_party/*" -exec hadolint -V {} \;
       - name: Slack Notification
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true

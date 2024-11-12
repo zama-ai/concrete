@@ -101,11 +101,11 @@ jobs:
       - name: ML Tests
         run: |
           export HOME="/home/ubuntu"
-          export CONCRETE_PYTHON_WHEEL=$(pwd)/frontends/concrete-python/dist/*manylinux*.whl
+          CONCRETE_PYTHON_WHEEL="$(pwd)/frontends/concrete-python/dist/*manylinux*.whl"
           apt update
           apt install git git-lfs -y
           pip install poetry==1.7.1
-          ./ci/scripts/test_cml.sh --use-wheel $CONCRETE_PYTHON_WHEEL --verbose
+          ./ci/scripts/test_cml.sh --use-wheel "${CONCRETE_PYTHON_WHEEL}" --verbose
       - name: Slack Notification
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true

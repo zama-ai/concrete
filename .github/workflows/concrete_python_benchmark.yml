@@ -61,8 +61,7 @@ jobs:
             set -e
             rm -rf /build/*
 
-            export PYTHON=${{ format('python{0}', matrix.python-version) }}
-            echo "Using $PYTHON"
+            export PYTHON=python
 
             cd /concrete/frontends/concrete-python
             make PYTHON=$PYTHON venv

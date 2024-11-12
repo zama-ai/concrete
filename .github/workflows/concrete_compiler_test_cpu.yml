@@ -127,10 +127,10 @@ jobs:
             for i in `ls *Dialect.md`; do diff $i /concrete/docs/explanations/$i; done;
       - name: Enable complete tests on push to main
         if: github.ref == 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=OFF" >> ${GITHUB_ENV}
+        run: echo "MINIMAL_TESTS=OFF" >> "${GITHUB_ENV}"
       - name: Enable minimal tests otherwise
         if: github.ref != 'refs/heads/main'
-        run: echo "MINIMAL_TESTS=ON" >> ${GITHUB_ENV}
+        run: echo "MINIMAL_TESTS=ON" >> "${GITHUB_ENV}"
       - name: Run compiler tests
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:

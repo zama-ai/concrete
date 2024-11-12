@@ -57,15 +57,17 @@ jobs:
       - name: Ouput benchmark details
         id: benchmark-details
         run: |
-          echo "bench_date=$(date --iso-8601=seconds)" >> "$GITHUB_OUTPUT"
-          echo "commit_date=$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})" >> "$GITHUB_OUTPUT"
-          echo "commit_hash=$(git describe --tags --dirty)" >> "$GITHUB_OUTPUT"
+          {
+            echo "bench_date=$(date --iso-8601=seconds)";
+            echo "commit_date=$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})";
+            echo "commit_hash=$(git describe --tags --dirty)";
+          } >> "$GITHUB_OUTPUT"
       - name: Set up home
         # "Install rust" step require root user to have a HOME directory which is not set.
         run: |
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
       - name: Setup rust toolchain for concrete-cpu
-        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
+        uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
       - name: Build compiler benchmarks
         run: |
           set -e
@@ -126,7 +128,7 @@ jobs:
         shell: bash
         run: |
           echo "Computing HMac on downloaded artifact"
-          SIGNATURE="$(slab/scripts/hmac_calculator.sh $parsed_benchmark_results.json '${{ secrets.JOB_SECRET }}')"
+          SIGNATURE="$(slab/scripts/hmac_calculator.sh parsed_benchmark_results.json ${{ secrets.JOB_SECRET }})"
           echo "Sending results to Slab..."
           curl -v -k \
           -H "Content-Type: application/json" \

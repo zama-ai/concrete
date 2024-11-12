@@ -21,7 +21,7 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
         run: |
           mkdir wheels
-          aws s3 cp s3://${S3_BUCKET_NAME}/cpu/concrete-python/ ./wheels/ --recursive --exclude "*" --include "concrete_python-${{ inputs.version }}-*"
+          aws s3 cp "s3://${S3_BUCKET_NAME}/cpu/concrete-python/" ./wheels/ --recursive --exclude "*" --include "concrete_python-${{ inputs.version }}-*"
           echo "============== Downloaded wheels ==============="
           ls -la ./wheels/
       - name: Push wheels to public PyPI (public)
@@ -37,7 +37,7 @@ jobs:
         uses: rtCamp/action-slack-notify@4e5fb42d249be6a45a298f3c9543b111b02f7907
         env:
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "test-linux-x86 (${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})" 
+          SLACK_MESSAGE: "publish-to-pypi finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   publish-to-dockerhub:
     runs-on: ubuntu-latest
@@ -50,9 +50,11 @@ jobs:
       - name: Get version from tag
         run: |
           # remove leading 'v' and '-' from tag
-          export VERSION=`echo ${{ inputs.tag }} | sed "s/^v*//g" | sed "s/-//g"`
-          echo "VERSION=$VERSION" >> "${GITHUB_ENV}"
-          echo "NAME_TAG=${{ env.DOCKER_IMAGE_NAME }}:v$VERSION" >> "${GITHUB_ENV}"
+          VERSION=$(echo ${{ inputs.version }} | sed "s/^v*//g" | sed "s/-//g")
+          {
+            echo "VERSION=$VERSION"
+            echo "NAME_TAG=${{ env.DOCKER_IMAGE_NAME }}:v$VERSION"
+          } >> "${GITHUB_ENV}"
       - name: Build image
         run: |
           mkdir empty_context

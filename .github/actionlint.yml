@@ -1,0 +1,5 @@
+self-hosted-runner:
+  labels:
+    - distributed-ci
+    - aws-mac1-metal
+    - aws-mac2-metal

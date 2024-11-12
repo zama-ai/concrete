@@ -63,7 +63,7 @@ jobs:
           echo "HOME=/shared" >> "${GITHUB_ENV}"
 
       - name: Setup rust toolchain for concrete-cpu
-        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
+        uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
 
       - name: Build end-to-end distributed test
         run: |

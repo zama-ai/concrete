@@ -54,9 +54,9 @@ jobs:
           # Install extra requirements for tests
           sudo apt update -y
           sudo apt install -y graphviz libgraphviz-dev
-          pip install -r $CONCRETE_PYTHON/requirements.extra-full.txt
-          pip install -r $CONCRETE_PYTHON/requirements.dev.txt
+          pip install -r "${CONCRETE_PYTHON}"/requirements.extra-full.txt
+          pip install -r "${CONCRETE_PYTHON}"/requirements.dev.txt
 
           # Running tests
-          cd $CONCRETE_PYTHON
+          cd "${CONCRETE_PYTHON}"
           make pytest-gpu
