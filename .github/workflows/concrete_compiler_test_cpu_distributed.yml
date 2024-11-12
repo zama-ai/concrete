@@ -2,14 +2,15 @@ name: concrete-compiler test linux-cpu-distributed
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - .github/workflows/concrete_compiler_test_cpu_distributed.yml
-      - compilers/concrete-compiler/**
-  push:
-    branches:
-      - 'main'
-      - 'release/*'
+  # Temporary disabled since need slab update
+  # pull_request:
+  #   paths:
+  #     - .github/workflows/concrete_compiler_test_cpu_distributed.yml
+  #     - compilers/concrete-compiler/**
+  # push:
+  #   branches:
+  #     - 'main'
+  #     - 'release/*'
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
