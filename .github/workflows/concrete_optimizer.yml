@@ -81,7 +81,7 @@ jobs:
           if_no_artifact_found: warn
           path: ./benchmark
       - name: Save benchmark result to file
-        uses: benchmark-action/github-action-benchmark@4de1bed97a47495fc4c5404952da0499e31f5c29 # v1.20.3
+        uses: benchmark-action/github-action-benchmark@d48d326b4ca9ba73ca0cd0d59f108f9e02a381c7 # v1.20.4
         with:
           tool: 'cargo'
           output-file-path: ./compilers/concrete-optimizer/bench_result.txt
