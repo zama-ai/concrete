@@ -3,9 +3,11 @@ on:
   pull_request:
 
 jobs:
-  format:
+  commit-compliance:
     runs-on: ubuntu-latest
     steps:
+      - name: Check commit signatures
+        uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52
       - name: Check first line
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee # v2.0.0
         with:
