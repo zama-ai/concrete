@@ -30,24 +30,15 @@ In short, we first determine a suitable set of parameters from TFHE-rs and then 
 from functools import partial
 from concrete.fhe import tfhers
 
-tfhers_params = tfhers.CryptoParams(
-    lwe_dimension=909,
-    glwe_dimension=1,
-    polynomial_size=4096,
-    pbs_base_log=15,
-    pbs_level=2,
-    lwe_noise_distribution=9.743962418842052e-07,
-    glwe_noise_distribution=2.168404344971009e-19,
-    encryption_key_choice=tfhers.EncryptionKeyChoice.BIG,
-)
-# creating a TFHE-rs ciphertext type with crypto and encoding params
-tfhers_type = tfhers.TFHERSIntegerType(
+# This will create a TFHE-rs unsigned integer of 8 bits
+# using the parameters from the json file
+tfhers_type = tfhers.get_type_from_params(
+    # The json file is a serialization of ClassicPBSParameters in TFHE-rs
+    "tfhers_params.json",
     is_signed=False,
-    bit_width=8,
-    carry_width=3,
-    msg_width=2,
-    params=tfhers_params,
+    precision=8,
 )
+
 # this partial will help us create TFHERSInteger with the given type instead of calling
 # tfhers.TFHERSInteger(tfhers_type, value) every time
 tfhers_int = partial(tfhers.TFHERSInteger, tfhers_type)
@@ -146,7 +137,7 @@ let shortint_key =
         // Concrete uses this parameters to define the TFHE-rs ciphertext type
         tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS
     ).unwrap();
-let client_key = ClientKey::from_raw_parts(shortint_key.into(), None, None);
+let client_key = ClientKey::from_raw_parts(shortint_key.into(), None, None, tfhe::Tag::default());
 let server_key = client_key.generate_server_key();
 ```
 
@@ -167,7 +158,7 @@ let config = ConfigBuilder::with_custom_parameters(
 .build();
 
 let (client_key, server_key) = generate_keys(config);
-let (integer_ck, _, _) = client_key.clone().into_raw_parts();
+let (integer_ck, _, _, _) = client_key.clone().into_raw_parts();
 let shortint_ck = integer_ck.into_raw_parts();
 let (glwe_secret_key, _, _) = shortint_ck.into_raw_parts();
 let lwe_secret_key = glwe_secret_key.into_lwe_secret_key();

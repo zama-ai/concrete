@@ -7,42 +7,18 @@ import numpy as np
 from concrete import fhe
 from concrete.fhe import tfhers
 
-########## Params #####################
-LWE_DIM = 909
-GLWE_DIM = 1
-POLY_SIZE = 4096
-PBS_BASE_LOG = 15
-PBS_LEVEL = 2
-MSG_WIDTH = 2
-CARRY_WIDTH = 3
-ENCRYPTION_KEY_CHOICE = tfhers.EncryptionKeyChoice.BIG
-LWE_NOISE_DISTR = 0
-GLWE_NOISE_DISTR = 2.168404344971009e-19
-#######################################
-
-assert GLWE_DIM == 1, "glwe dim must be 1"
-
 ### Options ###########################
+# These parameters were saved by running the tfhers_utils utility:
+# tfhers_utils save-params tfhers_params.json
+TFHERS_PARAMS_FILE = "tfhers_params.json"
 FHEUINT_PRECISION = 8
+IS_SIGNED = False
 #######################################
 
-
-tfhers_params = tfhers.CryptoParams(
-    lwe_dimension=LWE_DIM,
-    glwe_dimension=GLWE_DIM,
-    polynomial_size=POLY_SIZE,
-    pbs_base_log=PBS_BASE_LOG,
-    pbs_level=PBS_LEVEL,
-    lwe_noise_distribution=LWE_NOISE_DISTR,
-    glwe_noise_distribution=GLWE_NOISE_DISTR,
-    encryption_key_choice=ENCRYPTION_KEY_CHOICE,
-)
-tfhers_type = tfhers.TFHERSIntegerType(
-    is_signed=False,
-    bit_width=FHEUINT_PRECISION,
-    carry_width=CARRY_WIDTH,
-    msg_width=MSG_WIDTH,
-    params=tfhers_params,
+tfhers_type = tfhers.get_type_from_params(
+    TFHERS_PARAMS_FILE,
+    is_signed=IS_SIGNED,
+    precision=FHEUINT_PRECISION,
 )
 tfhers_int = partial(tfhers.TFHERSInteger, tfhers_type)
 

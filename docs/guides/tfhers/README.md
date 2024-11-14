@@ -1,6 +1,5 @@
 # TFHE-rs Interoperability
 
-
 {% hint style="warning" %}
 
 This feature is currently in beta version. Please note that the API may change in future Concrete releases.
@@ -27,28 +26,16 @@ When working with a TFHE-rs integer type in Concrete, you can use the `.encode(.
 ```python
 from concrete.fhe import tfhers
 
-# don't worry about the API, we will have better examples later.
-# we just want to show the encoding here
-tfhers_params = tfhers.CryptoParams(
-    lwe_dimension=909,
-    glwe_dimension=1,
-    polynomial_size=4096,
-    pbs_base_log=15,
-    pbs_level=2,
-    lwe_noise_distribution=9.743962418842052e-07,
-    glwe_noise_distribution=2.168404344971009e-19,
-    encryption_key_choice=tfhers.EncryptionKeyChoice.BIG,
-)
-
-# TFHERSInteger using this type will be represented as a vector of 8/2=4 integers
-tfhers_type = tfhers.TFHERSIntegerType(
+# This will create a TFHE-rs unsigned integer of 8 bits
+# using the parameters from the json file
+tfhers_type = tfhers.get_type_from_params(
+    "tfhers_params.json",
     is_signed=False,
-    bit_width=8,
-    carry_width=3,
-    msg_width=2,
-    params=tfhers_params,
+    precision=8,
 )
 
+# Encoding could change depending on the parameters saved in 'tfhers_params.json'
+# You should have the same result if message_modulus was equal to 4
 assert (tfhers_type.encode(123) == [3, 2, 3, 1]).all()
 
 assert tfhers_type.decode([3, 2, 3, 1]) == 123

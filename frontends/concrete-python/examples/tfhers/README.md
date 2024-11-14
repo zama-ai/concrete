@@ -57,6 +57,12 @@ python example.py keygen -s $TDIR/tfhers_sk -o $TDIR/concrete_sk -k $TDIR/concre
 ../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value 73 --ciphertext $TDIR/tfhers_ct_2 --client-key $TDIR/tfhers_client_key
 ```
 
+{% hint style="info" %}
+
+If you have tensor inputs, then you can encrypt by passing your flat tensor in `--value`. Concrete will take care of reshaping the values to the corresponding shape. For example `--value=1,2,3,4` can represent a 2 by 2 tensor, or a flat vector of 4 values.
+
+{% endhint %}
+
 ## Compute in TFHE-rs
 
 ```sh

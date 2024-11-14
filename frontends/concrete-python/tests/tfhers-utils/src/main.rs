@@ -1,18 +1,23 @@
-use clap::{Arg, ArgAction, Command};
 use core::panic;
-use serde::de::DeserializeOwned;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
+
+use clap::{Arg, ArgAction, Command};
+
 use tfhe::core_crypto::prelude::LweSecretKey;
-use tfhe::prelude::*;
-use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice};
-use tfhe::{generate_keys, set_server_key, ClientKey, ConfigBuilder, FheInt8, FheUint8, ServerKey};
-
-use serde::Serialize;
 use tfhe::named::Named;
-use tfhe::{Unversionize, Versionize};
-
+use tfhe::prelude::*;
 use tfhe::safe_serialization::{safe_deserialize, safe_serialize};
+use tfhe::shortint::{ClassicPBSParameters, EncryptionKeyChoice};
+use tfhe::{
+    generate_keys, set_server_key, ClientKey, ConfigBuilder, FheInt8, FheUint8, ServerKey,
+    Unversionize, Versionize,
+};
+
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use serde_json;
 
 const BLOCK_PARAMS: ClassicPBSParameters = tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS;
 const SERIALIZE_SIZE_LIMIT: u64 = 1_000_000_000;
@@ -405,6 +410,17 @@ fn main() {
                         .num_args(1),
                 ),
         )
+        .subcommand(
+            Command::new("save-params")
+                .short_flag('p')
+                .long_flag("save-params")
+                .about("save TFHE-rs parameters used into a file (JSON)")
+                .arg(
+                    Arg::new("filename")
+                        .help("filename to save TFHE-rs parameters to")
+                        .required(true),
+                ),
+        )
         .get_matches();
 
     match matches.subcommand() {
@@ -481,6 +497,13 @@ fn main() {
             } else {
                 keygen(client_key_path, server_key_path, output_lwe_path.unwrap())
             }
+        }
+        Some(("save-params", save_params_mtches)) => {
+            let filename = save_params_mtches.get_one::<String>("filename").unwrap();
+            let json_string = serde_json::to_string(&BLOCK_PARAMS).unwrap();
+            let path = Path::new(filename);
+            let mut file = fs::File::create(path).unwrap();
+            file.write_all(json_string.as_bytes()).unwrap();
         }
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachable
     }
