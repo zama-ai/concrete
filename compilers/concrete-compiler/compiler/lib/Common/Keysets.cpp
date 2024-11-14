@@ -6,10 +6,12 @@
 #include "concretelang/Common/Keysets.h"
 #include "capnp/message.h"
 #include "concrete-cpu.h"
+#include "concrete-optimizer.hpp"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keys.h"
+#include "concretelang/Common/Security.h"
 #include "kj/common.h"
 #include "kj/io.h"
 #include "llvm/ADT/ScopeExit.h"
@@ -415,6 +417,132 @@ KeysetCache::getKeyset(const Message<concreteprotocol::KeysetInfo> &keysetInfo,
   OUTCOME_TRYV(saveKeys(keyset, folderPath));
 
   return std::move(keyset);
+}
+
+Message<concreteprotocol::KeysetInfo>
+generateKeysetInfoFromParameters(CircuitKeys parameters,
+                                 concrete_optimizer::Options options) {
+  auto output = Message<concreteprotocol::KeysetInfo>{};
+  auto curve = ::concretelang::security::getSecurityCurve(
+      options.security_level, ::concretelang::security::BINARY);
+
+  auto skLen = (int)parameters.secret_keys.size();
+  auto skBuilder = output.asBuilder().initLweSecretKeys(skLen);
+  for (auto sk : llvm::enumerate(parameters.secret_keys)) {
+    auto output = Message<concreteprotocol::LweSecretKeyInfo>();
+    output.asBuilder().setId(sk.value().identifier);
+    output.asBuilder().getParams().setIntegerPrecision(64);
+    output.asBuilder().getParams().setLweDimension(sk.value().polynomial_size *
+                                                   sk.value().glwe_dimension);
+    output.asBuilder().getParams().setKeyType(
+        ::concreteprotocol::KeyType::BINARY);
+    skBuilder.setWithCaveats(sk.index(), output.asReader());
+  }
+
+  auto bskLen = (int)parameters.bootstrap_keys.size();
+  auto bskBuilder = output.asBuilder().initLweBootstrapKeys(bskLen);
+  for (auto bsk : llvm::enumerate(parameters.bootstrap_keys)) {
+    auto output = Message<concreteprotocol::LweBootstrapKeyInfo>();
+    output.asBuilder().setId(bsk.value().identifier);
+    output.asBuilder().setInputId(bsk.value().input_key.identifier);
+    output.asBuilder().setOutputId(bsk.value().output_key.identifier);
+    output.asBuilder().getParams().setLevelCount(
+        bsk.value().br_decomposition_parameter.level);
+    output.asBuilder().getParams().setBaseLog(
+        bsk.value().br_decomposition_parameter.log2_base);
+    output.asBuilder().getParams().setGlweDimension(
+        bsk.value().output_key.glwe_dimension);
+    output.asBuilder().getParams().setPolynomialSize(
+        bsk.value().output_key.polynomial_size);
+    output.asBuilder().getParams().setInputLweDimension(
+        bsk.value().input_key.polynomial_size);
+    output.asBuilder().getParams().setIntegerPrecision(64);
+    output.asBuilder().getParams().setKeyType(
+        concreteprotocol::KeyType::BINARY);
+    output.asBuilder().getParams().setVariance(
+        curve->getVariance(bsk.value().output_key.glwe_dimension,
+                           bsk.value().output_key.polynomial_size, 64));
+    bskBuilder.setWithCaveats(bsk.index(), output.asReader());
+  }
+
+  auto kskLen = (int)parameters.keyswitch_keys.size();
+  auto ckskLen = (int)parameters.conversion_keyswitch_keys.size();
+  auto kskBuilder = output.asBuilder().initLweKeyswitchKeys(kskLen + ckskLen);
+  for (auto ksk : llvm::enumerate(parameters.keyswitch_keys)) {
+    auto output = Message<concreteprotocol::LweKeyswitchKeyInfo>();
+    output.asBuilder().setId(ksk.value().identifier);
+    output.asBuilder().setInputId(ksk.value().input_key.identifier);
+    output.asBuilder().setOutputId(ksk.value().output_key.identifier);
+    output.asBuilder().getParams().setLevelCount(
+        ksk.value().ks_decomposition_parameter.level);
+    output.asBuilder().getParams().setBaseLog(
+        ksk.value().ks_decomposition_parameter.log2_base);
+    output.asBuilder().getParams().setIntegerPrecision(64);
+    output.asBuilder().getParams().setInputLweDimension(
+        ksk.value().input_key.glwe_dimension *
+        ksk.value().input_key.polynomial_size);
+    output.asBuilder().getParams().setOutputLweDimension(
+        ksk.value().output_key.glwe_dimension *
+        ksk.value().output_key.polynomial_size);
+    output.asBuilder().getParams().setKeyType(
+        concreteprotocol::KeyType::BINARY);
+    output.asBuilder().getParams().setVariance(
+        curve->getVariance(1,
+                           ksk.value().output_key.glwe_dimension *
+                               ksk.value().output_key.polynomial_size,
+                           64));
+    kskBuilder.setWithCaveats(ksk.index(), output.asReader());
+  }
+  for (auto ksk : llvm::enumerate(parameters.conversion_keyswitch_keys)) {
+    auto output = Message<concreteprotocol::LweKeyswitchKeyInfo>();
+    output.asBuilder().setId(ksk.value().identifier);
+    output.asBuilder().setInputId(ksk.value().input_key.identifier);
+    output.asBuilder().setOutputId(ksk.value().output_key.identifier);
+    output.asBuilder().getParams().setLevelCount(
+        ksk.value().ks_decomposition_parameter.level);
+    output.asBuilder().getParams().setBaseLog(
+        ksk.value().ks_decomposition_parameter.log2_base);
+    output.asBuilder().getParams().setIntegerPrecision(64);
+    output.asBuilder().getParams().setInputLweDimension(
+        ksk.value().input_key.glwe_dimension *
+        ksk.value().input_key.polynomial_size);
+    output.asBuilder().getParams().setOutputLweDimension(
+        ksk.value().output_key.glwe_dimension *
+        ksk.value().output_key.polynomial_size);
+    output.asBuilder().getParams().setKeyType(
+        concreteprotocol::KeyType::BINARY);
+    output.asBuilder().getParams().setVariance(
+        curve->getVariance(1,
+                           ksk.value().output_key.glwe_dimension *
+                               ksk.value().output_key.polynomial_size,
+                           64));
+    kskBuilder.setWithCaveats(ksk.index() + kskLen, output.asReader());
+  }
+  return output;
+}
+
+Message<concreteprotocol::KeysetInfo> keysetInfoFromVirtualCircuit(
+    std::vector<concrete_optimizer::utils::PartitionDefinition> partitionDefs,
+    bool generateFks, std::optional<concrete_optimizer::Options> options) {
+
+  rust::Vec<concrete_optimizer::utils::PartitionDefinition> rustPartitionDefs{};
+  for (auto def : partitionDefs) {
+    rustPartitionDefs.push_back(def);
+  }
+
+  auto defaultOptions = concrete_optimizer::Options{};
+  defaultOptions.security_level = 128;
+  defaultOptions.maximum_acceptable_error_probability = 0.000063342483999973;
+  defaultOptions.key_sharing = true;
+  defaultOptions.ciphertext_modulus_log = 64;
+  defaultOptions.fft_precision = 53;
+
+  auto opts = options.value_or(defaultOptions);
+
+  auto parameters = concrete_optimizer::utils::generate_virtual_keyset_info(
+      rustPartitionDefs, generateFks, opts);
+
+  return generateKeysetInfoFromParameters(parameters, opts);
 }
 
 } // namespace keysets

@@ -6,8 +6,8 @@
 #include "concretelang/Runtime/simulation.h"
 #include "concrete-cpu-noise-model.h"
 #include "concrete-cpu.h"
-#include "concrete/curves.h"
 #include "concretelang/Common/Csprng.h"
+#include "concretelang/Common/Security.h"
 #include "concretelang/Runtime/wrappers.h"
 #include "concretelang/Support/V0Parameters.h"
 #include <assert.h>
@@ -19,8 +19,9 @@ using concretelang::csprng::SoftCSPRNG;
 thread_local auto default_csprng = SoftCSPRNG(0);
 const uint64_t UINT63_MAX = UINT64_MAX >> 1;
 
-inline concrete::SecurityCurve *security_curve() {
-  return concrete::getSecurityCurve(128, concrete::BINARY);
+inline concretelang::security::SecurityCurve *security_curve() {
+  return concretelang::security::getSecurityCurve(
+      128, concretelang::security::BINARY);
 }
 
 uint64_t from_torus(double torus) {

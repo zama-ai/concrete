@@ -8,6 +8,7 @@ add_mlir_library(
   Keys.cpp
   Keysets.cpp
   Transformers.cpp
+  Security.cpp
   Values.cpp
   DEPENDS
   concrete-protocol

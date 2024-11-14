@@ -4,7 +4,12 @@ Tests of everything related to restrictions.
 
 import numpy as np
 import pytest
-from mlir._mlir_libs._concretelang._compiler import KeysetRestriction, RangeRestriction
+from mlir._mlir_libs._concretelang._compiler import (
+    KeysetInfo,
+    KeysetRestriction,
+    PartitionDefinition,
+    RangeRestriction,
+)
 
 from concrete import fhe
 
@@ -96,3 +101,28 @@ def test_keyset_restriction():
     restricted_keyset_info = restricted_module.keys.specs.program_info.get_keyset_info()
     assert big_keyset_info == restricted_keyset_info
     assert small_keyset_info != restricted_keyset_info
+
+
+def test_generic_restriction():
+    """
+    Test that compiling a module works.
+    """
+
+    generic_keyset_info = KeysetInfo.generate_virtual(
+        [PartitionDefinition(8, 10.0), PartitionDefinition(10, 10000.0)], True
+    )
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return (x + 1) % 200
+
+    inputset = [np.random.randint(1, 200, size=()) for _ in range(100)]
+    restricted_module = Module.compile(
+        {"inc": inputset},
+        enable_unsafe_features=True,
+        keyset_restriction=generic_keyset_info.get_restriction(),
+    )
+    compiled_keyset_info = restricted_module.keys.specs.program_info.get_keyset_info()
+    assert all([k in generic_keyset_info.secret_keys() for k in compiled_keyset_info.secret_keys()])
