@@ -194,7 +194,16 @@ Provide a `function_name` keyword argument to disambiguate."
         client_circuit = client_program.get_client_circuit(function_name)
 
         exported = [
-            (None if arg is None else Value(client_circuit.prepare_input(Value_(arg), position)))
+            (
+                None
+                if arg is None
+                else Value(
+                    client_circuit.prepare_input(
+                        Value_(arg.astype(np.int64) if isinstance(arg, np.ndarray) else arg),
+                        position,
+                    )
+                )
+            )
             for position, arg in enumerate(ordered_sanitized_args)
         ]
 
@@ -240,7 +249,12 @@ Provide a `function_name` keyword argument to disambiguate."
             (
                 None
                 if arg is None
-                else Value(client_circuit.simulate_prepare_input(Value_(arg), position))
+                else Value(
+                    client_circuit.simulate_prepare_input(
+                        Value_(arg.astype(np.int64) if isinstance(arg, np.ndarray) else arg),
+                        position,
+                    )
+                )
             )
             for position, arg in enumerate(ordered_sanitized_args)
         ]
