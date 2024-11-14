@@ -384,6 +384,9 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.runs-on }}
+    defaults:
+      run:
+        shell: zsh
     steps:
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
@@ -416,7 +419,7 @@ jobs:
           # MacOS x86 have conflict between our OpenMP library, and one from torch
           # we fix it by using a single one (from torch)
           # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
-          SITE_PACKAGES=$(pwd)/.testenv/lib/$PYTHON_VERSION/site-packages/
+          SITE_PACKAGES=$(pwd)/.testenv/lib/$PYTHON/site-packages/
           find . "${SITE_PACKAGES}" \( -not \( -path "${SITE_PACKAGES}"/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' \) -exec -n 1  ln -f -s "${SITE_PACKAGES}"/concrete/.dylibs/libomp.dylib {} \;
 
           # Copy test files
