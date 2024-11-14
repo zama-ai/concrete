@@ -1,3 +1,7 @@
+name: Setup rust
+
+description: Setup rust for optimizer
+
 runs:
   using: "composite"
   steps:

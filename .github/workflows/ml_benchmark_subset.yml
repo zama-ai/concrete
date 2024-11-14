@@ -59,7 +59,7 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
 
       - name: Setup rust toolchain for concrete-cpu
-        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
+        uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
 
       - name: Build compiler and ML benchmarks
         run: |
@@ -94,9 +94,9 @@ jobs:
           python3 ./ci/benchmark_parser.py compiler/benchmarks_results.json ${{ env.RESULTS_FILENAME }} \
           --database compiler_benchmarks \
           --hardware ${{ inputs.instance_type }} \
-          --project-version ${COMMIT_HASH} \
+          --project-version "${COMMIT_HASH}" \
           --branch ${{ github.ref_name }} \
-          --commit-date ${COMMIT_DATE} \
+          --commit-date "${COMMIT_DATE}" \
           --bench-date "${{ env.BENCH_DATE }}"
 
       - name: Upload parsed results artifact

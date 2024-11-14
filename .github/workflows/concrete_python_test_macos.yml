@@ -30,7 +30,7 @@ jobs:
         run: |
           brew install ninja ccache
       - name: Setup rust toolchain for concrete-cpu
-        uses: ./.github/workflows/setup_rust_toolchain_for_concrete_cpu
+        uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
       - name: Cache compilation (push)
         if: github.event_name == 'push'
         uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
@@ -50,7 +50,7 @@ jobs:
       - name: Prepare build environment
         run: |
           set -e
-          cd $GITHUB_WORKSPACE/frontends/concrete-python
+          cd ${{ github.workspace }}/frontends/concrete-python
 
           # Setup pkg-config to find OpenBLAS (scipy need it)
           export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
@@ -58,23 +58,23 @@ jobs:
           rm -rf .venv
           python3.10 -m venv .venv
 
-          . $GITHUB_WORKSPACE/frontends/concrete-python/.venv/bin/activate
+          . ${{ github.workspace }}/frontends/concrete-python/.venv/bin/activate
 
           pip install -r requirements.dev.txt
           pip install -r requirements.txt
       - name: Build concrete-compiler python-bindings
         run: |
-          $GITHUB_WORKSPACE/frontends/concrete-python .venv/bin/activate
-          cd $GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
+          ${{ github.workspace }}/frontends/concrete-python .venv/bin/activate
+          cd ${{ github.workspace }}/compilers/concrete-compiler/compiler
           ccache -z
-          make Python3_EXECUTABLE=$(which python) python-bindings
+          make Python3_EXECUTABLE="$(which python)" python-bindings
           ccache -s
       - name: Create wheels
         run: |
-          $GITHUB_WORKSPACE/frontends/concrete-python .venv/bin/activate
-          cd $GITHUB_WORKSPACE/frontends/concrete-python
+          ${{ github.workspace }}/frontends/concrete-python .venv/bin/activate
+          cd ${{ github.workspace }}/frontends/concrete-python
 
-          export COMPILER_BUILD_DIRECTORY=$GITHUB_WORKSPACE/compilers/concrete-compiler/compiler
+          export COMPILER_BUILD_DIRECTORY=${{ github.workspace }}/compilers/concrete-compiler/compiler
           rm -rf dist && mkdir -p dist
           pip wheel -v --no-deps -w dist .
           delocate-wheel -v dist/*macos*.whl
@@ -83,37 +83,37 @@ jobs:
       - name: Prepare test environment
         run: |
           set -e
-          export TEST_TMP_DIR=$(mktemp -d)
+          TEST_TMP_DIR=$(mktemp -d)
           echo "TEST_TMP_DIR=$TEST_TMP_DIR" >> "${GITHUB_ENV}"
-          cd $TEST_TMP_DIR
+          cd "${TEST_TMP_DIR}"
 
           python3.10 -m venv .testenv
           . .testenv/bin/activate
 
-          pip install $GITHUB_WORKSPACE/frontends/concrete-python/dist/*macos*.whl
-          pip install -r $GITHUB_WORKSPACE/frontends/concrete-python/requirements.dev.txt
+          pip install ${{ github.workspace }}/frontends/concrete-python/dist/*macos*.whl
+          pip install -r ${{ github.workspace }}/frontends/concrete-python/requirements.dev.txt
 
           # MacOS x86 have conflict between our OpenMP library, and one from torch
           # we fix it by using a single one (from torch)
           # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
 
-          find .testenv/lib/python3.10/site-packages -not \( -path .testenv/lib/python3.10/site-packages/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' | xargs -n 1  ln -f -s $(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib
+          find .testenv/lib/python3.10/site-packages \( -not \( -path .testenv/lib/python3.10/site-packages/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' \) -exec -n 1  ln -f -s "$(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib" {} \;
 
-          cp -R $GITHUB_WORKSPACE/frontends/concrete-python/examples ./examples
-          cp -R $GITHUB_WORKSPACE/frontends/concrete-python/tests ./tests
+          cp -R ${{ github.workspace }}/frontends/concrete-python/examples ./examples
+          cp -R ${{ github.workspace }}/frontends/concrete-python/tests ./tests
 
-          cp $GITHUB_WORKSPACE/frontends/concrete-python/Makefile .
+          cp ${{ github.workspace }}/frontends/concrete-python/Makefile .
       - name: Run pytest-macos
         run: |
           set -e
-          cd $TEST_TMP_DIR && . .testenv/bin/activate
+          cd "${TEST_TMP_DIR}" && . .testenv/bin/activate
           KEY_CACHE_DIRECTORY=./KeySetCache PYTEST_MARKERS="not dataflow and not graphviz" make pytest-macos
       - name: Run test-notebooks
         run: |
           set -e
-          cd $TEST_TMP_DIR && . .testenv/bin/activate
+          cd "${TEST_TMP_DIR}" && . .testenv/bin/activate
           make test-notebooks
       - name: Cleanup host
         if: success() || failure()
         run: |
-          rm -rf $TEST_TMP_DIR
+          rm -rf "${TEST_TMP_DIR}"
