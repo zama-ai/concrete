@@ -416,11 +416,7 @@ jobs:
           pip install "${WHEEL_DIR}"/*macos*.whl
           pip install -r "${CONCRETE_PYTHON}"/requirements.dev.txt
 
-          # MacOS x86 have conflict between our OpenMP library, and one from torch
-          # we fix it by using a single one (from torch)
-          # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
-          SITE_PACKAGES=$(pwd)/.testenv/lib/$PYTHON/site-packages/
-          find . "${SITE_PACKAGES}" \( -not \( -path "${SITE_PACKAGES}"/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' \) -exec -n 1  ln -f -s "${SITE_PACKAGES}"/concrete/.dylibs/libomp.dylib {} \;
+          ${{ github.workspace }}/.github/workflows/scripts/fix_multi_omp_bug_macos.sh
 
           # Copy test files
           cp -R "${CONCRETE_PYTHON}"/tests .
