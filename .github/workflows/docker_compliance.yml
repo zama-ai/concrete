@@ -16,7 +16,7 @@ jobs:
     container:
       image: hadolint/hadolint@sha256:27173fe25e062448490a32de410c08491c626a0bef360aa2ce5d5bdd9384b50d #2.12.0-debian
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Lint All Dockerfiles (except third_party)
         run: find  . -name "*Dockerfile*" -not -path "./third_party/*" -exec hadolint -V {} \;
