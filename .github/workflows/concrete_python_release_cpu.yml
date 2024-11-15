@@ -384,9 +384,6 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.runs-on }}
-    defaults:
-      run:
-        shell: zsh
     steps:
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
