@@ -32,6 +32,9 @@ use super::symbolic::{bootstrap, fast_keyswitch, keyswitch};
 
 const DEBUG: bool = false;
 
+mod restriction;
+pub use restriction::*;
+
 #[derive(Debug, Clone)]
 pub struct MicroParameters {
     pub pbs: Vec<Option<CmuxComplexityNoise>>,
@@ -79,6 +82,8 @@ type FksSrc = PartitionIndex;
 
 #[inline(never)]
 fn optimize_1_ks(
+    search_space_restriction: &impl SearchSpaceRestriction,
+    macro_parameters: &[MacroParameters],
     ks_src: KsSrc,
     ks_dst: KsDst,
     ks_input_lwe_dim: u64,
@@ -93,6 +98,15 @@ fn optimize_1_ks(
     let ks_max_cost =
         complexity.evaluate_ks_max_cost(cut_complexity, &operations.cost, ks_src, ks_dst);
     for &ks_quantity in ks_pareto {
+        if !search_space_restriction.is_available_micro_ks(
+            ks_src,
+            macro_parameters[ks_src.0],
+            ks_dst,
+            macro_parameters[ks_dst.0],
+            ks_quantity.decomp,
+        ) {
+            continue;
+        }
         // variance is decreasing, complexity is increasing
         let ks_cost = ks_quantity.complexity(ks_input_lwe_dim);
         let ks_variance = ks_quantity.noise(ks_input_lwe_dim);
@@ -111,6 +125,7 @@ fn optimize_1_ks(
 }
 
 fn optimize_many_independant_ks(
+    search_space_restriction: &impl SearchSpaceRestriction,
     macro_parameters: &[MacroParameters],
     ks_src: KsSrc,
     ks_input_lwe_dim: u64,
@@ -139,6 +154,8 @@ fn optimize_many_independant_ks(
         let output_dim = macro_dst.internal_dim;
         let ks_pareto = caches.pareto_quantities(output_dim);
         let ks_best = optimize_1_ks(
+            search_space_restriction,
+            macro_parameters,
             ks_src,
             ks_dst,
             ks_input_lwe_dim,
@@ -160,6 +177,7 @@ struct Best1FksAndManyKs {
 
 #[allow(clippy::type_complexity)]
 fn optimize_1_fks_and_all_compatible_ks(
+    search_space_restriction: &impl SearchSpaceRestriction,
     macro_parameters: &[MacroParameters],
     ks_used: &[Vec<bool>],
     fks_src: PartitionIndex,
@@ -194,6 +212,16 @@ fn optimize_1_fks_and_all_compatible_ks(
     let mut fks_max_cost =
         complexity.evaluate_fks_max_cost(cut_complexity, &operations.cost, fks_src, fks_dst);
     for &ks_quantity in &ks_pareto {
+        if !search_space_restriction.is_available_micro_fks(
+            fks_src,
+            macro_parameters[fks_src.0],
+            fks_dst,
+            macro_parameters[fks_dst.0],
+            ks_quantity.decomp,
+        ) {
+            // Parameters unavailable..
+            continue;
+        }
         // OPT: add a pareto cache for fks
         let fks_quantity = if same_dim {
             FksComplexityNoise {
@@ -250,6 +278,7 @@ fn optimize_1_fks_and_all_compatible_ks(
             .set_variance(fast_keyswitch_noise(fks_src, fks_dst), fks_quantity.noise);
 
         let sol = optimize_many_independant_ks(
+            search_space_restriction,
             macro_parameters,
             ks_src,
             ks_input_dim,
@@ -285,6 +314,7 @@ fn optimize_1_fks_and_all_compatible_ks(
 }
 
 fn optimize_dst_exclusive_fks_subset_and_all_ks(
+    search_space_restriction: &impl SearchSpaceRestriction,
     macro_parameters: &[MacroParameters],
     fks_paretos: &[Option<FksSrc>],
     ks_used: &[Vec<bool>],
@@ -307,6 +337,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
             .sample_extract_lwe_dimension();
         if let Some(fks_src) = maybe_fks_pareto {
             let (bests, operations) = optimize_1_fks_and_all_compatible_ks(
+                search_space_restriction,
                 macro_parameters,
                 ks_used,
                 *fks_src,
@@ -324,6 +355,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
         } else {
             // There is no fks to optimize
             let (many_ks, operations) = optimize_many_independant_ks(
+                search_space_restriction,
                 macro_parameters,
                 PartitionIndex(ks_src),
                 ks_input_lwe_dim,
@@ -344,7 +376,8 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
 fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     partition: PartitionIndex,
     macro_parameters: &[MacroParameters],
-    internal_dim: u64,
+    macro_param_partition: MacroParameters,
+    search_space_restriction: &impl SearchSpaceRestriction,
     cmux_pareto: &[CmuxComplexityNoise],
     fks_paretos: &[Option<FksSrc>],
     ks_used: &[Vec<bool>],
@@ -368,15 +401,24 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     for &cmux_quantity in cmux_pareto {
         // increasing complexity, decreasing variance
 
+        if !search_space_restriction.is_available_micro_pbs(
+            partition,
+            macro_param_partition,
+            cmux_quantity.decomp,
+        ) {
+            // Parameters are not available
+            continue;
+        }
+
         // Lower bounds cuts
-        let pbs_cost = cmux_quantity.complexity_br(internal_dim);
+        let pbs_cost = cmux_quantity.complexity_br(macro_param_partition.internal_dim);
         operations.cost.set_cost(bootstrap(partition), pbs_cost);
         let lower_cost = complexity.evaluate_total_cost(&operations.cost);
         if lower_cost > best_sol_complexity {
             continue;
         }
 
-        let pbs_variance = cmux_quantity.noise_br(internal_dim);
+        let pbs_variance = cmux_quantity.noise_br(macro_param_partition.internal_dim);
         if pbs_variance > pbs_max_feasible_variance {
             continue;
         }
@@ -385,6 +427,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
             .variance
             .set_variance(bootstrap_noise(partition), pbs_variance);
         let sol = optimize_dst_exclusive_fks_subset_and_all_ks(
+            search_space_restriction,
             macro_parameters,
             fks_paretos,
             ks_used,
@@ -663,6 +706,7 @@ fn optimize_macro(
     ciphertext_modulus_log: u32,
     fft_precision: u32,
     search_space: &SearchSpace,
+    search_space_restriction: &impl SearchSpaceRestriction,
     partition: PartitionIndex,
     used_tlu_keyswitch: &[Vec<bool>],
     used_conversion_keyswitch: &[Vec<bool>],
@@ -704,6 +748,16 @@ fn optimize_macro(
     });
     let mut lb_message = None;
     for (glwe_dimension, log2_polynomial_size) in glwe_params_domain {
+        if !search_space_restriction.is_available_glwe(
+            partition,
+            GlweParameters {
+                glwe_dimension,
+                log2_polynomial_size,
+            },
+        ) {
+            // No parameters with these macro parameters are available in the search space.
+            continue;
+        }
         let glwe_params = GlweParameters {
             log2_polynomial_size,
             glwe_dimension,
@@ -717,6 +771,16 @@ fn optimize_macro(
         }
 
         for &internal_dim in &search_space.internal_lwe_dimensions {
+            if !search_space_restriction.is_available_macro(
+                partition,
+                MacroParameters {
+                    glwe_params,
+                    internal_dim,
+                },
+            ) {
+                // No parameters with these macro parameters are available in the search space
+                continue;
+            }
             let mut operations = operations.clone();
             // OPT: fast linear noise_modulus_switching
             let variance_modulus_switching =
@@ -850,7 +914,8 @@ fn optimize_macro(
             let micro_opt = optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
                 partition,
                 &macros,
-                internal_dim,
+                macro_param_partition,
+                search_space_restriction,
                 cmux_pareto,
                 &fks_to_optimize,
                 used_tlu_keyswitch,
@@ -926,10 +991,6 @@ fn optimize_macro(
                     is_lower_bound,
                     is_feasible: Feasibility::Feasible,
                 };
-            } else {
-                // the macro parameters are feasible
-                // but the complexity is not good enough due to previous feasible solution
-                assert!(best_parameters.is_feasible.is_feasible());
             }
         }
     }
@@ -949,6 +1010,7 @@ pub fn optimize(
     dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
+    search_space_restriction: &impl SearchSpaceRestriction,
     persistent_caches: &PersistDecompCaches,
     p_cut: &Option<PartitionCut>,
     default_partition: PartitionIndex,
@@ -961,11 +1023,6 @@ pub fn optimize(
         maximum_acceptable_error_probability: config.maximum_acceptable_error_probability,
         ciphertext_modulus_log,
     };
-
-    let dag_p_cut = p_cut.as_ref().map_or_else(
-        || PartitionCut::for_each_precision(dag),
-        std::clone::Clone::clone,
-    );
 
     let dag = analyze(dag, &noise_config, p_cut, default_partition)?;
     let kappa =
@@ -1001,37 +1058,47 @@ pub fn optimize(
     let mut best_params: Option<Parameters> = None;
     for iter in 0..=10 {
         for partition in PartitionIndex::range(0, nb_partitions).rev() {
-            // reduce search space to the parameters of external partitions
-            let partition_search_space = if dag_p_cut.is_external_partition(&partition) {
-                let external_part =
-                    &dag_p_cut.external_partitions[partition.0 - dag_p_cut.n_internal_partitions()];
-                let mut reduced_search_space = search_space.clone();
-                reduced_search_space.glwe_dimensions =
-                    [external_part.macro_params.glwe_params.glwe_dimension].to_vec();
-                reduced_search_space.glwe_log_polynomial_sizes =
-                    [external_part.macro_params.glwe_params.log2_polynomial_size].to_vec();
-                reduced_search_space.internal_lwe_dimensions =
-                    [external_part.macro_params.internal_dim].to_vec();
-                reduced_search_space
-            } else {
-                search_space.clone()
+            let new_params = match p_cut {
+                Some(p_cut) => {
+                    let search_space_restriction = (
+                        search_space_restriction,
+                        ExternalPartitionRestriction(p_cut.clone()),
+                    );
+                    optimize_macro(
+                        security_level,
+                        ciphertext_modulus_log,
+                        fft_precision,
+                        search_space,
+                        &search_space_restriction,
+                        partition,
+                        &used_tlu_keyswitch,
+                        &used_conversion_keyswitch,
+                        &feasible,
+                        &complexity,
+                        &mut caches,
+                        &params,
+                        best_complexity,
+                        best_p_error,
+                    )
+                }
+                None => optimize_macro(
+                    security_level,
+                    ciphertext_modulus_log,
+                    fft_precision,
+                    search_space,
+                    search_space_restriction,
+                    partition,
+                    &used_tlu_keyswitch,
+                    &used_conversion_keyswitch,
+                    &feasible,
+                    &complexity,
+                    &mut caches,
+                    &params,
+                    best_complexity,
+                    best_p_error,
+                ),
             };
 
-            let new_params = optimize_macro(
-                security_level,
-                ciphertext_modulus_log,
-                fft_precision,
-                &partition_search_space,
-                partition,
-                &used_tlu_keyswitch,
-                &used_conversion_keyswitch,
-                &feasible,
-                &complexity,
-                &mut caches,
-                &params,
-                best_complexity,
-                best_p_error,
-            );
             assert!(
                 new_params.is_feasible.is_feasible() || !params.is_feasible.is_feasible(),
                 "Cannot degrade feasibility"
@@ -1094,6 +1161,9 @@ pub fn optimize(
                 return Err(optimization::Err::UnfeasibleVarianceConstraint(Box::new(
                     unfeasible_constraint.to_owned(),
                 )));
+            }
+            Feasibility::Unknown => {
+                return Err(optimization::Err::NoParametersFound);
             }
             _ => unreachable!(),
         }
@@ -1265,6 +1335,7 @@ pub fn optimize_to_circuit_solution(
     dag: &Dag,
     config: Config,
     search_space: &SearchSpace,
+    search_space_restriction: &impl SearchSpaceRestriction,
     persistent_caches: &PersistDecompCaches,
     p_cut: &Option<PartitionCut>,
 ) -> keys_spec::CircuitSolution {
@@ -1283,6 +1354,7 @@ pub fn optimize_to_circuit_solution(
         dag,
         config,
         search_space,
+        search_space_restriction,
         persistent_caches,
         p_cut,
         default_partition,

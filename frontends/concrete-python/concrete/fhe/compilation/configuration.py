@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union, get_type_hints
 
 import numpy as np
+from mlir._mlir_libs._concretelang._compiler import KeysetRestriction, RangeRestriction
 
 from ..dtypes import Integer
 from ..representation import GraphProcessor
@@ -994,6 +995,8 @@ class Configuration:
     dynamic_assignment_check_out_of_bounds: bool
     simulate_encrypt_run_decrypt: bool
     composable: bool
+    range_restriction: Optional[RangeRestriction]
+    keyset_restriction: Optional[KeysetRestriction]
 
     def __init__(
         self,
@@ -1063,6 +1066,8 @@ class Configuration:
         dynamic_indexing_check_out_of_bounds: bool = True,
         dynamic_assignment_check_out_of_bounds: bool = True,
         simulate_encrypt_run_decrypt: bool = False,
+        range_restriction: Optional[RangeRestriction] = None,
+        keyset_restriction: Optional[KeysetRestriction] = None,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1169,6 +1174,8 @@ class Configuration:
         self.dynamic_assignment_check_out_of_bounds = dynamic_assignment_check_out_of_bounds
 
         self.simulate_encrypt_run_decrypt = simulate_encrypt_run_decrypt
+        self.range_restriction = range_restriction
+        self.keyset_restriction = keyset_restriction
 
         self._validate()
 
@@ -1245,6 +1252,8 @@ class Configuration:
         dynamic_indexing_check_out_of_bounds: Union[Keep, bool] = KEEP,
         dynamic_assignment_check_out_of_bounds: Union[Keep, bool] = KEEP,
         simulate_encrypt_run_decrypt: Union[Keep, bool] = KEEP,
+        range_restriction: Union[Keep, Optional[RangeRestriction]] = KEEP,
+        keyset_restriction: Union[Keep, Optional[KeysetRestriction]] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

@@ -10,12 +10,14 @@ use concrete_optimizer::dag::operator::{
     self, FunctionTable, LevelledComplexity, OperatorIndex, Precision, Shape,
 };
 use concrete_optimizer::dag::unparametrized;
-use concrete_optimizer::global_parameters::{ParameterDomains, DEFAULT_DOMAINS};
 use concrete_optimizer::optimization::config::{Config, SearchSpace};
-use concrete_optimizer::optimization::dag::multi_parameters::keys_spec;
 use concrete_optimizer::optimization::dag::multi_parameters::keys_spec::CircuitSolution;
-use concrete_optimizer::optimization::dag::multi_parameters::optimize::MacroParameters;
+use concrete_optimizer::optimization::dag::multi_parameters::optimize::{
+    KeysetRestriction, MacroParameters, NoSearchSpaceRestriction, RangeRestriction,
+    SearchSpaceRestriction,
+};
 use concrete_optimizer::optimization::dag::multi_parameters::partition_cut::PartitionCut;
+use concrete_optimizer::optimization::dag::multi_parameters::{keys_spec, PartitionIndex};
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
 };
@@ -57,195 +59,6 @@ fn caches_from(options: &ffi::Options) -> decomposition::PersistDecompCaches {
         options.ciphertext_modulus_log,
         options.fft_precision,
     )
-}
-
-fn calculate_parameter_domain(options: &ffi::Options) -> ParameterDomains {
-    let mut domains = DEFAULT_DOMAINS;
-
-    if !options
-        .parameter_restrictions
-        .glwe_pbs
-        .log2_polynomial_size_min
-        .is_null()
-    {
-        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.start = *options
-            .parameter_restrictions
-            .glwe_pbs
-            .log2_polynomial_size_min;
-        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.start = *options
-            .parameter_restrictions
-            .glwe_pbs
-            .log2_polynomial_size_min;
-    }
-    if !options
-        .parameter_restrictions
-        .glwe_pbs
-        .log2_polynomial_size_max
-        .is_null()
-    {
-        domains.glwe_pbs_constrained_cpu.log2_polynomial_size.end = *options
-            .parameter_restrictions
-            .glwe_pbs
-            .log2_polynomial_size_max;
-        domains.glwe_pbs_constrained_gpu.log2_polynomial_size.end = *options
-            .parameter_restrictions
-            .glwe_pbs
-            .log2_polynomial_size_max;
-    }
-    if !options
-        .parameter_restrictions
-        .glwe_pbs
-        .glwe_dimension_min
-        .is_null()
-    {
-        domains.glwe_pbs_constrained_cpu.glwe_dimension.start =
-            *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
-        domains.glwe_pbs_constrained_gpu.glwe_dimension.start =
-            *options.parameter_restrictions.glwe_pbs.glwe_dimension_min;
-    }
-    if !options
-        .parameter_restrictions
-        .glwe_pbs
-        .glwe_dimension_max
-        .is_null()
-    {
-        domains.glwe_pbs_constrained_cpu.glwe_dimension.end =
-            *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
-        domains.glwe_pbs_constrained_gpu.glwe_dimension.end =
-            *options.parameter_restrictions.glwe_pbs.glwe_dimension_max;
-    }
-
-    if !options
-        .parameter_restrictions
-        .free_glwe
-        .log2_polynomial_size_min
-        .is_null()
-    {
-        domains.free_glwe.log2_polynomial_size.start = *options
-            .parameter_restrictions
-            .free_glwe
-            .log2_polynomial_size_min;
-    }
-    if !options
-        .parameter_restrictions
-        .free_glwe
-        .log2_polynomial_size_max
-        .is_null()
-    {
-        domains.free_glwe.log2_polynomial_size.end = *options
-            .parameter_restrictions
-            .free_glwe
-            .log2_polynomial_size_max;
-    }
-    if !options
-        .parameter_restrictions
-        .free_glwe
-        .glwe_dimension_min
-        .is_null()
-    {
-        domains.free_glwe.glwe_dimension.start =
-            *options.parameter_restrictions.free_glwe.glwe_dimension_min;
-    }
-    if !options
-        .parameter_restrictions
-        .free_glwe
-        .glwe_dimension_max
-        .is_null()
-    {
-        domains.free_glwe.glwe_dimension.end =
-            *options.parameter_restrictions.free_glwe.glwe_dimension_max;
-    }
-
-    if !options
-        .parameter_restrictions
-        .br_decomposition
-        .log2_base_min
-        .is_null()
-    {
-        domains.br_decomposition.log2_base.start = *options
-            .parameter_restrictions
-            .br_decomposition
-            .log2_base_min;
-    }
-    if !options
-        .parameter_restrictions
-        .br_decomposition
-        .log2_base_max
-        .is_null()
-    {
-        domains.br_decomposition.log2_base.end = *options
-            .parameter_restrictions
-            .br_decomposition
-            .log2_base_max;
-    }
-    if !options
-        .parameter_restrictions
-        .br_decomposition
-        .level_min
-        .is_null()
-    {
-        domains.br_decomposition.level.start =
-            *options.parameter_restrictions.br_decomposition.level_min;
-    }
-    if !options
-        .parameter_restrictions
-        .br_decomposition
-        .level_max
-        .is_null()
-    {
-        domains.br_decomposition.level.end =
-            *options.parameter_restrictions.br_decomposition.level_max;
-    }
-
-    if !options
-        .parameter_restrictions
-        .ks_decomposition
-        .log2_base_min
-        .is_null()
-    {
-        domains.ks_decomposition.log2_base.start = *options
-            .parameter_restrictions
-            .ks_decomposition
-            .log2_base_min;
-    }
-    if !options
-        .parameter_restrictions
-        .ks_decomposition
-        .log2_base_max
-        .is_null()
-    {
-        domains.ks_decomposition.log2_base.end = *options
-            .parameter_restrictions
-            .ks_decomposition
-            .log2_base_max;
-    }
-    if !options
-        .parameter_restrictions
-        .ks_decomposition
-        .level_min
-        .is_null()
-    {
-        domains.ks_decomposition.level.start =
-            *options.parameter_restrictions.ks_decomposition.level_min;
-    }
-    if !options
-        .parameter_restrictions
-        .ks_decomposition
-        .level_max
-        .is_null()
-    {
-        domains.ks_decomposition.level.end =
-            *options.parameter_restrictions.ks_decomposition.level_max;
-    }
-
-    if !options.parameter_restrictions.free_lwe_min.is_null() {
-        domains.free_lwe.start = *options.parameter_restrictions.free_lwe_min;
-    }
-    if !options.parameter_restrictions.free_lwe_max.is_null() {
-        domains.free_lwe.end = *options.parameter_restrictions.free_lwe_max;
-    }
-
-    domains
 }
 
 #[derive(Clone)]
@@ -317,8 +130,7 @@ fn optimize_bootstrap(precision: u64, noise_factor: f64, options: &ffi::Options)
 
     let sum_size = 1;
 
-    let parameter_restrictions = calculate_parameter_domain(options);
-    let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
+    let search_space = SearchSpace::default(processing_unit);
 
     let result = concrete_optimizer::optimization::atomic_pattern::optimize_one(
         sum_size,
@@ -768,8 +580,7 @@ impl Dag {
             complexity_model: &CpuComplexity::default(),
         };
 
-        let parameter_restrictions = calculate_parameter_domain(options);
-        let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
+        let search_space = SearchSpace::default(processing_unit);
 
         let encoding = options.encoding.into();
 
@@ -840,8 +651,7 @@ impl Dag {
             fft_precision: options.fft_precision,
             complexity_model: &CpuComplexity::default(),
         };
-        let parameter_restrictions = calculate_parameter_domain(options);
-        let search_space = SearchSpace::default(processing_unit, parameter_restrictions);
+        let search_space = SearchSpace::default(processing_unit);
 
         let encoding = options.encoding.into();
         #[allow(clippy::wildcard_in_or_patterns)]
@@ -852,15 +662,54 @@ impl Dag {
             ffi::MultiParamStrategy::ByPrecision | _ => PartitionCut::for_each_precision(&self.0),
         };
         let circuit_sol =
-            concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                &self.0,
-                config,
-                &search_space,
-                encoding,
-                options.default_log_norm2_woppbs,
-                &caches_from(options),
-                &Some(p_cut),
-            );
+            if !options.keyset_restriction.is_null() && !options.range_restriction.is_null() {
+                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    &(
+                        (*options.keyset_restriction).clone(),
+                        (*options.range_restriction).clone(),
+                    ),
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                    &Some(p_cut),
+                )
+            } else if !options.keyset_restriction.is_null() {
+                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    &*options.keyset_restriction,
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                    &Some(p_cut),
+                )
+            } else if !options.range_restriction.is_null() {
+                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    &*options.range_restriction,
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                    &Some(p_cut),
+                )
+            } else {
+                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                    &self.0,
+                    config,
+                    &search_space,
+                    &NoSearchSpaceRestriction,
+                    encoding,
+                    options.default_log_norm2_woppbs,
+                    &caches_from(options),
+                    &Some(p_cut),
+                )
+            };
         circuit_sol.into()
     }
 }
@@ -1335,33 +1184,16 @@ mod ffi {
         ByPrecisionAndNorm2,
     }
 
-    #[namespace = "concrete_optimizer"]
+    #[namespace = "concrete_optimizer::restriction"]
     #[derive(Debug, Clone)]
-    pub struct GlweParameterRestrictions {
-        pub log2_polynomial_size_min: SharedPtr<u64>,
-        pub log2_polynomial_size_max: SharedPtr<u64>,
-        pub glwe_dimension_min: SharedPtr<u64>,
-        pub glwe_dimension_max: SharedPtr<u64>,
-    }
-
-    #[namespace = "concrete_optimizer"]
-    #[derive(Debug, Clone)]
-    pub struct DecompositionParameterRestrictions {
-        pub log2_base_min: SharedPtr<u64>,
-        pub log2_base_max: SharedPtr<u64>,
-        pub level_min: SharedPtr<u64>,
-        pub level_max: SharedPtr<u64>,
-    }
-
-    #[namespace = "concrete_optimizer"]
-    #[derive(Debug, Clone)]
-    pub struct ParameterRestrictions {
-        pub glwe_pbs: GlweParameterRestrictions,
-        pub free_glwe: GlweParameterRestrictions,
-        pub br_decomposition: DecompositionParameterRestrictions,
-        pub ks_decomposition: DecompositionParameterRestrictions,
-        pub free_lwe_min: SharedPtr<u64>,
-        pub free_lwe_max: SharedPtr<u64>,
+    pub struct RangeRestriction {
+        pub glwe_log_polynomial_sizes: Vec<u64>,
+        pub glwe_dimensions: Vec<u64>,
+        pub internal_lwe_dimensions: Vec<u64>,
+        pub pbs_level_count: Vec<u64>,
+        pub pbs_base_log: Vec<u64>,
+        pub ks_level_count: Vec<u64>,
+        pub ks_base_log: Vec<u64>,
     }
 
     #[namespace = "concrete_optimizer"]
@@ -1377,7 +1209,8 @@ mod ffi {
         pub cache_on_disk: bool,
         pub ciphertext_modulus_log: u32,
         pub fft_precision: u32,
-        pub parameter_restrictions: ParameterRestrictions,
+        pub range_restriction: SharedPtr<RangeRestriction>, // SharedPtr used for Options since optionals are not available...
+        pub keyset_restriction: SharedPtr<KeysetRestriction>, // SharedPtr used for Options since optionals are not available...
     }
 
     #[namespace = "concrete_optimizer::dag"]
@@ -1487,6 +1320,45 @@ mod ffi {
         pub is_feasible: bool,
         pub error_msg: String,
     }
+
+    #[namespace = "concrete_optimizer::restriction"]
+    #[derive(Debug, Clone)]
+    pub struct LweSecretKeyInfo {
+        pub lwe_dimension: u64,
+    }
+
+    #[namespace = "concrete_optimizer::restriction"]
+    #[derive(Debug, Clone)]
+    pub struct LweBootstrapKeyInfo {
+        pub level_count: u64,
+        pub base_log: u64,
+        pub glwe_dimension: u64,
+        pub polynomial_size: u64,
+        pub input_lwe_dimension: u64,
+    }
+
+    #[namespace = "concrete_optimizer::restriction"]
+    #[derive(Debug, Clone)]
+    pub struct LweKeyswitchKeyInfo {
+        pub level_count: u64,
+        pub base_log: u64,
+        pub input_lwe_dimension: u64,
+        pub output_lwe_dimension: u64,
+    }
+
+    #[namespace = "concrete_optimizer::restriction"]
+    #[derive(Debug, Clone)]
+    pub struct KeysetInfo {
+        pub lwe_secret_keys: Vec<LweSecretKeyInfo>,
+        pub lwe_bootstrap_keys: Vec<LweBootstrapKeyInfo>,
+        pub lwe_keyswitch_keys: Vec<LweKeyswitchKeyInfo>,
+    }
+
+    #[namespace = "concrete_optimizer::restriction"]
+    #[derive(Debug, Clone)]
+    pub struct KeysetRestriction {
+        pub info: KeysetInfo,
+    }
 }
 
 fn processing_unit(options: &ffi::Options) -> ProcessingUnit {
@@ -1497,5 +1369,151 @@ fn processing_unit(options: &ffi::Options) -> ProcessingUnit {
         }
     } else {
         config::ProcessingUnit::Cpu
+    }
+}
+
+impl SearchSpaceRestriction for ffi::RangeRestriction {
+    fn is_available_glwe(&self, partition: PartitionIndex, glwe_params: GlweParameters) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &RangeRestriction>(self)
+                .is_available_glwe(partition, glwe_params)
+        }
+    }
+
+    fn is_available_macro(
+        &self,
+        partition: PartitionIndex,
+        macro_parameters: MacroParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &RangeRestriction>(self)
+                .is_available_macro(partition, macro_parameters)
+        }
+    }
+
+    fn is_available_micro_pbs(
+        &self,
+        partition: PartitionIndex,
+        macro_parameters: MacroParameters,
+        pbs_parameters: BrDecompositionParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &RangeRestriction>(self).is_available_micro_pbs(
+                partition,
+                macro_parameters,
+                pbs_parameters,
+            )
+        }
+    }
+
+    fn is_available_micro_ks(
+        &self,
+        from_partition: PartitionIndex,
+        from_macro: MacroParameters,
+        to_partition: PartitionIndex,
+        to_macro: MacroParameters,
+        ks_parameters: KsDecompositionParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &RangeRestriction>(self).is_available_micro_ks(
+                from_partition,
+                from_macro,
+                to_partition,
+                to_macro,
+                ks_parameters,
+            )
+        }
+    }
+
+    fn is_available_micro_fks(
+        &self,
+        from_partition: PartitionIndex,
+        from_macro: MacroParameters,
+        to_partition: PartitionIndex,
+        to_macro: MacroParameters,
+        ks_parameters: KsDecompositionParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &RangeRestriction>(self).is_available_micro_fks(
+                from_partition,
+                from_macro,
+                to_partition,
+                to_macro,
+                ks_parameters,
+            )
+        }
+    }
+}
+
+impl SearchSpaceRestriction for ffi::KeysetRestriction {
+    fn is_available_glwe(&self, partition: PartitionIndex, glwe_params: GlweParameters) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &KeysetRestriction>(self)
+                .is_available_glwe(partition, glwe_params)
+        }
+    }
+
+    fn is_available_macro(
+        &self,
+        partition: PartitionIndex,
+        macro_parameters: MacroParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &KeysetRestriction>(self)
+                .is_available_macro(partition, macro_parameters)
+        }
+    }
+
+    fn is_available_micro_pbs(
+        &self,
+        partition: PartitionIndex,
+        macro_parameters: MacroParameters,
+        pbs_parameters: BrDecompositionParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &KeysetRestriction>(self).is_available_micro_pbs(
+                partition,
+                macro_parameters,
+                pbs_parameters,
+            )
+        }
+    }
+
+    fn is_available_micro_ks(
+        &self,
+        from_partition: PartitionIndex,
+        from_macro: MacroParameters,
+        to_partition: PartitionIndex,
+        to_macro: MacroParameters,
+        ks_parameters: KsDecompositionParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &KeysetRestriction>(self).is_available_micro_ks(
+                from_partition,
+                from_macro,
+                to_partition,
+                to_macro,
+                ks_parameters,
+            )
+        }
+    }
+
+    fn is_available_micro_fks(
+        &self,
+        from_partition: PartitionIndex,
+        from_macro: MacroParameters,
+        to_partition: PartitionIndex,
+        to_macro: MacroParameters,
+        ks_parameters: KsDecompositionParameters,
+    ) -> bool {
+        unsafe {
+            std::mem::transmute::<&Self, &KeysetRestriction>(self).is_available_micro_fks(
+                from_partition,
+                from_macro,
+                to_partition,
+                to_macro,
+                ks_parameters,
+            )
+        }
     }
 }

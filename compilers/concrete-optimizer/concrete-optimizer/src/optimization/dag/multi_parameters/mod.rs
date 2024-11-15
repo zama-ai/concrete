@@ -13,3 +13,5 @@ pub(crate) mod variance_constraint;
 
 mod noise_expression;
 mod symbolic;
+
+pub use partitions::PartitionIndex;

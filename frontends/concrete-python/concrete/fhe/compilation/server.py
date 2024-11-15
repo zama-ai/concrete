@@ -180,6 +180,11 @@ class Server:
 
         options.set_enable_tlu_fusing(configuration.enable_tlu_fusing)
         options.set_print_tlu_fusing(configuration.print_tlu_fusing)
+        if configuration.keyset_restriction:
+            options.set_keyset_restriction(configuration.keyset_restriction)
+
+        if configuration.range_restriction:
+            options.set_range_restriction(configuration.range_restriction)
 
         try:
             if configuration.compiler_debug_mode:  # pragma: no cover

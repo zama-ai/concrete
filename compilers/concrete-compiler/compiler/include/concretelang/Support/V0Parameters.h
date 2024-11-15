@@ -6,6 +6,8 @@
 #ifndef CONCRETELANG_SUPPORT_V0Parameter_H_
 #define CONCRETELANG_SUPPORT_V0Parameter_H_
 
+#include <memory>
+#include <optional>
 #include <variant>
 
 #include "llvm/ADT/Optional.h"
@@ -80,6 +82,10 @@ const concrete_optimizer::Encoding DEFAULT_ENCODING =
 const bool DEFAULT_CACHE_ON_DISK = true;
 const uint32_t DEFAULT_CIPHERTEXT_MODULUS_LOG = 64;
 const uint32_t DEFAULT_FFT_PRECISION = 53;
+const std::shared_ptr<concrete_optimizer::restriction::RangeRestriction>
+    DEFAULT_RANGE_RESTRICTION = {};
+const std::shared_ptr<concrete_optimizer::restriction::KeysetRestriction>
+    DEFAULT_KEYSET_RESTRICTION = {};
 
 /// The strategy of the crypto optimization
 enum Strategy {
@@ -124,7 +130,10 @@ struct Config {
   bool cache_on_disk;
   uint32_t ciphertext_modulus_log;
   uint32_t fft_precision;
-  concrete_optimizer::ParameterRestrictions parameter_restrictions;
+  std::shared_ptr<concrete_optimizer::restriction::RangeRestriction>
+      range_restriction;
+  std::shared_ptr<concrete_optimizer::restriction::KeysetRestriction>
+      keyset_restriction;
   std::vector<CompositionRule> composition_rules;
   bool composable;
 };
@@ -142,7 +151,8 @@ const Config DEFAULT_CONFIG = {UNSPECIFIED_P_ERROR,
                                DEFAULT_CACHE_ON_DISK,
                                DEFAULT_CIPHERTEXT_MODULUS_LOG,
                                DEFAULT_FFT_PRECISION,
-                               concrete_optimizer::ParameterRestrictions{},
+                               DEFAULT_RANGE_RESTRICTION,
+                               DEFAULT_KEYSET_RESTRICTION,
                                DEFAULT_COMPOSITION_RULES,
                                DEFAULT_COMPOSABLE};
 

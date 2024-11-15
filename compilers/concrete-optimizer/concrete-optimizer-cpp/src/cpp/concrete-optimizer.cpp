@@ -949,9 +949,6 @@ namespace concrete_optimizer {
   struct Weights;
   enum class Encoding : ::std::uint8_t;
   enum class MultiParamStrategy : ::std::uint8_t;
-  struct GlweParameterRestrictions;
-  struct DecompositionParameterRestrictions;
-  struct ParameterRestrictions;
   struct Options;
   namespace dag {
     struct OperatorIndex;
@@ -968,6 +965,14 @@ namespace concrete_optimizer {
   }
   namespace v0 {
     struct Solution;
+  }
+  namespace restriction {
+    struct RangeRestriction;
+    struct LweSecretKeyInfo;
+    struct LweBootstrapKeyInfo;
+    struct LweKeyswitchKeyInfo;
+    struct KeysetInfo;
+    struct KeysetRestriction;
   }
 }
 
@@ -1140,43 +1145,22 @@ enum class MultiParamStrategy : ::std::uint8_t {
 };
 #endif // CXXBRIDGE1_ENUM_concrete_optimizer$MultiParamStrategy
 
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$GlweParameterRestrictions
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$GlweParameterRestrictions
-struct GlweParameterRestrictions final {
-  ::std::shared_ptr<::std::uint64_t> log2_polynomial_size_min;
-  ::std::shared_ptr<::std::uint64_t> log2_polynomial_size_max;
-  ::std::shared_ptr<::std::uint64_t> glwe_dimension_min;
-  ::std::shared_ptr<::std::uint64_t> glwe_dimension_max;
+namespace restriction {
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$RangeRestriction
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$RangeRestriction
+struct RangeRestriction final {
+  ::rust::Vec<::std::uint64_t> glwe_log_polynomial_sizes;
+  ::rust::Vec<::std::uint64_t> glwe_dimensions;
+  ::rust::Vec<::std::uint64_t> internal_lwe_dimensions;
+  ::rust::Vec<::std::uint64_t> pbs_level_count;
+  ::rust::Vec<::std::uint64_t> pbs_base_log;
+  ::rust::Vec<::std::uint64_t> ks_level_count;
+  ::rust::Vec<::std::uint64_t> ks_base_log;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$GlweParameterRestrictions
-
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$DecompositionParameterRestrictions
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$DecompositionParameterRestrictions
-struct DecompositionParameterRestrictions final {
-  ::std::shared_ptr<::std::uint64_t> log2_base_min;
-  ::std::shared_ptr<::std::uint64_t> log2_base_max;
-  ::std::shared_ptr<::std::uint64_t> level_min;
-  ::std::shared_ptr<::std::uint64_t> level_max;
-
-  using IsRelocatable = ::std::true_type;
-};
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$DecompositionParameterRestrictions
-
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
-struct ParameterRestrictions final {
-  ::concrete_optimizer::GlweParameterRestrictions glwe_pbs;
-  ::concrete_optimizer::GlweParameterRestrictions free_glwe;
-  ::concrete_optimizer::DecompositionParameterRestrictions br_decomposition;
-  ::concrete_optimizer::DecompositionParameterRestrictions ks_decomposition;
-  ::std::shared_ptr<::std::uint64_t> free_lwe_min;
-  ::std::shared_ptr<::std::uint64_t> free_lwe_max;
-
-  using IsRelocatable = ::std::true_type;
-};
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$ParameterRestrictions
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$RangeRestriction
+} // namespace restriction
 
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Options
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$Options
@@ -1191,7 +1175,8 @@ struct Options final {
   bool cache_on_disk;
   ::std::uint32_t ciphertext_modulus_log;
   ::std::uint32_t fft_precision;
-  ::concrete_optimizer::ParameterRestrictions parameter_restrictions;
+  ::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction> range_restriction;
+  ::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction> keyset_restriction;
 
   using IsRelocatable = ::std::true_type;
 };
@@ -1345,6 +1330,62 @@ struct CircuitSolution final {
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$dag$CircuitSolution
 } // namespace dag
+
+namespace restriction {
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweSecretKeyInfo
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweSecretKeyInfo
+struct LweSecretKeyInfo final {
+  ::std::uint64_t lwe_dimension;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweSecretKeyInfo
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweBootstrapKeyInfo
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweBootstrapKeyInfo
+struct LweBootstrapKeyInfo final {
+  ::std::uint64_t level_count;
+  ::std::uint64_t base_log;
+  ::std::uint64_t glwe_dimension;
+  ::std::uint64_t polynomial_size;
+  ::std::uint64_t input_lwe_dimension;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweBootstrapKeyInfo
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweKeyswitchKeyInfo
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweKeyswitchKeyInfo
+struct LweKeyswitchKeyInfo final {
+  ::std::uint64_t level_count;
+  ::std::uint64_t base_log;
+  ::std::uint64_t input_lwe_dimension;
+  ::std::uint64_t output_lwe_dimension;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$LweKeyswitchKeyInfo
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetInfo
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetInfo
+struct KeysetInfo final {
+  ::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> lwe_secret_keys;
+  ::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> lwe_bootstrap_keys;
+  ::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> lwe_keyswitch_keys;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetInfo
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetRestriction
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetRestriction
+struct KeysetRestriction final {
+  ::concrete_optimizer::restriction::KeysetInfo info;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetRestriction
+} // namespace restriction
 
 namespace v0 {
 extern "C" {
@@ -1697,6 +1738,46 @@ void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$reserve_total(::ru
 void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$set_len(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *ptr, ::std::size_t len) noexcept;
 void cxxbridge1$rust_vec$concrete_optimizer$dag$OperatorIndex$truncate(::rust::Vec<::concrete_optimizer::dag::OperatorIndex> *ptr, ::std::size_t len) noexcept;
 
+static_assert(sizeof(::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction>) == 2 * sizeof(void *), "");
+static_assert(alignof(::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction>) == alignof(void *), "");
+void cxxbridge1$shared_ptr$concrete_optimizer$restriction$RangeRestriction$null(::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction> *ptr) noexcept {
+  ::new (ptr) ::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction>();
+}
+::concrete_optimizer::restriction::RangeRestriction *cxxbridge1$shared_ptr$concrete_optimizer$restriction$RangeRestriction$uninit(::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction> *ptr) noexcept {
+  ::concrete_optimizer::restriction::RangeRestriction *uninit = reinterpret_cast<::concrete_optimizer::restriction::RangeRestriction *>(new ::rust::MaybeUninit<::concrete_optimizer::restriction::RangeRestriction>);
+  ::new (ptr) ::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction>(uninit);
+  return uninit;
+}
+void cxxbridge1$shared_ptr$concrete_optimizer$restriction$RangeRestriction$clone(::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction> const &self, ::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction> *ptr) noexcept {
+  ::new (ptr) ::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction>(self);
+}
+::concrete_optimizer::restriction::RangeRestriction const *cxxbridge1$shared_ptr$concrete_optimizer$restriction$RangeRestriction$get(::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction> const &self) noexcept {
+  return self.get();
+}
+void cxxbridge1$shared_ptr$concrete_optimizer$restriction$RangeRestriction$drop(::std::shared_ptr<::concrete_optimizer::restriction::RangeRestriction> *self) noexcept {
+  self->~shared_ptr();
+}
+
+static_assert(sizeof(::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction>) == 2 * sizeof(void *), "");
+static_assert(alignof(::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction>) == alignof(void *), "");
+void cxxbridge1$shared_ptr$concrete_optimizer$restriction$KeysetRestriction$null(::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction> *ptr) noexcept {
+  ::new (ptr) ::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction>();
+}
+::concrete_optimizer::restriction::KeysetRestriction *cxxbridge1$shared_ptr$concrete_optimizer$restriction$KeysetRestriction$uninit(::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction> *ptr) noexcept {
+  ::concrete_optimizer::restriction::KeysetRestriction *uninit = reinterpret_cast<::concrete_optimizer::restriction::KeysetRestriction *>(new ::rust::MaybeUninit<::concrete_optimizer::restriction::KeysetRestriction>);
+  ::new (ptr) ::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction>(uninit);
+  return uninit;
+}
+void cxxbridge1$shared_ptr$concrete_optimizer$restriction$KeysetRestriction$clone(::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction> const &self, ::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction> *ptr) noexcept {
+  ::new (ptr) ::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction>(self);
+}
+::concrete_optimizer::restriction::KeysetRestriction const *cxxbridge1$shared_ptr$concrete_optimizer$restriction$KeysetRestriction$get(::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction> const &self) noexcept {
+  return self.get();
+}
+void cxxbridge1$shared_ptr$concrete_optimizer$restriction$KeysetRestriction$drop(::std::shared_ptr<::concrete_optimizer::restriction::KeysetRestriction> *self) noexcept {
+  self->~shared_ptr();
+}
+
 void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$new(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> const *ptr) noexcept;
 void cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$drop(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> *ptr) noexcept;
 ::std::size_t cxxbridge1$rust_vec$concrete_optimizer$dag$SecretLweKey$len(::rust::Vec<::concrete_optimizer::dag::SecretLweKey> const *ptr) noexcept;
@@ -1759,6 +1840,33 @@ void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$drop(::rust::Vec
 void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$reserve_total(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> *ptr, ::std::size_t new_cap) noexcept;
 void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$set_len(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> *ptr, ::std::size_t len) noexcept;
 void cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$truncate(::rust::Vec<::concrete_optimizer::dag::InstructionKeys> *ptr, ::std::size_t len) noexcept;
+
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$new(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$drop(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$len(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$capacity(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> const *ptr) noexcept;
+::concrete_optimizer::restriction::LweSecretKeyInfo const *cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$data(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$reserve_total(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$set_len(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$truncate(::rust::Vec<::concrete_optimizer::restriction::LweSecretKeyInfo> *ptr, ::std::size_t len) noexcept;
+
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$new(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$drop(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$len(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$capacity(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> const *ptr) noexcept;
+::concrete_optimizer::restriction::LweBootstrapKeyInfo const *cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$data(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$reserve_total(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$set_len(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$truncate(::rust::Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo> *ptr, ::std::size_t len) noexcept;
+
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$new(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$drop(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$len(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$capacity(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> const *ptr) noexcept;
+::concrete_optimizer::restriction::LweKeyswitchKeyInfo const *cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$data(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$reserve_total(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$set_len(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$truncate(::rust::Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo> *ptr, ::std::size_t len) noexcept;
 } // extern "C"
 
 namespace rust {
@@ -2078,6 +2186,102 @@ void Vec<::concrete_optimizer::dag::InstructionKeys>::set_len(::std::size_t len)
 template <>
 void Vec<::concrete_optimizer::dag::InstructionKeys>::truncate(::std::size_t len) {
   return cxxbridge1$rust_vec$concrete_optimizer$dag$InstructionKeys$truncate(this, len);
+}
+template <>
+Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$new(this);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$drop(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$len(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$capacity(this);
+}
+template <>
+::concrete_optimizer::restriction::LweSecretKeyInfo const *Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$data(this);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$set_len(this, len);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweSecretKeyInfo>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweSecretKeyInfo$truncate(this, len);
+}
+template <>
+Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$new(this);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$drop(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$len(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$capacity(this);
+}
+template <>
+::concrete_optimizer::restriction::LweBootstrapKeyInfo const *Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$data(this);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$set_len(this, len);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweBootstrapKeyInfo>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweBootstrapKeyInfo$truncate(this, len);
+}
+template <>
+Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$new(this);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$drop(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$len(this);
+}
+template <>
+::std::size_t Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$capacity(this);
+}
+template <>
+::concrete_optimizer::restriction::LweKeyswitchKeyInfo const *Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$data(this);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$reserve_total(this, new_cap);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$set_len(this, len);
+}
+template <>
+void Vec<::concrete_optimizer::restriction::LweKeyswitchKeyInfo>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$restriction$LweKeyswitchKeyInfo$truncate(this, len);
 }
 } // namespace cxxbridge1
 } // namespace rust

@@ -7,7 +7,6 @@ use super::*;
 use crate::computing_cost::cpu::CpuComplexity;
 use crate::dag::operator::{FunctionTable, LevelledComplexity, Shape};
 use crate::dag::unparametrized;
-use crate::global_parameters::DEFAULT_DOMAINS;
 use crate::optimization::dag::multi_parameters::partitionning::tests::{
     get_tfhers_noise_br, SHARED_CACHES, TFHERS_MACRO_PARAMS,
 };
@@ -38,11 +37,12 @@ fn optimize(
     default_partition: PartitionIndex,
 ) -> Option<Parameters> {
     let config = default_config();
-    let search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
+    let search_space = SearchSpace::default_cpu();
     super::optimize(
         dag,
         config,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         p_cut,
         default_partition,
@@ -615,9 +615,15 @@ fn test_levelled_only() {
     let mut dag = unparametrized::Dag::new();
     let _ = dag.add_input(22, Shape::number());
     let config = default_config();
-    let search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
-    let sol =
-        super::optimize_to_circuit_solution(&dag, config, &search_space, &SHARED_CACHES, &None);
+    let search_space = SearchSpace::default_cpu();
+    let sol = super::optimize_to_circuit_solution(
+        &dag,
+        config,
+        &search_space,
+        &NoSearchSpaceRestriction,
+        &SHARED_CACHES,
+        &None,
+    );
     let sol_mono = solo_key::optimize::tests::optimize(&dag)
         .best_solution
         .unwrap();
@@ -646,13 +652,14 @@ fn test_big_secret_key_sharing() {
         key_sharing: false,
         ..config_sharing
     };
-    let mut search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
+    let mut search_space = SearchSpace::default_cpu();
     // eprintln!("{:?}", search_space);
     search_space.glwe_dimensions = vec![1]; // forcing big key sharing
     let sol_sharing = super::optimize_to_circuit_solution(
         &dag,
         config_sharing,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
     );
@@ -661,6 +668,7 @@ fn test_big_secret_key_sharing() {
         &dag,
         config_no_sharing,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
     );
@@ -695,13 +703,14 @@ fn test_big_and_small_secret_key() {
         key_sharing: false,
         ..config_sharing
     };
-    let mut search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
+    let mut search_space = SearchSpace::default_cpu();
     search_space.glwe_dimensions = vec![1]; // forcing big key sharing
     search_space.internal_lwe_dimensions = vec![768]; // forcing small key sharing
     let sol_sharing = super::optimize_to_circuit_solution(
         &dag,
         config_sharing,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
     );
@@ -709,6 +718,7 @@ fn test_big_and_small_secret_key() {
         &dag,
         config_no_sharing,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
     );
@@ -732,11 +742,12 @@ fn test_composition_2_partitions() {
     let lut3 = dag.add_lut(lut1, FunctionTable::UNKWOWN, 3);
     let input2 = dag.add_dot([input1, lut3], [1, 1]);
     let out = dag.add_lut(input2, FunctionTable::UNKWOWN, 3);
-    let search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
+    let search_space = SearchSpace::default_cpu();
     let normal_sol = super::optimize(
         &dag,
         default_config(),
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
         PartitionIndex(1),
@@ -748,6 +759,7 @@ fn test_composition_2_partitions() {
         &dag,
         default_config(),
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
         PartitionIndex(1),
@@ -767,11 +779,12 @@ fn test_composition_1_partition_not_composable() {
     let oup = dag.add_dot([lut1], [1 << 16]);
     let normal_config = default_config();
     let composed_config = normal_config;
-    let search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
+    let search_space = SearchSpace::default_cpu();
     let normal_sol = super::optimize(
         &dag,
         normal_config,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
         PartitionIndex(1),
@@ -781,6 +794,7 @@ fn test_composition_1_partition_not_composable() {
         &dag,
         composed_config,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &None,
         PartitionIndex(1),
@@ -792,7 +806,7 @@ fn test_composition_1_partition_not_composable() {
 #[test]
 fn test_maximal_multi() {
     let config = default_config();
-    let search_space = SearchSpace::default_cpu(DEFAULT_DOMAINS);
+    let search_space = SearchSpace::default_cpu();
     let mut dag = unparametrized::Dag::new();
     let input = dag.add_input(8, Shape::number());
     let lut1 = dag.add_lut(input, FunctionTable::UNKWOWN, 8u8);
@@ -808,14 +822,21 @@ fn test_maximal_multi() {
 
     eprintln!("{:?}", sol.micro_params.pbs);
 
-    let sol_ref =
-        super::optimize_to_circuit_solution(&dag, config, &search_space, &SHARED_CACHES, &None);
+    let sol_ref = super::optimize_to_circuit_solution(
+        &dag,
+        config,
+        &search_space,
+        &NoSearchSpaceRestriction,
+        &SHARED_CACHES,
+        &None,
+    );
     assert!(sol_ref.circuit_keys.secret_keys.len() == 2);
 
     let sol = super::optimize_to_circuit_solution(
         &dag,
         config,
         &search_space,
+        &NoSearchSpaceRestriction,
         &SHARED_CACHES,
         &Some(p_cut),
     );
