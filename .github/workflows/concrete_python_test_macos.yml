@@ -18,8 +18,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        python-version: ["3.10"]
         machine: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.machine }}
+    env:
+      python: python${{matrix.python-version}}
+      concrete-python-dir: ${{ github.workspace }}/frontends/concrete-python
+      concrete-compiler-dir: ${{ github.workspace }}/compilers/concrete-compiler/compiler
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -31,50 +36,34 @@ jobs:
           brew install ninja ccache
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
-      - name: Cache compilation (push)
-        if: github.event_name == 'push'
-        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
-        with:
-          path: /Users/runner/Library/Caches/ccache
-          key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-compilation-cache-
-      - name: Cache compilation (pull_request)
-        if: github.event_name == 'pull_request'
-        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
-        with:
-          path: /Users/runner/Library/Caches/ccache
-          key: ${{ runner.os }}-${{ runner.arch }}-compilation-cache-${{ github.event.pull_request.base.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-compilation-cache-
       - name: Prepare build environment
         run: |
           set -e
-          cd ${{ github.workspace }}/frontends/concrete-python
+          cd ${{ env.concrete-python-dir }}
 
           # Setup pkg-config to find OpenBLAS (scipy need it)
           export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
 
           rm -rf .venv
-          python3.10 -m venv .venv
+          ${{ env.python }} -m venv .venv
 
-          . ${{ github.workspace }}/frontends/concrete-python/.venv/bin/activate
+          . ${{ env.concrete-python-dir }}/.venv/bin/activate
 
           pip install -r requirements.dev.txt
           pip install -r requirements.txt
       - name: Build concrete-compiler python-bindings
         run: |
-          ${{ github.workspace }}/frontends/concrete-python .venv/bin/activate
-          cd ${{ github.workspace }}/compilers/concrete-compiler/compiler
+          . ${{ env.concrete-python-dir }}/.venv/bin/activate
+          cd ${{ env.concrete-compiler-dir }}
           ccache -z
-          make Python3_EXECUTABLE="$(which python)" python-bindings
+          make Python3_EXECUTABLE="$(which ${{ env.python }})" python-bindings
           ccache -s
       - name: Create wheels
         run: |
-          ${{ github.workspace }}/frontends/concrete-python .venv/bin/activate
-          cd ${{ github.workspace }}/frontends/concrete-python
+          . ${{ env.concrete-python-dir }}/.venv/bin/activate
+          cd ${{ env.concrete-python-dir }}
 
-          export COMPILER_BUILD_DIRECTORY=${{ github.workspace }}/compilers/concrete-compiler/compiler
+          export COMPILER_BUILD_DIRECTORY=${{ env.concrete-compiler-dir }}/build
           rm -rf dist && mkdir -p dist
           pip wheel -v --no-deps -w dist .
           delocate-wheel -v dist/*macos*.whl
@@ -87,22 +76,18 @@ jobs:
           echo "TEST_TMP_DIR=$TEST_TMP_DIR" >> "${GITHUB_ENV}"
           cd "${TEST_TMP_DIR}"
 
-          python3.10 -m venv .testenv
+          ${{ env.python }} -m venv .testenv
           . .testenv/bin/activate
 
-          pip install ${{ github.workspace }}/frontends/concrete-python/dist/*macos*.whl
-          pip install -r ${{ github.workspace }}/frontends/concrete-python/requirements.dev.txt
+          pip install ${{ env.concrete-python-dir }}/dist/*macos*.whl
+          pip install -r ${{ env.concrete-python-dir }}/requirements.dev.txt
 
-          # MacOS x86 have conflict between our OpenMP library, and one from torch
-          # we fix it by using a single one (from torch)
-          # see discussion: https://discuss.python.org/t/conflicting-binary-extensions-in-different-packages/25332/8
+          ${{ github.workspace }}/.github/workflows/scripts/fix_multi_omp_bug_macos.sh
 
-          find .testenv/lib/python3.10/site-packages \( -not \( -path .testenv/lib/python3.10/site-packages/concrete -prune \) -name 'lib*omp5.dylib' -or -name 'lib*omp.dylib' \) -exec -n 1  ln -f -s "$(pwd)/.testenv/lib/python3.10/site-packages/concrete/.dylibs/libomp.dylib" {} \;
+          cp -R ${{ env.concrete-python-dir }}/examples ./examples
+          cp -R ${{ env.concrete-python-dir }}/tests ./tests
 
-          cp -R ${{ github.workspace }}/frontends/concrete-python/examples ./examples
-          cp -R ${{ github.workspace }}/frontends/concrete-python/tests ./tests
-
-          cp ${{ github.workspace }}/frontends/concrete-python/Makefile .
+          cp ${{ env.concrete-python-dir }}/Makefile .
       - name: Run pytest-macos
         run: |
           set -e
