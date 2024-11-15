@@ -298,6 +298,9 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
+      # HOME is needed by actions-rs/toolchain
+      - run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
       - name: Install rust
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
         with:

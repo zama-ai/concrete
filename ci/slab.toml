@@ -27,4 +27,3 @@ security_group= ["sg-02dd8470fa845f31b", ]
 region = "eu-west-1"
 image_id = "ami-002bdcd64b8472cf9"
 instance_type = "hpc7a.96xlarge"
-user = "ubuntu"
