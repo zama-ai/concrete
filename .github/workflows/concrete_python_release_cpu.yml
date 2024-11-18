@@ -342,6 +342,7 @@ jobs:
 
           # Copy test files
           cp -R "${CONCRETE_PYTHON}"/tests .
+          cp -R "${CONCRETE_PYTHON}"/examples .
           cp -R "${CONCRETE_PYTHON}"/pytest.ini .
           cp "${CONCRETE_PYTHON}"/Makefile .
 
@@ -420,6 +421,7 @@ jobs:
 
           # Copy test files
           cp -R "${CONCRETE_PYTHON}"/tests .
+          cp -R "${CONCRETE_PYTHON}"/examples .
           cp -R "${CONCRETE_PYTHON}"/pytest.ini .
           cp "${CONCRETE_PYTHON}"/Makefile .
 
