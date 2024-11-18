@@ -53,35 +53,19 @@ python example.py keygen -s $TDIR/tfhers_sk -o $TDIR/concrete_sk -k $TDIR/concre
 ## Encrypt in TFHE-rs
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value 162 --ciphertext $TDIR/tfhers_ct_1 --client-key $TDIR/tfhers_client_key
-../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value 73 --ciphertext $TDIR/tfhers_ct_2 --client-key $TDIR/tfhers_client_key
-```
-
-{% hint style="info" %}
-
-If you have tensor inputs, then you can encrypt by passing your flat tensor in `--value`. Concrete will take care of reshaping the values to the corresponding shape. For example `--value=1,2,3,4` can represent a 2 by 2 tensor, or a flat vector of 4 values.
-
-{% endhint %}
-
-## Compute in TFHE-rs
-
-```sh
-# encrypt value to add first
-../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value 9 --ciphertext $TDIR/tfhers_ct_inc --client-key $TDIR/tfhers_client_key
-# add two ciphertexts
-../../tests/tfhers-utils/target/release/tfhers_utils add --server-key $TDIR/tfhers_server_key --cts $TDIR/tfhers_ct_2 $TDIR/tfhers_ct_inc --output-ct $TDIR/tfhers_ct_2
+../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 --ciphertext $TDIR/tfhers_ct --client-key $TDIR/tfhers_client_key
 ```
 
 ## Run in Concrete
 
 ```sh
-python example.py run -k $TDIR/concrete_keyset -c1 $TDIR/tfhers_ct_1 -c2 $TDIR/tfhers_ct_2 -o $TDIR/tfhers_ct_out
+python example.py run -k $TDIR/concrete_keyset -c $TDIR/tfhers_ct -o $TDIR/tfhers_ct_out
 ```
 
 ## Decrypt in TFHE-rs
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils decrypt-with-key --ciphertext $TDIR/tfhers_ct_out --client-key $TDIR/tfhers_client_key
+../../tests/tfhers-utils/target/release/tfhers_utils decrypt-with-key --tensor --ciphertext $TDIR/tfhers_ct_out --client-key $TDIR/tfhers_client_key
 ```
 
 ## Clean tmpdir

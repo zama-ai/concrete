@@ -68,7 +68,7 @@ def ml_inference(q_X: np.ndarray) -> np.ndarray:
     y_pred = q_X @ q_weights - weight_quantizer_zero_point * np.sum(q_X, axis=1, keepdims=True)
     y_pred += q_bias
     y_pred = fhe.round_bit_pattern(y_pred, rounder)
-    y_pred = (y_pred >> rounder.lsbs_to_remove)
+    y_pred = y_pred >> rounder.lsbs_to_remove
     return y_pred
 
 
@@ -166,10 +166,10 @@ def keygen(output_secret_key: str, secret_key: str, concrete_keyset_path: str):
 
 
 @cli.command()
-@click.option("-c1", "--rust-ct-1", type=str, required=True)
+@click.option("-c", "--rust-ct", type=str, required=True)
 @click.option("-o", "--output-rust-ct", type=str, required=False)
 @click.option("-k", "--concrete-keyset-path", type=str, required=True)
-def run(rust_ct_1: str, output_rust_ct: str, concrete_keyset_path: str):
+def run(rust_ct: str, output_rust_ct: str, concrete_keyset_path: str):
     """Run circuit"""
     circuit, tfhers_bridge = ccompilee()
 
@@ -179,7 +179,7 @@ def run(rust_ct_1: str, output_rust_ct: str, concrete_keyset_path: str):
     circuit.client.keys.load(concrete_keyset_path)
 
     # read tfhers int from file
-    with open(rust_ct_1, "rb") as f:
+    with open(rust_ct, "rb") as f:
         buff = f.read()
     # import fheuint8 and get its description
     tfhers_uint8_x = tfhers_bridge.import_value(buff, input_idx=0)
