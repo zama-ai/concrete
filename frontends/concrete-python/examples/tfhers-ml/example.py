@@ -22,6 +22,7 @@ tfhers_type = tfhers.get_type_from_params(
 )
 tfhers_int = partial(tfhers.TFHERSInteger, tfhers_type)
 
+rounder = fhe.AutoRounder(target_msbs=8)  # We want to keep 8 MSBs
 
 q_weights = np.array(
     [
@@ -66,6 +67,8 @@ def ml_inference(q_X: np.ndarray) -> np.ndarray:
     # Quantizing weights and inputs makes an additional term appear in the inference function
     y_pred = q_X @ q_weights - weight_quantizer_zero_point * np.sum(q_X, axis=1, keepdims=True)
     y_pred += q_bias
+    y_pred = fhe.round_bit_pattern(y_pred, rounder)
+    y_pred = (y_pred >> rounder.lsbs_to_remove)
     return y_pred
 
 
@@ -110,6 +113,10 @@ def ccompilee():
             ),
         )
     ]
+
+    # Add the auto-adjustment before compilation
+    fhe.AutoRounder.adjust(compute, inputset)
+
     circuit = compiler.compile(inputset, show_graph=True, show_mlir=True)
 
     tfhers_bridge = tfhers.new_bridge(circuit=circuit)
