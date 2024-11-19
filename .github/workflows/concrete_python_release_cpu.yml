@@ -417,7 +417,7 @@ jobs:
           pip install "${WHEEL_DIR}"/*macos*.whl
           pip install -r "${CONCRETE_PYTHON}"/requirements.dev.txt
 
-          ${{ github.workspace }}/.github/workflows/scripts/fix_multi_omp_bug_macos.sh
+          "${CONCRETE_PYTHON}"/../../.github/workflows/scripts/fix_multi_omp_bug_macos.sh
 
           # Copy test files
           cp -R "${CONCRETE_PYTHON}"/tests .
