@@ -10,7 +10,7 @@ output=$(eval "$shell_blocks" 2>&1) || echo "$output"
 result=$(echo "$output" | grep "result: " | sed 's/result: //g')
 
 expected="31"
-if [ $result -eq $expected ]
+if [ "$result" -eq $expected ]
 then
     exit 0
 else
