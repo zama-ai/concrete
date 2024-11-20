@@ -425,6 +425,9 @@ jobs:
           cp -R "${CONCRETE_PYTHON}"/pytest.ini .
           cp "${CONCRETE_PYTHON}"/Makefile .
 
+          # Fix: this is because cargo cannot be found
+          . "$HOME/.cargo/env"
+
           # Running tests
           make tfhers-utils
           mkdir ./KeySetCache
