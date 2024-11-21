@@ -388,6 +388,9 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.runs-on }}
+    outputs:
+      slack_message: ${{ steps.prepare_slack_notif.outputs.slack_message }}
+      slack_color: ${{ steps.prepare_slack_notif.outputs.slack_color }}
     steps:
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
@@ -436,10 +439,22 @@ jobs:
         if: success() || failure()
         run: |
           rm -rf "${TEST_TMP_DIR}"
-      - name: Slack Notification
+      - name: Prepare Slack Notification
+        id: prepare_slack_notif
         if: ${{ failure() }}
         continue-on-error: true
+        run: |
+          echo "slack_message=test-macos (${{matrix.runs-on}}/${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})" >> "$GITHUB_OUTPUT"
+          echo "slack_color=${{ job.status }}" >> "$GITHUB_OUTPUT"
+
+  slack-notif-macos:
+    needs: ["test-macos"]
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Slack Notification
+        # we want to check that prepare_slack_notif was run
+        if: ${{ needs.test-macos.outputs.slack_color != '' }}
         uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
         env:
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "test-macos (${{matrix.runs-on}}/${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+          SLACK_COLOR: ${{ needs.test-macos.outputs.slack_color }}
+          SLACK_MESSAGE: ${{ needs.test-macos.outputs.slack_message }}
