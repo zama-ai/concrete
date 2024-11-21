@@ -204,11 +204,19 @@ jobs:
   test-linux-x86:
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
       fail-fast: false
     needs: [setup-test-instance, push-wheels]
     runs-on: ${{ needs.setup-test-instance.outputs.runner-name }}
     steps:
+      # HOME is needed by actions-rs/toolchain
+      - run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+      - name: Install rust
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
+        with:
+          toolchain: nightly
+          default: true
       - name: Setup Python
         uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
         with:
