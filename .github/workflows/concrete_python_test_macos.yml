@@ -13,6 +13,12 @@ concurrency:
   group: concrete_python_tests_macos_${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
 jobs:
   concrete-python-test-pytest:
     strategy:
@@ -21,6 +27,9 @@ jobs:
         python-version: ["3.10"]
         machine: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.machine }}
+    outputs:
+      slack_message: ${{ steps.prepare_slack_notif.outputs.slack_message }}
+      slack_color: ${{ steps.prepare_slack_notif.outputs.slack_color }}
     env:
       python: python${{matrix.python-version}}
       concrete-python-dir: ${{ github.workspace }}/frontends/concrete-python
@@ -102,3 +111,22 @@ jobs:
         if: success() || failure()
         run: |
           rm -rf "${TEST_TMP_DIR}"
+      - name: Prepare Slack Notification
+        id: prepare_slack_notif
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: |
+          echo "slack_message=concrete-python-test-pytest (${{matrix.machine}}/${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})" >> "$GITHUB_OUTPUT"
+          echo "slack_color=${{ job.status }}" >> "$GITHUB_OUTPUT"
+
+  slack-notif-macos:
+    needs: ["concrete-python-test-pytest"]
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Slack Notification
+        # we want to check that prepare_slack_notif was run
+        if: ${{ needs.concrete-python-test-pytest.outputs.slack_color != '' }}
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+        env:
+          SLACK_COLOR: ${{ needs.concrete-python-test-pytest.outputs.slack_color }}
+          SLACK_MESSAGE: ${{ needs.concrete-python-test-pytest.outputs.slack_message }}
