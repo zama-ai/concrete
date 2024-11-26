@@ -71,9 +71,9 @@ pub struct Parameters {
 }
 
 #[derive(Debug, Clone)]
-struct OperationsCV {
+struct OperationsCV<'scheme> {
     variance: NoiseValues,
-    cost: ComplexityValues,
+    cost: ComplexityValues<'scheme>,
 }
 
 type KsSrc = PartitionIndex;
@@ -124,18 +124,18 @@ fn optimize_1_ks(
     None
 }
 
-fn optimize_many_independant_ks(
+fn optimize_many_independant_ks<'scheme>(
     search_space_restriction: &impl SearchSpaceRestriction,
     macro_parameters: &[MacroParameters],
     ks_src: KsSrc,
     ks_input_lwe_dim: u64,
     ks_used: &[Vec<bool>],
-    operations: &OperationsCV,
+    operations: &OperationsCV<'scheme>,
     feasible: &Feasible,
     complexity: &ComplexityExpression,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
-) -> Option<(Vec<(KsDst, KsComplexityNoise)>, OperationsCV)> {
+) -> Option<(Vec<(KsDst, KsComplexityNoise)>, OperationsCV<'scheme>)> {
     // all ks are independent since they appears in mutually exclusive variance constraints
     // only one ks can appear in a variance constraint,
     // we can obtain the best feasible by optimizing them separately since everything else is already chosen
@@ -176,20 +176,20 @@ struct Best1FksAndManyKs {
 }
 
 #[allow(clippy::type_complexity)]
-fn optimize_1_fks_and_all_compatible_ks(
+fn optimize_1_fks_and_all_compatible_ks<'scheme>(
     search_space_restriction: &impl SearchSpaceRestriction,
     macro_parameters: &[MacroParameters],
     ks_used: &[Vec<bool>],
     fks_src: PartitionIndex,
     fks_dst: PartitionIndex,
-    operations: &OperationsCV,
+    operations: &OperationsCV<'scheme>,
     feasible: &Feasible,
     complexity: &ComplexityExpression,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
     fft_precision: u32,
-) -> Option<(Best1FksAndManyKs, OperationsCV)> {
+) -> Option<(Best1FksAndManyKs, OperationsCV<'scheme>)> {
     // At this point every thing else is known apart fks and ks
     let input_glwe = macro_parameters[fks_src.0].glwe_params;
     let output_glwe = macro_parameters[fks_dst.0].glwe_params;
@@ -313,19 +313,19 @@ fn optimize_1_fks_and_all_compatible_ks(
     best_sol
 }
 
-fn optimize_dst_exclusive_fks_subset_and_all_ks(
+fn optimize_dst_exclusive_fks_subset_and_all_ks<'scheme>(
     search_space_restriction: &impl SearchSpaceRestriction,
     macro_parameters: &[MacroParameters],
     fks_paretos: &[Option<FksSrc>],
     ks_used: &[Vec<bool>],
-    operations: &OperationsCV,
+    operations: &OperationsCV<'scheme>,
     feasible: &Feasible,
     complexity: &ComplexityExpression,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
     fft_precision: u32,
-) -> Option<(Vec<Best1FksAndManyKs>, OperationsCV)> {
+) -> Option<(Vec<Best1FksAndManyKs>, OperationsCV<'scheme>)> {
     // All fks subgroup can be optimized independently
     let mut acc_operations = operations.clone();
     let mut result = vec![];
@@ -736,7 +736,7 @@ fn optimize_macro(
     let fks_to_optimize = fks_to_optimize(nb_partitions, used_conversion_keyswitch, partition);
     let operations = OperationsCV {
         variance: NoiseValues::new(),
-        cost: ComplexityValues::new(),
+        cost: ComplexityValues::from_scheme(complexity.scheme()),
     };
     let partition_feasible = feasible.filter_constraints(partition);
 
@@ -1031,7 +1031,8 @@ pub fn optimize(
     let mut caches = persistent_caches.caches();
 
     let feasible = Feasible::of(&dag.variance_constraints, kappa, None);
-    let complexity = ComplexityExpression::from(&dag.operations_count);
+    let scheme = dag.operations_count.0.scheme();
+    let complexity = ComplexityExpression::from_scheme_and_counts(&scheme, &dag.operations_count);
     let used_tlu_keyswitch = used_tlu_keyswitch(&dag);
     let used_conversion_keyswitch = used_conversion_keyswitch(&dag);
 
@@ -1233,7 +1234,7 @@ fn sanity_check(
     let nb_partitions = params.macro_params.len();
     let mut operations = OperationsCV {
         variance: NoiseValues::new(),
-        cost: ComplexityValues::new(),
+        cost: ComplexityValues::from_scheme(complexity.scheme()),
     };
     let micro_params = &params.micro_params;
     for partition in PartitionIndex::range(0, nb_partitions) {

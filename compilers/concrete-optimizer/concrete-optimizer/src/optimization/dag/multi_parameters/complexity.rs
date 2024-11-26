@@ -2,7 +2,7 @@ use std::{fmt, ops::Add};
 
 use super::{
     partitions::PartitionIndex,
-    symbolic::{fast_keyswitch, keyswitch, Symbol, SymbolMap},
+    symbolic::{fast_keyswitch, keyswitch, Symbol, SymbolArray, SymbolMap, SymbolScheme},
 };
 
 /// A structure storing the number of times an fhe operation gets executed in a circuit.
@@ -29,36 +29,44 @@ impl fmt::Display for OperationsCount {
 
 /// An ensemble of costs associated with fhe operation symbols.
 #[derive(Clone, Debug)]
-pub struct ComplexityValues(SymbolMap<f64>);
+pub struct ComplexityValues<'scheme>(SymbolArray<'scheme, f64>);
 
-impl ComplexityValues {
+impl<'scheme> ComplexityValues<'scheme> {
     /// Returns an empty set of cost values.
-    pub fn new() -> Self {
-        ComplexityValues(SymbolMap::new())
+    pub fn from_scheme(scheme: &SymbolScheme) -> ComplexityValues<'_> {
+        ComplexityValues(SymbolArray::from_scheme(scheme))
     }
 
     /// Sets the cost associated with an fhe operation symbol.
     pub fn set_cost(&mut self, source: Symbol, value: f64) {
-        self.0.set(source, value);
+        self.0.set(&source, value);
     }
 }
 
 /// A complexity expression is a sum of complexity terms associating operation
 /// symbols with the number of time they gets executed in the circuit.
 #[derive(Clone, Debug)]
-pub struct ComplexityExpression(SymbolMap<usize>);
+pub struct ComplexityExpression<'scheme>(SymbolArray<'scheme, usize>);
 
-impl ComplexityExpression {
+impl<'scheme> ComplexityExpression<'scheme> {
     /// Creates a complexity expression from a set of operation counts.
-    pub fn from(counts: &OperationsCount) -> Self {
-        Self(counts.0.clone())
+    pub fn from_scheme_and_counts(
+        scheme: &'scheme SymbolScheme,
+        counts: &OperationsCount,
+    ) -> ComplexityExpression<'scheme> {
+        Self(SymbolArray::from_scheme_and_map(scheme, &counts.0))
+    }
+
+    pub fn scheme(&self) -> &'scheme SymbolScheme {
+        self.scheme()
     }
 
     /// Evaluates the total cost expression on a set of cost values.
     pub fn evaluate_total_cost(&self, costs: &ComplexityValues) -> f64 {
-        self.0.iter().fold(0.0, |acc, (symbol, n_ops)| {
-            acc + (n_ops as f64) * costs.0.get(symbol)
-        })
+        self.0
+            .iter()
+            .zip(costs.0.iter())
+            .fold(0.0, |acc, (n_ops, cost)| acc + (*n_ops as f64) * *cost)
     }
 
     /// Evaluates the max ks cost expression on a set of cost values.
@@ -69,11 +77,11 @@ impl ComplexityExpression {
         src_partition: PartitionIndex,
         dst_partition: PartitionIndex,
     ) -> f64 {
-        let actual_ks_cost = costs.0.get(keyswitch(src_partition, dst_partition));
-        let ks_coeff = self.0.get(keyswitch(src_partition, dst_partition));
+        let actual_ks_cost = costs.0.get(&keyswitch(src_partition, dst_partition));
+        let ks_coeff = self.0.get(&keyswitch(src_partition, dst_partition));
         let actual_complexity =
-            self.evaluate_total_cost(costs) - (ks_coeff as f64) * actual_ks_cost;
-        (complexity_cut - actual_complexity) / (ks_coeff as f64)
+            self.evaluate_total_cost(costs) - (*ks_coeff as f64) * actual_ks_cost;
+        (complexity_cut - actual_complexity) / (*ks_coeff as f64)
     }
 
     /// Evaluates the max fks cost expression on a set of cost values.
@@ -84,10 +92,10 @@ impl ComplexityExpression {
         src_partition: PartitionIndex,
         dst_partition: PartitionIndex,
     ) -> f64 {
-        let actual_fks_cost = costs.0.get(fast_keyswitch(src_partition, dst_partition));
-        let fks_coeff = self.0.get(fast_keyswitch(src_partition, dst_partition));
+        let actual_fks_cost = costs.0.get(&fast_keyswitch(src_partition, dst_partition));
+        let fks_coeff = self.0.get(&fast_keyswitch(src_partition, dst_partition));
         let actual_complexity =
-            self.evaluate_total_cost(costs) - (fks_coeff as f64) * actual_fks_cost;
-        (complexity_cut - actual_complexity) / (fks_coeff as f64)
+            self.evaluate_total_cost(costs) - (*fks_coeff as f64) * actual_fks_cost;
+        (complexity_cut - actual_complexity) / (*fks_coeff as f64)
     }
 }
