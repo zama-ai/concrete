@@ -7,7 +7,7 @@ shell_blocks=$(sed -n '/^```sh/,/^```/ p' < README.md | sed '/^```sh/d' | sed '/
 set -e
 output=$(eval "$shell_blocks" 2>&1) || echo "$output"
 
-result=$(echo "$output" | grep "result: " | sed 's/result: //g')
+result=$(echo "$output" | grep "dequantized: " | sed 's/dequantized: //g')
 
 echo "### result: $result"
 # expected="31"

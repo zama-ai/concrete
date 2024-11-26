@@ -22,45 +22,13 @@ tfhers_type = tfhers.get_type_from_params(
 )
 tfhers_int = partial(tfhers.TFHERSInteger, tfhers_type)
 
-rounder = fhe.AutoRounder(target_msbs=8)  # We want to keep 8 MSBs
+#### Model Parameters ##################
+q_weights = np.array([[-25, 21, -10], [42, -20, -37], [-128, -15, 127], [-58, -51, 94]])
+q_bias = np.array([[35167, 9417, -44584]])
+weight_quantizer_zero_point = -5
+########################################
 
-q_weights = np.array(
-    [
-        [-81],
-        [-95],
-        [-51],
-        [-77],
-        [-64],
-        [-64],
-        [-128],
-        [127],
-        [-122],
-        [-81],
-        [-96],
-        [-93],
-        [-63],
-        [-50],
-        [-104],
-        [-99],
-        [-112],
-        [-46],
-        [-106],
-        [-42],
-        [-56],
-        [-46],
-        [-67],
-        [-116],
-        [-107],
-        [-75],
-        [-105],
-        [-109],
-        [-88],
-        [-80],
-    ]
-)
-q_weights = np.ones_like(q_weights)
-q_bias = np.array([[680]])
-weight_quantizer_zero_point = -74
+rounder = fhe.AutoRounder(target_msbs=8)  # We want to keep 8 MSBs
 
 
 def ml_inference(q_X: np.ndarray) -> np.ndarray:

@@ -1,6 +1,6 @@
 # TFHE-rs Interoperability Example
 
-This is the full execution for the example explained in the [TFHE-rs Interoperability Guide](../../../../docs/guides/tfhers) (use case 1). You can find the TFHE-rs code [here](../../tests/tfhers-utils/src/main.rs), while the Python code is under this direcotry [here](example.py). Both are CLI tools, so that we can execute the example step by step. You can refer to the code at every step to see how it's implemented.
+This is a similar example to the first TFHE-rs example, except that it uses tensors and run a linear ML model. It also uses quantization.
 
 ## Make tmpdir
 
@@ -50,10 +50,16 @@ Then we do a partial keygen in Concrete.
 python example.py keygen -s $TDIR/tfhers_sk -o $TDIR/concrete_sk -k $TDIR/concrete_keyset
 ```
 
+### Quantize values
+
+```sh
+../../tests/tfhers-utils/target/release/tfhers_utils quantize --value=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 --config ./input_quantizer.json -o $TDIR/quantized_values
+```
+
 ## Encrypt in TFHE-rs
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 --ciphertext $TDIR/tfhers_ct --client-key $TDIR/tfhers_client_key
+../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value=$(cat $TDIR/quantized_values) --ciphertext $TDIR/tfhers_ct --client-key $TDIR/tfhers_client_key
 ```
 
 ## Run in Concrete
@@ -65,7 +71,13 @@ python example.py run -k $TDIR/concrete_keyset -c $TDIR/tfhers_ct -o $TDIR/tfher
 ## Decrypt in TFHE-rs
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils decrypt-with-key --tensor --ciphertext $TDIR/tfhers_ct_out --client-key $TDIR/tfhers_client_key
+../../tests/tfhers-utils/target/release/tfhers_utils decrypt-with-key --tensor --ciphertext $TDIR/tfhers_ct_out --client-key $TDIR/tfhers_client_key --plaintext $TDIR/result_plaintext
+```
+
+### Dequantize values
+
+```sh
+../../tests/tfhers-utils/target/release/tfhers_utils dequantize --value=$(cat $TDIR/result_plaintext) --config ./output_quantizer.json
 ```
 
 ## Clean tmpdir
