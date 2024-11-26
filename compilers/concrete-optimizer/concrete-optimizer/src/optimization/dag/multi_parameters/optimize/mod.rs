@@ -15,7 +15,7 @@ use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::{cmux, keyswitch, DecompCaches, PersistDecompCaches};
 use crate::parameters::GlweParameters;
 
-use crate::optimization::dag::multi_parameters::complexity::ComplexityExpression;
+use crate::optimization::dag::multi_parameters::complexity::ComplexityEvaluator;
 use crate::optimization::dag::multi_parameters::feasible::Feasible;
 use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
@@ -73,9 +73,9 @@ pub struct Parameters {
 }
 
 #[derive(Debug, Clone)]
-struct OperationsCV<'scheme> {
+struct OperationsCV {
     variance: NoiseValues,
-    cost: ComplexityValues<'scheme>,
+    cost: ComplexityValues,
 }
 
 type KsSrc = PartitionIndex;
@@ -92,7 +92,7 @@ fn optimize_1_ks(
     ks_pareto: &[KsComplexityNoise],
     operations: &mut OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     cut_complexity: f64,
 ) -> Option<KsComplexityNoise> {
     // find the first feasible (and less complex)
@@ -132,12 +132,12 @@ fn optimize_many_independant_ks<'scheme>(
     ks_src: KsSrc,
     ks_input_lwe_dim: u64,
     ks_used: &[Vec<bool>],
-    operations: &OperationsCV<'scheme>,
+    operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
-) -> Option<(Vec<(KsDst, KsComplexityNoise)>, OperationsCV<'scheme>)> {
+) -> Option<(Vec<(KsDst, KsComplexityNoise)>, OperationsCV)> {
     // all ks are independent since they appears in mutually exclusive variance constraints
     // only one ks can appear in a variance constraint,
     // we can obtain the best feasible by optimizing them separately since everything else is already chosen
@@ -184,14 +184,14 @@ fn optimize_1_fks_and_all_compatible_ks<'scheme>(
     ks_used: &[Vec<bool>],
     fks_src: PartitionIndex,
     fks_dst: PartitionIndex,
-    operations: &OperationsCV<'scheme>,
+    operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
     fft_precision: u32,
-) -> Option<(Best1FksAndManyKs, OperationsCV<'scheme>)> {
+) -> Option<(Best1FksAndManyKs, OperationsCV)> {
     // At this point every thing else is known apart fks and ks
     let input_glwe = macro_parameters[fks_src.0].glwe_params;
     let output_glwe = macro_parameters[fks_dst.0].glwe_params;
@@ -320,14 +320,14 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks<'scheme>(
     macro_parameters: &[MacroParameters],
     fks_paretos: &[Option<FksSrc>],
     ks_used: &[Vec<bool>],
-    operations: &OperationsCV<'scheme>,
+    operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
     fft_precision: u32,
-) -> Option<(Vec<Best1FksAndManyKs>, OperationsCV<'scheme>)> {
+) -> Option<(Vec<Best1FksAndManyKs>, OperationsCV)> {
     // All fks subgroup can be optimized independently
     let mut acc_operations = operations.clone();
     let mut result = vec![];
@@ -385,7 +385,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     ks_used: &[Vec<bool>],
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     best_p_error: f64,
@@ -713,7 +713,7 @@ fn optimize_macro(
     used_tlu_keyswitch: &[Vec<bool>],
     used_conversion_keyswitch: &[Vec<bool>],
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut DecompCaches,
     init_parameters: &Parameters,
     best_complexity: f64,
@@ -737,7 +737,7 @@ fn optimize_macro(
 
     let fks_to_optimize = fks_to_optimize(nb_partitions, used_conversion_keyswitch, partition);
     let operations = OperationsCV {
-        variance: NoiseValues::new(),
+        variance: NoiseValues::from_scheme(complexity.scheme()),
         cost: ComplexityValues::from_scheme(complexity.scheme()),
     };
     let partition_feasible = feasible.filter_constraints(partition);
@@ -1026,13 +1026,12 @@ pub fn optimize(
         ciphertext_modulus_log,
     };
 
-    let dag = analyze(dag, &noise_config, p_cut, default_partition)?;
+    let mut dag = analyze(dag, &noise_config, p_cut, default_partition)?;
     let kappa =
         error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
     let mut caches = persistent_caches.caches();
 
-    let feasible = Feasible::of(&dag.variance_constraints, kappa, None);
     let mut scheme = SymbolScheme::new();
     for i in PartitionIndex::range(0, dag.nb_partitions) {
         scheme.add_symbol(input(i));
@@ -1043,7 +1042,13 @@ pub fn optimize(
             scheme.add_symbol(keyswitch(i, j));
         }
     }
-    let complexity = ComplexityExpression::from_scheme_and_counts(&scheme, &dag.operations_count);
+
+    dag.variance_constraints
+        .iter_mut()
+        .for_each(|c| c.init_evaluator(&scheme));
+    let feasible = Feasible::of(&dag.variance_constraints, kappa, None);
+
+    let complexity = ComplexityEvaluator::from_scheme_and_counts(&scheme, &dag.operations_count);
     let used_tlu_keyswitch = used_tlu_keyswitch(&dag);
     let used_conversion_keyswitch = used_conversion_keyswitch(&dag);
 
@@ -1235,7 +1240,7 @@ fn sanity_check(
     ciphertext_modulus_log: u32,
     security_level: u64,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
 ) {
     assert!(params.is_feasible.is_feasible());
     assert!(
@@ -1244,7 +1249,7 @@ fn sanity_check(
     );
     let nb_partitions = params.macro_params.len();
     let mut operations = OperationsCV {
-        variance: NoiseValues::new(),
+        variance: NoiseValues::from_scheme(complexity.scheme()),
         cost: ComplexityValues::from_scheme(complexity.scheme()),
     };
     let micro_params = &params.micro_params;

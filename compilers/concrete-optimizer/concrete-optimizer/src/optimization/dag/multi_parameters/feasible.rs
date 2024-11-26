@@ -54,7 +54,11 @@ impl Feasible {
             if pbs_coeff == 0.0 {
                 continue;
             }
-            let actual_variance = constraint.noise_expression.evaluate(operations_variance)
+            let actual_variance = constraint
+                .noise_evaluator
+                .as_ref()
+                .unwrap()
+                .evaluate(operations_variance)
                 - pbs_coeff * actual_pbs_variance;
             let pbs_max_variance = (constraint.safe_variance_bound - actual_variance) / pbs_coeff;
             smallest_pbs_max_variance = smallest_pbs_max_variance.min(pbs_max_variance);
@@ -80,7 +84,11 @@ impl Feasible {
             if ks_coeff == 0.0 {
                 continue;
             }
-            let actual_variance = constraint.noise_expression.evaluate(operations_variance)
+            let actual_variance = constraint
+                .noise_evaluator
+                .as_ref()
+                .unwrap()
+                .evaluate(operations_variance)
                 - ks_coeff * actual_ks_variance;
             let ks_max_variance = (constraint.safe_variance_bound - actual_variance) / ks_coeff;
             smallest_ks_max_variance = smallest_ks_max_variance.min(ks_max_variance);
@@ -107,7 +115,11 @@ impl Feasible {
             if fks_coeff == 0.0 {
                 continue;
             }
-            let actual_variance = constraint.noise_expression.evaluate(operations_variance)
+            let actual_variance = constraint
+                .noise_evaluator
+                .as_ref()
+                .unwrap()
+                .evaluate(operations_variance)
                 - fks_coeff * actual_fks_variance;
             let fks_max_variance = (constraint.safe_variance_bound - actual_variance) / fks_coeff;
             smallest_fks_max_variance = smallest_fks_max_variance.min(fks_max_variance);
@@ -126,7 +138,11 @@ impl Feasible {
 
     fn local_feasible(&self, operations_variance: &NoiseValues) -> bool {
         for constraint in &self.undominated_constraints {
-            if constraint.noise_expression.evaluate(operations_variance)
+            if constraint
+                .noise_evaluator
+                .as_ref()
+                .unwrap()
+                .evaluate(operations_variance)
                 > constraint.safe_variance_bound
             {
                 return false;
@@ -148,7 +164,11 @@ impl Feasible {
         let mut worst_relative_variance = 0.0;
         let mut worst_variance = 0.0;
         for constraint in &self.undominated_constraints {
-            let variance = constraint.noise_expression.evaluate(operations_variance);
+            let variance = constraint
+                .noise_evaluator
+                .as_ref()
+                .unwrap()
+                .evaluate(operations_variance);
             let relative_variance = variance / constraint.safe_variance_bound;
             if relative_variance > worst_relative_variance {
                 worst_relative_variance = relative_variance;
@@ -167,7 +187,11 @@ impl Feasible {
     fn global_p_error_with_cut(&self, operations_variance: &NoiseValues, cut: f64) -> Option<f64> {
         let mut global_p_error = 0.0;
         for constraint in &self.constraints {
-            let variance = constraint.noise_expression.evaluate(operations_variance);
+            let variance = constraint
+                .noise_evaluator
+                .as_ref()
+                .unwrap()
+                .evaluate(operations_variance);
             let relative_variance = variance / constraint.safe_variance_bound;
             let p_error = p_error_from_relative_variance(relative_variance, self.kappa);
             global_p_error = combine_errors(

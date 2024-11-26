@@ -29,11 +29,11 @@ impl fmt::Display for OperationsCount {
 
 /// An ensemble of costs associated with fhe operation symbols.
 #[derive(Clone, Debug)]
-pub struct ComplexityValues<'scheme>(SymbolArray<'scheme, f64>);
+pub struct ComplexityValues(SymbolArray<f64>);
 
-impl<'scheme> ComplexityValues<'scheme> {
+impl ComplexityValues {
     /// Returns an empty set of cost values.
-    pub fn from_scheme(scheme: &SymbolScheme) -> ComplexityValues<'_> {
+    pub fn from_scheme(scheme: &SymbolScheme) -> ComplexityValues {
         ComplexityValues(SymbolArray::from_scheme(scheme))
     }
 
@@ -46,18 +46,18 @@ impl<'scheme> ComplexityValues<'scheme> {
 /// A complexity expression is a sum of complexity terms associating operation
 /// symbols with the number of time they gets executed in the circuit.
 #[derive(Clone, Debug)]
-pub struct ComplexityExpression<'scheme>(SymbolArray<'scheme, usize>);
+pub struct ComplexityEvaluator(SymbolArray<usize>);
 
-impl<'scheme> ComplexityExpression<'scheme> {
+impl ComplexityEvaluator {
     /// Creates a complexity expression from a set of operation counts.
     pub fn from_scheme_and_counts(
-        scheme: &'scheme SymbolScheme,
+        scheme: &SymbolScheme,
         counts: &OperationsCount,
-    ) -> ComplexityExpression<'scheme> {
+    ) -> ComplexityEvaluator {
         Self(SymbolArray::from_scheme_and_map(scheme, &counts.0))
     }
 
-    pub fn scheme(&self) -> &'scheme SymbolScheme {
+    pub fn scheme(&self) -> &SymbolScheme {
         self.0.scheme()
     }
 

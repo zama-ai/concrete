@@ -117,15 +117,15 @@ impl SymbolScheme {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SymbolArray<'scheme, T: Default + Clone + PartialEq> {
-    pub(super) scheme: &'scheme SymbolScheme,
+pub struct SymbolArray<T: Default + Clone + PartialEq> {
+    pub(super) scheme: SymbolScheme,
     pub(super) values: Vec<T>,
 }
 
-impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
-    pub fn from_scheme(scheme: &SymbolScheme) -> SymbolArray<'_, T> {
+impl<T: Default + Clone + PartialEq> SymbolArray<T> {
+    pub fn from_scheme(scheme: &SymbolScheme) -> SymbolArray<T> {
         SymbolArray {
-            scheme,
+            scheme: scheme.to_owned(),
             values: vec![T::default(); scheme.len()],
         }
     }
@@ -135,10 +135,7 @@ impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
     //     SymbolArray { scheme, values }
     // }
 
-    pub fn from_scheme_and_map(
-        scheme: &'scheme SymbolScheme,
-        map: &SymbolMap<T>,
-    ) -> SymbolArray<'scheme, T> {
+    pub fn from_scheme_and_map(scheme: &SymbolScheme, map: &SymbolMap<T>) -> SymbolArray<T> {
         let mut output = Self::from_scheme(scheme);
         map.iter().for_each(|(sym, v)| output.set(&sym, v));
         output
@@ -148,7 +145,7 @@ impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
         self.scheme
             .get_symbol_index(sym)
             .map(|i| self.values[i] = val)
-            .unwrap();
+            .expect(&format!("Failed to set {sym}"));
     }
 
     pub fn get<'a>(&'a self, sym: &Symbol) -> &'a T {
@@ -158,8 +155,8 @@ impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
             .unwrap()
     }
 
-    pub fn scheme(&self) -> &'scheme SymbolScheme {
-        self.scheme
+    pub fn scheme(&self) -> &SymbolScheme {
+        &self.scheme
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &T> {
@@ -175,7 +172,7 @@ impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
     }
 }
 
-impl<'scheme, T: Default + Clone + PartialEq + Display> SymbolArray<'scheme, T> {
+impl<T: Default + Clone + PartialEq + Display> SymbolArray<T> {
     /// Formats the symbol array with a given separator and symbol prefix.
     pub fn fmt_with(
         &self,
@@ -244,5 +241,5 @@ pub fn bootstrap(partition: PartitionIndex) -> Symbol {
 /// Returns a modulus switch symbol.
 #[allow(unused)]
 pub fn modulus_switching(partition: PartitionIndex) -> Symbol {
-    Symbol::Bootstrap(partition)
+    Symbol::ModulusSwitch(partition)
 }
