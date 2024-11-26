@@ -28,7 +28,9 @@ use super::noise_expression::{
     bootstrap_noise, fast_keyswitch_noise, input_noise, keyswitch_noise, modulus_switching_noise,
     NoiseValues,
 };
-use super::symbolic::{bootstrap, fast_keyswitch, keyswitch};
+use super::symbolic::{
+    bootstrap, fast_keyswitch, input, keyswitch, modulus_switching, SymbolScheme,
+};
 
 const DEBUG: bool = false;
 
@@ -1031,7 +1033,16 @@ pub fn optimize(
     let mut caches = persistent_caches.caches();
 
     let feasible = Feasible::of(&dag.variance_constraints, kappa, None);
-    let scheme = dag.operations_count.0.scheme();
+    let mut scheme = SymbolScheme::new();
+    for i in PartitionIndex::range(0, dag.nb_partitions) {
+        scheme.add_symbol(input(i));
+        scheme.add_symbol(bootstrap(i));
+        scheme.add_symbol(modulus_switching(i));
+        for j in PartitionIndex::range(0, dag.nb_partitions) {
+            scheme.add_symbol(fast_keyswitch(i, j));
+            scheme.add_symbol(keyswitch(i, j));
+        }
+    }
     let complexity = ComplexityExpression::from_scheme_and_counts(&scheme, &dag.operations_count);
     let used_tlu_keyswitch = used_tlu_keyswitch(&dag);
     let used_conversion_keyswitch = used_conversion_keyswitch(&dag);

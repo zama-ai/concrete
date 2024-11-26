@@ -130,16 +130,15 @@ impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
         }
     }
 
-    pub fn from_scheme_and_vals(scheme: &SymbolScheme, values: Vec<T>) -> SymbolArray<'_, T> {
-        debug_assert_eq!(scheme.len(), values.len());
-        SymbolArray { scheme, values }
-    }
+    // pub fn from_scheme_and_vals(scheme: &SymbolScheme, values: Vec<T>) -> SymbolArray<'_, T> {
+    //     debug_assert_eq!(scheme.len(), values.len());
+    //     SymbolArray { scheme, values }
+    // }
 
     pub fn from_scheme_and_map(
         scheme: &'scheme SymbolScheme,
         map: &SymbolMap<T>,
     ) -> SymbolArray<'scheme, T> {
-        debug_assert_eq!(scheme.len(), map.len());
         let mut output = Self::from_scheme(scheme);
         map.iter().for_each(|(sym, v)| output.set(&sym, v));
         output
@@ -149,7 +148,10 @@ impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
         self.scheme
             .get_symbol_index(sym)
             .map(|i| self.values[i] = val)
-            .unwrap()
+            .expect(&format!(
+                "Failed to set symbol {} from array with scheme {:?}",
+                sym, self.scheme
+            ))
     }
 
     pub fn get<'a>(&'a self, sym: &Symbol) -> &'a T {

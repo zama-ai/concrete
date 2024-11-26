@@ -58,7 +58,7 @@ impl<'scheme> ComplexityExpression<'scheme> {
     }
 
     pub fn scheme(&self) -> &'scheme SymbolScheme {
-        self.scheme()
+        self.0.scheme()
     }
 
     /// Evaluates the total cost expression on a set of cost values.

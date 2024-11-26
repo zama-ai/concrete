@@ -196,7 +196,7 @@ impl Mul<NoiseSource> for f64 {
 
 /// A symbolic source of noise, or a noise source variable.
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-pub struct NoiseSource(Symbol);
+pub struct NoiseSource(pub Symbol);
 
 /// Returns an input noise source symbol.
 pub fn input_noise(partition: PartitionIndex) -> NoiseSource {
