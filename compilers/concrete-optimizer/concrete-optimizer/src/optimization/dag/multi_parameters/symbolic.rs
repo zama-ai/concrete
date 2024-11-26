@@ -148,10 +148,7 @@ impl<'scheme, T: Default + Clone + PartialEq> SymbolArray<'scheme, T> {
         self.scheme
             .get_symbol_index(sym)
             .map(|i| self.values[i] = val)
-            .expect(&format!(
-                "Failed to set symbol {} from array with scheme {:?}",
-                sym, self.scheme
-            ))
+            .unwrap();
     }
 
     pub fn get<'a>(&'a self, sym: &Symbol) -> &'a T {
