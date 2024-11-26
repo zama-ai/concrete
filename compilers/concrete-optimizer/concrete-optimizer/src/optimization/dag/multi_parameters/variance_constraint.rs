@@ -4,8 +4,9 @@ use std::fmt;
 
 use super::noise_expression::{
     bootstrap_noise, fast_keyswitch_noise, input_noise, keyswitch_noise, modulus_switching_noise,
-    NoiseExpression,
+    NoiseEvaluator, NoiseExpression,
 };
+use super::symbolic::SymbolScheme;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarianceConstraint {
@@ -15,6 +16,7 @@ pub struct VarianceConstraint {
     pub nb_constraints: u64,
     pub safe_variance_bound: f64,
     pub noise_expression: NoiseExpression,
+    pub noise_evaluator: Option<NoiseEvaluator>,
     pub location: Location,
 }
 
@@ -35,6 +37,13 @@ impl fmt::Display for VarianceConstraint {
 }
 
 impl VarianceConstraint {
+    pub fn init_evaluator(&mut self, scheme: &SymbolScheme) {
+        self.noise_evaluator = Some(NoiseEvaluator::from_scheme_and_expression(
+            scheme,
+            &self.noise_expression,
+        ));
+    }
+
     #[allow(clippy::cast_sign_loss)]
     fn dominance_index(&self) -> u64 {
         let max_coeff = self
