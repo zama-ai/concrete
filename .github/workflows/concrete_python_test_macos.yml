@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - .github/workflows/concrete_python_tests_macos.yml
+      - .github/workflows/concrete_python_test_macos.yml
   push:
     branches:
       - 'main'
@@ -122,6 +122,7 @@ jobs:
   slack-notif-macos:
     needs: ["concrete-python-test-pytest"]
     runs-on: "ubuntu-latest"
+    if: always()
     steps:
       - name: Slack Notification
         # we want to check that prepare_slack_notif was run

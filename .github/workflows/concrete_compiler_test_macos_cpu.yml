@@ -96,6 +96,7 @@ jobs:
   slack-notif-macos:
     needs: ["build-and-test"]
     runs-on: "ubuntu-latest"
+    if: always()
     steps:
       - name: Slack Notification
         # we want to check that prepare_slack_notif was run
