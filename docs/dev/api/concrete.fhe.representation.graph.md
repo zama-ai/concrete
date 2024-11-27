@@ -204,7 +204,7 @@ integer_range(
     operation_filter: Optional[str, List[str], Pattern] = None,
     is_encrypted_filter: Optional[bool] = None,
     custom_filter: Optional[Callable[[Node], bool]] = None
-) → Optional[Tuple[int, int]]
+) → Union[Tuple[int, int], NoneType]
 ```
 
 Get integer range of the graph. 

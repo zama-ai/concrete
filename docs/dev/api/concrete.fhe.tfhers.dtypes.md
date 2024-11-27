@@ -110,7 +110,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decode`
 

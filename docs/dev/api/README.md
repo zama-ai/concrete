@@ -5,32 +5,10 @@
 ## Modules
 
 - [`concrete.compiler`](./concrete.compiler.md): Compiler submodule.
-- [`concrete.compiler.client_parameters`](./concrete.compiler.client_parameters.md): Client parameters.
-- [`concrete.compiler.client_support`](./concrete.compiler.client_support.md): Client support.
 - [`concrete.compiler.compilation_context`](./concrete.compiler.compilation_context.md): CompilationContext.
 - [`concrete.compiler.compilation_feedback`](./concrete.compiler.compilation_feedback.md): Compilation feedback.
-- [`concrete.compiler.compilation_options`](./concrete.compiler.compilation_options.md): CompilationOptions.
-- [`concrete.compiler.evaluation_keys`](./concrete.compiler.evaluation_keys.md): EvaluationKeys.
-- [`concrete.compiler.key_set`](./concrete.compiler.key_set.md): KeySet.
-- [`concrete.compiler.key_set_cache`](./concrete.compiler.key_set_cache.md): KeySetCache.
-- [`concrete.compiler.lambda_argument`](./concrete.compiler.lambda_argument.md): LambdaArgument.
-- [`concrete.compiler.library_compilation_result`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult.
-- [`concrete.compiler.library_lambda`](./concrete.compiler.library_lambda.md): LibraryLambda.
-- [`concrete.compiler.library_support`](./concrete.compiler.library_support.md): LibrarySupport.
-- [`concrete.compiler.lwe_secret_key`](./concrete.compiler.lwe_secret_key.md): LweSecretKey.
-- [`concrete.compiler.parameter`](./concrete.compiler.parameter.md): Parameter.
-- [`concrete.compiler.public_arguments`](./concrete.compiler.public_arguments.md): PublicArguments.
-- [`concrete.compiler.public_result`](./concrete.compiler.public_result.md): PublicResult.
-- [`concrete.compiler.server_circuit`](./concrete.compiler.server_circuit.md): ServerCircuit.
-- [`concrete.compiler.server_program`](./concrete.compiler.server_program.md): ServerProgram.
-- [`concrete.compiler.simulated_value_decrypter`](./concrete.compiler.simulated_value_decrypter.md): SimulatedValueDecrypter.
-- [`concrete.compiler.simulated_value_exporter`](./concrete.compiler.simulated_value_exporter.md): SimulatedValueExporter.
 - [`concrete.compiler.tfhers_int`](./concrete.compiler.tfhers_int.md): Import and export TFHErs integers into Concrete.
 - [`concrete.compiler.utils`](./concrete.compiler.utils.md): Common utils for the compiler submodule.
-- [`concrete.compiler.value`](./concrete.compiler.value.md): Value.
-- [`concrete.compiler.value_decrypter`](./concrete.compiler.value_decrypter.md): ValueDecrypter.
-- [`concrete.compiler.value_exporter`](./concrete.compiler.value_exporter.md): ValueExporter.
-- [`concrete.compiler.wrapper`](./concrete.compiler.wrapper.md): Wrapper for native Cpp objects.
 - [`concrete.fhe`](./concrete.fhe.md): Concrete.
 - [`concrete.fhe.compilation`](./concrete.fhe.compilation.md): Glue the compilation process together.
 - [`concrete.fhe.compilation.artifacts`](./concrete.fhe.compilation.artifacts.md): Declaration of `DebugArtifacts` class.
@@ -40,6 +18,7 @@
 - [`concrete.fhe.compilation.composition`](./concrete.fhe.compilation.composition.md): Declaration of classes related to composition.
 - [`concrete.fhe.compilation.configuration`](./concrete.fhe.compilation.configuration.md): Declaration of `Configuration` class.
 - [`concrete.fhe.compilation.decorators`](./concrete.fhe.compilation.decorators.md): Declaration of `circuit` and `compiler` decorators.
+- [`concrete.fhe.compilation.evaluation_keys`](./concrete.fhe.compilation.evaluation_keys.md): Declaration of `EvaluationKeys`.
 - [`concrete.fhe.compilation.keys`](./concrete.fhe.compilation.keys.md): Declaration of `Keys` class.
 - [`concrete.fhe.compilation.module`](./concrete.fhe.compilation.module.md): Declaration of `FheModule` classes.
 - [`concrete.fhe.compilation.module_compiler`](./concrete.fhe.compilation.module_compiler.md): Declaration of `MultiCompiler` class.
@@ -101,7 +80,7 @@
 - [`concrete.fhe.values.scalar`](./concrete.fhe.values.scalar.md): Declaration of `ClearScalar` and `EncryptedScalar` wrappers.
 - [`concrete.fhe.values.tensor`](./concrete.fhe.values.tensor.md): Declaration of `ClearTensor` and `EncryptedTensor` wrappers.
 - [`concrete.fhe.values.value_description`](./concrete.fhe.values.value_description.md): Declaration of `ValueDescription` class.
-- [`concrete.fhe.version`](./concrete.fhe.version.md)
+- [`concrete.fhe.version`](./concrete.fhe.version.md): Version of the project, which is updated automatically by the CI right before releasing.
 - [`concrete.lang`](./concrete.lang.md): Concretelang python module
 - [`concrete.lang.dialects`](./concrete.lang.dialects.md)
 - [`concrete.lang.dialects.fhe`](./concrete.lang.dialects.fhe.md): FHE dialect module
@@ -110,34 +89,9 @@
 
 ## Classes
 
-- [`client_parameters.ClientParameters`](./concrete.compiler.client_parameters.md): ClientParameters are public parameters used for key generation.
-- [`client_support.ClientSupport`](./concrete.compiler.client_support.md): Client interface for doing key generation and encryption.
-- [`compilation_context.CompilationContext`](./concrete.compiler.compilation_context.md): Support class for compilation context.
-- [`compilation_feedback.CircuitCompilationFeedback`](./concrete.compiler.compilation_feedback.md): CircuitCompilationFeedback is a set of hint computed by the compiler engine for a circuit.
-- [`compilation_feedback.ProgramCompilationFeedback`](./concrete.compiler.compilation_feedback.md): CompilationFeedback is a set of hint computed by the compiler engine.
-- [`compilation_options.CompilationOptions`](./concrete.compiler.compilation_options.md): CompilationOptions holds different flags and options of the compilation process.
-- [`evaluation_keys.EvaluationKeys`](./concrete.compiler.evaluation_keys.md): EvaluationKeys required for execution.
-- [`key_set.KeySet`](./concrete.compiler.key_set.md): KeySet stores the different keys required for an encrypted computation.
-- [`key_set_cache.KeySetCache`](./concrete.compiler.key_set_cache.md): KeySetCache is a cache for KeySet to avoid generating similar keys multiple times.
-- [`lambda_argument.LambdaArgument`](./concrete.compiler.lambda_argument.md): LambdaArgument holds scalar or tensor values.
-- [`library_compilation_result.LibraryCompilationResult`](./concrete.compiler.library_compilation_result.md): LibraryCompilationResult holds the result of the library compilation.
-- [`library_lambda.LibraryLambda`](./concrete.compiler.library_lambda.md): LibraryLambda reference a compiled library and can be ran using LibrarySupport.
-- [`library_support.LibrarySupport`](./concrete.compiler.library_support.md): Support class for library compilation and execution.
-- [`lwe_secret_key.LweSecretKey`](./concrete.compiler.lwe_secret_key.md): An LweSecretKey.
-- [`lwe_secret_key.LweSecretKeyParam`](./concrete.compiler.lwe_secret_key.md): LWE Secret Key Parameters
-- [`parameter.Parameter`](./concrete.compiler.parameter.md): An FHE parameter.
-- [`public_arguments.PublicArguments`](./concrete.compiler.public_arguments.md): PublicArguments holds encrypted and plain arguments, as well as public materials.
-- [`public_result.PublicResult`](./concrete.compiler.public_result.md): PublicResult holds the result of an encrypted execution and can be decrypted using ClientSupport.
-- [`server_circuit.ServerCircuit`](./concrete.compiler.server_circuit.md): ServerCircuit references a circuit that can be called for execution and simulation.
-- [`server_program.ServerProgram`](./concrete.compiler.server_program.md): ServerProgram references compiled circuit objects.
-- [`simulated_value_decrypter.SimulatedValueDecrypter`](./concrete.compiler.simulated_value_decrypter.md): A helper class to decrypt `Value`s.
-- [`simulated_value_exporter.SimulatedValueExporter`](./concrete.compiler.simulated_value_exporter.md): A helper class to create `Value`s.
+- [`compilation_context.CompilationContext`](./concrete.compiler.compilation_context.md): Compilation context.
+- [`compilation_feedback.MoreCircuitCompilationFeedback`](./concrete.compiler.compilation_feedback.md): Helper class for compilation feedback.
 - [`tfhers_int.TfhersExporter`](./concrete.compiler.tfhers_int.md): A helper class to import and export TFHErs big integers.
-- [`tfhers_int.TfhersFheIntDescription`](./concrete.compiler.tfhers_int.md): A helper class to create `TfhersFheIntDescription`s.
-- [`value.Value`](./concrete.compiler.value.md): An encrypted/clear value which can be scalar/tensor.
-- [`value_decrypter.ValueDecrypter`](./concrete.compiler.value_decrypter.md): A helper class to decrypt `Value`s.
-- [`value_exporter.ValueExporter`](./concrete.compiler.value_exporter.md): A helper class to create `Value`s.
-- [`wrapper.WrapperCpp`](./concrete.compiler.wrapper.md): Wrapper base class for native Cpp objects.
 - [`artifacts.DebugArtifacts`](./concrete.fhe.compilation.artifacts.md): DebugArtifacts class, to export information about the compilation process for single function.
 - [`artifacts.DebugManager`](./concrete.fhe.compilation.artifacts.md): A debug manager, allowing streamlined debugging.
 - [`artifacts.FunctionDebugArtifacts`](./concrete.fhe.compilation.artifacts.md): An object containing debug artifacts for a certain function in an fhe module.
@@ -150,6 +104,7 @@
 - [`composition.CompositionRule`](./concrete.fhe.compilation.composition.md): A raw composition rule.
 - [`configuration.ApproximateRoundingConfig`](./concrete.fhe.compilation.configuration.md): Controls the behavior of approximate rounding.
 - [`decorators.Compilable`](./concrete.fhe.compilation.decorators.md): Compilable class, to wrap a function and provide methods to trace and compile it.
+- [`evaluation_keys.EvaluationKeys`](./concrete.fhe.compilation.evaluation_keys.md): EvaluationKeys required for execution.
 - [`keys.Keys`](./concrete.fhe.compilation.keys.md): Keys class, to manage generate/reuse keys.
 - [`module.ExecutionRt`](./concrete.fhe.compilation.module.md): Runtime object class for execution.
 - [`module.FheFunction`](./concrete.fhe.compilation.module.md): Fhe function class, allowing to run or simulate one function of an fhe module.
@@ -161,7 +116,7 @@
 - [`specs.ClientSpecs`](./concrete.fhe.compilation.specs.md): ClientSpecs class, to create Client objects.
 - [`status.EncryptionStatus`](./concrete.fhe.compilation.status.md): EncryptionStatus enum, to represent encryption status of parameters.
 - [`utils.Lazy`](./concrete.fhe.compilation.utils.md): A lazyly initialized value.
-- [`value.Value`](./concrete.fhe.compilation.value.md): Value class, to store scalar or tensor values which can be encrypted or clear.
+- [`value.Value`](./concrete.fhe.compilation.value.md): A public value object that can be sent between client and server.
 - [`wiring.AllComposable`](./concrete.fhe.compilation.wiring.md): Composition policy that allows to forward any output of the module to any of its input.
 - [`wiring.AllInputs`](./concrete.fhe.compilation.wiring.md): All the encrypted inputs of a given function of a module.
 - [`wiring.AllOutputs`](./concrete.fhe.compilation.wiring.md): All the encrypted outputs of a given function of a module.
@@ -399,6 +354,7 @@
 - [`utils.flood_replace_none_values`](./concrete.fhe.mlir.utils.md): Use flooding algorithm to replace `None` values.
 - [`utils.format_constant`](./concrete.fhe.representation.utils.md): Get the textual representation of a constant.
 - [`utils.format_indexing_element`](./concrete.fhe.representation.utils.md): Format an indexing element.
+- [`tfhers.get_type_from_params`](./concrete.fhe.tfhers.md): Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
 - [`bridge.new_bridge`](./concrete.fhe.tfhers.bridge.md): Create a TFHErs bridge from a circuit.
 - [`tracing.from_native`](./concrete.fhe.tfhers.tracing.md): Convert a Concrete integer to the tfhers representation.
 - [`tracing.to_native`](./concrete.fhe.tfhers.tracing.md): Convert a tfhers integer to the Concrete representation.

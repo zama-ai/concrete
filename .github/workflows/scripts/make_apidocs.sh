@@ -31,8 +31,8 @@ fi
 
 # Fixing the path issues, to point on files in GitHub
 WHICH_PYTHON_VERSION=$(${PYTHON} --version | cut -f 2 -d " " | cut -f 1-2 -d ".")
-sed $SED_OPT -e "s@../../.venvtrash/lib.*/python$WHICH_PYTHON_VERSION/site-packages/@../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/@g" docs/dev/api/concrete.compiler*.md docs/dev/api/concrete.lang*.md
-sed $SED_OPT -e "s@../../.venvtrash/lib.*/python$WHICH_PYTHON_VERSION/site-packages/@../../frontends/concrete-python/@g" docs/dev/api/concrete.fhe*.md
+sed $SED_OPT -e "s@../../.venv-docs/lib.*/python$WHICH_PYTHON_VERSION/site-packages/@../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/@g" docs/dev/api/concrete.compiler*.md docs/dev/api/concrete.lang*.md
+sed $SED_OPT -e "s@../../.venv-docs/lib.*/python$WHICH_PYTHON_VERSION/site-packages/@../../frontends/concrete-python/@g" docs/dev/api/concrete.fhe*.md
 
 # Fixing the links in README.md, which fails (missing .'s for some reason): remove the #headers
 sed $SED_OPT -e "s@.md#module-.*)@.md)@g" docs/dev/api/README.md

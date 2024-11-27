@@ -9,17 +9,17 @@ Declaration of `Value` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L10"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Value`
-Value class, to store scalar or tensor values which can be encrypted or clear. 
+A public value object that can be sent between client and server. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(inner: Value)
+__init__(inner: TransportValue)
 ```
 
 
@@ -31,29 +31,19 @@ __init__(inner: Value)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
 ```python
-deserialize(serialized_data: bytes) → Value
+deserialize(buffer: bytes) → Value
 ```
 
-Deserialize data from bytes. 
-
-
-
-**Args:**
-  serialized_data (bytes):  previously serialized data 
-
-
-
-**Returns:**
-  Value:  deserialized data 
+Deserialize a Value from bytes. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/value.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 
@@ -61,11 +51,6 @@ Deserialize data from bytes.
 serialize() → bytes
 ```
 
-Serialize data into bytes. 
-
-
-
-**Returns:**
-  bytes:  serialized data 
+Serialize a Value to bytes. 
 
 
