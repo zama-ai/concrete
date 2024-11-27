@@ -94,7 +94,7 @@ construct_deduplicated_tables(
     node: Node,
     preds: List[Node],
     configuration: Configuration
-) → Tuple[Tuple[ndarray, Optional[List[Tuple[int, ]]]], ]
+) → Tuple[Tuple[ndarray, Union[List[Tuple[int, ]], NoneType]], ]
 ```
 
 Construct lookup tables for each cell of the input for an Operation.Generic node. 
