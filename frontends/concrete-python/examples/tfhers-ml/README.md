@@ -50,16 +50,16 @@ Then we do a partial keygen in Concrete.
 python example.py keygen -s $TDIR/tfhers_sk -o $TDIR/concrete_sk -k $TDIR/concrete_keyset
 ```
 
-### Quantize values
+## Quantize values
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils quantize --value=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 --config ./input_quantizer.json -o $TDIR/quantized_values
+../../tests/tfhers-utils/target/release/tfhers_utils quantize --value=5.1,3.5,1.4,0.2,4.9,3,1.4,0.2,4.7,3.2,1.3,0.2,4.6,3,1.5,0.2,5,3.6,1.4,0.2 --config ./input_quantizer.json -o $TDIR/quantized_values
 ```
 
 ## Encrypt in TFHE-rs
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --value=$(cat $TDIR/quantized_values) --ciphertext $TDIR/tfhers_ct --client-key $TDIR/tfhers_client_key
+../../tests/tfhers-utils/target/release/tfhers_utils encrypt-with-key --signed --value=$(cat $TDIR/quantized_values) --ciphertext $TDIR/tfhers_ct --client-key $TDIR/tfhers_client_key
 ```
 
 ## Run in Concrete
@@ -71,13 +71,22 @@ python example.py run -k $TDIR/concrete_keyset -c $TDIR/tfhers_ct -o $TDIR/tfher
 ## Decrypt in TFHE-rs
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils decrypt-with-key --tensor --ciphertext $TDIR/tfhers_ct_out --client-key $TDIR/tfhers_client_key --plaintext $TDIR/result_plaintext
+../../tests/tfhers-utils/target/release/tfhers_utils decrypt-with-key --tensor --signed --ciphertext $TDIR/tfhers_ct_out --client-key $TDIR/tfhers_client_key --plaintext $TDIR/result_plaintext
 ```
 
-### Dequantize values
+## Rescale Output
+
+Because `lsbs_to_remove=10`
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils dequantize --value=$(cat $TDIR/result_plaintext) --config ./output_quantizer.json
+python -c "print(','.join(map(lambda x: str(x << 10), [$(cat $TDIR/result_plaintext)])))" > $TDIR/rescaled_plaintext
+```
+
+
+## Dequantize values
+
+```sh
+../../tests/tfhers-utils/target/release/tfhers_utils dequantize --value=$(cat $TDIR/rescaled_plaintext) --config ./output_quantizer.json
 ```
 
 ## Clean tmpdir
