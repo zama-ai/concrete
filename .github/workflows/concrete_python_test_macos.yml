@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - .github/workflows/concrete_python_tests_macos.yml
+      - .github/workflows/concrete_python_test_macos.yml
   push:
     branches:
       - 'main'
