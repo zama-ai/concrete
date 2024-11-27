@@ -22,6 +22,7 @@ image_id = "ami-0bb5bb9cb747b5ddd"
 instance_id = "i-0e5ae2a14134d6275"
 instance_type = "m6i.8xlarge"
 security_group= ["sg-02dd8470fa845f31b", ]
+runner_name = "distributed-ci"
 
 [backend.aws.release]
 region = "eu-west-1"
