@@ -81,7 +81,7 @@ jobs:
           if_no_artifact_found: warn
           path: ./benchmark
       - name: Save benchmark result to file
-        uses: benchmark-action/github-action-benchmark@4de1bed97a47495fc4c5404952da0499e31f5c29 # v1.20.3
+        uses: benchmark-action/github-action-benchmark@d48d326b4ca9ba73ca0cd0d59f108f9e02a381c7 # v1.20.4
         with:
           tool: 'cargo'
           output-file-path: ./compilers/concrete-optimizer/bench_result.txt
@@ -93,7 +93,7 @@ jobs:
           # Enable Job Summary for PRs
           summary-always: true
       - name: Upload benchmark data
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           path: ./benchmark
           name: ${{ runner.os }}-benchmark

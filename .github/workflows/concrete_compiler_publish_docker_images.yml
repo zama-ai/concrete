@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275 # v44.5.24
+        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v44.5.24
       - name: Login
         id: login
         if: contains(steps.changed-files.outputs.modified_files, env.dockerfile) || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
@@ -100,7 +100,7 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275 # v44.5.24
+        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v44.5.24
       - name: Login
         id: login
         # from the docs: The jobs.<job_id>.if condition is evaluated before jobs.<job_id>.strategy.matrix is applied. So we can't just use matrix.dockerfile
@@ -149,7 +149,7 @@ jobs:
           submodules: recursive
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275 # v44.5.24
+        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v44.5.24
         with:
           files: |
             backends/**
