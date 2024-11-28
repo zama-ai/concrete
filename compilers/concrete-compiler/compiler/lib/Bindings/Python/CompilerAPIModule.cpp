@@ -1433,6 +1433,26 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             return std::make_unique<Keyset>(std::move(keyset));
           },
           "Deserialize a Keyset from bytes.", arg("bytes"))
+      .def_static(
+          "deserialize_from_file",
+          [](const std::string path) {
+            std::ifstream ifs;
+            ifs.open(path);
+            if (!ifs.good()) {
+              throw std::runtime_error("Failed to open keyset file " + path);
+            }
+
+            auto keysetProto = Message<concreteprotocol::Keyset>();
+            auto maybeError = keysetProto.readBinaryFromIstream(
+                ifs, mlir::concretelang::python::DESER_OPTIONS);
+            if (maybeError.has_failure()) {
+              throw std::runtime_error("Failed to deserialize keyset." +
+                                       maybeError.as_failure().error().mesg);
+            }
+            auto keyset = Keyset::fromProto(keysetProto);
+            return std::make_unique<Keyset>(std::move(keyset));
+          },
+          "Deserialize a Keyset from a file.", arg("path"))
       .def(
           "serialize",
           [](Keyset &keySet) {
