@@ -133,7 +133,7 @@ class Keys:
             message = f"Unable to load keys from {location} because it doesn't exist"
             raise ValueError(message)
 
-        keys = Keys.deserialize(bytes(location.read_bytes()))
+        keys = Keys.deserialize(location)
 
         # pylint: disable=protected-access
         self._specs = None
@@ -185,20 +185,27 @@ class Keys:
         return serialized_keyset
 
     @staticmethod
-    def deserialize(serialized_keys: bytes) -> "Keys":
+    def deserialize(serialized_keys: Union[Path, bytes]) -> "Keys":
         """
-        Deserialize keys from bytes.
+        Deserialize keys from file or buffer.
+
+        Prefer using a Path instead of bytes in case of big Keys. It reduces memory usage.
 
         Args:
-            serialized_keys (bytes):
-                previously serialized keys
+            serialized_keys (Union[Path, bytes]):
+                previously serialized keys (either Path or buffer)
 
         Returns:
             Keys:
                 deserialized keys
         """
 
-        keyset = Keyset.deserialize(serialized_keys)
+        keyset = None
+        if isinstance(serialized_keys, Path):
+            keyset = Keyset.deserialize_from_file(str(serialized_keys))
+        elif isinstance(serialized_keys, bytes):
+            keyset = Keyset.deserialize(serialized_keys)
+        assert keyset is not None, "serialized_keys should be either Path or bytes"
 
         # pylint: disable=protected-access
         result = Keys(None)
