@@ -90,7 +90,7 @@ python -c "print(','.join(map(lambda x: str(x << 10), [$(cat $TDIR/result_plaint
 We need to dequantize integer outputs using a pre-built quantizer for our ML model
 
 ```sh
-../../tests/tfhers-utils/target/release/tfhers_utils dequantize --value=$(cat $TDIR/rescaled_plaintext) --config ./output_quantizer.json
+../../tests/tfhers-utils/target/release/tfhers_utils dequantize --value=$(cat $TDIR/rescaled_plaintext) --shape=5,3 --config ./output_quantizer.json
 ```
 
 ## Compute error

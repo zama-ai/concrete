@@ -445,6 +445,16 @@ fn main() {
                         .num_args(1..),
                 )
                 .arg(
+                    Arg::new("shape")
+                        .short('s')
+                        .long("shape")
+                        .help("shape of values")
+                        .action(ArgAction::Set)
+                        .required(false)
+                        .value_delimiter(',')
+                        .num_args(0..),
+                )
+                .arg(
                     Arg::new("output")
                         .long("output")
                         .short('o')
@@ -475,6 +485,16 @@ fn main() {
                         .required(true)
                         .value_delimiter(',')
                         .num_args(1..),
+                )
+                .arg(
+                    Arg::new("shape")
+                        .short('s')
+                        .long("shape")
+                        .help("shape of values")
+                        .action(ArgAction::Set)
+                        .required(false)
+                        .value_delimiter(',')
+                        .num_args(0..),
                 )
                 .arg(
                     Arg::new("output")
@@ -574,13 +594,17 @@ fn main() {
                 .get_many::<String>("value")
                 .unwrap()
                 .collect();
+            let shapes: Vec<usize> = match quantize_matches.get_many::<String>("shape") {
+                Some(shapes) => shapes.into_iter().map(|s| s.parse().unwrap()).collect(),
+                None => vec![value_str.len()],
+            };
             let config_path = quantize_matches.get_one::<String>("config").unwrap();
             let output_path = quantize_matches.get_one::<String>("output");
 
             let quantizer = Quantizer::from_json_file(config_path).unwrap();
             let value: Vec<f64> = value_str.iter().map(|v| v.parse().unwrap()).collect();
             let quantized_array = quantizer.quantize(
-                &ndarray::ArrayD::from_shape_vec(ndarray::IxDyn(&[value.len()]), value).unwrap(),
+                &ndarray::ArrayD::from_shape_vec(ndarray::IxDyn(&shapes), value).unwrap(),
             );
             let quantized_values: Vec<&i64> = quantized_array.iter().collect();
             let results_str: Vec<String> = quantized_values.iter().map(|v| v.to_string()).collect();
@@ -597,13 +621,17 @@ fn main() {
                 .get_many::<String>("value")
                 .unwrap()
                 .collect();
+            let shapes: Vec<usize> = match dequantize_matches.get_many::<String>("shape") {
+                Some(shapes) => shapes.into_iter().map(|s| s.parse().unwrap()).collect(),
+                None => vec![value_str.len()],
+            };
             let config_path = dequantize_matches.get_one::<String>("config").unwrap();
             let output_path = dequantize_matches.get_one::<String>("output");
 
             let quantizer = Quantizer::from_json_file(config_path).unwrap();
             let value: Vec<i64> = value_str.iter().map(|v| v.parse().unwrap()).collect();
             let dequantized_array = quantizer.dequantize(
-                &ndarray::ArrayD::from_shape_vec(ndarray::IxDyn(&[value.len()]), value).unwrap(),
+                &ndarray::ArrayD::from_shape_vec(ndarray::IxDyn(&shapes), value).unwrap(),
             );
             let dequantized_values: Vec<&f64> = dequantized_array.iter().collect();
             let results_str: Vec<String> =
