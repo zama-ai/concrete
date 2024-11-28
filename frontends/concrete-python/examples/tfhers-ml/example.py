@@ -4,7 +4,7 @@ from functools import partial
 import click
 import numpy as np
 
-from concrete import fhe
+import concrete.fhe as fhe
 from concrete.fhe import tfhers
 
 ### Options ###########################
