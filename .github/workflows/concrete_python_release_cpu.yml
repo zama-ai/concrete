@@ -143,7 +143,7 @@ jobs:
       - name: Check documentation
         run: |
           WHEEL_DIR=$(pwd)/${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
-          CONCRETE_WHEEL="${WHEEL_DIR}"/*.whl .github/workflows/scripts/make_apidocs.sh
+          CONCRETE_WHEEL="${WHEEL_DIR}/*.whl" .github/workflows/scripts/make_apidocs.sh
       - name: Upload docs.patch if failure
         if: ${{ failure() }}
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
