@@ -47,7 +47,7 @@ impl Viz for crate::dag::unparametrized::Dag {
     }
 }
 
-impl<'dag> Viz for crate::dag::unparametrized::DagCircuit<'dag> {
+impl Viz for crate::dag::unparametrized::DagCircuit<'_> {
     fn viz_node(&self) -> String {
         let mut graph: Vec<String> = vec![];
         let circuit = &self.circuit;
@@ -72,7 +72,7 @@ style=\"rounded\"
     }
 }
 
-impl<'dag> Viz for crate::dag::unparametrized::DagOperator<'dag> {
+impl Viz for crate::dag::unparametrized::DagOperator<'_> {
     fn viz_node(&self) -> String {
         let input_string = self
             .operator

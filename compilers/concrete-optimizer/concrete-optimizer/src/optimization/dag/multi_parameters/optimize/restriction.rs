@@ -348,10 +348,10 @@ pub struct KeysetRestriction {
 
 impl SearchSpaceRestriction for KeysetRestriction {
     fn is_available_glwe(&self, _partition: PartitionIndex, glwe_params: GlweParameters) -> bool {
-        return self.info.lwe_bootstrap_keys.iter().any(|k| {
+        self.info.lwe_bootstrap_keys.iter().any(|k| {
             k.glwe_dimension == glwe_params.glwe_dimension
                 && k.polynomial_size == 2_u64.pow(glwe_params.log2_polynomial_size as u32)
-        });
+        })
     }
 
     fn is_available_macro(
@@ -359,12 +359,12 @@ impl SearchSpaceRestriction for KeysetRestriction {
         _partition: PartitionIndex,
         macro_parameters: MacroParameters,
     ) -> bool {
-        return self.info.lwe_bootstrap_keys.iter().any(|k| {
+        self.info.lwe_bootstrap_keys.iter().any(|k| {
             k.glwe_dimension == macro_parameters.glwe_params.glwe_dimension
                 && k.polynomial_size
                     == 2_u64.pow(macro_parameters.glwe_params.log2_polynomial_size as u32)
                 && k.input_lwe_dimension == macro_parameters.internal_dim
-        });
+        })
     }
 
     fn is_available_micro_pbs(
@@ -373,14 +373,14 @@ impl SearchSpaceRestriction for KeysetRestriction {
         macro_parameters: MacroParameters,
         pbs_parameters: BrDecompositionParameters,
     ) -> bool {
-        return self.info.lwe_bootstrap_keys.iter().any(|k| {
+        self.info.lwe_bootstrap_keys.iter().any(|k| {
             k.glwe_dimension == macro_parameters.glwe_params.glwe_dimension
                 && k.polynomial_size
                     == 2_u64.pow(macro_parameters.glwe_params.log2_polynomial_size as u32)
                 && k.input_lwe_dimension == macro_parameters.internal_dim
                 && k.level_count == pbs_parameters.level
                 && k.base_log == pbs_parameters.log2_base
-        });
+        })
     }
 
     fn is_available_micro_ks(
@@ -391,12 +391,12 @@ impl SearchSpaceRestriction for KeysetRestriction {
         to_macro: MacroParameters,
         ks_parameters: KsDecompositionParameters,
     ) -> bool {
-        return self.info.lwe_keyswitch_keys.iter().any(|k| {
+        self.info.lwe_keyswitch_keys.iter().any(|k| {
             k.input_lwe_dimension == from_macro.glwe_params.sample_extract_lwe_dimension()
                 && k.output_lwe_dimension == to_macro.internal_dim
                 && k.level_count == ks_parameters.level
                 && k.base_log == ks_parameters.log2_base
-        });
+        })
     }
 
     fn is_available_micro_fks(
@@ -407,12 +407,12 @@ impl SearchSpaceRestriction for KeysetRestriction {
         to_macro: MacroParameters,
         ks_parameters: KsDecompositionParameters,
     ) -> bool {
-        return self.info.lwe_keyswitch_keys.iter().any(|k| {
+        self.info.lwe_keyswitch_keys.iter().any(|k| {
             k.input_lwe_dimension == from_macro.glwe_params.sample_extract_lwe_dimension()
                 && k.output_lwe_dimension == to_macro.glwe_params.sample_extract_lwe_dimension()
                 && k.level_count == ks_parameters.level
                 && k.base_log == ks_parameters.log2_base
-        });
+        })
     }
 }
 

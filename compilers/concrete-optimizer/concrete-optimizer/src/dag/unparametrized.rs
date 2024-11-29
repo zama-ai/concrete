@@ -128,7 +128,7 @@ impl<'dag> DagCircuit<'dag> {
     }
 }
 
-impl<'dag> fmt::Display for DagCircuit<'dag> {
+impl fmt::Display for DagCircuit<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for op in self.get_operators_iter() {
             writeln!(f, "{} <- {:?}", op.id, op.operator)?;
@@ -146,7 +146,7 @@ pub struct DagBuilder<'dag> {
     pub(crate) circuit: String,
 }
 
-impl<'dag> DagBuilder<'dag> {
+impl DagBuilder<'_> {
     fn add_operator(&mut self, operator: Operator, location: Location) -> OperatorIndex {
         debug_assert!(operator
             .get_inputs_iter()
