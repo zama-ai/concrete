@@ -95,6 +95,7 @@ jobs:
 
           cp -R ${{ env.concrete-python-dir }}/examples ./examples
           cp -R ${{ env.concrete-python-dir }}/tests ./tests
+          cp -R ${{ env.concrete-python-dir }}/scripts ./scripts
 
           cp ${{ env.concrete-python-dir }}/Makefile .
       - name: Run pytest-macos

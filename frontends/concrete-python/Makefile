@@ -75,7 +75,7 @@ pytest-default: tfhers-utils
 pytest-macos:
 	pytest tests -svv -n auto \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
-		-m "${PYTEST_MARKERS} minimal"
+		-m minimal
 
 pytest-single: tfhers-utils
 	eval $(shell make silent_cp_activate)
@@ -103,7 +103,7 @@ pytest-gpu:
 	# test multi precision
 	pytest tests -svv -n0 --use_gpu \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
-		-m "${PYTEST_MARKERS} minimal"
+		-m minimal
 
 benchmark:
 	eval $(shell make silent_cp_activate)
