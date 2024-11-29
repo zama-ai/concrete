@@ -235,6 +235,7 @@ impl VariancedDag {
                         nb_constraints: out_shape.flat_size(),
                         safe_variance_bound: max_variance,
                         noise_expression: variance.clone(),
+                        noise_evaluator: None,
                         location: op.location.clone(),
                     };
                     self.external_variance_constraints.push(constraint);
@@ -273,6 +274,7 @@ impl VariancedDag {
                     nb_constraints: out_shape.flat_size(),
                     safe_variance_bound: max_variance,
                     noise_expression: variance.clone(),
+                    noise_evaluator: None,
                     location: dag_op.location.clone(),
                 };
                 self.external_variance_constraints.push(constraint);
@@ -646,6 +648,7 @@ fn variance_constraint(
         safe_variance_bound,
         nb_partitions,
         noise_expression: noise,
+        noise_evaluator: None,
         location,
     }
 }

@@ -5,28 +5,27 @@ use std::{
 
 use super::{
     partitions::PartitionIndex,
-    symbolic::{Symbol, SymbolMap},
+    symbolic::{Symbol, SymbolArray, SymbolMap, SymbolScheme},
 };
 
 /// An ensemble of noise values for fhe operations.
 #[derive(Debug, Clone, PartialEq)]
-pub struct NoiseValues(SymbolMap<f64>);
+pub struct NoiseValues(SymbolArray<f64>);
 
 impl NoiseValues {
     /// Returns an empty set of noise values.
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        NoiseValues(SymbolMap::new())
+    pub fn from_scheme(scheme: &SymbolScheme) -> NoiseValues {
+        NoiseValues(SymbolArray::from_scheme(scheme))
     }
 
     /// Sets the noise variance associated with a noise source.
     pub fn set_variance(&mut self, source: NoiseSource, value: f64) {
-        self.0.set(source.0, value);
+        self.0.set(&source.0, value);
     }
 
     /// Returns the variance associated with a noise source
     pub fn variance(&self, source: NoiseSource) -> f64 {
-        self.0.get(source.0)
+        *self.0.get(&source.0)
     }
 }
 
@@ -36,10 +35,36 @@ impl Display for NoiseValues {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct NoiseEvaluator(SymbolArray<f64>);
+
+impl NoiseEvaluator {
+    /// Returns a zero noise expression
+    pub fn from_scheme_and_expression(
+        scheme: &SymbolScheme,
+        expr: &NoiseExpression,
+    ) -> NoiseEvaluator {
+        NoiseEvaluator(SymbolArray::from_scheme_and_map(scheme, &expr.0))
+    }
+
+    /// Returns the coefficient associated with a noise source.
+    pub fn coeff(&self, source: NoiseSource) -> f64 {
+        *self.0.get(&source.0)
+    }
+
+    /// Evaluate the noise expression on a set of noise values.
+    pub fn evaluate(&self, values: &NoiseValues) -> f64 {
+        self.0
+            .iter()
+            .zip(values.0.iter())
+            .fold(0.0, |acc, (coef, var)| acc + coef * var)
+    }
+}
+
 /// A noise expression, i.e. a sum of noise terms associating a noise source,
 /// with a multiplicative coefficient.
 #[derive(Debug, Clone, PartialEq)]
-pub struct NoiseExpression(SymbolMap<f64>);
+pub struct NoiseExpression(pub SymbolMap<f64>);
 
 impl NoiseExpression {
     /// Returns a zero noise expression
@@ -70,12 +95,12 @@ impl NoiseExpression {
         lhs
     }
 
-    /// Evaluate the noise expression on a set of noise values.
-    pub fn evaluate(&self, values: &NoiseValues) -> f64 {
-        self.terms_iter().fold(0.0, |acc, term| {
-            acc + term.coefficient * values.variance(term.source)
-        })
-    }
+    // /// Evaluate the noise expression on a set of noise values.
+    // pub fn evaluate(&self, values: &NoiseValues) -> f64 {
+    //     self.terms_iter().fold(0.0, |acc, term| {
+    //         acc + term.coefficient * values.variance(term.source)
+    //     })
+    // }
 }
 
 impl Display for NoiseExpression {
@@ -196,7 +221,7 @@ impl Mul<NoiseSource> for f64 {
 
 /// A symbolic source of noise, or a noise source variable.
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-pub struct NoiseSource(Symbol);
+pub struct NoiseSource(pub Symbol);
 
 /// Returns an input noise source symbol.
 pub fn input_noise(partition: PartitionIndex) -> NoiseSource {

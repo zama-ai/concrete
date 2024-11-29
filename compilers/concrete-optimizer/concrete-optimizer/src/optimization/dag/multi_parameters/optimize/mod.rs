@@ -15,7 +15,7 @@ use crate::optimization::decomposition::keyswitch::KsComplexityNoise;
 use crate::optimization::decomposition::{cmux, keyswitch, DecompCaches, PersistDecompCaches};
 use crate::parameters::GlweParameters;
 
-use crate::optimization::dag::multi_parameters::complexity::ComplexityExpression;
+use crate::optimization::dag::multi_parameters::complexity::ComplexityEvaluator;
 use crate::optimization::dag::multi_parameters::feasible::Feasible;
 use crate::optimization::dag::multi_parameters::partition_cut::PartitionCut;
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
@@ -28,7 +28,7 @@ use super::noise_expression::{
     bootstrap_noise, fast_keyswitch_noise, input_noise, keyswitch_noise, modulus_switching_noise,
     NoiseValues,
 };
-use super::symbolic::{bootstrap, fast_keyswitch, keyswitch};
+use super::symbolic::{bootstrap, fast_keyswitch, keyswitch, SymbolScheme};
 
 const DEBUG: bool = false;
 
@@ -90,7 +90,7 @@ fn optimize_1_ks(
     ks_pareto: &[KsComplexityNoise],
     operations: &mut OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     cut_complexity: f64,
 ) -> Option<KsComplexityNoise> {
     // find the first feasible (and less complex)
@@ -132,7 +132,7 @@ fn optimize_many_independant_ks(
     ks_used: &[Vec<bool>],
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
 ) -> Option<(Vec<(KsDst, KsComplexityNoise)>, OperationsCV)> {
@@ -184,7 +184,7 @@ fn optimize_1_fks_and_all_compatible_ks(
     fks_dst: PartitionIndex,
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
@@ -320,7 +320,7 @@ fn optimize_dst_exclusive_fks_subset_and_all_ks(
     ks_used: &[Vec<bool>],
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     ciphertext_modulus_log: u32,
@@ -383,7 +383,7 @@ fn optimize_1_cmux_and_dst_exclusive_fks_subset_and_all_ks(
     ks_used: &[Vec<bool>],
     operations: &OperationsCV,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut keyswitch::Cache,
     cut_complexity: f64,
     best_p_error: f64,
@@ -711,7 +711,7 @@ fn optimize_macro(
     used_tlu_keyswitch: &[Vec<bool>],
     used_conversion_keyswitch: &[Vec<bool>],
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
     caches: &mut DecompCaches,
     init_parameters: &Parameters,
     best_complexity: f64,
@@ -735,8 +735,8 @@ fn optimize_macro(
 
     let fks_to_optimize = fks_to_optimize(nb_partitions, used_conversion_keyswitch, partition);
     let operations = OperationsCV {
-        variance: NoiseValues::new(),
-        cost: ComplexityValues::new(),
+        variance: NoiseValues::from_scheme(complexity.scheme()),
+        cost: ComplexityValues::from_scheme(complexity.scheme()),
     };
     let partition_feasible = feasible.filter_constraints(partition);
 
@@ -1024,14 +1024,24 @@ pub fn optimize(
         ciphertext_modulus_log,
     };
 
-    let dag = analyze(dag, &noise_config, p_cut, default_partition)?;
+    let dag_p_cut = p_cut
+        .clone()
+        .or(Some(PartitionCut::for_each_precision(dag)));
+
+    let mut dag = analyze(dag, &noise_config, &dag_p_cut, default_partition)?;
     let kappa =
         error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 
     let mut caches = persistent_caches.caches();
 
+    let scheme = SymbolScheme::new(dag.nb_partitions);
+
+    dag.variance_constraints
+        .iter_mut()
+        .for_each(|c| c.init_evaluator(&scheme));
     let feasible = Feasible::of(&dag.variance_constraints, kappa, None);
-    let complexity = ComplexityExpression::from(&dag.operations_count);
+
+    let complexity = ComplexityEvaluator::from_scheme_and_counts(&scheme, &dag.operations_count);
     let used_tlu_keyswitch = used_tlu_keyswitch(&dag);
     let used_conversion_keyswitch = used_conversion_keyswitch(&dag);
 
@@ -1223,7 +1233,7 @@ fn sanity_check(
     ciphertext_modulus_log: u32,
     security_level: u64,
     feasible: &Feasible,
-    complexity: &ComplexityExpression,
+    complexity: &ComplexityEvaluator,
 ) {
     assert!(params.is_feasible.is_feasible());
     assert!(
@@ -1232,8 +1242,8 @@ fn sanity_check(
     );
     let nb_partitions = params.macro_params.len();
     let mut operations = OperationsCV {
-        variance: NoiseValues::new(),
-        cost: ComplexityValues::new(),
+        variance: NoiseValues::from_scheme(complexity.scheme()),
+        cost: ComplexityValues::from_scheme(complexity.scheme()),
     };
     let micro_params = &params.micro_params;
     for partition in PartitionIndex::range(0, nb_partitions) {
