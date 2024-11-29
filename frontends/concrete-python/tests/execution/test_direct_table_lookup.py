@@ -156,6 +156,7 @@ def negative_identity_table_lookup_generator(n):
         pytest.param(6, negative_identity_table_lookup_generator(6)),
     ],
 )
+@pytest.mark.minimal
 def test_direct_table_lookup(bits, function, helpers):
     """
     Test direct table lookup.

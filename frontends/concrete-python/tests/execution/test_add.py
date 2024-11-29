@@ -69,6 +69,7 @@ from concrete import fhe
         },
     ],
 )
+@pytest.mark.minimal
 def test_constant_add(function, parameters, helpers):
     """
     Test add where one of the operators is a constant.
@@ -164,6 +165,7 @@ def test_constant_add(function, parameters, helpers):
         },
     ],
 )
+@pytest.mark.minimal
 def test_add(function, parameters, helpers):
     """
     Test add where both of the operators are dynamic.

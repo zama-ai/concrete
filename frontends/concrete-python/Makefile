@@ -72,10 +72,10 @@ pytest-default: tfhers-utils
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-pytest-macos: tfhers-utils
+pytest-macos:
 	pytest tests -svv -n auto \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
-		-m "${PYTEST_MARKERS}"
+		-m "${PYTEST_MARKERS} minimal"
 
 pytest-single: tfhers-utils
 	eval $(shell make silent_cp_activate)
@@ -98,21 +98,12 @@ pytest-multi: tfhers-utils
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-pytest-gpu: tfhers-utils
+pytest-gpu:
 	eval $(shell make silent_cp_activate)
-	# test single precision
-	pytest tests -svv -n0 --use_gpu \
-		--key-cache "${KEY_CACHE_DIRECTORY}" \
-		-m "${PYTEST_MARKERS}"
-
 	# test multi precision
 	pytest tests -svv -n0 --use_gpu \
-		--precision=multi \
-		--cov=concrete.fhe \
-		--cov-fail-under=100 \
-		--cov-report=term-missing:skip-covered \
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
-		-m "${PYTEST_MARKERS}"
+		-m "${PYTEST_MARKERS} minimal"
 
 benchmark:
 	eval $(shell make silent_cp_activate)

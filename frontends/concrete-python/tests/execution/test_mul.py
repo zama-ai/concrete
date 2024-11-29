@@ -174,6 +174,7 @@ def test_constant_mul(function, parameters, helpers):
         },
     ],
 )
+@pytest.mark.minimal
 def test_mul(function, parameters, helpers):
     """
     Test mul where both of the operators are dynamic.

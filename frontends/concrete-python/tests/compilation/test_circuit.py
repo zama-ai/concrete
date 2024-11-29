@@ -251,6 +251,7 @@ def test_circuit_separate_args(helpers):
     assert np.array_equal(x_plus_y, x + np.array(y))
 
 
+@pytest.mark.minimal
 def test_client_server_api(helpers):
     """
     Test client/server API.

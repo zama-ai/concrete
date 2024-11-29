@@ -658,6 +658,7 @@ def test_non_composable_due_to_increasing_noise():
     assert Fixed.compile(inputsets)
 
 
+@pytest.mark.minimal
 def test_client_server_api(helpers):
     """
     Test client/server API of modules.
