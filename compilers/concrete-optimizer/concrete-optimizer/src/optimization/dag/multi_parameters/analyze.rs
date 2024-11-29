@@ -56,7 +56,7 @@ pub struct VariancedDagOperator<'a> {
     id: OperatorIndex,
 }
 
-impl<'a> VariancedDagOperator<'a> {
+impl VariancedDagOperator<'_> {
     #[allow(unused)]
     fn get_inputs_iter(&self) -> impl Iterator<Item = VariancedDagOperator<'_>> {
         self.operator()
@@ -66,7 +66,7 @@ impl<'a> VariancedDagOperator<'a> {
             .map(|n| self.dag.get_operator(n.id))
     }
 
-    pub(crate) fn operator(&self) -> DagOperator<'a> {
+    pub(crate) fn operator(&self) -> DagOperator<'_> {
         self.dag.dag.get_operator(self.id)
     }
 
@@ -85,7 +85,7 @@ pub struct VariancedDagOperatorMut<'a> {
     id: OperatorIndex,
 }
 
-impl<'a> VariancedDagOperatorMut<'a> {
+impl VariancedDagOperatorMut<'_> {
     fn get_inputs_iter(&self) -> impl Iterator<Item = VariancedDagOperator<'_>> {
         self.operator()
             .get_inputs_iter()

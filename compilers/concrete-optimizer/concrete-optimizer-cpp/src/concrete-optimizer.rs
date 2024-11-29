@@ -716,7 +716,7 @@ impl Dag {
 
 pub struct DagBuilder<'dag>(unparametrized::DagBuilder<'dag>);
 
-impl<'dag> DagBuilder<'dag> {
+impl DagBuilder<'_> {
     fn add_input(
         &mut self,
         out_precision: Precision,

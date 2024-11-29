@@ -711,9 +711,9 @@ impl InstructionKeys {
     }
 
     pub fn shared_keys(instructions_keys: &[Self], sharing: &KeySharing) -> Vec<Self> {
-        return instructions_keys
+        instructions_keys
             .iter()
             .map(|i| i.shared_keys_1(sharing))
-            .collect();
+            .collect()
     }
 }
