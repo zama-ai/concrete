@@ -88,6 +88,9 @@ def ccompilee():
     # Add the auto-adjustment before compilation
     fhe.AutoRounder.adjust(compute, inputset)
 
+    # Print the number of bits rounded
+    print(f"lsbs_to_remove: {rounder.lsbs_to_remove}")
+
     circuit = compiler.compile(inputset, show_graph=True, show_mlir=True)
 
     tfhers_bridge = tfhers.new_bridge(circuit=circuit)
