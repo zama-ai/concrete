@@ -9,7 +9,7 @@ use crate::dag::operator::OperatorIndex;
 use super::partition_cut::PartitionCut;
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, PartialOrd, Ord, Hash, Copy)]
-pub struct PartitionIndex(pub(crate) usize);
+pub struct PartitionIndex(pub usize);
 
 impl PartitionIndex {
     pub const FIRST: Self = Self(0);

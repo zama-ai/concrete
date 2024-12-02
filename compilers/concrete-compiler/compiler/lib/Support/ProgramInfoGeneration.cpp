@@ -12,8 +12,8 @@
 
 #include "capnp/message.h"
 #include "concrete-protocol.capnp.h"
-#include "concrete/curves.h"
 #include "concretelang/Common/Protocol.h"
+#include "concretelang/Common/Security.h"
 #include "concretelang/Common/Values.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
@@ -41,13 +41,13 @@ using concretelang::protocol::Message;
 namespace mlir {
 namespace concretelang {
 
-const auto keyFormat = concrete::BINARY;
+const auto keyFormat = ::concretelang::security::BINARY;
 typedef double Variance;
 
 llvm::Expected<Message<concreteprotocol::GateInfo>>
 generateGate(mlir::Type inputType,
              const Message<concreteprotocol::EncodingInfo> &inputEncodingInfo,
-             concrete::SecurityCurve curve,
+             ::concretelang::security::SecurityCurve curve,
              concreteprotocol::Compression compression) {
 
   auto inputEncoding = inputEncodingInfo.asReader().getEncoding();
@@ -181,7 +181,8 @@ generateGate(mlir::Type inputType,
 
 Message<concreteprotocol::KeysetInfo>
 extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
-                  concrete::SecurityCurve curve, bool compressEvaluationKeys) {
+                  ::concretelang::security::SecurityCurve curve,
+                  bool compressEvaluationKeys) {
 
   auto output = Message<concreteprotocol::KeysetInfo>();
 
@@ -307,7 +308,7 @@ extractKeysetInfo(TFHE::TFHECircuitKeys circuitKeys,
 llvm::Expected<Message<concreteprotocol::CircuitInfo>>
 extractCircuitInfo(mlir::func::FuncOp funcOp,
                    concreteprotocol::CircuitEncodingInfo::Reader encodings,
-                   concrete::SecurityCurve curve,
+                   ::concretelang::security::SecurityCurve curve,
                    bool compressInputCiphertexts) {
 
   auto output = Message<concreteprotocol::CircuitInfo>();
@@ -348,7 +349,8 @@ extractCircuitInfo(mlir::func::FuncOp funcOp,
 llvm::Expected<Message<concreteprotocol::ProgramInfo>> extractProgramInfo(
     mlir::ModuleOp module,
     const Message<concreteprotocol::ProgramEncodingInfo> &encodings,
-    concrete::SecurityCurve curve, bool compressInputCiphertexts) {
+    ::concretelang::security::SecurityCurve curve,
+    bool compressInputCiphertexts) {
 
   auto output = Message<concreteprotocol::ProgramInfo>();
   auto circuitsCount = encodings.asReader().getCircuits().size();
@@ -386,7 +388,8 @@ createProgramInfoFromTfheDialect(
     bool compressEvaluationKeys, bool compressInputCiphertexts) {
 
   // Check that security curves exist
-  const auto curve = concrete::getSecurityCurve(bitsOfSecurity, keyFormat);
+  const auto curve =
+      ::concretelang::security::getSecurityCurve(bitsOfSecurity, keyFormat);
   if (curve == nullptr) {
     return StreamStringError("Cannot find security curves for ")
            << bitsOfSecurity << "bits";

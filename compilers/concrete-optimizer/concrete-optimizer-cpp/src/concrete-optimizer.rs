@@ -17,6 +17,7 @@ use concrete_optimizer::optimization::dag::multi_parameters::optimize::{
     SearchSpaceRestriction,
 };
 use concrete_optimizer::optimization::dag::multi_parameters::partition_cut::PartitionCut;
+use concrete_optimizer::optimization::dag::multi_parameters::virtual_circuit::generate_virtual_parameters;
 use concrete_optimizer::optimization::dag::multi_parameters::{keys_spec, PartitionIndex};
 use concrete_optimizer::optimization::dag::solo_key::optimize_generic::{
     Encoding, Solution as DagSolution,
@@ -913,6 +914,32 @@ fn location_from_string(string: &str) -> Box<Location> {
     }
 }
 
+fn generate_virtual_keyset_info(
+    inputs: Vec<ffi::PartitionDefinition>,
+    generate_fks: bool,
+    options: &ffi::Options,
+) -> ffi::CircuitKeys {
+    let config = Config {
+        security_level: options.security_level,
+        maximum_acceptable_error_probability: options.maximum_acceptable_error_probability,
+        key_sharing: options.key_sharing,
+        ciphertext_modulus_log: options.ciphertext_modulus_log,
+        fft_precision: options.fft_precision,
+        complexity_model: &CpuComplexity::default(),
+    };
+    generate_virtual_parameters(
+        inputs
+            .into_iter()
+            .map(
+                |ffi::PartitionDefinition { precision, norm2 }| concrete_optimizer::optimization::dag::multi_parameters::virtual_circuit::PartitionDefinition { precision, norm2 },
+            )
+            .collect(),
+        generate_fks,
+        config
+    )
+    .into()
+}
+
 pub struct Weights(operator::Weights);
 
 fn vector(weights: &[i64]) -> Box<Weights> {
@@ -980,6 +1007,13 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::utils"]
         fn location_from_string(string: &str) -> Box<Location>;
+
+        #[namespace = "concrete_optimizer::utils"]
+        fn generate_virtual_keyset_info(
+            partitions: Vec<PartitionDefinition>,
+            generate_fks: bool,
+            options: &Options,
+        ) -> CircuitKeys;
 
         #[namespace = "concrete_optimizer::utils"]
         fn get_external_partition(
@@ -1358,6 +1392,13 @@ mod ffi {
     #[derive(Debug, Clone)]
     pub struct KeysetRestriction {
         pub info: KeysetInfo,
+    }
+
+    #[namespace = "concrete_optimizer::utils"]
+    #[derive(Debug, Clone)]
+    pub struct PartitionDefinition {
+        pub precision: u8,
+        pub norm2: f64,
     }
 }
 

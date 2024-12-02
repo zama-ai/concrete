@@ -6,6 +6,7 @@
 #ifndef CONCRETELANG_COMMON_KEYSETS_H
 #define CONCRETELANG_COMMON_KEYSETS_H
 
+#include "concrete-optimizer.hpp"
 #include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Error.h"
@@ -91,6 +92,10 @@ public:
 private:
   KeysetCache() = default;
 };
+
+Message<concreteprotocol::KeysetInfo> keysetInfoFromVirtualCircuit(
+    std::vector<concrete_optimizer::utils::PartitionDefinition> partitions,
+    bool generate_fks, std::optional<concrete_optimizer::Options> options);
 
 } // namespace keysets
 } // namespace concretelang

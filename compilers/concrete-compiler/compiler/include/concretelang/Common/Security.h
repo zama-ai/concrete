@@ -2,16 +2,11 @@
 // Exceptions. See
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
+#ifndef CONCRETELANG_COMMON_SECURITY_H
+#define CONCRETELANG_COMMON_SECURITY_H
 
-#ifndef CONCRETELANG_SUPPORT_V0CURVES_H_
-#define CONCRETELANG_SUPPORT_V0CURVES_H_
-
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <vector>
-
-namespace concrete {
+namespace concretelang {
+namespace security {
 
 enum KeyFormat {
   BINARY,
@@ -42,31 +37,16 @@ struct SecurityCurve {
   /// @param polynomialSize The size of the polynom of the glwe
   /// @param logQ The log of q
   /// @return The secure encryption variances
-  double getVariance(int glweDimension, int polynomialSize, int logQ) {
-    auto size = glweDimension * polynomialSize;
-    if (size < minimalLweDimension) {
-      return NAN;
-    }
-    auto a = std::pow(2, (slope * size + bias) * 2);
-    auto b = std::pow(2, -2 * (logQ - 2));
-    return a > b ? a : b;
-  }
+  double getVariance(int glweDimension, int polynomialSize, int logQ);
 };
-
-#include "curves.gen.h"
 
 /// @brief Return the security curve for a given level and a key format.
 /// @param bitsOfSecurity The number of bits of security
 /// @param keyFormat The format of the key
 /// @return The security curve or nullptr if the curve is not found.
-SecurityCurve *getSecurityCurve(int bitsOfSecurity, KeyFormat keyFormat) {
-  for (size_t i = 0; i < curvesLen; i++) {
-    if (curves[i].bits == bitsOfSecurity && curves[i].keyFormat == keyFormat)
-      return &curves[i];
-  }
-  return nullptr;
-}
+SecurityCurve *getSecurityCurve(int bitsOfSecurity, KeyFormat keyFormat);
 
-} // namespace concrete
+} // namespace security
+} // namespace concretelang
 
 #endif

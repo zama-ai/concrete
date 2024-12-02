@@ -326,6 +326,122 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                "with a keyset.";
 
   // ------------------------------------------------------------------------------//
+  // OPTIMIZER OPTIONS //
+  // ------------------------------------------------------------------------------//
+  pybind11::class_<concrete_optimizer::Options>(m, "OptimizerOptions")
+      .def(
+          "set_security_level",
+          [](concrete_optimizer::Options &options, uint64_t security_level) {
+            options.security_level = security_level;
+          },
+          "Set option for security level.", arg("security_level"))
+      .def(
+          "set_maximum_acceptable_error_probability",
+          [](concrete_optimizer::Options &options,
+             double maximum_acceptable_error_probability) {
+            options.maximum_acceptable_error_probability =
+                maximum_acceptable_error_probability;
+          },
+          "Set option for maximum acceptable error probability.",
+          arg("maximum_acceptable_error_probability"))
+      .def(
+          "set_key_sharing",
+          [](concrete_optimizer::Options &options, bool key_sharing) {
+            options.key_sharing = key_sharing;
+          },
+          "Set option for key sharing.", arg("key_sharing"))
+      .def(
+          "set_multi_param_strategy_to_by_precision",
+          [](concrete_optimizer::Options &options) {
+            options.multi_param_strategy =
+                concrete_optimizer::MultiParamStrategy::ByPrecision;
+          },
+          "Set option for multi param strategy to by-precision.")
+      .def(
+          "set_multi_param_strategy_to_by_precision_and_norm_2",
+          [](concrete_optimizer::Options &options) {
+            options.multi_param_strategy =
+                concrete_optimizer::MultiParamStrategy::ByPrecisionAndNorm2;
+          },
+          "Set option for multi param strategy to by-precision-and-norm2.")
+      .def(
+          "set_default_log_norm2_woppbs",
+          [](concrete_optimizer::Options &options,
+             double default_log_norm2_woppbs) {
+            options.default_log_norm2_woppbs = default_log_norm2_woppbs;
+          },
+          "Set option for default log norm2 woppbs.",
+          arg("default_log_norm2_woppbs"))
+      .def(
+          "set_use_gpu_constraints",
+          [](concrete_optimizer::Options &options, bool use_gpu_constraints) {
+            options.use_gpu_constraints = use_gpu_constraints;
+          },
+          "Set option for use gpu constrints.", arg("use_gpu_constraints"))
+      .def(
+          "set_encoding_to_auto",
+          [](concrete_optimizer::Options &options) {
+            options.encoding = concrete_optimizer::Encoding::Auto;
+          },
+          "Set option for encoding to auto.")
+      .def(
+          "set_encoding_to_crt",
+          [](concrete_optimizer::Options &options) {
+            options.encoding = concrete_optimizer::Encoding::Crt;
+          },
+          "Set option for encoding to crt.")
+      .def(
+          "set_encoding_to_native",
+          [](concrete_optimizer::Options &options) {
+            options.encoding = concrete_optimizer::Encoding::Native;
+          },
+          "Set option for encoding to native.")
+      .def(
+          "set_cache_on_disk",
+          [](concrete_optimizer::Options &options, bool cache_on_disk) {
+            options.cache_on_disk = cache_on_disk;
+          },
+          "Set option for cache on disk.", arg("cache_on_disk"))
+      .def(
+          "set_ciphertext_modulus_log",
+          [](concrete_optimizer::Options &options,
+             uint32_t ciphertext_modulus_log) {
+            options.ciphertext_modulus_log = ciphertext_modulus_log;
+          },
+          "Set option for ciphertext modulus log.",
+          arg("ciphertext_modulus_log"))
+      .def(
+          "set_fft_precision",
+          [](concrete_optimizer::Options &options, uint32_t fft_precision) {
+            options.fft_precision = fft_precision;
+          },
+          "Set option for fft precision.", arg("fft_precision"))
+      .def(
+          "set_fft_precision",
+          [](concrete_optimizer::Options &options, uint32_t fft_precision) {
+            options.fft_precision = fft_precision;
+          },
+          "Set option for fft precision.", arg("fft_precision"))
+      .def(
+          "set_range_restriction",
+          [](concrete_optimizer::Options &options,
+             concrete_optimizer::restriction::RangeRestriction restriction) {
+            options.range_restriction = std::make_shared<
+                concrete_optimizer::restriction::RangeRestriction>(restriction);
+          },
+          "Set option for range restriction", arg("restriction"))
+      .def(
+          "set_keyset_restriction",
+          [](concrete_optimizer::Options &options,
+             concrete_optimizer::restriction::KeysetRestriction restriction) {
+            options.keyset_restriction = std::make_shared<
+                concrete_optimizer::restriction::KeysetRestriction>(
+                restriction);
+          },
+          "Set option for keyset restriction", arg("restriction"))
+      .doc() = "Options for the optimizer.";
+
+  // ------------------------------------------------------------------------------//
   // COMPILATION OPTIONS //
   // ------------------------------------------------------------------------------//
   pybind11::class_<CompilationOptions>(m, "CompilationOptions")
@@ -645,6 +761,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       output.append(")");
       return output;
     }
+
+    bool operator==(LweSecretKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left == right;
+    }
+
+    bool operator!=(LweSecretKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left != right;
+    }
   };
   pybind11::class_<LweSecretKeyParam>(m, "LweSecretKeyParam")
       .def(
@@ -659,6 +787,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](pybind11::object key) {
              return pybind11::hash(pybind11::repr(key));
            })
+      .def(pybind11::self == pybind11::self)
+      .def(pybind11::self != pybind11::self)
       .doc() = "Parameters of an LWE Secret Key.";
 
   // ------------------------------------------------------------------------------//
@@ -688,6 +818,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       output.append(std::to_string(info.asReader().getParams().getVariance()));
       output.append(")");
       return output;
+    }
+
+    bool operator==(BootstrapKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left == right;
+    }
+
+    bool operator!=(BootstrapKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left != right;
     }
   };
   pybind11::class_<BootstrapKeyParam>(m, "BootstrapKeyParam")
@@ -745,6 +887,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](pybind11::object key) {
              return pybind11::hash(pybind11::repr(key));
            })
+      .def(pybind11::self == pybind11::self)
+      .def(pybind11::self != pybind11::self)
       .doc() = "Parameters of a Bootstrap key.";
 
   // ------------------------------------------------------------------------------//
@@ -765,6 +909,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       output.append(std::to_string(info.asReader().getParams().getVariance()));
       output.append(")");
       return output;
+    }
+
+    bool operator==(KeyswitchKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left == right;
+    }
+
+    bool operator!=(KeyswitchKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left != right;
     }
   };
   pybind11::class_<KeyswitchKeyParam>(m, "KeyswitchKeyParam")
@@ -804,6 +960,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](pybind11::object key) {
              return pybind11::hash(pybind11::repr(key));
            })
+      .def(pybind11::self == pybind11::self)
+      .def(pybind11::self != pybind11::self)
       .doc() = "Parameters of a keyswitch key.";
 
   // ------------------------------------------------------------------------------//
@@ -833,6 +991,18 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       output.append(std::to_string(info.asReader().getParams().getVariance()));
       output.append(")");
       return output;
+    }
+
+    bool operator==(PackingKeyswitchKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left == right;
+    }
+
+    bool operator!=(PackingKeyswitchKeyParam const &other) const {
+      capnp::AnyStruct::Reader left = this->info.asReader().getParams();
+      capnp::AnyStruct::Reader right = other.info.asReader().getParams();
+      return left != right;
     }
   };
   pybind11::class_<PackingKeyswitchKeyParam>(m, "PackingKeyswitchKeyParam")
@@ -892,13 +1062,46 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
            [](pybind11::object key) {
              return pybind11::hash(pybind11::repr(key));
            })
+      .def(pybind11::self == pybind11::self)
+      .def(pybind11::self != pybind11::self)
       .doc() = "Parameters of a packing keyswitch key.";
+
+  // ------------------------------------------------------------------------------//
+  // PARTITION DEFINITION //
+  // ------------------------------------------------------------------------------//
+  //
+  pybind11::class_<concrete_optimizer::utils::PartitionDefinition>(
+      m, "PartitionDefinition")
+      .def(init([](uint8_t precision, double norm2)
+                    -> concrete_optimizer::utils::PartitionDefinition {
+             return concrete_optimizer::utils::PartitionDefinition{precision,
+                                                                   norm2};
+           }),
+           arg("precision"), arg("norm2"))
+      .doc() = "Definition of a partition (in terms of precision in bits and "
+               "norm2 in value).";
 
   // ------------------------------------------------------------------------------//
   // KEYSET INFO //
   // ------------------------------------------------------------------------------//
   typedef Message<concreteprotocol::KeysetInfo> KeysetInfo;
   pybind11::class_<KeysetInfo>(m, "KeysetInfo")
+      .def_static(
+          "generate_virtual",
+          [](std::vector<concrete_optimizer::utils::PartitionDefinition>
+                 partitions,
+             bool generateFks,
+             std::optional<concrete_optimizer::Options> options) -> KeysetInfo {
+            if (partitions.size() < 2) {
+              throw std::runtime_error("Need at least two partition defs to "
+                                       "generate a virtual keyset info.");
+            }
+            return ::concretelang::keysets::keysetInfoFromVirtualCircuit(
+                partitions, generateFks, options);
+          },
+          arg("partition_defs"), arg("generate_fks"),
+          arg("options") = std::nullopt,
+          "Generate a generic keyset info for a set of partition definitions")
       .def(
           "secret_keys",
           [](KeysetInfo &keysetInfo) {
