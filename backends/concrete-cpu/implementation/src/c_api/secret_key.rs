@@ -326,6 +326,7 @@ pub unsafe extern "C" fn concrete_cpu_glwe_secret_key_size_u64(
 pub extern "C" fn concrete_cpu_lwe_secret_key_buffer_size_u64(lwe_dimension: usize) -> usize {
     let metadata = core::mem::size_of::<LweSecretKey<&[u64]>>();
     metadata + concrete_cpu_lwe_secret_key_size_u64(lwe_dimension) * 8 /*u64*/
+    + 100 /*serialization headers (fragile)*/
 }
 
 #[no_mangle]
@@ -335,6 +336,7 @@ pub extern "C" fn concrete_cpu_glwe_secret_key_buffer_size_u64(
 ) -> usize {
     let metadata = core::mem::size_of::<GlweSecretKey<&[u64]>>();
     metadata + glwe_dimension * polynomial_size * 8 /*u64*/
+    + 100 /*serialization headers (fragile)*/
 }
 
 #[no_mangle]
