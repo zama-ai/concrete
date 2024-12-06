@@ -4,8 +4,11 @@ Declaration of `FheModule` classes.
 
 # pylint: disable=import-error,no-member,no-name-in-module
 
+import asyncio
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
+from threading import Thread
+from typing import Any, Awaitable, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 from concrete.compiler import CompilationContext, LweSecretKey, Parameter
@@ -24,13 +27,40 @@ from .value import Value
 # pylint: enable=import-error,no-member,no-name-in-module
 
 
-class ExecutionRt(NamedTuple):
+class ExecutionRt:
     """
     Runtime object class for execution.
     """
 
     client: Client
     server: Server
+    auto_schedule_run: bool
+    fhe_executor_pool: ThreadPoolExecutor
+    fhe_waiter_loop: asyncio.BaseEventLoop
+    fhe_waiter_thread: Thread  # daemon thread
+
+    def __init__(self, client, server, auto_schedule_run):
+        self.client = client
+        self.server = server
+        self.auto_schedule_run = auto_schedule_run
+        if auto_schedule_run:
+            self.fhe_executor_pool = ThreadPoolExecutor()
+            self.fhe_waiter_loop = asyncio.new_event_loop()
+
+            def loop_thread():
+                asyncio.set_event_loop(self.fhe_waiter_loop)
+                self.fhe_waiter_loop.run_forever()
+
+            self.fhe_waiter_thread = Thread(target=loop_thread, args=(), daemon=True)
+            self.fhe_waiter_thread.start()
+        else:
+            self.fhe_executor_pool = None
+            self.fhe_waiter_loop = None
+            self.fhe_waiter_thread = None
+
+    def __del__(self):
+        if self.fhe_waiter_loop:
+            self.fhe_waiter_loop.stop()  # pragma: no cover
 
 
 class SimulationRt(NamedTuple):
@@ -177,12 +207,12 @@ class FheFunction:
             return tuple(args) if len(args) > 1 else args[0]  # type: ignore
         return self.execution_runtime.val.client.encrypt(*args, function_name=self.name)
 
-    def run(
+    def run_sync(
         self,
         *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
-    ) -> Union[Value, Tuple[Value, ...]]:
+    ) -> Any:
         """
-        Evaluate the function.
+        Evaluate the function synchronuously.
 
         Args:
             *args (Value):
@@ -193,17 +223,115 @@ class FheFunction:
                 result(s) of evaluation
         """
 
+        return self._run(True, *args)
+
+    def run_async(
+        self, *args: Optional[Union[Value, Tuple[Optional[Value], ...]]]
+    ) -> Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+        """
+        Evaluate the function asynchronuously.
+
+        Args:
+            *args (Value):
+                argument(s) for evaluation
+
+        Returns:
+            Union[Awaitable[Value], Awaitable[Tuple[Value, ...]]]:
+                result(s) a future of the evaluation
+        """
+        if (
+            isinstance(self.execution_runtime.val, ExecutionRt)
+            and not self.execution_runtime.val.fhe_executor_pool
+        ):
+            client = self.execution_runtime.val.client
+            server = self.execution_runtime.val.server
+            self.execution_runtime = Lazy(lambda: ExecutionRt(client, server, True))
+            self.execution_runtime.val.auto_schedule_run = False
+
+        return self._run(False, *args)
+
+    def run(
+        self,
+        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+    ) -> Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+        """
+        Evaluate the function.
+
+        Args:
+            *args (Value):
+                argument(s) for evaluation
+
+        Returns:
+            Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+                result(s) of evaluation or future of result(s) of evaluation if configured with async_run=True
+        """
+        if isinstance(self.execution_runtime.val, ExecutionRt):
+            auto_schedule_run = self.execution_runtime.val.auto_schedule_run
+        else:
+            auto_schedule_run = False  # pragma: no cover
+        return self._run(not auto_schedule_run, *args)
+
+    def _run(
+        self,
+        sync: bool,
+        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+    ) -> Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+        """
+        Evaluate the function.
+
+        Args:
+            *args (Value):
+                argument(s) for evaluation
+
+        Returns:
+            Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+                result(s) of evaluation if sync=True else future of result(s) of evaluation
+        """
         if self.configuration.simulate_encrypt_run_decrypt:
             return self._simulate_decrypt(self._simulate_run(*args))  # type: ignore
-        return self.execution_runtime.val.server.run(
+
+        assert isinstance(self.execution_runtime.val, ExecutionRt)
+
+        fhe_work = lambda *args: self.execution_runtime.val.server.run(
             *args,
             evaluation_keys=self.execution_runtime.val.client.evaluation_keys,
             function_name=self.name,
         )
 
+        def args_ready(args):
+            return [arg.result() if isinstance(arg, Future) else arg for arg in args]
+
+        if sync:
+            return fhe_work(*args_ready(args))
+
+        all_args_done = all(not isinstance(arg, Future) or arg.done() for arg in args)
+
+        fhe_work_future = lambda *args: self.execution_runtime.val.fhe_executor_pool.submit(
+            fhe_work, *args
+        )
+        if all_args_done:
+            return fhe_work_future(*args_ready(args))  # type: ignore
+
+        # waiting args to be ready with async coroutines
+        # it only required one thread to run unlimited waits vs unlimited sync threads
+        async def wait_async(arg):
+            if not isinstance(arg, Future):
+                return arg  # pragma: no cover
+            if arg.done():
+                return arg.result()  # pragma: no cover
+            return await asyncio.wrap_future(arg, loop=self.execution_runtime.val.fhe_waiter_loop)
+
+        async def args_ready_and_submit(*args):
+            args = [await wait_async(arg) for arg in args]
+            return await wait_async(fhe_work_future(*args))
+
+        run_async = args_ready_and_submit(*args)
+        return asyncio.run_coroutine_threadsafe(
+            run_async, self.execution_runtime.val.fhe_waiter_loop
+        )  # type: ignore
+
     def decrypt(
-        self,
-        *results: Union[Value, Tuple[Value, ...]],
+        self, *results: Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]
     ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
@@ -220,6 +348,8 @@ class FheFunction:
         if self.configuration.simulate_encrypt_run_decrypt:
             return tuple(results) if len(results) > 1 else results[0]  # type: ignore
 
+        assert isinstance(self.execution_runtime.val, ExecutionRt)
+        results = [res.result() if isinstance(res, Future) else res for res in results]
         return self.execution_runtime.val.client.decrypt(*results, function_name=self.name)
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
@@ -620,7 +750,9 @@ class FheModule:
             execution_client = Client(
                 execution_server.client_specs, keyset_cache_directory, is_simulated=False
             )
-            return ExecutionRt(execution_client, execution_server)
+            return ExecutionRt(
+                execution_client, execution_server, self.configuration.auto_schedule_run
+            )
 
         self.execution_runtime = Lazy(init_execution)
         if configuration.fhe_execution:

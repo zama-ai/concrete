@@ -4,7 +4,9 @@ Tests of everything related to modules.
 
 import inspect
 import tempfile
+from concurrent.futures import Future
 from pathlib import Path
+from typing import Awaitable
 
 import numpy as np
 import pytest
@@ -955,3 +957,83 @@ def test_wired_with_all_encrypted_inputs(helpers):
         },
         helpers.configuration().fork(),
     )
+
+
+class IncDec:
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted"})
+        def inc(x):
+            return fhe.refresh(x + 1)
+
+        @fhe.function({"x": "encrypted"})
+        def dec(x):
+            return fhe.refresh(x - 1)
+
+    precision = 4
+
+    inputset = list(range(1, 2**precision - 1))
+    to_compile = {"inc": inputset, "dec": inputset}
+
+
+def test_run_async():
+    """
+    Test `run_async` with `auto_schedule_run=False` configuration option.
+    """
+
+    module = IncDec.Module.compile(IncDec.to_compile)
+
+    sample_x = 2
+    encrypted_x = module.inc.encrypt(sample_x)
+
+    a = module.inc.run_async(encrypted_x)
+    assert isinstance(a, Future)
+
+    b = module.dec.run(a)
+    assert isinstance(b, type(encrypted_x))
+
+    result = module.inc.decrypt(b)
+    assert result == sample_x
+    del module
+
+
+def test_run_sync():
+    """
+    Test `run_sync` with `auto_schedule_run=True` configuration option.
+    """
+
+    conf = fhe.Configuration(auto_schedule_run=True)
+    module = IncDec.Module.compile(IncDec.to_compile, conf)
+
+    sample_x = 2
+    encrypted_x = module.inc.encrypt(sample_x)
+
+    a = module.inc.run(encrypted_x)
+    assert isinstance(a, Future)
+
+    b = module.dec.run_sync(a)
+    assert isinstance(b, type(encrypted_x))
+
+    result = module.inc.decrypt(b)
+    assert result == sample_x
+
+
+def test_run_auto_schedule():
+    """
+    Test `run` with `auto_schedule_run=True` configuration option.
+    """
+
+    conf = fhe.Configuration(auto_schedule_run=True)
+    module = IncDec.Module.compile(IncDec.to_compile, conf)
+
+    sample_x = 2
+    encrypted_x = module.inc.encrypt(sample_x)
+
+    a = module.inc.run(encrypted_x)
+    assert isinstance(a, Future)
+
+    b = module.dec.run(a)
+    assert isinstance(b, Future)
+
+    result = module.inc.decrypt(b)
+    assert result == sample_x
