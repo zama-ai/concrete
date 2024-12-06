@@ -47,7 +47,7 @@ Refer to the API, review product architecture, and access additional resources f
 Ask technical questions and discuss with the community. Our team of experts usually answers within 24 hours in working days.
 
 * [Community forum](https://community.zama.ai/c/concrete/)
-* [Discord channel](https://discord.fhe.org/)
+* [Discord channel](https://discord.com/invite/zama)
 
 ### Developers
 
