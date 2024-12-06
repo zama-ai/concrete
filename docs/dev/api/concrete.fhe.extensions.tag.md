@@ -11,7 +11,7 @@ Declaration of `tag` context manager, to allow tagging certain nodes.
 
 ---
 
-<a href="../../tempdirectoryforapidocs/concrete/fhe/extensions/tag/tag#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../concrete/fhe/extensions/tag/tag#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tag`
 
