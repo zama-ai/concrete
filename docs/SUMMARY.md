@@ -29,6 +29,7 @@
    * [Multi parameters](compilation/multi_parameters.md)
 * [Compression](compilation/compression.md)
 * [Reusing arguments](compilation/reuse_arguments.md)
+* [Parameter compatibility with restrictions](compilation/parameter_compatibility_with_restrictions.md)
 * [Common errors](compilation/common_errors.md)
 
 ## Execution / Analysis
