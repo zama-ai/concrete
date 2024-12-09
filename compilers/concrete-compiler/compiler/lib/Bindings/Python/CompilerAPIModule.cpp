@@ -1107,7 +1107,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](KeysetInfo &keysetInfo) {
             auto secretKeys = std::vector<LweSecretKeyParam>();
             for (auto key : keysetInfo.asReader().getLweSecretKeys()) {
-              secretKeys.push_back(LweSecretKeyParam{key});
+              secretKeys.push_back(LweSecretKeyParam{
+                  (Message<concreteprotocol::LweSecretKeyInfo>)key});
             }
             return secretKeys;
           },
@@ -1117,7 +1118,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](KeysetInfo &keysetInfo) {
             auto bootstrapKeys = std::vector<BootstrapKeyParam>();
             for (auto key : keysetInfo.asReader().getLweBootstrapKeys()) {
-              bootstrapKeys.push_back(BootstrapKeyParam{key});
+              bootstrapKeys.push_back(BootstrapKeyParam{
+                  (Message<concreteprotocol::LweBootstrapKeyInfo>)key});
             }
             return bootstrapKeys;
           },
@@ -1127,7 +1129,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](KeysetInfo &keysetInfo) {
             auto keyswitchKeys = std::vector<KeyswitchKeyParam>();
             for (auto key : keysetInfo.asReader().getLweKeyswitchKeys()) {
-              keyswitchKeys.push_back(KeyswitchKeyParam{key});
+              keyswitchKeys.push_back(KeyswitchKeyParam{
+                  (Message<concreteprotocol::LweKeyswitchKeyInfo>)key});
             }
             return keyswitchKeys;
           },
@@ -1137,7 +1140,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](KeysetInfo &keysetInfo) {
             auto packingKeyswitchKeys = std::vector<PackingKeyswitchKeyParam>();
             for (auto key : keysetInfo.asReader().getPackingKeyswitchKeys()) {
-              packingKeyswitchKeys.push_back(PackingKeyswitchKeyParam{key});
+              packingKeyswitchKeys.push_back(PackingKeyswitchKeyParam{
+                  (Message<concreteprotocol::PackingKeyswitchKeyInfo>)key});
             }
             return packingKeyswitchKeys;
           },
@@ -1220,13 +1224,13 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def(
           "get_type_info",
           [](GateInfo &gate) -> TypeInfo {
-            return {gate.asReader().getTypeInfo()};
+            return {(TypeInfo)gate.asReader().getTypeInfo()};
           },
           "Return the type associated to the gate.")
       .def(
           "get_raw_info",
           [](GateInfo &gate) -> RawInfo {
-            return {gate.asReader().getRawInfo()};
+            return {(RawInfo)gate.asReader().getRawInfo()};
           },
           "Return the raw type associated to the gate.")
       .doc() = "Informations describing a circuit gate (input or output).";
@@ -1247,7 +1251,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](CircuitInfo &circuit) -> std::vector<GateInfo> {
             auto output = std::vector<GateInfo>();
             for (auto gate : circuit.asReader().getInputs()) {
-              output.push_back({gate});
+              output.push_back({(Message<concreteprotocol::GateInfo>)gate});
             }
             return output;
           },
@@ -1257,7 +1261,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           [](CircuitInfo &circuit) -> std::vector<GateInfo> {
             auto output = std::vector<GateInfo>();
             for (auto gate : circuit.asReader().getOutputs()) {
-              output.push_back({gate});
+              output.push_back({(Message<concreteprotocol::GateInfo>)gate});
             }
             return output;
           },
@@ -1415,7 +1419,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def(
           "get_keyset_info",
           [](ProgramInfo &programInfo) -> KeysetInfo {
-            return programInfo.programInfo.asReader().getKeyset();
+            return (KeysetInfo)programInfo.programInfo.asReader().getKeyset();
           },
           "Return the keyset info associated to the program.")
       .def(
@@ -1424,7 +1428,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             auto output = std::vector<CircuitInfo>();
             for (auto circuit :
                  programInfo.programInfo.asReader().getCircuits()) {
-              output.push_back(circuit);
+              output.push_back((CircuitInfo)circuit);
             }
             return output;
           },
@@ -1435,7 +1439,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             for (auto circuit :
                  programInfo.programInfo.asReader().getCircuits()) {
               if (circuit.getName() == name) {
-                return circuit;
+                return (CircuitInfo)circuit;
               }
             }
             throw std::runtime_error("couldn't find circuit.");
@@ -1552,7 +1556,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               throw std::runtime_error("Failed to deserialize server keyset." +
                                        maybeError.as_failure().error().mesg);
             }
-            return ServerKeyset::fromProto(serverKeysetProto);
+            return ServerKeyset::fromProto(serverKeysetProto.asReader());
           },
           "Deserialize a ServerKeyset from bytes.", arg("bytes"))
       .def(
@@ -1604,7 +1608,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                GET_OR_THROW_RESULT(
                    Keyset keyset,
                    (*cache).getKeyset(
-                       programInfo.programInfo.asReader().getKeyset(),
+                       (KeysetInfo)programInfo.programInfo.asReader()
+                           .getKeyset(),
                        secretSeed, encryptionSeed,
                        initialLweSecretKeys.value()));
                return std::make_unique<Keyset>(std::move(keyset));
@@ -1612,9 +1617,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                ::concretelang::csprng::SecretCSPRNG secCsprng(secretSeed);
                ::concretelang::csprng::EncryptionCSPRNG encCsprng(
                    encryptionSeed);
-               auto keyset =
-                   Keyset(programInfo.programInfo.asReader().getKeyset(),
-                          secCsprng, encCsprng, initialLweSecretKeys.value());
+               auto keyset = Keyset(
+                   (KeysetInfo)programInfo.programInfo.asReader().getKeyset(),
+                   secCsprng, encCsprng, initialLweSecretKeys.value());
                return std::make_unique<Keyset>(std::move(keyset));
              }
            }),
@@ -1652,7 +1657,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               throw std::runtime_error("Failed to deserialize keyset." +
                                        maybeError.as_failure().error().mesg);
             }
-            auto keyset = Keyset::fromProto(keysetProto);
+            auto keyset = Keyset::fromProto(std::move(keysetProto));
             return std::make_unique<Keyset>(std::move(keyset));
           },
           "Deserialize a Keyset from a file.", arg("path"))
@@ -1668,6 +1673,21 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               return maybeBuffer.value();
             };
             return pybind11::bytes(keySetSerialize(keySet));
+          },
+          "Serialize a Keyset to bytes.")
+      .def(
+          "serialize_to_file",
+          [](Keyset &keySet, const std::string path) {
+            std::ofstream ofs;
+            ofs.open(path);
+            if (!ofs.good()) {
+              throw std::runtime_error("Failed to open keyset file " + path);
+            }
+            auto keysetProto = keySet.toProto();
+            auto maybeBuffer = keysetProto.writeBinaryToOstream(ofs);
+            if (maybeBuffer.has_failure()) {
+              throw std::runtime_error("Failed to serialize keys.");
+            }
           },
           "Serialize a Keyset to bytes.")
       .def(
@@ -2034,8 +2054,10 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
 
              GET_OR_THROW_RESULT(auto pi, library.getProgramInfo());
              GET_OR_THROW_RESULT(
-                 auto result, ServerProgram::load(pi.asReader(), sharedLibPath,
-                                                  useSimulation));
+                 auto result,
+                 ServerProgram::load(
+                     (Message<concreteprotocol::ProgramInfo>)pi.asReader(),
+                     sharedLibPath, useSimulation));
              return result;
            }),
            arg("library"), arg("use_simulation"))
@@ -2061,7 +2083,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               throw std::runtime_error("Unknown position.");
             }
             auto info = circuit.getCircuitInfo().asReader().getInputs()[pos];
-            auto typeTransformer = getPythonTypeTransformer(info);
+            auto typeTransformer = getPythonTypeTransformer((GateInfo)info);
             GET_OR_THROW_RESULT(
                 auto ok, circuit.prepareInput(typeTransformer(arg), pos));
             return ok;
@@ -2084,7 +2106,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
               throw std::runtime_error("Unknown position.");
             }
             auto info = circuit.getCircuitInfo().asReader().getInputs()[pos];
-            auto typeTransformer = getPythonTypeTransformer(info);
+            auto typeTransformer = getPythonTypeTransformer((GateInfo)info);
             GET_OR_THROW_RESULT(auto ok, circuit.simulatePrepareInput(
                                              typeTransformer(arg), pos));
             return ok;

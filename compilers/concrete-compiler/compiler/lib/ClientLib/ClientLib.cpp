@@ -49,14 +49,17 @@ ClientCircuit::create(const Message<concreteprotocol::CircuitInfo> &info,
     InputTransformer transformer;
     if (gateInfo.getTypeInfo().hasIndex()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getIndexInputTransformer(gateInfo));
+                  TransformerFactory::getIndexInputTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasPlaintext()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getPlaintextInputTransformer(gateInfo));
+                  TransformerFactory::getPlaintextInputTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasLweCiphertext()) {
       OUTCOME_TRY(transformer,
                   TransformerFactory::getLweCiphertextInputTransformer(
-                      keyset, gateInfo, csprng, useSimulation));
+                      keyset, (Message<concreteprotocol::GateInfo>)gateInfo,
+                      csprng, useSimulation));
     } else {
       return StringError("Malformed input gate info.");
     }
@@ -69,14 +72,17 @@ ClientCircuit::create(const Message<concreteprotocol::CircuitInfo> &info,
     OutputTransformer transformer;
     if (gateInfo.getTypeInfo().hasIndex()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getIndexOutputTransformer(gateInfo));
+                  TransformerFactory::getIndexOutputTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasPlaintext()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getPlaintextOutputTransformer(gateInfo));
+                  TransformerFactory::getPlaintextOutputTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasLweCiphertext()) {
       OUTCOME_TRY(transformer,
                   TransformerFactory::getLweCiphertextOutputTransformer(
-                      keyset, gateInfo, useSimulation));
+                      keyset, (Message<concreteprotocol::GateInfo>)gateInfo,
+                      useSimulation));
     } else {
       return StringError("Malformed output gate info.");
     }
@@ -161,7 +167,9 @@ Result<ClientProgram> ClientProgram::createEncrypted(
   ClientProgram output;
   for (auto circuitInfo : info.asReader().getCircuits()) {
     OUTCOME_TRY(const ClientCircuit clientCircuit,
-                ClientCircuit::createEncrypted(circuitInfo, keyset, csprng));
+                ClientCircuit::createEncrypted(
+                    (Message<concreteprotocol::CircuitInfo>)circuitInfo, keyset,
+                    csprng));
     output.circuits.push_back(clientCircuit);
   }
   return output;
@@ -172,8 +180,10 @@ Result<ClientProgram> ClientProgram::createSimulated(
     std::shared_ptr<csprng::EncryptionCSPRNG> csprng) {
   ClientProgram output;
   for (auto circuitInfo : info.asReader().getCircuits()) {
-    OUTCOME_TRY(const ClientCircuit clientCircuit,
-                ClientCircuit::createSimulated(circuitInfo, csprng));
+    OUTCOME_TRY(
+        const ClientCircuit clientCircuit,
+        ClientCircuit::createSimulated(
+            (Message<concreteprotocol::CircuitInfo>)circuitInfo, csprng));
     output.circuits.push_back(clientCircuit);
   }
   return output;
