@@ -5,6 +5,7 @@ use std::path::Path;
 
 use clap::{Arg, ArgAction, Command};
 
+use concrete_quantizer::Quantizer;
 use tfhe::core_crypto::prelude::LweSecretKey;
 use tfhe::named::Named;
 use tfhe::prelude::*;
@@ -17,7 +18,6 @@ use tfhe::{
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json;
 
 const BLOCK_PARAMS: ClassicPBSParameters = tfhe::shortint::prelude::PARAM_MESSAGE_2_CARRY_3_KS_PBS;
 const SERIALIZE_SIZE_LIMIT: u64 = 1_000_000_000;
@@ -421,6 +421,90 @@ fn main() {
                         .required(true),
                 ),
         )
+        .subcommand(
+            Command::new("quantize")
+                .long_flag("quantize")
+                .about("Quantize float values into integers.")
+                .arg(
+                    Arg::new("config")
+                        .short('c')
+                        .long("config")
+                        .help("quantizer configuration")
+                        .required(true)
+                        .action(ArgAction::Set)
+                        .num_args(1),
+                )
+                .arg(
+                    Arg::new("value")
+                        .short('v')
+                        .long("value")
+                        .help("value(s) to quantize")
+                        .action(ArgAction::Set)
+                        .required(true)
+                        .value_delimiter(',')
+                        .num_args(1..),
+                )
+                .arg(
+                    Arg::new("shape")
+                        .short('s')
+                        .long("shape")
+                        .help("shape of values")
+                        .action(ArgAction::Set)
+                        .required(false)
+                        .value_delimiter(',')
+                        .num_args(0..),
+                )
+                .arg(
+                    Arg::new("output")
+                        .long("output")
+                        .short('o')
+                        .help("where to write quantized output")
+                        .action(ArgAction::Set)
+                        .num_args(1),
+                ),
+        )
+        .subcommand(
+            Command::new("dequantize")
+                .long_flag("dequantize")
+                .about("Dequantize integers values into floats.")
+                .arg(
+                    Arg::new("config")
+                        .short('c')
+                        .long("config")
+                        .help("quantizer configuration")
+                        .required(true)
+                        .action(ArgAction::Set)
+                        .num_args(1),
+                )
+                .arg(
+                    Arg::new("value")
+                        .short('v')
+                        .long("value")
+                        .help("value(s) to quantize")
+                        .action(ArgAction::Set)
+                        .required(true)
+                        .value_delimiter(',')
+                        .num_args(1..),
+                )
+                .arg(
+                    Arg::new("shape")
+                        .short('s')
+                        .long("shape")
+                        .help("shape of values")
+                        .action(ArgAction::Set)
+                        .required(false)
+                        .value_delimiter(',')
+                        .num_args(0..),
+                )
+                .arg(
+                    Arg::new("output")
+                        .long("output")
+                        .short('o')
+                        .help("where to write dequantized output")
+                        .action(ArgAction::Set)
+                        .num_args(1),
+                ),
+        )
         .get_matches();
 
     match matches.subcommand() {
@@ -504,6 +588,61 @@ fn main() {
             let path = Path::new(filename);
             let mut file = fs::File::create(path).unwrap();
             file.write_all(json_string.as_bytes()).unwrap();
+        }
+        Some(("quantize", quantize_matches)) => {
+            let value_str: Vec<&String> = quantize_matches
+                .get_many::<String>("value")
+                .unwrap()
+                .collect();
+            let shapes: Vec<usize> = match quantize_matches.get_many::<String>("shape") {
+                Some(shapes) => shapes.into_iter().map(|s| s.parse().unwrap()).collect(),
+                None => vec![value_str.len()],
+            };
+            let config_path = quantize_matches.get_one::<String>("config").unwrap();
+            let output_path = quantize_matches.get_one::<String>("output");
+
+            let quantizer = Quantizer::from_json_file(config_path).unwrap();
+            let value: Vec<f64> = value_str.iter().map(|v| v.parse().unwrap()).collect();
+            let quantized_array = quantizer.quantize(
+                &ndarray::ArrayD::from_shape_vec(ndarray::IxDyn(&shapes), value).unwrap(),
+            );
+            let quantized_values: Vec<&i64> = quantized_array.iter().collect();
+            let results_str: Vec<String> = quantized_values.iter().map(|v| v.to_string()).collect();
+            let string_result = results_str.join(",");
+            if let Some(path) = output_path {
+                let pt_path: &Path = Path::new(path);
+                fs::write(pt_path, string_result).unwrap();
+            } else {
+                println!("quantized: {}", string_result);
+            }
+        }
+        Some(("dequantize", dequantize_matches)) => {
+            let value_str: Vec<&String> = dequantize_matches
+                .get_many::<String>("value")
+                .unwrap()
+                .collect();
+            let shapes: Vec<usize> = match dequantize_matches.get_many::<String>("shape") {
+                Some(shapes) => shapes.into_iter().map(|s| s.parse().unwrap()).collect(),
+                None => vec![value_str.len()],
+            };
+            let config_path = dequantize_matches.get_one::<String>("config").unwrap();
+            let output_path = dequantize_matches.get_one::<String>("output");
+
+            let quantizer = Quantizer::from_json_file(config_path).unwrap();
+            let value: Vec<i64> = value_str.iter().map(|v| v.parse().unwrap()).collect();
+            let dequantized_array = quantizer.dequantize(
+                &ndarray::ArrayD::from_shape_vec(ndarray::IxDyn(&shapes), value).unwrap(),
+            );
+            let dequantized_values: Vec<&f64> = dequantized_array.iter().collect();
+            let results_str: Vec<String> =
+                dequantized_values.iter().map(|v| v.to_string()).collect();
+            let string_result = results_str.join(",");
+            if let Some(path) = output_path {
+                let pt_path: &Path = Path::new(path);
+                fs::write(pt_path, string_result).unwrap();
+            } else {
+                println!("dequantized: {}", string_result);
+            }
         }
         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachable
     }
