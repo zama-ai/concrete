@@ -64,11 +64,14 @@ LweSecretKey::LweSecretKey(Message<concreteprotocol::LweSecretKeyInfo> info,
 
 LweSecretKey
 LweSecretKey::fromProto(const Message<concreteprotocol::LweSecretKey> &proto) {
+  return fromProto(proto.asReader());
+}
 
-  auto info =
-      Message<concreteprotocol::LweSecretKeyInfo>(proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
+LweSecretKey
+LweSecretKey::fromProto(concreteprotocol::LweSecretKey::Reader reader) {
+
+  auto info = Message<concreteprotocol::LweSecretKeyInfo>(reader.getInfo());
+  auto vector = protoPayloadToSharedVector<uint64_t>(reader.getPayload());
   return LweSecretKey(vector, info);
 }
 
@@ -137,11 +140,14 @@ LweBootstrapKey::LweBootstrapKey(
 };
 
 LweBootstrapKey LweBootstrapKey::fromProto(
-    const Message<concreteprotocol::LweBootstrapKey> &proto) {
-  auto info = Message<concreteprotocol::LweBootstrapKeyInfo>(
-      proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
+    const Message<concreteprotocol::LweBootstrapKey> &key) {
+  return fromProto(key.asReader());
+}
+
+LweBootstrapKey
+LweBootstrapKey::fromProto(concreteprotocol::LweBootstrapKey::Reader reader) {
+  auto info = Message<concreteprotocol::LweBootstrapKeyInfo>(reader.getInfo());
+  auto vector = protoPayloadToSharedVector<uint64_t>(reader.getPayload());
   LweBootstrapKey key(info);
   switch (info.asReader().getCompression()) {
   case concreteprotocol::Compression::NONE:
@@ -258,10 +264,13 @@ LweKeyswitchKey::LweKeyswitchKey(
 
 LweKeyswitchKey LweKeyswitchKey::fromProto(
     const Message<concreteprotocol::LweKeyswitchKey> &proto) {
-  auto info = Message<concreteprotocol::LweKeyswitchKeyInfo>(
-      proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
+  return fromProto(proto.asReader());
+}
+
+LweKeyswitchKey
+LweKeyswitchKey::fromProto(concreteprotocol::LweKeyswitchKey::Reader reader) {
+  auto info = Message<concreteprotocol::LweKeyswitchKeyInfo>(reader.getInfo());
+  auto vector = protoPayloadToSharedVector<uint64_t>(reader.getPayload());
   LweKeyswitchKey key(info);
   switch (info.asReader().getCompression()) {
   case concreteprotocol::Compression::NONE:
@@ -362,10 +371,14 @@ PackingKeyswitchKey::PackingKeyswitchKey(
 
 PackingKeyswitchKey PackingKeyswitchKey::fromProto(
     const Message<concreteprotocol::PackingKeyswitchKey> &proto) {
-  auto info = Message<concreteprotocol::PackingKeyswitchKeyInfo>(
-      proto.asReader().getInfo());
-  auto vector =
-      protoPayloadToSharedVector<uint64_t>(proto.asReader().getPayload());
+  return fromProto(proto.asReader());
+}
+
+PackingKeyswitchKey PackingKeyswitchKey::fromProto(
+    concreteprotocol::PackingKeyswitchKey::Reader reader) {
+  auto info =
+      Message<concreteprotocol::PackingKeyswitchKeyInfo>(reader.getInfo());
+  auto vector = protoPayloadToSharedVector<uint64_t>(reader.getPayload());
   return PackingKeyswitchKey(vector, info);
 }
 

@@ -494,14 +494,17 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
     ArgTransformer transformer;
     if (gateInfo.getTypeInfo().hasIndex()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getIndexArgTransformer(gateInfo));
+                  TransformerFactory::getIndexArgTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasPlaintext()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getPlaintextArgTransformer(gateInfo));
+                  TransformerFactory::getPlaintextArgTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasLweCiphertext()) {
-      OUTCOME_TRY(transformer,
-                  TransformerFactory::getLweCiphertextArgTransformer(
-                      gateInfo, useSimulation));
+      OUTCOME_TRY(
+          transformer,
+          TransformerFactory::getLweCiphertextArgTransformer(
+              (Message<concreteprotocol::GateInfo>)gateInfo, useSimulation));
     } else {
       return StringError("Malformed input gate info.");
     }
@@ -514,14 +517,17 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
     ReturnTransformer transformer;
     if (gateInfo.getTypeInfo().hasIndex()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getIndexReturnTransformer(gateInfo));
+                  TransformerFactory::getIndexReturnTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasPlaintext()) {
       OUTCOME_TRY(transformer,
-                  TransformerFactory::getPlaintextReturnTransformer(gateInfo));
+                  TransformerFactory::getPlaintextReturnTransformer(
+                      (Message<concreteprotocol::GateInfo>)gateInfo));
     } else if (gateInfo.getTypeInfo().hasLweCiphertext()) {
-      OUTCOME_TRY(transformer,
-                  TransformerFactory::getLweCiphertextReturnTransformer(
-                      gateInfo, useSimulation));
+      OUTCOME_TRY(
+          transformer,
+          TransformerFactory::getLweCiphertextReturnTransformer(
+              (Message<concreteprotocol::GateInfo>)gateInfo, useSimulation));
     } else {
       return StringError("Malformed input gate info.");
     }
@@ -535,14 +541,16 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
 
   output.argRawSize = 0;
   for (auto gateInfo : circuitInfo.asReader().getInputs()) {
-    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation);
+    auto descriptorSize = getGateDescriptionSize(
+        (Message<concreteprotocol::GateInfo>)gateInfo, useSimulation);
     output.argDescriptorSizes.push_back(descriptorSize);
     output.argRawSize += descriptorSize;
   }
 
   output.returnRawSize = 0;
   for (auto gateInfo : circuitInfo.asReader().getOutputs()) {
-    auto descriptorSize = getGateDescriptionSize(gateInfo, useSimulation);
+    auto descriptorSize = getGateDescriptionSize(
+        (Message<concreteprotocol::GateInfo>)gateInfo, useSimulation);
     output.returnDescriptorSizes.push_back(descriptorSize);
     output.returnRawSize += descriptorSize;
   }
@@ -605,9 +613,12 @@ void ServerCircuit::invoke(const ServerKeyset &serverKeyset) {
   for (unsigned int i = 0; i < circuitInfo.asReader().getOutputs().size();
        i++) {
     // We read the descriptor from the _returnRaws via the maps.
-    size_t precision =
-        getGateIntegerPrecision(circuitInfo.asReader().getOutputs()[i]);
-    bool isSigned = getGateIsSigned(circuitInfo.asReader().getOutputs()[i]);
+    size_t precision = getGateIntegerPrecision(
+        (Message<concreteprotocol::GateInfo>)circuitInfo.asReader()
+            .getOutputs()[i]);
+    bool isSigned = getGateIsSigned(
+        (Message<concreteprotocol::GateInfo>)circuitInfo.asReader()
+            .getOutputs()[i]);
     InvocationDescriptor descriptor =
         InvocationDescriptor::fromU64s(_returnRawMaps[i], precision, isSigned);
     // We generate a value from the descriptor which we store in the
@@ -631,7 +642,8 @@ ServerProgram::load(const Message<concreteprotocol::ProgramInfo> &programInfo,
   for (auto circuitInfo : programInfo.asReader().getCircuits()) {
     OUTCOME_TRY(auto serverCircuit,
                 ServerCircuit::fromDynamicModule(
-                    circuitInfo, sharedDynamicModule, useSimulation));
+                    (Message<concreteprotocol::CircuitInfo>)circuitInfo,
+                    sharedDynamicModule, useSimulation));
     serverCircuits.push_back(serverCircuit);
   }
   output.serverCircuits = serverCircuits;

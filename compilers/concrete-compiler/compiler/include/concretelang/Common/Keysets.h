@@ -33,6 +33,8 @@ struct ClientKeyset {
   static ClientKeyset
   fromProto(const Message<concreteprotocol::ClientKeyset> &proto);
 
+  static ClientKeyset fromProto(concreteprotocol::ClientKeyset::Reader reader);
+
   Message<concreteprotocol::ClientKeyset> toProto() const;
 };
 
@@ -43,6 +45,7 @@ struct ServerKeyset {
 
   static ServerKeyset
   fromProto(const Message<concreteprotocol::ServerKeyset> &proto);
+  static ServerKeyset fromProto(concreteprotocol::ServerKeyset::Reader reader);
 
   Message<concreteprotocol::ServerKeyset> toProto() const;
 };
@@ -73,6 +76,7 @@ struct Keyset {
       : server(server), client(client) {}
 
   static Keyset fromProto(const Message<concreteprotocol::Keyset> &proto);
+  static Keyset fromProto(concreteprotocol::Keyset::Reader reader);
 
   Message<concreteprotocol::Keyset> toProto() const;
 };

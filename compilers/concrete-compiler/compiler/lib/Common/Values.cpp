@@ -173,12 +173,17 @@ size_t Value::getLength() const {
 
 bool Value::isCompatibleWithShape(
     const Message<concreteprotocol::Shape> &shape) const {
+  return isCompatibleWithShape(shape.asReader());
+}
+
+bool Value::isCompatibleWithShape(
+    concreteprotocol::Shape::Reader reader) const {
   auto dimensions = getDimensions();
-  if ((uint32_t)shape.asReader().getDimensions().size() != dimensions.size()) {
+  if ((uint32_t)reader.getDimensions().size() != dimensions.size()) {
     return false;
   }
   for (uint32_t i = 0; i < dimensions.size(); i++) {
-    if (shape.asReader().getDimensions()[i] != dimensions[i]) {
+    if (reader.getDimensions()[i] != dimensions[i]) {
       return false;
     }
   }

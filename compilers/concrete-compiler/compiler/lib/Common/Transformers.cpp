@@ -220,7 +220,7 @@ updateGateInfoAccordingValue(Message<concreteprotocol::GateInfo> &gate,
     auto lweSize = gateCiphertext.getEncryption().getLweDimension() + 1;
     gateDimensions.set(gateDimensions.size() - 1, lweSize);
     concreteShapeDimensions.set(concreteShapeDimensions.size() - 1, lweSize);
-    return gateBuilder.asReader();
+    return (Message<concreteprotocol::GateInfo>)gateBuilder.asReader();
   }
   if (gateCompression == concreteprotocol::Compression::NONE &&
       valueCompression == concreteprotocol::Compression::SEED) {
@@ -232,7 +232,7 @@ updateGateInfoAccordingValue(Message<concreteprotocol::GateInfo> &gate,
         concreteprotocol::Compression::SEED);
     gateDimensions.set(gateDimensions.size() - 1, 3);
     concreteShapeDimensions.set(concreteShapeDimensions.size() - 1, 3);
-    return gateBuilder.asReader();
+    return (Message<concreteprotocol::GateInfo>)gateBuilder.asReader();
   }
   return gate;
 }
@@ -837,11 +837,13 @@ Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
                  .getEncoding()
                  .hasInteger()) {
     OUTCOME_TRY(encodingTransformer,
-                getIntegerEncodingTransformer(gateInfo.asReader()
-                                                  .getTypeInfo()
-                                                  .getLweCiphertext()
-                                                  .getEncoding()
-                                                  .getInteger()));
+                getIntegerEncodingTransformer(
+                    (Message<concreteprotocol::IntegerCiphertextEncodingInfo>)
+                        gateInfo.asReader()
+                            .getTypeInfo()
+                            .getLweCiphertext()
+                            .getEncoding()
+                            .getInteger()));
   } else {
     return StringError("Malformed gate info");
   }
@@ -850,28 +852,35 @@ Result<InputTransformer> TransformerFactory::getLweCiphertextInputTransformer(
   Transformer encryptionTransformer;
   if (useSimulation) {
     OUTCOME_TRY(encryptionTransformer,
-                getEncryptionSimulationTransformer(gateInfo.asReader()
-                                                       .getTypeInfo()
-                                                       .getLweCiphertext()
-                                                       .getEncryption(),
-                                                   csprng));
+                getEncryptionSimulationTransformer(
+                    (Message<concreteprotocol::LweCiphertextEncryptionInfo>)
+                        gateInfo.asReader()
+                            .getTypeInfo()
+                            .getLweCiphertext()
+                            .getEncryption(),
+                    csprng));
   } else {
     auto compression =
         gateInfo.asReader().getTypeInfo().getLweCiphertext().getCompression();
     if (compression == concreteprotocol::Compression::NONE) {
       OUTCOME_TRY(encryptionTransformer,
-                  getEncryptionTransformer(keyset,
-                                           gateInfo.asReader()
-                                               .getTypeInfo()
-                                               .getLweCiphertext()
-                                               .getEncryption(),
-                                           csprng));
+                  getEncryptionTransformer(
+                      keyset,
+                      (Message<concreteprotocol::LweCiphertextEncryptionInfo>)
+                          gateInfo.asReader()
+                              .getTypeInfo()
+                              .getLweCiphertext()
+                              .getEncryption(),
+                      csprng));
     } else if (compression == concreteprotocol::Compression::SEED) {
-      OUTCOME_TRY(encryptionTransformer,
-                  getSeededEncryptionTransformer(keyset, gateInfo.asReader()
-                                                             .getTypeInfo()
-                                                             .getLweCiphertext()
-                                                             .getEncryption()));
+      OUTCOME_TRY(
+          encryptionTransformer,
+          getSeededEncryptionTransformer(
+              keyset, (Message<concreteprotocol::LweCiphertextEncryptionInfo>)
+                          gateInfo.asReader()
+                              .getTypeInfo()
+                              .getLweCiphertext()
+                              .getEncryption()));
     } else {
       return StringError(
           "Only none compression is currently supported for lwe ciphertext "
@@ -947,8 +956,10 @@ Result<ArgTransformer> TransformerFactory::getLweCiphertextArgTransformer(
   /// Generating the decompression transformer.
   auto lweCiphertextInfo = gateInfo.asReader().getTypeInfo().getLweCiphertext();
   OUTCOME_TRY(auto decompressionTransformer,
-              getDecompressionTransformer(lweCiphertextInfo.getEncryption(),
-                                          useSimulation));
+              getDecompressionTransformer(
+                  (Message<concreteprotocol::LweCiphertextEncryptionInfo>)
+                      lweCiphertextInfo.getEncryption(),
+                  useSimulation));
 
   // Generating the verifier.
   TransportValueVerifier verify;
@@ -1021,7 +1032,11 @@ Result<OutputTransformer> TransformerFactory::getLweCiphertextOutputTransformer(
 
   /// Generating the decompression transformer.
   auto encryptionInfo =
-      gateInfo.asReader().getTypeInfo().getLweCiphertext().getEncryption();
+      (Message<concreteprotocol::LweCiphertextEncryptionInfo>)gateInfo
+          .asReader()
+          .getTypeInfo()
+          .getLweCiphertext()
+          .getEncryption();
   OUTCOME_TRY(auto decompressionTransformer,
               getDecompressionTransformer(encryptionInfo, useSimulation));
 
@@ -1031,10 +1046,7 @@ Result<OutputTransformer> TransformerFactory::getLweCiphertextOutputTransformer(
     OUTCOME_TRY(decryptionTransformer, getDecryptionSimulationTransformer());
   } else {
     OUTCOME_TRY(decryptionTransformer,
-                getDecryptionTransformer(keyset, gateInfo.asReader()
-                                                     .getTypeInfo()
-                                                     .getLweCiphertext()
-                                                     .getEncryption()));
+                getDecryptionTransformer(keyset, encryptionInfo));
   }
 
   /// Generating the decoding transformer.
@@ -1051,11 +1063,13 @@ Result<OutputTransformer> TransformerFactory::getLweCiphertextOutputTransformer(
                  .getEncoding()
                  .hasInteger()) {
     OUTCOME_TRY(decodingTransformer,
-                getIntegerDecodingTransformer(gateInfo.asReader()
-                                                  .getTypeInfo()
-                                                  .getLweCiphertext()
-                                                  .getEncoding()
-                                                  .getInteger()));
+                getIntegerDecodingTransformer(
+                    (Message<concreteprotocol::IntegerCiphertextEncodingInfo>)
+                        gateInfo.asReader()
+                            .getTypeInfo()
+                            .getLweCiphertext()
+                            .getEncoding()
+                            .getInteger()));
   } else {
     return StringError("Malformed gate info");
   }

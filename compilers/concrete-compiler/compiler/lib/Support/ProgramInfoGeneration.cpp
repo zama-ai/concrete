@@ -326,7 +326,9 @@ extractCircuitInfo(mlir::func::FuncOp funcOp,
     auto compression = compressInputCiphertexts
                            ? concreteprotocol::Compression::SEED
                            : concreteprotocol::Compression::NONE;
-    auto maybeGate = generateGate(ty, encoding, curve, compression);
+    auto maybeGate =
+        generateGate(ty, (Message<concreteprotocol::EncodingInfo>)encoding,
+                     curve, compression);
     if (!maybeGate) {
       return maybeGate.takeError();
     }
@@ -336,7 +338,9 @@ extractCircuitInfo(mlir::func::FuncOp funcOp,
     auto ty = funcType.getResult(i);
     auto encoding = encodings.getOutputs()[i];
     auto compression = concreteprotocol::Compression::NONE;
-    auto maybeGate = generateGate(ty, encoding, curve, compression);
+    auto maybeGate =
+        generateGate(ty, (Message<concreteprotocol::EncodingInfo>)encoding,
+                     curve, compression);
     if (!maybeGate) {
       return maybeGate.takeError();
     }

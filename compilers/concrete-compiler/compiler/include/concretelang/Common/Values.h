@@ -198,6 +198,7 @@ struct Value {
 
   bool
   isCompatibleWithShape(const Message<concreteprotocol::Shape> &shape) const;
+  bool isCompatibleWithShape(concreteprotocol::Shape::Reader reader) const;
 
   bool isScalar() const;
 
