@@ -22,6 +22,15 @@ DEFAULT_P_ERROR = None
 DEFAULT_GLOBAL_P_ERROR = 1 / 100_000
 
 
+class SecurityLevel(int, Enum):
+    """
+    Security level used to optimize the circuit parameters.
+    """
+
+    SECURITY_128_BITS = 128
+    SECURITY_132_BITS = 132
+
+
 class ParameterSelectionStrategy(str, Enum):
     """
     ParameterSelectionStrategy, to set optimization strategy.
@@ -998,6 +1007,7 @@ class Configuration:
     range_restriction: Optional[RangeRestriction]
     keyset_restriction: Optional[KeysetRestriction]
     auto_schedule_run: bool
+    security_level: SecurityLevel
 
     def __init__(
         self,
@@ -1070,6 +1080,7 @@ class Configuration:
         range_restriction: Optional[RangeRestriction] = None,
         keyset_restriction: Optional[KeysetRestriction] = None,
         auto_schedule_run: bool = False,
+        security_level: SecurityLevel = SecurityLevel.SECURITY_128_BITS,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1181,6 +1192,8 @@ class Configuration:
 
         self.auto_schedule_run = auto_schedule_run
 
+        self.security_level = security_level
+
         self._validate()
 
     class Keep:
@@ -1259,6 +1272,7 @@ class Configuration:
         range_restriction: Union[Keep, Optional[RangeRestriction]] = KEEP,
         keyset_restriction: Union[Keep, Optional[KeysetRestriction]] = KEEP,
         auto_schedule_run: Union[Keep, bool] = KEEP,
+        security_level: Union[Keep, SecurityLevel] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.

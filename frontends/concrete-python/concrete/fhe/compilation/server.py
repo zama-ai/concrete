@@ -186,6 +186,8 @@ class Server:
         if configuration.range_restriction:
             options.set_range_restriction(configuration.range_restriction)
 
+        options.set_security_level(configuration.security_level)
+
         try:
             if configuration.compiler_debug_mode:  # pragma: no cover
                 set_llvm_debug_flag(True)
