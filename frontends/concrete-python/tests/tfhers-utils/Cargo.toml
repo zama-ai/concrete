@@ -11,13 +11,13 @@ serde_json = "1.0.128"
 
 clap = { version = "4.5.16", features = ["derive"] }
 
-tfhe = { version = "0.8.6", features = ["integer"] }
+tfhe = { version = "0.10.0", features = ["integer"] }
 
 [target.x86_64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.8.6", features = ["integer", "x86_64-unix"] }
+tfhe = { version = "0.10.0", features = ["integer", "x86_64-unix"] }
 
 [target.aarch64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.8.6", features = ["integer", "aarch64-unix"] }
+tfhe = { version = "0.10.0", features = ["integer", "aarch64-unix"] }
 
 [target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { version = "0.8.6", features = ["integer", "x86_64"] }
+tfhe = { version = "0.10.0", features = ["integer", "x86_64"] }
