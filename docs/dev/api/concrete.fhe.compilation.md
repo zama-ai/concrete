@@ -11,6 +11,7 @@ Glue the compilation process together.
 - **utils**
 - **configuration**
 - **artifacts**
+- **evaluation_keys**
 - **keys**
 - **value**
 - **client**
