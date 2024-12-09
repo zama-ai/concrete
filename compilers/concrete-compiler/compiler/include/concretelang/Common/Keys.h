@@ -53,6 +53,8 @@ public:
   static LweSecretKey
   fromProto(const Message<concreteprotocol::LweSecretKey> &proto);
 
+  static LweSecretKey fromProto(concreteprotocol::LweSecretKey::Reader reader);
+
   Message<concreteprotocol::LweSecretKey> toProto() const;
 
   const uint64_t *getRawPtr() const;
@@ -94,6 +96,10 @@ public:
   /// @brief Initialize the key from the protocol message.
   static LweBootstrapKey
   fromProto(const Message<concreteprotocol::LweBootstrapKey> &proto);
+
+  /// @brief Initialize the key from a reader.
+  static LweBootstrapKey
+  fromProto(concreteprotocol::LweBootstrapKey::Reader reader);
 
   /// @brief Returns the serialized form of the key.
   Message<concreteprotocol::LweBootstrapKey> toProto() const;
@@ -147,6 +153,10 @@ public:
   static LweKeyswitchKey
   fromProto(const Message<concreteprotocol::LweKeyswitchKey> &proto);
 
+  /// @brief Initialize the key from a reader.
+  static LweKeyswitchKey
+  fromProto(concreteprotocol::LweKeyswitchKey::Reader reader);
+
   /// @brief Returns the serialized form of the key.
   Message<concreteprotocol::LweKeyswitchKey> toProto() const;
 
@@ -198,6 +208,9 @@ public:
 
   static PackingKeyswitchKey
   fromProto(const Message<concreteprotocol::PackingKeyswitchKey> &proto);
+
+  static PackingKeyswitchKey
+  fromProto(concreteprotocol::PackingKeyswitchKey::Reader reader);
 
   Message<concreteprotocol::PackingKeyswitchKey> toProto() const;
 

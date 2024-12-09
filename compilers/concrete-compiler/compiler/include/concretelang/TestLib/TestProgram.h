@@ -81,15 +81,15 @@ public:
     }
     OUTCOME_TRY(auto lib, getLibrary());
     OUTCOME_TRY(auto programInfo, lib.getProgramInfo());
+    auto keysetInfo =
+        (Message<concreteprotocol::KeysetInfo>)programInfo.asReader()
+            .getKeyset();
     if (tryCache) {
       OUTCOME_TRY(keyset, getTestKeySetCachePtr()->getKeyset(
-                              programInfo.asReader().getKeyset(), secretSeed,
-                              encryptionSeed));
+                              keysetInfo, secretSeed, encryptionSeed));
     } else {
       auto encryptionCsprng = csprng::EncryptionCSPRNG(encryptionSeed);
       auto secretCsprng = csprng::SecretCSPRNG(secretSeed);
-      Message<concreteprotocol::KeysetInfo> keysetInfo =
-          programInfo.asReader().getKeyset();
       keyset = Keyset(keysetInfo, secretCsprng, encryptionCsprng);
     }
     return outcome::success();

@@ -17,8 +17,13 @@ namespace protocol {
 /// dimensions.
 std::vector<size_t>
 protoShapeToDimensions(const Message<concreteprotocol::Shape> &shape) {
+  return protoShapeToDimensions(shape.asReader());
+}
+
+std::vector<size_t>
+protoShapeToDimensions(concreteprotocol::Shape::Reader reader) {
   auto output = std::vector<size_t>();
-  for (auto dim : shape.asReader().getDimensions()) {
+  for (auto dim : reader.getDimensions()) {
     output.push_back(dim);
   }
   return output;
