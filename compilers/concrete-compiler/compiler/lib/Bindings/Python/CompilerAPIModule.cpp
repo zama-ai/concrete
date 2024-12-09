@@ -1676,6 +1676,21 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           },
           "Serialize a Keyset to bytes.")
       .def(
+          "serialize_to_file",
+          [](Keyset &keySet, const std::string path) {
+            std::ofstream ofs;
+            ofs.open(path);
+            if (!ofs.good()) {
+              throw std::runtime_error("Failed to open keyset file " + path);
+            }
+            auto keysetProto = keySet.toProto();
+            auto maybeBuffer = keysetProto.writeBinaryToOstream(ofs);
+            if (maybeBuffer.has_failure()) {
+              throw std::runtime_error("Failed to serialize keys.");
+            }
+          },
+          "Serialize a Keyset to bytes.")
+      .def(
           "serialize_lwe_secret_key_as_glwe",
           [](Keyset &keyset, size_t keyIndex, size_t glwe_dimension,
              size_t polynomial_size) {
