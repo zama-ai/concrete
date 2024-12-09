@@ -237,6 +237,7 @@ impl VariancedDag {
                         noise_expression: variance.clone(),
                         noise_evaluator: None,
                         location: op.location.clone(),
+                        operator_index: op.id,
                     };
                     self.external_variance_constraints.push(constraint);
                 }
@@ -276,6 +277,7 @@ impl VariancedDag {
                     noise_expression: variance.clone(),
                     noise_evaluator: None,
                     location: dag_op.location.clone(),
+                    operator_index: dag_op.id,
                 };
                 self.external_variance_constraints.push(constraint);
             }
@@ -397,7 +399,7 @@ impl VariancedDag {
 
 #[derive(Debug)]
 pub struct AnalyzedDag {
-    pub operators: Vec<Operator>,
+    pub dag: Dag,
     // Collect all operators ouput variances
     pub nb_partitions: usize,
     pub instrs_partition: Vec<InstructionPartition>,
@@ -443,8 +445,8 @@ pub fn analyze(
         .into_iter()
         .reduce(Add::add)
         .unwrap();
-    Ok(AnalyzedDag {
-        operators: varianced_dag.dag.operators,
+    let output = AnalyzedDag {
+        dag: varianced_dag.dag,
         instruction_rewrite_index,
         nb_partitions: varianced_dag.partitions.nb_partitions,
         instrs_partition: varianced_dag.partitions.instrs_partition,
@@ -455,7 +457,8 @@ pub fn analyze(
         operations_count_per_instrs,
         operations_count,
         p_cut,
-    })
+    };
+    Ok(output)
 }
 
 pub fn original_instrs_partition(
@@ -479,7 +482,7 @@ pub fn original_instrs_partition(
         for (i, new_instruction) in new_instructions.iter().enumerate() {
             // focus on TLU information
             let new_instr_part = &dag.instrs_partition[new_instruction.0];
-            if let Operator::Lut { .. } = dag.operators[new_instruction.0] {
+            if let Operator::Lut { .. } = dag.dag.operators[new_instruction.0] {
                 let ks_dst = new_instr_part.instruction_partition;
                 partition = Some(ks_dst);
                 #[allow(clippy::match_on_vec_items)]
@@ -641,6 +644,7 @@ fn variance_constraint(
     let nb_constraints = dag.out_shapes[op_i].flat_size();
     let safe_variance_bound = safe_noise_bound(precision, noise_config);
     let location = dag.locations[op_i].clone();
+    let operator_index = OperatorIndex(op_i);
     VarianceConstraint {
         precision,
         partition,
@@ -650,6 +654,7 @@ fn variance_constraint(
         noise_expression: noise,
         noise_evaluator: None,
         location,
+        operator_index,
     }
 }
 
@@ -1175,7 +1180,7 @@ pub mod tests {
         for op_i in (input1.0 + 1)..rounded1.0 {
             if let Operator::Dot {
                 weights, inputs, ..
-            } = &dag.operators[op_i]
+            } = &dag.dag.operators[op_i]
             {
                 let bit_extract = weights.values.len() == 1;
                 let first_bit_extract = bit_extract && !first_bit_extract_verified;
@@ -1383,7 +1388,11 @@ pub mod tests {
             "∅",                            // cast
             "1¢Br[1] + 1¢K[0→1]",           // _lut1
         ];
-        for ((c, ec), op) in instrs_counts.iter().zip(expected_counts).zip(dag.operators) {
+        for ((c, ec), op) in instrs_counts
+            .iter()
+            .zip(expected_counts)
+            .zip(dag.dag.operators)
+        {
             assert!(
                 c == ec,
                 "\nBad count on {op}\nActual: {c}\nTruth : {ec} (expected)\n"

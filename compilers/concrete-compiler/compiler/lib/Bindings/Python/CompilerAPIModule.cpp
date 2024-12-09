@@ -1069,7 +1069,6 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   // ------------------------------------------------------------------------------//
   // PARTITION DEFINITION //
   // ------------------------------------------------------------------------------//
-  //
   pybind11::class_<concrete_optimizer::utils::PartitionDefinition>(
       m, "PartitionDefinition")
       .def(init([](uint8_t precision, double norm2)
@@ -1082,6 +1081,28 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
                "norm2 in value).";
 
   // ------------------------------------------------------------------------------//
+  // EXTERNAL PARTITION //
+  // ------------------------------------------------------------------------------//
+  pybind11::class_<concrete_optimizer::utils::ExternalPartition>(
+      m, "ExternalPartition")
+      .def(init([](std::string name, uint64_t macroLog2PolynomialSize,
+                   uint64_t macroGlweDimension, uint64_t macroInternalDim,
+                   double maxVariance, double variance)
+                    -> concrete_optimizer::utils::ExternalPartition {
+             return concrete_optimizer::utils::ExternalPartition{
+                 name,
+                 macroLog2PolynomialSize,
+                 macroGlweDimension,
+                 macroInternalDim,
+                 maxVariance,
+                 variance};
+           }),
+           arg("name"), arg("macro_log2_polynomial_size"),
+           arg("macro_glwe_dimension"), arg("macro_internal_dim"),
+           arg("max_variance"), arg("variance"))
+      .doc() = "Definition of an external partition.";
+
+  // ------------------------------------------------------------------------------//
   // KEYSET INFO //
   // ------------------------------------------------------------------------------//
   typedef Message<concreteprotocol::KeysetInfo> KeysetInfo;
@@ -1089,15 +1110,16 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       .def_static(
           "generate_virtual",
           [](std::vector<concrete_optimizer::utils::PartitionDefinition>
-                 partitions,
-             bool generateFks,
+                 internalPartitions,
+             std::vector<concrete_optimizer::utils::ExternalPartition>
+                 externalPartitions,
              std::optional<concrete_optimizer::Options> options) -> KeysetInfo {
-            if (partitions.size() < 2) {
+            if (internalPartitions.size() + externalPartitions.size() < 2) {
               throw std::runtime_error("Need at least two partition defs to "
                                        "generate a virtual keyset info.");
             }
             return ::concretelang::keysets::keysetInfoFromVirtualCircuit(
-                partitions, generateFks, options);
+                internalPartitions, externalPartitions, options);
           },
           arg("partition_defs"), arg("generate_fks"),
           arg("options") = std::nullopt,

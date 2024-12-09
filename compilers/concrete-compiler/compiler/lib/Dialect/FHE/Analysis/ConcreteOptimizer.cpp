@@ -274,8 +274,8 @@ struct FunctionToDag {
               options, logPolySize, glweDim, lweDim, pbsLevel, pbsLogBase);
           auto name = partitionAttr.getName().getValue().str();
           // TODO: max_variance vs variance
-          return concrete_optimizer::utils::get_external_partition(
-              name, logPolySize, glweDim, lweDim, max_variance, max_variance);
+          return concrete_optimizer::utils::ExternalPartition{
+              name, logPolySize, glweDim, lweDim, max_variance, max_variance};
         };
 
     if (auto srcPartitionAttr =
@@ -287,14 +287,14 @@ struct FunctionToDag {
       auto partition = partitionBuilder(srcPartitionAttr);
 
       index[val] = dagBuilder.add_change_partition_with_src(
-          encrypted_input, *partition, *loc_to_location(val.getLoc()));
+          encrypted_input, partition, *loc_to_location(val.getLoc()));
     } else if (auto destPartitionAttr =
                    op.getAttrOfType<mlir::concretelang::FHE::PartitionAttr>(
                        "dest")) {
       auto partition = partitionBuilder(destPartitionAttr);
 
       index[val] = dagBuilder.add_change_partition_with_dst(
-          encrypted_input, *partition, *loc_to_location(val.getLoc()));
+          encrypted_input, partition, *loc_to_location(val.getLoc()));
     } else {
       assert(false &&
              "ChangePartition: one of src or dest partitions need to be set");

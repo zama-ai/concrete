@@ -4,7 +4,7 @@ use ordered_float::OrderedFloat;
 
 use crate::dag::operator::{Operator, OperatorIndex, Precision};
 use crate::dag::rewrite::round::expand_round_and_index_map;
-use crate::dag::unparametrized;
+use crate::dag::unparametrized::{self, Dag};
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use crate::optimization::dag::solo_key::analyze::out_variances;
 use crate::optimization::dag::solo_key::symbolic_variance::SymbolicVariance;
@@ -44,6 +44,11 @@ impl std::fmt::Display for ExternalPartition {
         write!(f, "{{ name: {} }}", self.name)?;
         Ok(())
     }
+}
+
+pub struct PrePartitionDag {
+    pub p_cut: PartitionCut,
+    pub dag: Dag,
 }
 
 // TODO: keep both precisions
@@ -150,9 +155,10 @@ impl PartitionCut {
             Operator::Lut { input, .. } => {
                 assert!(self.has_internal_partitions);
                 for (partition, &(precision_cut, norm2_cut)) in self.p_cut.iter().enumerate() {
-                    if dag.out_precisions[input.0] <= precision_cut
-                        && self.rnorm2(op_i) <= norm2_cut
-                    {
+                    let precision_ok = dag.out_precisions[input.0] <= precision_cut;
+                    let rnorm2 = self.rnorm2(op_i);
+                    let norm_ok = rnorm2 <= norm2_cut;
+                    if precision_ok && norm_ok {
                         return Some(PartitionIndex(partition));
                     }
                 }
@@ -288,12 +294,14 @@ impl PartitionCut {
                 }
             }
         }
+
         for op in dag.get_output_operators_iter() {
             for &origin in &noise_origins[op.id.0] {
                 max_output_norm2[origin] = max_output_norm2[origin].max(out_norm2(op.id.0));
                 assert!(!max_output_norm2[origin].is_nan());
             }
         }
+
         let mut round_done: HashMap<usize, u64> = HashMap::default();
         // reassociate all lut's output_norm2 and precisions
         for (op_i, output_norm2) in max_output_norm2.iter_mut().enumerate() {
