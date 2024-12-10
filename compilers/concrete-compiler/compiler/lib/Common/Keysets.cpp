@@ -164,9 +164,28 @@ Keyset Keyset::fromProto(concreteprotocol::Keyset::Reader reader) {
 
 Message<concreteprotocol::Keyset> Keyset::toProto() const {
   auto output = Message<concreteprotocol::Keyset>();
-  auto serverProto = server.toProto();
+  // we inlined call to server.toProto() to avoid a single big copy of the
+  // server keyset. With this, we only do copies of individual keys.
+  auto serverKeyset = output.asBuilder().initServer();
+  serverKeyset.initLweBootstrapKeys(server.lweBootstrapKeys.size());
+  for (size_t i = 0; i < server.lweBootstrapKeys.size(); i++) {
+    serverKeyset.getLweBootstrapKeys().setWithCaveats(
+        i, server.lweBootstrapKeys[i].toProto().asReader());
+  }
+
+  serverKeyset.initLweKeyswitchKeys(server.lweKeyswitchKeys.size());
+  for (size_t i = 0; i < server.lweKeyswitchKeys.size(); i++) {
+    serverKeyset.getLweKeyswitchKeys().setWithCaveats(
+        i, server.lweKeyswitchKeys[i].toProto().asReader());
+  }
+
+  serverKeyset.initPackingKeyswitchKeys(server.packingKeyswitchKeys.size());
+  for (size_t i = 0; i < server.packingKeyswitchKeys.size(); i++) {
+    serverKeyset.getPackingKeyswitchKeys().setWithCaveats(
+        i, server.packingKeyswitchKeys[i].toProto().asReader());
+  }
+  // client serialization is not inlined as keys aren't that big
   auto clientProto = client.toProto();
-  output.asBuilder().setServer(serverProto.asReader());
   output.asBuilder().setClient(clientProto.asReader());
   return output;
 }
