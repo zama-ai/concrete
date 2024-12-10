@@ -19,7 +19,7 @@ ClientSpecs class, to create Client objects.
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(client_parameters: ClientParameters)
+__init__(program_info: ProgramInfo)
 ```
 
 

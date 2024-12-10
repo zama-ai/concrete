@@ -9,19 +9,20 @@ Declaration of `Client` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L23"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Client`
 Client class, which can be used to manage keys, encrypt arguments and decrypt results. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
     client_specs: ClientSpecs,
-    keyset_cache_directory: Optional[Path, str] = None
+    keyset_cache_directory: Optional[Path, str] = None,
+    is_simulated: bool = False
 )
 ```
 
@@ -47,11 +48,17 @@ Get evaluation keys for encrypted computation.
 
 Get the keys for the client. 
 
+---
+
+#### <kbd>property</kbd> specs
+
+Get the client specs for the client. 
+
 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt`
 
@@ -76,7 +83,7 @@ Decrypt result(s) of evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt`
 
@@ -84,7 +91,7 @@ Decrypt result(s) of evaluation.
 encrypt(
     *args: Optional[int, ndarray, List],
     function_name: Optional[str] = None
-) → Union[Value, Tuple[Optional[Value], ], NoneType]
+) → Union[Value, Tuple[Union[Value, NoneType], ], NoneType]
 ```
 
 Encrypt argument(s) to for evaluation. 
@@ -101,14 +108,14 @@ Encrypt argument(s) to for evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L101"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen`
 
 ```python
 keygen(
     force: bool = False,
-    seed: Optional[int] = None,
+    secret_seed: Optional[int] = None,
     encryption_seed: Optional[int] = None,
     initial_keys: Optional[Dict[int, LweSecretKey]] = None
 )
@@ -121,7 +128,7 @@ Generate keys required for homomorphic evaluation.
 **Args:**
   force (bool, default = False):  whether to generate new keys even if keys are already generated 
 
- seed (Optional[int], default = None):  seed for private keys randomness 
+ secret_seed (Optional[int], default = None):  seed for private keys randomness 
 
  encryption_seed (Optional[int], default = None):  seed for encryption randomness 
 
@@ -129,14 +136,15 @@ Generate keys required for homomorphic evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
 ```python
 load(
     path: Union[str, Path],
-    keyset_cache_directory: Optional[Path, str] = None
+    keyset_cache_directory: Optional[Path, str] = None,
+    is_simulated: bool = False
 ) → Client
 ```
 
@@ -149,6 +157,8 @@ Load the client from the given path in zip format.
 
  keyset_cache_directory (Optional[Union[str, Path]], default = None):  keyset cache directory to use 
 
+ is_simulated (bool, default = False):  should perform 
+
 
 
 **Returns:**
@@ -156,7 +166,7 @@ Load the client from the given path in zip format.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
@@ -170,5 +180,55 @@ Save the client into the given path in zip format.
 
 **Args:**
   path (Union[str, Path]):  path to save the client 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `simulate_decrypt`
+
+```python
+simulate_decrypt(
+    *results: Union[Value, Tuple[Value, ]],
+    function_name: Optional[str] = None
+) → Union[int, ndarray, Tuple[Union[int, ndarray, NoneType], ], NoneType]
+```
+
+Simulate decryption of result(s) of evaluation. 
+
+
+
+**Args:**
+  *results (Union[Value, Tuple[Value, ...]]):  result(s) of evaluation  function_name (str):  name of the function to decrypt for 
+
+
+
+**Returns:**
+  Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:  decrypted result(s) of evaluation 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/client.py#L212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `simulate_encrypt`
+
+```python
+simulate_encrypt(
+    *args: Optional[int, ndarray, List],
+    function_name: Optional[str] = None
+) → Union[Value, Tuple[Union[Value, NoneType], ], NoneType]
+```
+
+Simulate encryption of argument(s) for evaluation. 
+
+
+
+**Args:**
+  *args (Optional[Union[int, np.ndarray, List]]):  argument(s) for evaluation  function_name (str):  name of the function to encrypt 
+
+
+
+**Returns:**
+  Optional[Union[Value, Tuple[Optional[Value], ...]]]:  encrypted argument(s) for evaluation 
 
 
