@@ -134,17 +134,19 @@ void memref_batched_keyswitch_lwe_cuda_u64(
   void *ct0_gpu = alloc_and_memcpy_async_to_gpu(
       ct0_aligned, ct0_offset, ct0_batch_size, gpu_idx, (cudaStream_t)stream);
   // Initialize indexes
-  uint64_t *indexes = (uint64_t*) malloc(num_samples * sizeof(uint64_t));
+  uint64_t *indexes = (uint64_t *)malloc(num_samples * sizeof(uint64_t));
   for (uint32_t i = 0; i < num_samples; i++) {
     indexes[i] = i;
   }
-  void *indexes_gpu = alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples * sizeof(uint64_t), gpu_idx, (cudaStream_t)stream);
+  void *indexes_gpu =
+      alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples * sizeof(uint64_t),
+                                    gpu_idx, (cudaStream_t)stream);
   void *out_gpu = cuda_malloc_async(out_batch_size * sizeof(uint64_t),
                                     (cudaStream_t)stream, gpu_idx);
   // Run the keyswitch kernel on the GPU
   cuda_keyswitch_lwe_ciphertext_vector_64(
-      stream, gpu_idx, out_gpu, indexes_gpu, ct0_gpu, indexes_gpu, ksk_gpu, input_lwe_dim, output_lwe_dim,
-      base_log, level, num_samples);
+      stream, gpu_idx, out_gpu, indexes_gpu, ct0_gpu, indexes_gpu, ksk_gpu,
+      input_lwe_dim, output_lwe_dim, base_log, level, num_samples);
   // Copy the output batch of ciphertext back to CPU
   memcpy_async_to_cpu(out_aligned, out_offset, out_batch_size, out_gpu, gpu_idx,
                       stream);
@@ -213,27 +215,28 @@ void memref_batched_bootstrap_lwe_cuda_u64(
            test_vector_idxes_size = num_samples * sizeof(uint64_t);
   void *test_vector_idxes = malloc(test_vector_idxes_size);
   memset(test_vector_idxes, 0, test_vector_idxes_size);
-  void *test_vector_idxes_gpu = cuda_malloc_async(
-      test_vector_idxes_size, (cudaStream_t)stream, gpu_idx);
+  void *test_vector_idxes_gpu =
+      cuda_malloc_async(test_vector_idxes_size, (cudaStream_t)stream, gpu_idx);
   cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, test_vector_idxes,
                            test_vector_idxes_size, (cudaStream_t)stream,
                            gpu_idx);
   // Initialize indexes
-  uint64_t *indexes = (uint64_t*) malloc(num_samples * sizeof(uint64_t));
+  uint64_t *indexes = (uint64_t *)malloc(num_samples * sizeof(uint64_t));
   for (uint32_t i = 0; i < num_samples; i++) {
     indexes[i] = i;
   }
-  void *indexes_gpu = alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples * sizeof(uint64_t), gpu_idx, (cudaStream_t)stream);
+  void *indexes_gpu =
+      alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples * sizeof(uint64_t),
+                                    gpu_idx, (cudaStream_t)stream);
   // Allocate PBS buffer on GPU
-  scratch_cuda_programmable_bootstrap_amortized_64(
-      stream, gpu_idx, &pbs_buffer, glwe_dim, poly_size, num_samples,
-      true);
+  scratch_cuda_programmable_bootstrap_64(stream, gpu_idx, &pbs_buffer, glwe_dim,
+                                         poly_size, level, num_samples, true);
   // Run the bootstrap kernel on the GPU
-  cuda_programmable_bootstrap_amortized_lwe_ciphertext_vector_64(
-      stream, gpu_idx, out_gpu, indexes_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu, indexes_gpu,
-      fbsk_gpu, pbs_buffer, input_lwe_dim, glwe_dim, poly_size, base_log, level,
-      num_samples);
-  cleanup_cuda_programmable_bootstrap_amortized(stream, gpu_idx, &pbs_buffer);
+  cuda_programmable_bootstrap_lwe_ciphertext_vector_64(
+      stream, gpu_idx, out_gpu, indexes_gpu, glwe_ct_gpu, test_vector_idxes_gpu,
+      ct0_gpu, indexes_gpu, fbsk_gpu, pbs_buffer, input_lwe_dim, glwe_dim,
+      poly_size, base_log, level, num_samples, 1, 1);
+  cleanup_cuda_programmable_bootstrap(stream, gpu_idx, &pbs_buffer);
   // Copy the output batch of ciphertext back to CPU
   memcpy_async_to_cpu(out_aligned, out_offset, out_batch_size, out_gpu, gpu_idx,
                       stream);
@@ -318,28 +321,29 @@ void memref_batched_mapped_bootstrap_lwe_cuda_u64(
     for (size_t i = 0; i < num_lut_vectors; ++i)
       test_vector_idxes[i] = i;
   }
-  void *test_vector_idxes_gpu = cuda_malloc_async(
-      test_vector_idxes_size, (cudaStream_t)stream, gpu_idx);
+  void *test_vector_idxes_gpu =
+      cuda_malloc_async(test_vector_idxes_size, (cudaStream_t)stream, gpu_idx);
   cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, (void *)test_vector_idxes,
                            test_vector_idxes_size, (cudaStream_t)stream,
                            gpu_idx);
   // Initialize indexes
-  uint64_t *indexes = (uint64_t*) malloc(num_samples * sizeof(uint64_t));
+  uint64_t *indexes = (uint64_t *)malloc(num_samples * sizeof(uint64_t));
   for (uint32_t i = 0; i < num_samples; i++) {
     indexes[i] = i;
   }
-  void *indexes_gpu = alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples * sizeof(uint64_t), gpu_idx, (cudaStream_t)stream);
+  void *indexes_gpu =
+      alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples * sizeof(uint64_t),
+                                    gpu_idx, (cudaStream_t)stream);
 
   // Allocate PBS buffer on GPU
-  scratch_cuda_programmable_bootstrap_amortized_64(
-      stream, gpu_idx, &pbs_buffer, glwe_dim, poly_size, num_samples,
-      true);
+  scratch_cuda_programmable_bootstrap_64(stream, gpu_idx, &pbs_buffer, glwe_dim,
+                                         poly_size, level, num_samples, true);
   // Run the bootstrap kernel on the GPU
-  cuda_programmable_bootstrap_amortized_lwe_ciphertext_vector_64(
-								 stream, gpu_idx, out_gpu, indexes_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu, indexes_gpu,
-      fbsk_gpu, pbs_buffer, input_lwe_dim, glwe_dim, poly_size, base_log, level,
-      num_samples);
-  cleanup_cuda_programmable_bootstrap_amortized(stream, gpu_idx, &pbs_buffer);
+  cuda_programmable_bootstrap_lwe_ciphertext_vector_64(
+      stream, gpu_idx, out_gpu, indexes_gpu, glwe_ct_gpu, test_vector_idxes_gpu,
+      ct0_gpu, indexes_gpu, fbsk_gpu, pbs_buffer, input_lwe_dim, glwe_dim,
+      poly_size, base_log, level, num_samples, 1, 1);
+  cleanup_cuda_programmable_bootstrap(stream, gpu_idx, &pbs_buffer);
   // Copy the output batch of ciphertext back to CPU
   memcpy_async_to_cpu(out_aligned, out_offset, out_batch_size, out_gpu, gpu_idx,
                       stream);

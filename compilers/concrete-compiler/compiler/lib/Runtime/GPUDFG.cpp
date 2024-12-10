@@ -117,22 +117,25 @@ struct Dependence;
 // is required.
 struct PBS_buffer {
   PBS_buffer(void *stream, uint32_t gpu_idx, uint32_t glwe_dimension,
-             uint32_t polynomial_size, uint32_t input_lwe_ciphertext_count)
+             uint32_t polynomial_size, uint32_t level_count,
+             uint32_t input_lwe_ciphertext_count)
       : max_pbs_buffer_samples(input_lwe_ciphertext_count),
-        glwe_dim(glwe_dimension), poly_size(polynomial_size),
-        gpu_stream(stream), gpu_index(gpu_idx) {
-    scratch_cuda_programmable_bootstrap_amortized_64(
-        gpu_stream, gpu_index, &pbs_buffer, glwe_dim, poly_size,
-        max_pbs_buffer_samples, true);
+        glwe_dim(glwe_dimension), _level_count(level_count),
+        poly_size(polynomial_size), gpu_stream(stream), gpu_index(gpu_idx) {
+    scratch_cuda_programmable_bootstrap_64(gpu_stream, gpu_index, &pbs_buffer,
+                                           glwe_dim, poly_size, _level_count,
+                                           max_pbs_buffer_samples, true);
   }
   ~PBS_buffer() {
-    cleanup_cuda_programmable_bootstrap_amortized(gpu_stream, gpu_index, &pbs_buffer);
+    cleanup_cuda_programmable_bootstrap(gpu_stream, gpu_index, &pbs_buffer);
   }
   int8_t *get_pbs_buffer(void *stream, uint32_t gpu_idx,
                          uint32_t glwe_dimension, uint32_t polynomial_size,
+                         uint32_t level_count,
                          uint32_t input_lwe_ciphertext_count) {
     assert(glwe_dimension <= glwe_dim);
     assert(polynomial_size <= poly_size);
+    assert(level_count <= _level_count);
     assert(input_lwe_ciphertext_count <= max_pbs_buffer_samples);
     assert(stream == gpu_stream);
     assert(gpu_idx == gpu_index);
@@ -144,6 +147,7 @@ struct PBS_buffer {
   uint32_t max_pbs_buffer_samples;
   uint32_t glwe_dim;
   uint32_t poly_size;
+  uint32_t _level_count;
   void *gpu_stream;
   uint32_t gpu_index;
 };
@@ -163,10 +167,11 @@ struct GPU_state {
       cuda_destroy_stream((cudaStream_t)gpu_stream, gpu_idx);
   }
   inline int8_t *get_pbs_buffer(uint32_t glwe_dimension,
-                                uint32_t polynomial_size,
+                                uint32_t polynomial_size, uint32_t level_count,
                                 uint32_t input_lwe_ciphertext_count) {
     if (pbs_buffer != nullptr && (pbs_buffer->glwe_dim != glwe_dimension ||
                                   pbs_buffer->poly_size != polynomial_size ||
+                                  pbs_buffer->_level_count != level_count ||
                                   pbs_buffer->get_max_pbs_buffer_samples() <
                                       input_lwe_ciphertext_count)) {
       delete pbs_buffer;
@@ -174,9 +179,10 @@ struct GPU_state {
     }
     if (pbs_buffer == nullptr)
       pbs_buffer = new PBS_buffer(get_gpu_stream(), gpu_idx, glwe_dimension,
-                                  polynomial_size, input_lwe_ciphertext_count);
+                                  polynomial_size, level_count,
+                                  input_lwe_ciphertext_count);
     return pbs_buffer->get_pbs_buffer(get_gpu_stream(), gpu_idx, glwe_dimension,
-                                      polynomial_size,
+                                      polynomial_size, level_count,
                                       input_lwe_ciphertext_count);
   }
   inline void *get_gpu_stream() {
@@ -216,16 +222,17 @@ struct GPU_DFG {
     to_free_list.clear();
   }
   inline int8_t *get_pbs_buffer(uint32_t glwe_dimension,
-                                uint32_t polynomial_size,
+                                uint32_t polynomial_size, uint32_t level_count,
                                 uint32_t input_lwe_ciphertext_count) {
     if (pbs_buffer == nullptr) {
-      int8_t *ret = gpus[gpu_idx].get_pbs_buffer(
-          glwe_dimension, polynomial_size, input_lwe_ciphertext_count);
+      int8_t *ret =
+          gpus[gpu_idx].get_pbs_buffer(glwe_dimension, polynomial_size,
+                                       level_count, input_lwe_ciphertext_count);
       pbs_buffer = gpus[gpu_idx].pbs_buffer;
       return ret;
     }
     return pbs_buffer->get_pbs_buffer(gpu_stream, gpu_idx, glwe_dimension,
-                                      polynomial_size,
+                                      polynomial_size, level_count,
                                       input_lwe_ciphertext_count);
   }
   inline void *get_gpu_stream(int32_t loc) {
@@ -422,8 +429,8 @@ struct Dependence {
   }
   inline void free_data(GPU_DFG *dfg, bool immediate = false) {
     if (device_data != nullptr) {
-      cuda_drop_async(device_data,
-                      (cudaStream_t)dfg->get_gpu_stream(location), location);
+      cuda_drop_async(device_data, (cudaStream_t)dfg->get_gpu_stream(location),
+                      location);
     }
     if (onHostReady && host_data.allocated != nullptr && hostAllocated) {
       // As streams are not synchronized aside from the GET operation,
@@ -1080,16 +1087,18 @@ void memref_keyswitch_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
       void *ksk_gpu = p->ctx.val->get_ksk_gpu(
           p->level.val, p->input_lwe_dim.val, p->output_lwe_dim.val, loc, s,
           p->sk_index.val);
-        // Initialize indexes
-      uint64_t *indexes = (uint64_t*) malloc(num_samples * sizeof(uint64_t));
+      // Initialize indexes
+      uint64_t *indexes = (uint64_t *)malloc(num_samples * sizeof(uint64_t));
       for (uint32_t i = 0; i < num_samples; i++) {
-	indexes[i] = i;
+        indexes[i] = i;
       }
-      void *indexes_gpu = alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples, loc, s);
+      void *indexes_gpu =
+          alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples, loc, s);
 
       cuda_keyswitch_lwe_ciphertext_vector_64(
-	  s, loc, out_gpu, indexes_gpu, ct0_gpu, indexes_gpu, ksk_gpu, p->input_lwe_dim.val,
-          p->output_lwe_dim.val, p->base_log.val, p->level.val, num_samples);
+          s, loc, out_gpu, indexes_gpu, ct0_gpu, indexes_gpu, ksk_gpu,
+          p->input_lwe_dim.val, p->output_lwe_dim.val, p->base_log.val,
+          p->level.val, num_samples);
       cuda_drop_async(indexes_gpu, s, loc);
       Dependence *dep =
           new Dependence(loc, out, out_gpu, false, false, d->chunk_id);
@@ -1188,23 +1197,25 @@ void memref_bootstrap_lwe_u64_process(Process *p, int32_t loc, int32_t chunk_id,
       cuda_memcpy_async_to_gpu(test_vector_idxes_gpu, (void *)test_vector_idxes,
                                test_vector_idxes_size, s, loc);
       // Initialize indexes
-      uint64_t *indexes = (uint64_t*) malloc(num_samples * sizeof(uint64_t));
+      uint64_t *indexes = (uint64_t *)malloc(num_samples * sizeof(uint64_t));
       for (uint32_t i = 0; i < num_samples; i++) {
-	indexes[i] = i;
+        indexes[i] = i;
       }
-      void *indexes_gpu = alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples, loc, s);
+      void *indexes_gpu =
+          alloc_and_memcpy_async_to_gpu(indexes, 0, num_samples, loc, s);
 
       int8_t *pbs_buffer = p->dfg->gpus[loc].get_pbs_buffer(
-          p->glwe_dim.val, p->poly_size.val, num_samples);
+          p->glwe_dim.val, p->poly_size.val, p->level.val, num_samples);
       void *ct0_gpu = d0->device_data;
       void *out_gpu = cuda_malloc_async(data_size, s, loc);
       void *fbsk_gpu = p->ctx.val->get_bsk_gpu(
           p->input_lwe_dim.val, p->poly_size.val, p->level.val, p->glwe_dim.val,
           loc, s, p->sk_index.val);
-      cuda_programmable_bootstrap_amortized_lwe_ciphertext_vector_64(
-          s, loc, out_gpu, indexes_gpu, glwe_ct_gpu, test_vector_idxes_gpu, ct0_gpu, indexes_gpu,
-          fbsk_gpu, (int8_t *)pbs_buffer, p->input_lwe_dim.val, p->glwe_dim.val,
-          p->poly_size.val, p->base_log.val, p->level.val, num_samples);
+      cuda_programmable_bootstrap_lwe_ciphertext_vector_64(
+          s, loc, out_gpu, indexes_gpu, glwe_ct_gpu, test_vector_idxes_gpu,
+          ct0_gpu, indexes_gpu, fbsk_gpu, (int8_t *)pbs_buffer,
+          p->input_lwe_dim.val, p->glwe_dim.val, p->poly_size.val,
+          p->base_log.val, p->level.val, num_samples, 1, 1);
       cuda_drop_async(test_vector_idxes_gpu, s, loc);
       cuda_drop_async(glwe_ct_gpu, s, loc);
       cuda_drop_async(indexes_gpu, s, loc);
@@ -1442,8 +1453,7 @@ void memref_negate_lwe_ciphertext_u64_process(Process *p, int32_t loc,
   Dependence *idep0 = p->input_streams[0]->get(loc, chunk_id);
   if (p->output_streams[0]->need_new_gen(chunk_id))
     p->output_streams[0]->put(
-        sched(idep0, (cudaStream_t)p->dfg->get_gpu_stream(loc), loc),
-        chunk_id);
+        sched(idep0, (cudaStream_t)p->dfg->get_gpu_stream(loc), loc), chunk_id);
 }
 
 } // namespace
