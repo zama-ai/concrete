@@ -16,11 +16,11 @@ from concrete import fhe
 class Counter:
     @fhe.function({"x": "encrypted"})
     def inc(x):
-        return x + 1 % 20
+        return (x + 1) % 20
 
     @fhe.function({"x": "encrypted"})
     def dec(x):
-        return x - 1 % 20
+        return (x - 1) % 20
 ```
 
 Then, to compile the `Counter` module, use the `compile` method with a dictionary of input-sets for each function:
