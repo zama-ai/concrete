@@ -20,8 +20,8 @@ def get_lut_integer_type(p):
         raise Exception("Unexpected precision") 
 
 def generate(args):
-    print("# /!\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
-    print("# /!\ THIS FILE HAS BEEN GENERATED")
+    print("# /!\\ DO NOT EDIT MANUALLY THIS FILE MANUALLY")
+    print("# /!\\ THIS FILE HAS BEEN GENERATED")
     np.random.seed(0)
     for n_ct in args.n_ct:
         for p in args.bitwidth:
