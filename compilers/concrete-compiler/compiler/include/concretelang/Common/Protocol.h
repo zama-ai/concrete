@@ -69,7 +69,8 @@ template <typename MessageType> struct Message {
     message = regionBuilder->initRoot<MessageType>();
   }
 
-  Message(const typename MessageType::Reader &reader) : message(nullptr) {
+  explicit Message(const typename MessageType::Reader &reader)
+      : message(nullptr) {
     regionBuilder = new capnp::MallocMessageBuilder(
         std::min(reader.totalSize().wordCount, MAX_SEGMENT_SIZE),
         capnp::AllocationStrategy::FIXED_SIZE);
@@ -308,7 +309,12 @@ vectorToProtoPayload(const std::vector<T> &input) {
 template <typename T>
 std::vector<T>
 protoPayloadToVector(const Message<concreteprotocol::Payload> &input) {
-  auto payloadData = input.asReader().getData();
+  return protoPayloadToVector<T>(input.asReader());
+}
+
+template <typename T>
+std::vector<T> protoPayloadToVector(concreteprotocol::Payload::Reader reader) {
+  auto payloadData = reader.getData();
   auto elmsPerBlob = capnp::MAX_TEXT_SIZE / sizeof(T);
   size_t totalPayloadSize = 0;
   for (auto blob : payloadData) {
@@ -331,7 +337,13 @@ protoPayloadToVector(const Message<concreteprotocol::Payload> &input) {
 template <typename T>
 std::shared_ptr<std::vector<T>>
 protoPayloadToSharedVector(const Message<concreteprotocol::Payload> &input) {
-  auto payloadData = input.asReader().getData();
+  return protoPayloadToSharedVector<T>(input.asReader());
+}
+
+template <typename T>
+std::shared_ptr<std::vector<T>>
+protoPayloadToSharedVector(concreteprotocol::Payload::Reader reader) {
+  auto payloadData = reader.getData();
   size_t elmsPerBlob = capnp::MAX_TEXT_SIZE / sizeof(T);
   size_t totalPayloadSize = 0;
   for (auto blob : payloadData) {
@@ -353,6 +365,8 @@ protoPayloadToSharedVector(const Message<concreteprotocol::Payload> &input) {
 /// dimensions.
 std::vector<size_t>
 protoShapeToDimensions(const Message<concreteprotocol::Shape> &shape);
+std::vector<size_t>
+protoShapeToDimensions(concreteprotocol::Shape::Reader reader);
 
 /// Helper function turning a protocol `Shape` object into a vector of
 /// dimensions.

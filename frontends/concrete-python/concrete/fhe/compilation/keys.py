@@ -115,7 +115,7 @@ class Keys:
             message = f"Unable to save keys to {location} because it already exists"
             raise ValueError(message)
 
-        location.write_bytes(self.serialize())
+        self.serialize_to_file(location)
 
     def load(self, location: Union[str, Path]):
         """
@@ -171,6 +171,8 @@ class Keys:
         Serialize keys into bytes.
 
         Serialized keys are not encrypted, so be careful how you store/transfer them!
+        `serialize_to_file` is supposed to be more performant as it avoid copying the buffer
+        between the Compiler and the Frontend.
 
         Returns:
             bytes:
@@ -183,6 +185,23 @@ class Keys:
 
         serialized_keyset = self._keyset.serialize()
         return serialized_keyset
+
+    def serialize_to_file(self, path: Path):
+        """
+        Serialize keys into a file.
+
+        Serialized keys are not encrypted, so be careful how you store/transfer them!
+        This is supposed to be more performant than `serialize` as it avoid copying the buffer
+        between the Compiler and the Frontend.
+
+        Args:
+            path (Path): where to save serialized keys
+        """
+        if self._keyset is None:
+            message = "Keys cannot be serialized before they are generated"
+            raise RuntimeError(message)
+
+        self._keyset.serialize_to_file(str(path))
 
     @staticmethod
     def deserialize(serialized_keys: Union[Path, bytes]) -> "Keys":

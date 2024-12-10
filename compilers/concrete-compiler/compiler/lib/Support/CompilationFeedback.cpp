@@ -18,17 +18,14 @@ namespace concretelang {
 
 void CircuitCompilationFeedback::fillFromCircuitInfo(
     concreteprotocol::CircuitInfo::Reader circuitInfo) {
-  auto computeGateSize =
-      [&](const Message<concreteprotocol::GateInfo> &gateInfo) {
-        unsigned int nElements = 1;
-        for (auto dimension :
-             gateInfo.asReader().getRawInfo().getShape().getDimensions()) {
-          nElements *= dimension;
-        }
-        unsigned int gateScalarSize =
-            gateInfo.asReader().getRawInfo().getIntegerPrecision() / 8;
-        return nElements * gateScalarSize;
-      };
+  auto computeGateSize = [&](const concreteprotocol::GateInfo::Reader reader) {
+    unsigned int nElements = 1;
+    for (auto dimension : reader.getRawInfo().getShape().getDimensions()) {
+      nElements *= dimension;
+    }
+    unsigned int gateScalarSize = reader.getRawInfo().getIntegerPrecision() / 8;
+    return nElements * gateScalarSize;
+  };
   // Compute the size of inputs
   totalInputsSize = 0;
   for (auto gateInfo : circuitInfo.getInputs()) {

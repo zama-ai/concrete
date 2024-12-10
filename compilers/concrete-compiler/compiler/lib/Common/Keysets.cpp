@@ -43,8 +43,13 @@ namespace keysets {
 
 ClientKeyset
 ClientKeyset::fromProto(const Message<concreteprotocol::ClientKeyset> &proto) {
+  return fromProto(proto.asReader());
+}
+
+ClientKeyset
+ClientKeyset::fromProto(concreteprotocol::ClientKeyset::Reader reader) {
   auto output = ClientKeyset();
-  for (auto skProto : proto.asReader().getLweSecretKeys()) {
+  for (auto skProto : reader.getLweSecretKeys()) {
     output.lweSecretKeys.push_back(LweSecretKey::fromProto(skProto));
   }
 
@@ -64,16 +69,21 @@ Message<concreteprotocol::ClientKeyset> ClientKeyset::toProto() const {
 
 ServerKeyset
 ServerKeyset::fromProto(const Message<concreteprotocol::ServerKeyset> &proto) {
+  return fromProto(proto.asReader());
+}
+
+ServerKeyset
+ServerKeyset::fromProto(concreteprotocol::ServerKeyset::Reader reader) {
   auto output = ServerKeyset();
-  for (auto bskProto : proto.asReader().getLweBootstrapKeys()) {
+  for (auto bskProto : reader.getLweBootstrapKeys()) {
     output.lweBootstrapKeys.push_back(LweBootstrapKey::fromProto(bskProto));
   }
 
-  for (auto kskProto : proto.asReader().getLweKeyswitchKeys()) {
+  for (auto kskProto : reader.getLweKeyswitchKeys()) {
     output.lweKeyswitchKeys.push_back(LweKeyswitchKey::fromProto(kskProto));
   }
 
-  for (auto pkskProto : proto.asReader().getPackingKeyswitchKeys()) {
+  for (auto pkskProto : reader.getPackingKeyswitchKeys()) {
     output.packingKeyswitchKeys.push_back(
         PackingKeyswitchKey::fromProto(pkskProto));
   }
@@ -117,38 +127,65 @@ Keyset::Keyset(const Message<concreteprotocol::KeysetInfo> &info,
       client.lweSecretKeys.push_back(lweSk);
     } else {
       // generate new key
-      client.lweSecretKeys.push_back(LweSecretKey(keyInfo, secretCsprng));
+      client.lweSecretKeys.push_back(LweSecretKey(
+          (Message<concreteprotocol::LweSecretKeyInfo>)keyInfo, secretCsprng));
     }
   }
   for (auto keyInfo : info.asReader().getLweBootstrapKeys()) {
     server.lweBootstrapKeys.push_back(LweBootstrapKey(
-        keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
+        (Message<concreteprotocol::LweBootstrapKeyInfo>)keyInfo,
+        client.lweSecretKeys[keyInfo.getInputId()],
         client.lweSecretKeys[keyInfo.getOutputId()], encryptionCsprng));
   }
   for (auto keyInfo : info.asReader().getLweKeyswitchKeys()) {
     server.lweKeyswitchKeys.push_back(LweKeyswitchKey(
-        keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
+        (Message<concreteprotocol::LweKeyswitchKeyInfo>)keyInfo,
+        client.lweSecretKeys[keyInfo.getInputId()],
         client.lweSecretKeys[keyInfo.getOutputId()], encryptionCsprng));
   }
   for (auto keyInfo : info.asReader().getPackingKeyswitchKeys()) {
     server.packingKeyswitchKeys.push_back(PackingKeyswitchKey(
-        keyInfo, client.lweSecretKeys[keyInfo.getInputId()],
+        (Message<concreteprotocol::PackingKeyswitchKeyInfo>)keyInfo,
+        client.lweSecretKeys[keyInfo.getInputId()],
         client.lweSecretKeys[keyInfo.getOutputId()], encryptionCsprng));
   }
 }
 
 Keyset Keyset::fromProto(const Message<concreteprotocol::Keyset> &proto) {
-  auto server = ServerKeyset::fromProto(proto.asReader().getServer());
-  auto client = ClientKeyset::fromProto(proto.asReader().getClient());
+  return fromProto(proto.asReader());
+}
+
+Keyset Keyset::fromProto(concreteprotocol::Keyset::Reader reader) {
+  auto server = ServerKeyset::fromProto(reader.getServer());
+  auto client = ClientKeyset::fromProto(reader.getClient());
 
   return {server, client};
 }
 
 Message<concreteprotocol::Keyset> Keyset::toProto() const {
   auto output = Message<concreteprotocol::Keyset>();
-  auto serverProto = server.toProto();
+  // we inlined call to server.toProto() to avoid a single big copy of the
+  // server keyset. With this, we only do copies of individual keys.
+  auto serverKeyset = output.asBuilder().initServer();
+  serverKeyset.initLweBootstrapKeys(server.lweBootstrapKeys.size());
+  for (size_t i = 0; i < server.lweBootstrapKeys.size(); i++) {
+    serverKeyset.getLweBootstrapKeys().setWithCaveats(
+        i, server.lweBootstrapKeys[i].toProto().asReader());
+  }
+
+  serverKeyset.initLweKeyswitchKeys(server.lweKeyswitchKeys.size());
+  for (size_t i = 0; i < server.lweKeyswitchKeys.size(); i++) {
+    serverKeyset.getLweKeyswitchKeys().setWithCaveats(
+        i, server.lweKeyswitchKeys[i].toProto().asReader());
+  }
+
+  serverKeyset.initPackingKeyswitchKeys(server.packingKeyswitchKeys.size());
+  for (size_t i = 0; i < server.packingKeyswitchKeys.size(); i++) {
+    serverKeyset.getPackingKeyswitchKeys().setWithCaveats(
+        i, server.packingKeyswitchKeys[i].toProto().asReader());
+  }
+  // client serialization is not inlined as keys aren't that big
   auto clientProto = client.toProto();
-  output.asBuilder().setServer(serverProto.asReader());
   output.asBuilder().setClient(clientProto.asReader());
   return output;
 }

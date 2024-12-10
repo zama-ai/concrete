@@ -175,6 +175,13 @@ def test_keys_serialize_before_generation(helpers):
     expected_message = "Keys cannot be serialized before they are generated"
     helpers.check_str(expected_message, str(excinfo.value))
 
+    with pytest.raises(RuntimeError) as excinfo:
+        # path doesn't matter as it will fail
+        circuit.keys.serialize_to_file(Path("_keys_file"))
+
+    expected_message = "Keys cannot be serialized before they are generated"
+    helpers.check_str(expected_message, str(excinfo.value))
+
 
 def test_keys_generate_manual_seed(helpers):
     """
