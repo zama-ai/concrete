@@ -13,8 +13,6 @@ on:
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
-  CUDA_VERSION: 11.8
-  GCC_VERSION: 8
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
   SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
@@ -38,29 +36,25 @@ jobs:
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
-          backend: aws
+          backend: hyperstack
           profile: gpu-bench
 
   build-and-run-benchmarks:
     needs: setup-instance
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    env:
+      CUDA_VERSION: "12.2"
+      GCC_VERSION: "11"
     outputs:
       bench_date: ${{ steps.benchmark-details.outputs.bench_date }}
       commit_date: ${{ steps.benchmark-details.outputs.commit_date }}
       commit_hash: ${{ steps.benchmark-details.outputs.commit_hash }}
-    env:
-      CUDA_SUPPORT: ON
-      CUDA_PATH: /usr/local/cuda-${{ github.env.CUDA_VERSION }}
-      CC: /usr/bin/gcc-${{ github.env.GCC_VERSION }}
-      CXX: /usr/bin/g++-${{ github.env.GCC_VERSION }}
-      CUDAHOSTCXX: /usr/bin/g++-${{ github.env.GCC_VERSION }}
-      CUDACXX: ${{ github.env.CUDA_PATH }}/bin/nvcc
     steps:
-      - name: Setup GPU environment
-        run: |
-          echo "$CUDA_PATH/bin" >> "${GITHUB_PATH}"
-          echo "LD_LIBRARY_PATH=$CUDA_PATH/lib:$LD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-          env
+      - name: Setup Cuda
+        uses: ./.github/actions/hyperstack_setup
+        with:
+          cuda-version: ${{ env.CUDA_VERSION }}
+          gcc-version: ${{ env.GCC_VERSION }}
       - name: Checkout concrete
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -74,10 +68,6 @@ jobs:
             echo "commit_date=$(git --no-pager show -s --format=%cd --date=iso8601-strict ${{ github.sha }})";
             echo "commit_hash=$(git describe --tags --dirty)";
           } >> "$GITHUB_OUTPUT"
-      - name: Set up home
-        # "Install rust" step require root user to have a HOME directory which is not set.
-        run: |
-          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
       - name: Build compiler benchmarks
@@ -85,7 +75,7 @@ jobs:
           set -e
           git config --global --add safe.directory '*'
           cd compilers/concrete-compiler/compiler
-          make BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} build-benchmarks
+          make BINDINGS_PYTHON_ENABLED=OFF CUDA_SUPPORT=ON build-benchmarks
       - name: Run compiler benchmarks
         run: |
           set -e
@@ -119,7 +109,7 @@ jobs:
           # TODO output setup-instance (https://github.com/zama-ai/slab-github-runner/issues/38)
           python3 ./ci/benchmark_parser.py benchmarks_results.json parsed_benchmark_results.json \
           --database compiler_benchmarks \
-          --hardware "p3.8xlarge" \
+          --hardware "n3-H100x2" \
           --project-version ${{ needs.build-and-run-benchmarks.outputs.commit_hash}} \
           --branch ${{ github.ref_name }} \
           --commit-date "${{ needs.build-and-run-benchmarks.outputs.commit_date }}" \

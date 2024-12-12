@@ -16,12 +16,10 @@ instance_type = "p3.2xlarge"
 subnet_id = "subnet-8123c9e7"
 security_group= ["sg-017afab1f328af917", ]
 
-[backend.aws.gpu-bench]
-region = "us-east-1"
-image_id = "ami-07daa9292f60ade73"
-instance_type = "p3.8xlarge"
-subnet_id = "subnet-8123c9e7"
-security_group= ["sg-017afab1f328af917", ]
+[backend.hyperstack.gpu-bench]
+environment_name = "canada"
+image_name = "Ubuntu Server 22.04 LTS R535 CUDA 12.2"
+flavor_name = "n3-H100x2"
 
 [backend.aws.slurm-cluster]
 region = "eu-west-3"
