@@ -86,13 +86,13 @@ jobs:
         with:
           name: compiler-benchmarks-result
           path: compilers/concrete-compiler/compiler/benchmarks_results.json
-      - name: Slack Notification
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
-        env:
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "build-and-run-benchmarks finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+      # - name: Slack Notification
+      #   if: ${{ failure() && github.ref == 'refs/heads/main' }}
+      #   continue-on-error: true
+      #   uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+      #   env:
+      #     SLACK_COLOR: ${{ job.status }}
+      #     SLACK_MESSAGE: "build-and-run-benchmarks finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   parse-and-send-results:
     name: Parse and send results
@@ -139,13 +139,13 @@ jobs:
           -H "X-Hub-Signature-256: sha256=${SIGNATURE}" \
           -d @parsed_benchmark_results.json \
           ${{ secrets.SLAB_URL }}
-      - name: Slack Notification
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
-        env:
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "parse-and-send-results finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+      # - name: Slack Notification
+      #   if: ${{ failure() && github.ref == 'refs/heads/main' }}
+      #   continue-on-error: true
+      #   uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+      #   env:
+      #     SLACK_COLOR: ${{ job.status }}
+      #     SLACK_MESSAGE: "parse-and-send-results finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   teardown-instance:
     name: Teardown instance
