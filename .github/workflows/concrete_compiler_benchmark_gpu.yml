@@ -51,7 +51,7 @@ jobs:
       commit_hash: ${{ steps.benchmark-details.outputs.commit_hash }}
     steps:
       - name: Setup Cuda
-        uses: ./.github/actions/hyperstack_setup
+        uses: ./.github/actions/cuda_setup
         with:
           cuda-version: ${{ env.CUDA_VERSION }}
           gcc-version: ${{ env.GCC_VERSION }}
