@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Start instance
         id: start-instance
-        uses: zama-ai/slab-github-runner@98f0788261a7323d5d695a883e20df36591a92b7 # v1.3.0
+        uses: zama-ai/slab-github-runner@f26b8d611b2e695158fb0a6980834f0612f65ef8 # v1.4.0
         with:
           mode: start
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v44.5.24
+        uses: tj-actions/changed-files@bab30c2299617f6615ec02a68b9a40d10bd21366 # v44.5.24
       - name: Login
         id: login
         if: contains(steps.changed-files.outputs.modified_files, env.dockerfile) || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
@@ -100,7 +100,7 @@ jobs:
           echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v44.5.24
+        uses: tj-actions/changed-files@bab30c2299617f6615ec02a68b9a40d10bd21366 # v44.5.24
       - name: Login
         id: login
         # from the docs: The jobs.<job_id>.if condition is evaluated before jobs.<job_id>.strategy.matrix is applied. So we can't just use matrix.dockerfile
@@ -149,7 +149,7 @@ jobs:
           submodules: recursive
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v44.5.24
+        uses: tj-actions/changed-files@bab30c2299617f6615ec02a68b9a40d10bd21366 # v44.5.24
         with:
           files: |
             backends/**
@@ -202,7 +202,7 @@ jobs:
     steps:
       - name: Stop instance
         id: stop-instance
-        uses: zama-ai/slab-github-runner@98f0788261a7323d5d695a883e20df36591a92b7 # v1.3.0
+        uses: zama-ai/slab-github-runner@f26b8d611b2e695158fb0a6980834f0612f65ef8 # v1.4.0
         with:
           mode: stop
           github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
