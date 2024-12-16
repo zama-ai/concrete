@@ -187,7 +187,7 @@ fn write_keys(
     }
 
     if let Some(lwe_sk) = lwe_secret_key {
-        unsafe_save(output_lwe_path, &lwe_sk)
+        safe_save(output_lwe_path, &lwe_sk)
     }
 }
 
@@ -212,7 +212,7 @@ fn keygen(client_key_path: &String, server_key_path: &String, output_lwe_path: &
 }
 
 fn keygen_from_lwe(lwe_sk_path: &String) -> ClientKey {
-    let lwe_sk = unsafe_load(lwe_sk_path);
+    let lwe_sk = safe_load(lwe_sk_path);
 
     let shortint_key =
         tfhe::shortint::ClientKey::try_from_lwe_encryption_key(lwe_sk, BLOCK_PARAMS).unwrap();

@@ -218,12 +218,11 @@ pub unsafe extern "C" fn concrete_cpu_serialize_lwe_secret_key_u64(
     out_buffer: *mut u8,
     out_buffer_len: usize,
 ) -> usize {
-    let lwe_sk = LweSecretKey::from_container(slice::from_raw_parts(
-        lwe_sk,
-        concrete_cpu_lwe_secret_key_size_u64(lwe_dimension),
-    ));
+    let lwe_sk: LweSecretKey<Vec<u64>> = LweSecretKey::from_container(
+        slice::from_raw_parts(lwe_sk, concrete_cpu_lwe_secret_key_size_u64(lwe_dimension)).to_vec(),
+    );
 
-    super::utils::unsafe_serialize(&lwe_sk, out_buffer, out_buffer_len)
+    super::utils::safe_serialize(&lwe_sk, out_buffer, out_buffer_len)
 }
 
 #[no_mangle]
@@ -233,7 +232,7 @@ pub unsafe extern "C" fn concrete_cpu_unserialize_lwe_secret_key_u64(
     lwe_sk: *mut u64,
     lwe_sk_size: usize,
 ) -> usize {
-    let sk: LweSecretKey<Vec<u64>> = super::utils::unsafe_deserialize(buffer, buffer_len);
+    let sk: LweSecretKey<Vec<u64>> = super::utils::safe_deserialize(buffer, buffer_len);
     let container = sk.into_container();
     assert!(container.len() <= lwe_sk_size);
     let lwe_sk_slice = slice::from_raw_parts_mut(lwe_sk, lwe_sk_size);
@@ -249,15 +248,16 @@ pub unsafe extern "C" fn concrete_cpu_serialize_glwe_secret_key_u64(
     out_buffer: *mut u8,
     out_buffer_len: usize,
 ) -> usize {
-    let glwe_sk = GlweSecretKey::from_container(
+    let glwe_sk: GlweSecretKey<Vec<u64>> = GlweSecretKey::from_container(
         slice::from_raw_parts(
             glwe_sk,
             concrete_cpu_glwe_secret_key_size_u64(glwe_dimension, polynomial_size),
-        ),
+        )
+        .to_vec(),
         PolynomialSize(polynomial_size),
     );
 
-    super::utils::unsafe_serialize(&glwe_sk, out_buffer, out_buffer_len)
+    super::utils::safe_serialize(&glwe_sk, out_buffer, out_buffer_len)
 }
 
 #[no_mangle]
@@ -267,7 +267,7 @@ pub unsafe extern "C" fn concrete_cpu_unserialize_glwe_secret_key_u64(
     glwe_sk: *mut u64,
     glwe_sk_size: usize,
 ) -> usize {
-    let sk: GlweSecretKey<Vec<u64>> = super::utils::unsafe_deserialize(buffer, buffer_len);
+    let sk: GlweSecretKey<Vec<u64>> = super::utils::safe_deserialize(buffer, buffer_len);
     assert!(sk.glwe_dimension().0 == 1);
     let container = sk.into_container();
     assert!(container.len() <= glwe_sk_size);
@@ -326,6 +326,7 @@ pub unsafe extern "C" fn concrete_cpu_glwe_secret_key_size_u64(
 pub extern "C" fn concrete_cpu_lwe_secret_key_buffer_size_u64(lwe_dimension: usize) -> usize {
     let metadata = core::mem::size_of::<LweSecretKey<&[u64]>>();
     metadata + concrete_cpu_lwe_secret_key_size_u64(lwe_dimension) * 8 /*u64*/
+    + 100 /*serialization headers (fragile)*/
 }
 
 #[no_mangle]
@@ -335,6 +336,7 @@ pub extern "C" fn concrete_cpu_glwe_secret_key_buffer_size_u64(
 ) -> usize {
     let metadata = core::mem::size_of::<GlweSecretKey<&[u64]>>();
     metadata + glwe_dimension * polynomial_size * 8 /*u64*/
+    + 100 /*serialization headers (fragile)*/
 }
 
 #[no_mangle]

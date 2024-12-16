@@ -29,16 +29,16 @@ serde = "~1"
 rayon = { version = "1.6", optional = true }
 once_cell = { version = "1.16", optional = true }
 
-tfhe = { version = "0.8.6", features = ["integer"] }
+tfhe = { version = "0.10.0", features = ["integer"] }
 
 [target.x86_64-unknown-unix-gnu.dependencies]
-tfhe = { version = "0.8.6", features = ["integer", "x86_64-unix"] }
+tfhe = { version = "0.10.0", features = ["integer", "x86_64-unix"] }
 
 [target.aarch64-unknown-unix-gnu.dependencies]
-tfhe = { version = "0.8.6", features = ["integer", "aarch64-unix"] }
+tfhe = { version = "0.10.0", features = ["integer", "aarch64-unix"] }
 
 [target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { version = "0.8.6", features = ["integer", "x86_64"] }
+tfhe = { version = "0.10.0", features = ["integer", "x86_64"] }
 
 [features]
 default = ["parallel", "std", "csprng"]

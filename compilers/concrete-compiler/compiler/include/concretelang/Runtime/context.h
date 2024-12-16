@@ -19,9 +19,9 @@
 using ::concretelang::keysets::ServerKeyset;
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
-#include "bootstrap.h"
 #include "device.h"
 #include "keyswitch.h"
+#include "programmable_bootstrap.h"
 #endif
 
 namespace mlir {
@@ -102,14 +102,14 @@ public:
     size_t bsk_gpu_buffer_size = bsk_buffer_len * sizeof(double);
 
     void *bsk_gpu_tmp =
-        cuda_malloc_async(bsk_gpu_buffer_size, (cudaStream_t *)stream, gpu_idx);
-    cuda_convert_lwe_bootstrap_key_64(
-        bsk_gpu_tmp, const_cast<uint64_t *>(bsk.getBuffer().data()),
-        (cudaStream_t *)stream, gpu_idx, input_lwe_dim, glwe_dim, level,
-        poly_size);
+        cuda_malloc_async(bsk_gpu_buffer_size, (cudaStream_t)stream, gpu_idx);
+    cuda_convert_lwe_programmable_bootstrap_key_64(
+        (cudaStream_t)stream, gpu_idx, bsk_gpu_tmp,
+        const_cast<uint64_t *>(bsk.getBuffer().data()), input_lwe_dim, glwe_dim,
+        level, poly_size);
     // Synchronization here is not optional as it works with mutex to
     // prevent other GPU streams from reading partially copied keys.
-    cudaStreamSynchronize(*(cudaStream_t *)stream);
+    cudaStreamSynchronize((cudaStream_t)stream);
     bsk_gpu[gpu_idx][bsk_idx] = bsk_gpu_tmp;
     return bsk_gpu[gpu_idx][bsk_idx];
   }
@@ -132,14 +132,14 @@ public:
     size_t ksk_buffer_size = sizeof(uint64_t) * ksk.getBuffer().size();
 
     void *ksk_gpu_tmp =
-        cuda_malloc_async(ksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
+        cuda_malloc_async(ksk_buffer_size, (cudaStream_t)stream, gpu_idx);
 
     cuda_memcpy_async_to_gpu(ksk_gpu_tmp,
                              const_cast<uint64_t *>(ksk.getBuffer().data()),
-                             ksk_buffer_size, (cudaStream_t *)stream, gpu_idx);
+                             ksk_buffer_size, (cudaStream_t)stream, gpu_idx);
     // Synchronization here is not optional as it works with mutex to
     // prevent other GPU streams from reading partially copied keys.
-    cudaStreamSynchronize(*(cudaStream_t *)stream);
+    cudaStreamSynchronize((cudaStream_t)stream);
     ksk_gpu[gpu_idx][ksk_idx] = ksk_gpu_tmp;
     return ksk_gpu[gpu_idx][ksk_idx];
   }

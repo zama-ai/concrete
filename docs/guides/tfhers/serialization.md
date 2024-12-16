@@ -33,7 +33,7 @@ fn save_fheuint8(fheuint: FheUint8, path: &String) {
 
 ## Secret Key
 
-TFHE-rs safe serialization doesn't yet support this key so we should deserialize `LweSecretKey` using `bincode`
+We should deserialize `LweSecretKey` using safe serialization functions from TFHE-rs
 
 ```rust
 use tfhe::core_crypto::prelude::LweSecretKey;
@@ -42,7 +42,7 @@ use tfhe::core_crypto::prelude::LweSecretKey;
 
 fn load_lwe_sk(path: &String) -> LweSecretKey<Vec<u64>> {
     let file = fs::File::open(path).unwrap();
-    bincode::deserialize_from(file).unwrap()
+    safe_deserialize(file, SERIALIZE_SIZE_LIMIT).unwrap()
 }
 ```
 
@@ -51,6 +51,6 @@ To serialize
 ```rust
 fn save_lwe_sk(lwe_sk: LweSecretKey<Vec<u64>>, path: &String) {
     let file = fs::File::create(path).unwrap();
-    bincode::serialize_into(file, lwe_sk).unwrap()
+    safe_serialize(lwe_sk, file, SERIALIZE_SIZE_LIMIT).unwrap()
 }
 ```

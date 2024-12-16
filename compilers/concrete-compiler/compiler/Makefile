@@ -391,7 +391,7 @@ $(BENCHMARK_GPU_DIR):
 
 $(BENCHMARK_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml: tests/end_to_end_fixture/end_to_end_linalg_apply_lookup_table_gen.py
 	$(Python3_EXECUTABLE) $< \
-	--bitwidth 1 2 3 4 5 6 7 --n-ct 1 128 1024 2048 8192
+	--bitwidth 1 2 3 4 5 6 7 --n-ct 1 128 1024 2048 8192  > $@
 
 
 generate-gpu-benchmarks: $(BENCHMARK_GPU_DIR) $(BENCHMARK_GPU_DIR)/end_to_end_linalg_apply_lookup_table.yaml
