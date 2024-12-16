@@ -218,3 +218,6 @@ When options are specified both in the `configuration` and as kwargs in the `com
   - Automatic scheduling behavior can be override locally by calling directly a variant of `run`:
     - `run_sync`: forces the fhe function to occur in the current thread, not in the background,
     - `run_async`: forces the fhe function to occur in a background thread, returning immediately a `Future[Value]`
+
+#### security_level: int = 128
+- Set the level of security used to perform the optimization of crypto-parameters.

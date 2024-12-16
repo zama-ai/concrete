@@ -5,10 +5,12 @@ Tests of `Configuration` class.
 import os
 import sys
 
+import numpy as np
 import pytest
 
 from concrete import fhe
-from concrete.fhe.compilation import Configuration
+from concrete.fhe.compilation import Configuration, server
+from concrete.fhe.compilation.configuration import SecurityLevel
 
 from ..conftest import USE_MULTI_PRECISION
 
@@ -300,4 +302,47 @@ Bit-Width Assignments for <lambda>
 --------------------------------------------------------------------------------
 
         """.strip(),
+    )
+
+
+def test_set_security_level():
+
+    @fhe.module()
+    class Module:
+        @fhe.function({"x": "encrypted", "y": "clear"})
+        def inc(x, y):
+            return (x + y + 1) % 20
+
+        composition = fhe.Wired(
+            {
+                fhe.Wire(fhe.Output(inc, 0), fhe.AllInputs(inc)),
+            }
+        )
+
+    inputset = [
+        (np.random.randint(1, 20, size=()), np.random.randint(1, 20, size=())) for _ in range(100)
+    ]
+
+    module1 = Module.compile(
+        {"inc": inputset},
+        security_level=SecurityLevel.SECURITY_128_BITS,
+    )
+
+    module2 = Module.compile(
+        {"inc": inputset},
+        security_level=SecurityLevel.SECURITY_128_BITS,
+    )
+
+    module3 = Module.compile(
+        {"inc": inputset},
+        security_level=SecurityLevel.SECURITY_132_BITS,
+    )
+
+    assert (
+        module1.server.client_specs.program_info.get_keyset_info()
+        == module2.server.client_specs.program_info.get_keyset_info()
+    )
+    assert (
+        module1.server.client_specs.program_info.get_keyset_info()
+        != module3.server.client_specs.program_info.get_keyset_info()
     )
