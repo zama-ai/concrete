@@ -81,6 +81,7 @@ jobs:
 
             rustup toolchain install nightly-2024-09-30
             dnf -y install graphviz graphviz-devel python3.12 python3.12-pip
+            pip3 install numpy
 
             cd /concrete/frontends/concrete-python
             make PYTHON=python3 venv
