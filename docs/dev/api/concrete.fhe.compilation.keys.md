@@ -9,20 +9,20 @@ Declaration of `Keys` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L18"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Keys`
 Keys class, to manage generate/reuse keys. 
 
 Includes encryption keys as well as evaluation keys. Be careful when serializing/saving keys! 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    client_specs: Optional[ClientSpecs],
+    specs: Optional[ClientSpecs],
     cache_directory: Optional[Path, str] = None
 )
 ```
@@ -44,24 +44,32 @@ Get if the keys are already generated.
 
 Get only evaluation keys. 
 
+---
+
+#### <kbd>property</kbd> specs
+
+Return the associated client specs if any. 
+
 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
 ```python
-deserialize(serialized_keys: bytes) → Keys
+deserialize(serialized_keys: Union[Path, bytes]) → Keys
 ```
 
-Deserialize keys from bytes. 
+Deserialize keys from file or buffer. 
+
+Prefer using a Path instead of bytes in case of big Keys. It reduces memory usage. 
 
 
 
 **Args:**
-  serialized_keys (bytes):  previously serialized keys 
+  serialized_keys (Union[Path, bytes]):  previously serialized keys (either Path or buffer) 
 
 
 
@@ -70,14 +78,14 @@ Deserialize keys from bytes.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `generate`
 
 ```python
 generate(
     force: bool = False,
-    seed: Optional[int] = None,
+    secret_seed: Optional[int] = None,
     encryption_seed: Optional[int] = None,
     initial_keys: Optional[Dict[int, LweSecretKey]] = None
 )
@@ -90,7 +98,7 @@ Generate new keys.
 **Args:**
   force (bool, default = False):  whether to generate new keys even if keys are already generated/loaded 
 
- seed (Optional[int], default = None):  seed for private keys randomness 
+ secret_seed (Optional[int], default = None):  seed for private keys randomness 
 
  encryption_seed (Optional[int], default = None):  seed for encryption randomness 
 
@@ -98,7 +106,7 @@ Generate new keys.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -115,14 +123,14 @@ Load keys from a location.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L136"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_if_exists_generate_and_save_otherwise`
 
 ```python
 load_if_exists_generate_and_save_otherwise(
     location: Union[str, Path],
-    seed: Optional[int] = None
+    secret_seed: Optional[int] = None
 )
 ```
 
@@ -133,11 +141,11 @@ Load keys from a location if they exist, else generate new keys and save to that
 **Args:**
   location (Union[str, Path]):  location to load from or save to 
 
- seed (Optional[int], default = None):  seed for randomness in case keys need to be generated 
+ secret_seed (Optional[int], default = None):  seed for randomness in case keys need to be generated 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
@@ -156,7 +164,7 @@ Saved keys are not encrypted, so be careful how you store/transfer them!
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 
