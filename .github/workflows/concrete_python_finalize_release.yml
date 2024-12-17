@@ -60,16 +60,22 @@ jobs:
           mkdir empty_context
           docker image build -t ${{ env.NAME_TAG }} --build-arg version=${{ env.VERSION }} -f ${{ env.DOCKER_FILE }} empty_context
 
-      # disabled because of https://github.com/aquasecurity/trivy/discussions/7668
-      # - name: Run Trivy vulnerability scanner
-      #   uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
-      #   with:
-      #     image-ref: '${{ env.NAME_TAG }}'
-      #     format: 'table'
-      #     exit-code: '1'
-      #     ignore-unfixed: true
-      #     vuln-type: 'os,library'
-      #     severity: 'CRITICAL,HIGH'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # 0.29.0
+        with:
+          image-ref: '${{ env.NAME_TAG }}'
+          format: 'sarif'
+          scanners: vuln,secret
+          output: trivy-out-docker.sarif
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
+        with:
+          sarif_file: trivy-out-docker.sarif
+          category: trivy-docker
 
       - name: Login to Docker Hub
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567

@@ -13,6 +13,8 @@ env:
   SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
   THIS_FILE: .github/workflows/concrete_compiler_publish_docker_images.yml
+  TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+  TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
 
 concurrency:
   group: concrete_compiler_publish_docker_images
@@ -55,17 +57,20 @@ jobs:
       - name: Build
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: docker build -t "${{ env.image }}" -f ${{ env.dockerfile }} .
-      # disabled because of https://github.com/aquasecurity/trivy/discussions/7668
-      # - name: Run Trivy vulnerability scanner
-      #   if: ${{ steps.login.conclusion != 'skipped' }}
-      #   uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
-      #   with:
-      #     image-ref: '${{ env.IMAGE }}'
-      #     format: 'table'
-      #     exit-code: '1'
-      #     ignore-unfixed: true
-      #     vuln-type: 'os,library'
-      #     severity: 'CRITICAL,HIGH'
+      - name: Run Trivy vulnerability scanner
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # 0.29.0
+        with:
+          image-ref: '${{ env.image }}'
+          format: 'sarif'
+          scanners: vuln,secret
+          output: trivy-out-docker.sarif
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
+        with:
+          sarif_file: trivy-out-docker.sarif
+          category: trivy-docker
       - name: Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: docker push "${{ env.image }}:latest"
@@ -114,17 +119,20 @@ jobs:
           docker build -t "${{ env.image }}" -f ${{ matrix.dockerfile }} .
           docker image tag "${{ env.image }}" "${{ env.image }}:${{ matrix.tag }}"
           docker push "${{ env.image }}:${{ matrix.tag }}"
-      # disabled because of https://github.com/aquasecurity/trivy/discussions/7668
-      # - name: Run Trivy vulnerability scanner
-      #   if: ${{ steps.login.conclusion != 'skipped' }}
-      #   uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
-      #   with:
-      #     image-ref: '${{ env.image }}'
-      #     format: 'table'
-      #     exit-code: '1'
-      #     ignore-unfixed: true
-      #     vuln-type: 'os,library'
-      #     severity: 'CRITICAL,HIGH'
+      - name: Run Trivy vulnerability scanner
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # 0.29.0
+        with:
+          image-ref: '${{ env.image }}'
+          format: 'sarif'
+          scanners: vuln,secret
+          output: trivy-out-docker.sarif
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ steps.login.conclusion != 'skipped' }}
+        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
+        with:
+          sarif_file: trivy-out-docker.sarif
+          category: trivy-docker
       - name: Push Latest Image
         if: ${{ steps.login.conclusion != 'skipped' && matrix.tag == '11-8' }}
         run: docker push "${{ env.image }}:latest"
@@ -165,16 +173,20 @@ jobs:
         run: |
           DOCKER_BUILDKIT=1 docker build --no-cache \
             --label "commit-sha=${{ github.sha }}" -t ${{ env.image }} -f ${{ env.dockerfile }} .
-      # disabled because of https://github.com/aquasecurity/trivy/discussions/7668
-      # - name: Run Trivy vulnerability scanner
-      #   uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # 0.28.0
-      #   with:
-      #     image-ref: '${{ matrix.image }}'
-      #     format: 'table'
-      #     exit-code: '1'
-      #     ignore-unfixed: true
-      #     vuln-type: 'os,library'
-      #     severity: 'CRITICAL,HIGH'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # 0.29.0
+        if: steps.login.conclusion != 'skipped'
+        with:
+          image-ref: '${{ env.image }}'
+          format: 'sarif'
+          scanners: vuln,secret
+          output: trivy-out-docker.sarif
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: steps.login.conclusion != 'skipped'
+        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
+        with:
+          sarif_file: trivy-out-docker.sarif
+          category: trivy-docker
       - name: Tag and Publish Image
         if: steps.login.conclusion != 'skipped'
         run: |
