@@ -98,8 +98,11 @@ private:
 };
 
 Message<concreteprotocol::KeysetInfo> keysetInfoFromVirtualCircuit(
-    std::vector<concrete_optimizer::utils::PartitionDefinition> partitions,
-    bool generate_fks, std::optional<concrete_optimizer::Options> options);
+    std::vector<concrete_optimizer::utils::PartitionDefinition>
+        internalPartitions,
+    std::vector<concrete_optimizer::utils::ExternalPartition>
+        externalPartitions,
+    std::optional<concrete_optimizer::Options> options);
 
 } // namespace keysets
 } // namespace concretelang

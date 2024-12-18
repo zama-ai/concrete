@@ -926,7 +926,6 @@ namespace concrete_optimizer {
   struct Dag;
   struct DagBuilder;
   struct Location;
-  struct ExternalPartition;
   struct Weights;
   enum class Encoding : ::std::uint8_t;
   enum class MultiParamStrategy : ::std::uint8_t;
@@ -957,6 +956,7 @@ namespace concrete_optimizer {
   }
   namespace utils {
     struct PartitionDefinition;
+    struct ExternalPartition;
   }
 }
 
@@ -996,8 +996,8 @@ struct DagBuilder final : public ::rust::Opaque {
   ::concrete_optimizer::dag::OperatorIndex add_max_noise(::rust::Slice<::concrete_optimizer::dag::OperatorIndex const> inputs, ::rust::Slice<::std::uint64_t const> out_shape, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_round_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
   ::concrete_optimizer::dag::OperatorIndex add_unsafe_cast_op(::concrete_optimizer::dag::OperatorIndex input, ::std::uint8_t rounded_precision, ::concrete_optimizer::Location const &location) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_change_partition_with_src(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &src_partition, ::concrete_optimizer::Location const &location) noexcept;
-  ::concrete_optimizer::dag::OperatorIndex add_change_partition_with_dst(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::ExternalPartition const &dst_partition, ::concrete_optimizer::Location const &location) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_change_partition_with_src(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::utils::ExternalPartition const &src_partition, ::concrete_optimizer::Location const &location) noexcept;
+  ::concrete_optimizer::dag::OperatorIndex add_change_partition_with_dst(::concrete_optimizer::dag::OperatorIndex input, ::concrete_optimizer::utils::ExternalPartition const &dst_partition, ::concrete_optimizer::Location const &location) noexcept;
   void tag_operator_as_output(::concrete_optimizer::dag::OperatorIndex op) noexcept;
   ~DagBuilder() = delete;
 
@@ -1023,20 +1023,6 @@ private:
   };
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$Location
-
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$ExternalPartition
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$ExternalPartition
-struct ExternalPartition final : public ::rust::Opaque {
-  ~ExternalPartition() = delete;
-
-private:
-  friend ::rust::layout;
-  struct layout {
-    static ::std::size_t size() noexcept;
-    static ::std::size_t align() noexcept;
-  };
-};
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$ExternalPartition
 
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$Weights
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$Weights
@@ -1381,6 +1367,20 @@ struct PartitionDefinition final {
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$PartitionDefinition
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartition
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartition
+struct ExternalPartition final {
+  ::rust::String name;
+  ::std::uint64_t macro_log2_polynomial_size;
+  ::std::uint64_t macro_glwe_dimension;
+  ::std::uint64_t macro_internal_dim;
+  double max_variance;
+  double variance;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartition
 } // namespace utils
 
 namespace v0 {
@@ -1396,9 +1396,7 @@ namespace utils {
 
 ::rust::Box<::concrete_optimizer::Location> location_from_string(::rust::Str string) noexcept;
 
-::CircuitKeys generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> partitions, bool generate_fks, ::concrete_optimizer::Options const &options) noexcept;
-
-::rust::Box<::concrete_optimizer::ExternalPartition> get_external_partition(::rust::String name, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t internal_dim, double max_variance, double variance) noexcept;
+::CircuitKeys generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> internal_partitions, ::rust::Vec<::concrete_optimizer::utils::ExternalPartition> external_partitions, ::concrete_optimizer::Options const &options) noexcept;
 
 double get_noise_br(::concrete_optimizer::Options const &options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept;
 } // namespace utils
