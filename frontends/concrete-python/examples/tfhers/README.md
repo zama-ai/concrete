@@ -1,10 +1,10 @@
-# TFHE-rs Interoperability Example
+# TFHE-rs interoperability example
 
 This is the full execution for the example explained in the [TFHE-rs Interoperability Guide](../../../../docs/guides/tfhers) (use case 1). You can find the TFHE-rs code [here](../../tests/tfhers-utils/src/main.rs), while the Python code is under this direcotry [here](example.py). Both are CLI tools, so that we can execute the example step by step. You can refer to the code at every step to see how it's implemented.
 
 ## Make tmpdir
 
-We want to setup a temporary working directory first
+We want to setup a temporary working directory first:
 
 ```sh
 export TDIR=`mktemp -d`
@@ -12,7 +12,7 @@ export TDIR=`mktemp -d`
 
 ## KeyGen
 
-First we need to build the TFHE-rs utility in [this directory](../../tests/tfhers-utils/) by running
+First we need to build the TFHE-rs utility in [this directory](../../tests/tfhers-utils/) by running the following:
 
 ```sh
 cd ../../tests/tfhers-utils/
@@ -20,17 +20,17 @@ make build
 cd -
 ```
 
-Then we can generate keys in two different ways. You only need to run one of the following methods
+Then we can generate keys in two different ways. You only need to run one of the following methods.
 
 #### Generate the Secret Key in Concrete
 
-We start by doing keygen in Concrete
+We start by doing keygen in Concrete:
 
 ```sh
 python example.py keygen -o $TDIR/concrete_sk -k $TDIR/concrete_keyset
 ```
 
-Then we do a partial keygen in TFHE-rs
+Then we do a partial keygen in TFHE-rs:
 
 ```sh
 ../../tests/tfhers-utils/target/release/tfhers_utils keygen --lwe-sk $TDIR/concrete_sk --output-lwe-sk $TDIR/tfhers_sk -c $TDIR/tfhers_client_key -s $TDIR/tfhers_server_key
@@ -38,13 +38,13 @@ Then we do a partial keygen in TFHE-rs
 
 #### Generate the Secret Key in TFHE-rs
 
-We start by doing keygen in TFHE-rs
+We start by doing keygen in TFHE-rs:
 
 ```sh
 ../../tests/tfhers-utils/target/release/tfhers_utils keygen --output-lwe-sk $TDIR/tfhers_sk -c $TDIR/tfhers_client_key -s $TDIR/tfhers_server_key
 ```
 
-Then we do a partial keygen in Concrete.
+Then we do a partial keygen in Concrete:
 
 ```sh
 python example.py keygen -s $TDIR/tfhers_sk -o $TDIR/concrete_sk -k $TDIR/concrete_keyset
