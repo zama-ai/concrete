@@ -39,13 +39,6 @@ class Circuit:
     def _function(self) -> FheFunction:
         return getattr(self._module, self._name)
 
-    @property
-    def function_name(self) -> str:
-        """
-        Return the name of the circuit.
-        """
-        return self._name
-
     def __str__(self):
         return self._function.graph.format()
 

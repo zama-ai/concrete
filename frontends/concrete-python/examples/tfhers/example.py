@@ -51,7 +51,7 @@ def ccompilee():
     inputset = [(tfhers_int(120), tfhers_int(120))]
     circuit = compiler.compile(inputset)
 
-    tfhers_bridge = tfhers.new_bridge(circuit=circuit)
+    tfhers_bridge = tfhers.new_bridge(circuit)
     return circuit, tfhers_bridge
 
 
