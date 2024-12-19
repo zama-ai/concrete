@@ -97,7 +97,7 @@ decoded = tfhers_type.decode(result)
 We are going to create a TFHE-rs bridge that facilitates the seamless transfer of ciphertexts and keys between Concrete and TFHE-rs.
 
 ```python
-tfhers_bridge = tfhers.new_bridge(circuit=circuit)
+tfhers_bridge = tfhers.new_bridge(circuit)
 ```
 
 ## Key generation
