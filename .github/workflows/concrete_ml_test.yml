@@ -106,8 +106,7 @@ jobs:
           # Make test script executable
           chmod +x ci/scripts/test_cml.sh
 
-          # Build the docker image with specific tag
-          cd concrete-ml
+
           # Build the docker image with specific tag
           cd concrete-ml
           DOCKER_BUILDKIT=1 docker build \
