@@ -108,7 +108,14 @@ jobs:
 
           # Build the docker image with specific tag
           cd concrete-ml
-          make docker_build DEV_DOCKER_PYTHON=py38
+          # Build the docker image with specific tag
+          cd concrete-ml
+          DOCKER_BUILDKIT=1 docker build \
+            --build-arg BUILD_UID=$(id -u) \
+            --build-arg BUILD_GID=$(id -g) \
+            --pull \
+            -t concrete-ml-dev:py38 \
+            -f docker/Dockerfile.dev .
 
           # Run the tests
           docker run --rm \
