@@ -29,10 +29,6 @@ function usage() {
     echo
 }
 
-# No real reason to change this. We could use tmp files, but then, when there are bugs, they would
-# be harder to find
-TMP_DIRECTORY="tmp_directory_for_cml_tests"
-TMP_VENV=".venv_test_cml"
 
 # Default is to use the Concrete current version, ie the one of the branch
 CP_VERSION="current"
@@ -43,12 +39,8 @@ DO_QUICK_SCRIPT_DEBUG=0
 # Set to 1 to stop the CI at the first test that fails
 STOP_AT_FIRST_FAIL=0
 
-# Which python to use, to create the venv
-PYTHON=python
-
 # Variables of the script, don't change
 IS_VERBOSE=0
-ML_BRANCH="main"
 
 # Specify wheel's path if we want to install CP from wheel
 WHEEL=""
@@ -101,6 +93,10 @@ do
             IS_VERBOSE=1
             ;;
 
+        "--help" )
+            usage
+            exit 0
+            ;;
         *)
             echo "Unknown param : $1"
             usage
@@ -115,65 +111,6 @@ if [ "$PATCH" != "" ]
 then
     PATCH="$PWD/$PATCH"
 fi
-
-# Directory for tests
-echo
-echo "Creating a temporary directory for CML tests"
-
-if [ $DO_QUICK_SCRIPT_DEBUG -eq 0 ]
-then
-    rm -rf ${TMP_DIRECTORY}
-    mkdir ${TMP_DIRECTORY}
-else
-    echo "    -- skipped during debug"
-fi
-
-cd ${TMP_DIRECTORY}
-
-# Get repository
-echo
-echo "Getting CML repository"
-
-if [ $DO_QUICK_SCRIPT_DEBUG -eq 0 ]
-then
-    git lfs install --skip-smudge
-    git clone https://github.com/zama-ai/concrete-ml.git --branch ${ML_BRANCH}
-
-    cd concrete-ml
-    git lfs pull --include "tests/data/**, src/concrete/ml/**" --exclude  ""
-    cd ..
-else
-    echo "    -- skipped during debug"
-fi
-
-cd concrete-ml
-
-echo
-echo "Used ML branch:"
-git branch
-
-# Install
-echo
-echo "Installing CML environment"
-
-if [ $DO_QUICK_SCRIPT_DEBUG -eq 0 ]
-then
-    rm -rf ${TMP_VENV}
-    ${PYTHON} -m venv ${TMP_VENV}
-else
-    echo "    -- skipped during debug"
-fi
-
-source ${TMP_VENV}/bin/activate
-
-if [ $DO_QUICK_SCRIPT_DEBUG -eq 0 ]
-then
-    make sync_env
-fi
-
-echo
-echo "Python which is used: "
-which python
 
 # Force CP version
 echo
@@ -194,7 +131,7 @@ else
     poetry run python -m pip install -U --index-url https://pypi.zama.ai/cpu/ --pre "concrete-python==${CP_VERSION}"
 fi
 
-INSTALLED_CP=`pip freeze | grep "concrete-python"`
+INSTALLED_CP=`poetry run pip freeze | grep "concrete-python"`
 echo
 echo "Installed Concrete-Python: ${INSTALLED_CP}"
 

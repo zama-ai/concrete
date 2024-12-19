@@ -94,18 +94,29 @@ jobs:
             
             deactivate
 
-      - name: Setup Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: ML Tests
         run: |
-          export HOME="/home/ubuntu"
-          CONCRETE_PYTHON_WHEEL="$(pwd)/frontends/concrete-python/dist/*manylinux*.whl"
-          apt update
-          apt install git git-lfs -y
-          pip install poetry==1.7.1
-          ./ci/scripts/test_cml.sh --use-wheel "${CONCRETE_PYTHON_WHEEL}" --verbose
+          # Set wheel path and extract filename
+          WHEEL_PATH="frontends/concrete-python/dist"
+          WHEEL_FILENAME=$(ls ${WHEEL_PATH}/*manylinux*.whl | xargs basename)
+
+          # Checkout the concrete-ml repository on branch main
+          git clone --branch main https://github.com/zama-ai/concrete-ml.git
+
+          # Make test script executable
+          chmod +x ci/scripts/test_cml.sh
+
+          # Build the docker image with specific tag
+          cd concrete-ml
+          make docker_build DEV_DOCKER_PYTHON=py38
+
+          # Run the tests
+          docker run --rm \
+            -v "$(pwd):/src/" \
+            -w /src/concrete-ml \
+            concrete-ml-dev:py38 \
+            /bin/bash -l -i -c "./ci/scripts/test_cml.sh --use-wheel \"/src/${WHEEL_PATH#$(pwd)/}/${WHEEL_FILENAME}\" --verbose"
+
       - name: Slack Notification
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true
@@ -136,3 +147,4 @@ jobs:
         env:
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "Instance teardown finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+
