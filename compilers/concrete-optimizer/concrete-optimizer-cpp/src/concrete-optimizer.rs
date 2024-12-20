@@ -1,7 +1,7 @@
-#![allow(clippy::boxed_local)]
-#![allow(clippy::too_many_arguments)]
+// #![allow(clippy::boxed_local)]
+// #![allow(clippy::too_many_arguments)]
 
-use core::panic;
+// use core::panic;
 
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
@@ -888,8 +888,8 @@ fn location_from_string(string: &str) -> Box<Location> {
 }
 
 fn generate_virtual_keyset_info(
-    internal_partitions: Vec<ffi::PartitionDefinition>,
-    external_partitions: Vec<ffi::ExternalPartition>,
+    internal_partitions: Vec<ffi::InternalPartitionDefinition>,
+    external_partitions: Vec<ffi::ExternalPartitionDefinition>,
     options: &ffi::Options,
 ) -> ffi::CircuitKeys {
     let config = Config {
@@ -900,14 +900,18 @@ fn generate_virtual_keyset_info(
         fft_precision: options.fft_precision,
         complexity_model: &CpuComplexity::default(),
     };
+
     generate_virtual_parameters(
         internal_partitions
             .into_iter()
             .map(
-                |ffi::PartitionDefinition { precision, norm2 }| concrete_optimizer::optimization::dag::multi_parameters::virtual_circuit::InternalPartition { precision, norm2 },
+                |ffi::InternalPartitionDefinition { precision, norm2 }| concrete_optimizer::optimization::dag::multi_parameters::virtual_circuit::InternalPartition { precision, norm2 },
             )
             .collect(),
-        external_partitions.into_iter().map(|part| part.into()).collect(),
+        external_partitions.into_iter().map(|def| {
+            let noise = get_noise_br(options, def.log2_polynomial_size, def.glwe_dimension, def.internal_dim, def.pbs_level, def.pbs_base_log);
+            ExternalPartition { name: def.name, macro_params: MacroParameters { glwe_params: GlweParameters { log2_polynomial_size: def.log2_polynomial_size, glwe_dimension: def.glwe_dimension }, internal_dim: def.internal_dim } , max_variance: noise, variance: noise }
+        }).collect(),
         config
     )
     .into()
@@ -999,8 +1003,8 @@ mod ffi {
 
         #[namespace = "concrete_optimizer::utils"]
         fn generate_virtual_keyset_info(
-            internal_partitions: Vec<PartitionDefinition>,
-            external_partitions: Vec<ExternalPartition>,
+            internal_partitions: Vec<InternalPartitionDefinition>,
+            external_partitions: Vec<ExternalPartitionDefinition>,
             options: &Options,
         ) -> CircuitKeys;
 
@@ -1375,9 +1379,20 @@ mod ffi {
 
     #[namespace = "concrete_optimizer::utils"]
     #[derive(Debug, Clone)]
-    pub struct PartitionDefinition {
+    pub struct InternalPartitionDefinition {
         pub precision: u8,
         pub norm2: f64,
+    }
+
+    #[namespace = "concrete_optimizer::utils"]
+    #[derive(Debug, Clone)]
+    pub struct ExternalPartitionDefinition {
+        pub name: String,
+        pub log2_polynomial_size: u64,
+        pub glwe_dimension: u64,
+        pub internal_dim: u64,
+        pub pbs_level: u64,
+        pub pbs_base_log: u64,
     }
 
     #[namespace = "concrete_optimizer::utils"]

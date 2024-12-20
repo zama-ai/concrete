@@ -981,7 +981,8 @@ namespace concrete_optimizer {
     struct KeysetRestriction;
   }
   namespace utils {
-    struct PartitionDefinition;
+    struct InternalPartitionDefinition;
+    struct ExternalPartitionDefinition;
     struct ExternalPartition;
   }
 }
@@ -1384,15 +1385,29 @@ struct KeysetRestriction final {
 } // namespace restriction
 
 namespace utils {
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$PartitionDefinition
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$PartitionDefinition
-struct PartitionDefinition final {
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$InternalPartitionDefinition
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$InternalPartitionDefinition
+struct InternalPartitionDefinition final {
   ::std::uint8_t precision;
   double norm2;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$PartitionDefinition
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$InternalPartitionDefinition
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartitionDefinition
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartitionDefinition
+struct ExternalPartitionDefinition final {
+  ::rust::String name;
+  ::std::uint64_t log2_polynomial_size;
+  ::std::uint64_t glwe_dimension;
+  ::std::uint64_t internal_dim;
+  ::std::uint64_t pbs_level;
+  ::std::uint64_t pbs_base_log;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartitionDefinition
 
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartition
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartition
@@ -1438,7 +1453,7 @@ extern "C" {
 
 ::concrete_optimizer::Location *concrete_optimizer$utils$cxxbridge1$location_from_string(::rust::Str string) noexcept;
 
-void concrete_optimizer$utils$cxxbridge1$generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> *internal_partitions, ::rust::Vec<::concrete_optimizer::utils::ExternalPartition> *external_partitions, ::concrete_optimizer::Options const &options, ::CircuitKeys *return$) noexcept;
+void concrete_optimizer$utils$cxxbridge1$generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> *internal_partitions, ::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> *external_partitions, ::concrete_optimizer::Options const &options, ::CircuitKeys *return$) noexcept;
 
 double concrete_optimizer$utils$cxxbridge1$get_noise_br(::concrete_optimizer::Options const &options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept;
 } // extern "C"
@@ -1572,9 +1587,9 @@ namespace utils {
   return ::rust::Box<::concrete_optimizer::Location>::from_raw(concrete_optimizer$utils$cxxbridge1$location_from_string(string));
 }
 
-::CircuitKeys generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> internal_partitions, ::rust::Vec<::concrete_optimizer::utils::ExternalPartition> external_partitions, ::concrete_optimizer::Options const &options) noexcept {
-  ::rust::ManuallyDrop<::rust::Vec<::concrete_optimizer::utils::PartitionDefinition>> internal_partitions$(::std::move(internal_partitions));
-  ::rust::ManuallyDrop<::rust::Vec<::concrete_optimizer::utils::ExternalPartition>> external_partitions$(::std::move(external_partitions));
+::CircuitKeys generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> internal_partitions, ::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> external_partitions, ::concrete_optimizer::Options const &options) noexcept {
+  ::rust::ManuallyDrop<::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition>> internal_partitions$(::std::move(internal_partitions));
+  ::rust::ManuallyDrop<::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>> external_partitions$(::std::move(external_partitions));
   ::rust::MaybeUninit<::CircuitKeys> return$;
   concrete_optimizer$utils$cxxbridge1$generate_virtual_keyset_info(&internal_partitions$.value, &external_partitions$.value, options, &return$.value);
   return ::std::move(return$.value);
@@ -1729,23 +1744,23 @@ extern "C" {
 void cxxbridge1$box$concrete_optimizer$Location$dealloc(::concrete_optimizer::Location *) noexcept;
 void cxxbridge1$box$concrete_optimizer$Location$drop(::rust::Box<::concrete_optimizer::Location> *ptr) noexcept;
 
-void cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$new(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> const *ptr) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$drop(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$len(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> const *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$capacity(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> const *ptr) noexcept;
-::concrete_optimizer::utils::PartitionDefinition const *cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$data(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> const *ptr) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$reserve_total(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> *ptr, ::std::size_t new_cap) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$set_len(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> *ptr, ::std::size_t len) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$truncate(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$new(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$drop(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$len(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$capacity(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> const *ptr) noexcept;
+::concrete_optimizer::utils::InternalPartitionDefinition const *cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$data(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$reserve_total(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$set_len(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$truncate(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> *ptr, ::std::size_t len) noexcept;
 
-void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$new(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> const *ptr) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$drop(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$len(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> const *ptr) noexcept;
-::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$capacity(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> const *ptr) noexcept;
-::concrete_optimizer::utils::ExternalPartition const *cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$data(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> const *ptr) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$reserve_total(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> *ptr, ::std::size_t new_cap) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$set_len(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> *ptr, ::std::size_t len) noexcept;
-void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$truncate(::rust::Vec<::concrete_optimizer::utils::ExternalPartition> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$new(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$drop(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$len(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> const *ptr) noexcept;
+::std::size_t cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$capacity(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> const *ptr) noexcept;
+::concrete_optimizer::utils::ExternalPartitionDefinition const *cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$data(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> const *ptr) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$reserve_total(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> *ptr, ::std::size_t new_cap) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$set_len(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> *ptr, ::std::size_t len) noexcept;
+void cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$truncate(::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> *ptr, ::std::size_t len) noexcept;
 
 ::concrete_optimizer::Dag *cxxbridge1$box$concrete_optimizer$Dag$alloc() noexcept;
 void cxxbridge1$box$concrete_optimizer$Dag$dealloc(::concrete_optimizer::Dag *) noexcept;
@@ -1914,68 +1929,68 @@ void Box<::concrete_optimizer::Location>::drop() noexcept {
   cxxbridge1$box$concrete_optimizer$Location$drop(this);
 }
 template <>
-Vec<::concrete_optimizer::utils::PartitionDefinition>::Vec() noexcept {
-  cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$new(this);
+Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$new(this);
 }
 template <>
-void Vec<::concrete_optimizer::utils::PartitionDefinition>::drop() noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$drop(this);
+void Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$drop(this);
 }
 template <>
-::std::size_t Vec<::concrete_optimizer::utils::PartitionDefinition>::size() const noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$len(this);
+::std::size_t Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$len(this);
 }
 template <>
-::std::size_t Vec<::concrete_optimizer::utils::PartitionDefinition>::capacity() const noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$capacity(this);
+::std::size_t Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$capacity(this);
 }
 template <>
-::concrete_optimizer::utils::PartitionDefinition const *Vec<::concrete_optimizer::utils::PartitionDefinition>::data() const noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$data(this);
+::concrete_optimizer::utils::InternalPartitionDefinition const *Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$data(this);
 }
 template <>
-void Vec<::concrete_optimizer::utils::PartitionDefinition>::reserve_total(::std::size_t new_cap) noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$reserve_total(this, new_cap);
+void Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$reserve_total(this, new_cap);
 }
 template <>
-void Vec<::concrete_optimizer::utils::PartitionDefinition>::set_len(::std::size_t len) noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$set_len(this, len);
+void Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$set_len(this, len);
 }
 template <>
-void Vec<::concrete_optimizer::utils::PartitionDefinition>::truncate(::std::size_t len) {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$PartitionDefinition$truncate(this, len);
+void Vec<::concrete_optimizer::utils::InternalPartitionDefinition>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$InternalPartitionDefinition$truncate(this, len);
 }
 template <>
-Vec<::concrete_optimizer::utils::ExternalPartition>::Vec() noexcept {
-  cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$new(this);
+Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::Vec() noexcept {
+  cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$new(this);
 }
 template <>
-void Vec<::concrete_optimizer::utils::ExternalPartition>::drop() noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$drop(this);
+void Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::drop() noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$drop(this);
 }
 template <>
-::std::size_t Vec<::concrete_optimizer::utils::ExternalPartition>::size() const noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$len(this);
+::std::size_t Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::size() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$len(this);
 }
 template <>
-::std::size_t Vec<::concrete_optimizer::utils::ExternalPartition>::capacity() const noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$capacity(this);
+::std::size_t Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::capacity() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$capacity(this);
 }
 template <>
-::concrete_optimizer::utils::ExternalPartition const *Vec<::concrete_optimizer::utils::ExternalPartition>::data() const noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$data(this);
+::concrete_optimizer::utils::ExternalPartitionDefinition const *Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::data() const noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$data(this);
 }
 template <>
-void Vec<::concrete_optimizer::utils::ExternalPartition>::reserve_total(::std::size_t new_cap) noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$reserve_total(this, new_cap);
+void Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::reserve_total(::std::size_t new_cap) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$reserve_total(this, new_cap);
 }
 template <>
-void Vec<::concrete_optimizer::utils::ExternalPartition>::set_len(::std::size_t len) noexcept {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$set_len(this, len);
+void Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::set_len(::std::size_t len) noexcept {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$set_len(this, len);
 }
 template <>
-void Vec<::concrete_optimizer::utils::ExternalPartition>::truncate(::std::size_t len) {
-  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartition$truncate(this, len);
+void Vec<::concrete_optimizer::utils::ExternalPartitionDefinition>::truncate(::std::size_t len) {
+  return cxxbridge1$rust_vec$concrete_optimizer$utils$ExternalPartitionDefinition$truncate(this, len);
 }
 template <>
 ::concrete_optimizer::Dag *Box<::concrete_optimizer::Dag>::allocation::alloc() noexcept {

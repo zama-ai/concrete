@@ -559,17 +559,17 @@ generateKeysetInfoFromParameters(CircuitKeys parameters,
 }
 
 Message<concreteprotocol::KeysetInfo> keysetInfoFromVirtualCircuit(
-    std::vector<concrete_optimizer::utils::PartitionDefinition> partitionDefs,
-    std::vector<concrete_optimizer::utils::ExternalPartition>
+    std::vector<concrete_optimizer::utils::InternalPartitionDefinition> partitionDefs,
+    std::vector<concrete_optimizer::utils::ExternalPartitionDefinition>
         externalPartitions,
     std::optional<concrete_optimizer::Options> options) {
 
-  rust::Vec<concrete_optimizer::utils::PartitionDefinition> rustPartitionDefs{};
+  rust::Vec<concrete_optimizer::utils::InternalPartitionDefinition> rustPartitionDefs{};
   for (auto def : partitionDefs) {
     rustPartitionDefs.push_back(def);
   }
 
-  rust::Vec<concrete_optimizer::utils::ExternalPartition>
+  rust::Vec<concrete_optimizer::utils::ExternalPartitionDefinition>
       rustExternalPartitions{};
   for (auto def : externalPartitions) {
     rustExternalPartitions.push_back(def);

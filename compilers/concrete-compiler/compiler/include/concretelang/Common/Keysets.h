@@ -98,9 +98,9 @@ private:
 };
 
 Message<concreteprotocol::KeysetInfo> keysetInfoFromVirtualCircuit(
-    std::vector<concrete_optimizer::utils::PartitionDefinition>
+    std::vector<concrete_optimizer::utils::InternalPartitionDefinition>
         internalPartitions,
-    std::vector<concrete_optimizer::utils::ExternalPartition>
+    std::vector<concrete_optimizer::utils::ExternalPartitionDefinition>
         externalPartitions,
     std::optional<concrete_optimizer::Options> options);
 

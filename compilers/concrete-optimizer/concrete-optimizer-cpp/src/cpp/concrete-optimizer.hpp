@@ -955,7 +955,8 @@ namespace concrete_optimizer {
     struct KeysetRestriction;
   }
   namespace utils {
-    struct PartitionDefinition;
+    struct InternalPartitionDefinition;
+    struct ExternalPartitionDefinition;
     struct ExternalPartition;
   }
 }
@@ -1358,15 +1359,29 @@ struct KeysetRestriction final {
 } // namespace restriction
 
 namespace utils {
-#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$PartitionDefinition
-#define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$PartitionDefinition
-struct PartitionDefinition final {
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$InternalPartitionDefinition
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$InternalPartitionDefinition
+struct InternalPartitionDefinition final {
   ::std::uint8_t precision;
   double norm2;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$PartitionDefinition
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$InternalPartitionDefinition
+
+#ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartitionDefinition
+#define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartitionDefinition
+struct ExternalPartitionDefinition final {
+  ::rust::String name;
+  ::std::uint64_t log2_polynomial_size;
+  ::std::uint64_t glwe_dimension;
+  ::std::uint64_t internal_dim;
+  ::std::uint64_t pbs_level;
+  ::std::uint64_t pbs_base_log;
+
+  using IsRelocatable = ::std::true_type;
+};
+#endif // CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartitionDefinition
 
 #ifndef CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartition
 #define CXXBRIDGE1_STRUCT_concrete_optimizer$utils$ExternalPartition
@@ -1396,7 +1411,7 @@ namespace utils {
 
 ::rust::Box<::concrete_optimizer::Location> location_from_string(::rust::Str string) noexcept;
 
-::CircuitKeys generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::PartitionDefinition> internal_partitions, ::rust::Vec<::concrete_optimizer::utils::ExternalPartition> external_partitions, ::concrete_optimizer::Options const &options) noexcept;
+::CircuitKeys generate_virtual_keyset_info(::rust::Vec<::concrete_optimizer::utils::InternalPartitionDefinition> internal_partitions, ::rust::Vec<::concrete_optimizer::utils::ExternalPartitionDefinition> external_partitions, ::concrete_optimizer::Options const &options) noexcept;
 
 double get_noise_br(::concrete_optimizer::Options const &options, ::std::uint64_t log2_polynomial_size, ::std::uint64_t glwe_dimension, ::std::uint64_t lwe_dim, ::std::uint64_t pbs_level, ::std::uint64_t pbs_log2_base) noexcept;
 } // namespace utils

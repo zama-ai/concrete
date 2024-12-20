@@ -647,6 +647,12 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           },
           "Enable or disable overflow detection during simulation.",
           arg("enable_overflow_detection"))
+      .def(
+          "get_optimizer_options",
+          [](CompilationOptions &options) -> concrete_optimizer::Options {
+              return options_from_config(options.optimizerConfig);
+          },
+          "Returns the associated optimizer configuration")
       .doc() = "Holds different flags and options of the compilation process.";
 
   pybind11::enum_<mlir::concretelang::PrimitiveOperation>(m,
@@ -1069,12 +1075,12 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   // ------------------------------------------------------------------------------//
   // PARTITION DEFINITION //
   // ------------------------------------------------------------------------------//
-  pybind11::class_<concrete_optimizer::utils::PartitionDefinition>(
-      m, "PartitionDefinition")
+  pybind11::class_<concrete_optimizer::utils::InternalPartitionDefinition>(
+      m, "InternalPartitionDefinition")
       .def(init([](uint8_t precision, double norm2)
-                    -> concrete_optimizer::utils::PartitionDefinition {
-             return concrete_optimizer::utils::PartitionDefinition{precision,
-                                                                   norm2};
+                    -> concrete_optimizer::utils::InternalPartitionDefinition {
+             return concrete_optimizer::utils::InternalPartitionDefinition{
+                 precision, norm2};
            }),
            arg("precision"), arg("norm2"))
       .doc() = "Definition of a partition (in terms of precision in bits and "
@@ -1083,23 +1089,23 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   // ------------------------------------------------------------------------------//
   // EXTERNAL PARTITION //
   // ------------------------------------------------------------------------------//
-  pybind11::class_<concrete_optimizer::utils::ExternalPartition>(
-      m, "ExternalPartition")
+  pybind11::class_<concrete_optimizer::utils::ExternalPartitionDefinition>(
+      m, "ExternalPartitionDefinition")
       .def(init([](std::string name, uint64_t macroLog2PolynomialSize,
                    uint64_t macroGlweDimension, uint64_t macroInternalDim,
-                   double maxVariance, double variance)
-                    -> concrete_optimizer::utils::ExternalPartition {
-             return concrete_optimizer::utils::ExternalPartition{
+                   uint64_t pbsLevel, uint64_t pbsBaseLog)
+                    -> concrete_optimizer::utils::ExternalPartitionDefinition {
+             return concrete_optimizer::utils::ExternalPartitionDefinition{
                  name,
                  macroLog2PolynomialSize,
                  macroGlweDimension,
                  macroInternalDim,
-                 maxVariance,
-                 variance};
+                 pbsLevel,
+                 pbsBaseLog};
            }),
            arg("name"), arg("macro_log2_polynomial_size"),
            arg("macro_glwe_dimension"), arg("macro_internal_dim"),
-           arg("max_variance"), arg("variance"))
+           arg("pbs_level"), arg("pbs_base_log"))
       .doc() = "Definition of an external partition.";
 
   // ------------------------------------------------------------------------------//
@@ -1109,9 +1115,9 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   pybind11::class_<KeysetInfo>(m, "KeysetInfo")
       .def_static(
           "generate_virtual",
-          [](std::vector<concrete_optimizer::utils::PartitionDefinition>
+          [](std::vector<concrete_optimizer::utils::InternalPartitionDefinition>
                  internalPartitions,
-             std::vector<concrete_optimizer::utils::ExternalPartition>
+             std::vector<concrete_optimizer::utils::ExternalPartitionDefinition>
                  externalPartitions,
              std::optional<concrete_optimizer::Options> options) -> KeysetInfo {
             if (internalPartitions.size() + externalPartitions.size() < 2) {

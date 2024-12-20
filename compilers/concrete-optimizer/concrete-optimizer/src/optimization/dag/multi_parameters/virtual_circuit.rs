@@ -275,7 +275,7 @@ mod test {
                     norm2: 100.,
                 },
                 InternalPartition {
-                    precision: 4,
+                    precision: 5,
                     norm2: 100.,
                 },
             ],
@@ -298,28 +298,20 @@ mod test {
         let _a = generate_virtual_parameters(
             vec![
                 InternalPartition {
-                    precision: 2,
-                    norm2: 1.,
+                    precision: 3,
+                    norm2: 10.,
                 },
                 InternalPartition {
-                    precision: 3,
-                    norm2: 1000.,
+                    precision: 5,
+                    norm2: 100.,
                 },
             ],
-            vec![
-                ExternalPartition {
-                    name: String::from("tfhers"),
-                    macro_params: TFHERS_MACRO_PARAMS,
-                    max_variance: 2.0 * variance,
-                    variance,
-                },
-                ExternalPartition {
-                    name: String::from("tfhers"),
-                    macro_params: TFHERS_MACRO_PARAMS,
-                    max_variance: 4.0 * variance,
-                    variance,
-                },
-            ],
+            vec![ExternalPartition {
+                name: String::from("tfhers"),
+                macro_params: TFHERS_MACRO_PARAMS,
+                max_variance: variance,
+                variance,
+            }],
             config,
         );
     }

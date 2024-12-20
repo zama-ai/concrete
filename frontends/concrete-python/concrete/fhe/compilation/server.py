@@ -107,86 +107,16 @@ class Server:
                 composition rules to be applied when compiling
         """
 
-        backend = Backend.GPU if configuration.use_gpu else Backend.CPU
-        options = CompilationOptions(backend)
+        options = configuration.to_compilation_options()
+
         options.simulation(is_simulated)
-        options.set_loop_parallelize(configuration.loop_parallelize)
-        options.set_dataflow_parallelize(configuration.dataflow_parallelize)
-        options.set_auto_parallelize(configuration.auto_parallelize)
-        options.set_compress_evaluation_keys(configuration.compress_evaluation_keys)
-        options.set_compress_input_ciphertexts(configuration.compress_input_ciphertexts)
-        options.set_enable_overflow_detection_in_simulation(
-            configuration.detect_overflow_in_simulation
-        )
-        options.set_composable(configuration.composable)
         composition_rules = list(composition_rules) if composition_rules else []
         for rule in composition_rules:
             options.add_composition(rule.from_.func, rule.from_.pos, rule.to.func, rule.to.pos)
-
         if configuration.auto_parallelize or configuration.dataflow_parallelize:
             # pylint: disable=c-extension-no-member,no-member
             concrete.compiler.init_dfr()
             # pylint: enable=c-extension-no-member,no-member
-
-        global_p_error_is_set = configuration.global_p_error is not None
-        p_error_is_set = configuration.p_error is not None
-
-        if global_p_error_is_set and p_error_is_set:  # pragma: no cover
-            options.set_global_p_error(configuration.global_p_error)
-            options.set_p_error(configuration.p_error)
-
-        elif global_p_error_is_set:  # pragma: no cover
-            options.set_global_p_error(configuration.global_p_error)
-            options.set_p_error(1.0)
-
-        elif p_error_is_set:  # pragma: no cover
-            options.set_global_p_error(1.0)
-            options.set_p_error(configuration.p_error)
-
-        else:  # pragma: no cover
-            if DEFAULT_GLOBAL_P_ERROR is not None:
-                options.set_global_p_error(DEFAULT_GLOBAL_P_ERROR)
-            else:
-                options.set_global_p_error(1.0)
-
-            if DEFAULT_P_ERROR is not None:
-                options.set_p_error(DEFAULT_P_ERROR)
-            else:
-                options.set_p_error(1.0)
-
-        show_optimizer = (
-            configuration.show_optimizer
-            if configuration.show_optimizer is not None
-            else configuration.verbose
-        )
-        options.set_display_optimizer_choice(show_optimizer)
-
-        parameter_selection_strategy = configuration.parameter_selection_strategy
-        if parameter_selection_strategy == ParameterSelectionStrategy.V0:  # pragma: no cover
-            options.set_optimizer_strategy(OptimizerStrategy.V0)
-        elif parameter_selection_strategy == ParameterSelectionStrategy.MONO:  # pragma: no cover
-            options.set_optimizer_strategy(OptimizerStrategy.DAG_MONO)
-        elif parameter_selection_strategy == ParameterSelectionStrategy.MULTI:  # pragma: no cover
-            options.set_optimizer_strategy(OptimizerStrategy.DAG_MULTI)
-
-        multi_parameter_strategy = configuration.multi_parameter_strategy
-        converter = {
-            MultiParameterStrategy.PRECISION: OptimizerMultiParameterStrategy.PRECISION,
-            MultiParameterStrategy.PRECISION_AND_NORM2: (
-                OptimizerMultiParameterStrategy.PRECISION_AND_NORM2
-            ),
-        }
-        options.set_optimizer_multi_parameter_strategy(converter[multi_parameter_strategy])
-
-        options.set_enable_tlu_fusing(configuration.enable_tlu_fusing)
-        options.set_print_tlu_fusing(configuration.print_tlu_fusing)
-        if configuration.keyset_restriction:
-            options.set_keyset_restriction(configuration.keyset_restriction)
-
-        if configuration.range_restriction:
-            options.set_range_restriction(configuration.range_restriction)
-
-        options.set_security_level(configuration.security_level)
 
         try:
             if configuration.compiler_debug_mode:  # pragma: no cover
