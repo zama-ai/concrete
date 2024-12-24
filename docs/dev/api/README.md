@@ -158,7 +158,7 @@
 - [`graph.MultiGraphProcessor`](./concrete.fhe.representation.graph.md): MultiGraphProcessor base class, to define the API for a multiple graph processing pipeline.
 - [`node.Node`](./concrete.fhe.representation.node.md): Node class, to represent computation in a computation graph.
 - [`operation.Operation`](./concrete.fhe.representation.operation.md): Operation enum, to distinguish nodes within a computation graph.
-- [`bridge.Bridge`](./concrete.fhe.tfhers.bridge.md): TFHErs Bridge extend a Circuit with TFHErs functionalities.
+- [`bridge.Bridge`](./concrete.fhe.tfhers.bridge.md): TFHErs Bridge extend an Module with TFHErs functionalities.
 - [`dtypes.CryptoParams`](./concrete.fhe.tfhers.dtypes.md): Crypto parameters used for a tfhers integer.
 - [`dtypes.EncryptionKeyChoice`](./concrete.fhe.tfhers.dtypes.md): TFHErs key choice: big or small.
 - [`dtypes.TFHERSIntegerType`](./concrete.fhe.tfhers.dtypes.md) to represent tfhers integer types.
@@ -355,7 +355,7 @@
 - [`utils.format_constant`](./concrete.fhe.representation.utils.md): Get the textual representation of a constant.
 - [`utils.format_indexing_element`](./concrete.fhe.representation.utils.md): Format an indexing element.
 - [`tfhers.get_type_from_params`](./concrete.fhe.tfhers.md): Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
-- [`bridge.new_bridge`](./concrete.fhe.tfhers.bridge.md): Create a TFHErs bridge from a circuit.
+- [`bridge.new_bridge`](./concrete.fhe.tfhers.bridge.md): Create a TFHErs bridge from a circuit or module.
 - [`tracing.from_native`](./concrete.fhe.tfhers.tracing.md): Convert a Concrete integer to the tfhers representation.
 - [`tracing.to_native`](./concrete.fhe.tfhers.tracing.md): Convert a tfhers integer to the Concrete representation.
 - [`scalar.clear_scalar_builder`](./concrete.fhe.values.scalar.md): Build a clear scalar value.

@@ -54,7 +54,7 @@ Return the associated client specs if any.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
@@ -174,11 +174,31 @@ serialize() → bytes
 
 Serialize keys into bytes. 
 
-Serialized keys are not encrypted, so be careful how you store/transfer them! 
+Serialized keys are not encrypted, so be careful how you store/transfer them! `serialize_to_file` is supposed to be more performant as it avoid copying the buffer between the Compiler and the Frontend. 
 
 
 
 **Returns:**
   bytes:  serialized keys 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `serialize_to_file`
+
+```python
+serialize_to_file(path: Path)
+```
+
+Serialize keys into a file. 
+
+Serialized keys are not encrypted, so be careful how you store/transfer them! This is supposed to be more performant than `serialize` as it avoid copying the buffer between the Compiler and the Frontend. 
+
+
+
+**Args:**
+ 
+ - <b>`path`</b> (Path):  where to save serialized keys 
 
 

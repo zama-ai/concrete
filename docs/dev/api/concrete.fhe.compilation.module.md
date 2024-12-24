@@ -9,10 +9,22 @@ Declaration of `FheModule` classes.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ExecutionRt`
 Runtime object class for execution. 
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(client, server, auto_schedule_run)
+```
+
+
+
+
 
 
 
@@ -20,7 +32,7 @@ Runtime object class for execution.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SimulationRt`
 Runtime object class for simulation. 
@@ -31,12 +43,12 @@ Runtime object class for simulation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FheFunction`
 Fhe function class, allowing to run or simulate one function of an fhe module. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -245,13 +257,13 @@ Get all statistics of the function.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt`
 
 ```python
 decrypt(
-    *results: Union[Value, Tuple[Value, ]]
+    *results: Union[Value, Tuple[Value, ], Awaitable[Union[Value, Tuple[Value, ]]]]
 ) → Union[int, ndarray, Tuple[Union[int, ndarray, NoneType], ], NoneType]
 ```
 
@@ -269,7 +281,7 @@ Decrypt result(s) of evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `draw`
 
@@ -303,7 +315,7 @@ That this function requires the python `pygraphviz` package which itself require
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt`
 
@@ -327,7 +339,7 @@ Encrypt argument(s) to for evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L355"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt_run_decrypt`
 
@@ -349,17 +361,63 @@ Encrypt inputs, run the function, and decrypt the outputs in one go.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L180"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
 ```python
 run(
     *args: Optional[Value, Tuple[Union[Value], ], NoneType]
-) → Union[Value, Tuple[Value, ]]
+) → Union[Value, Tuple[Value, ], Awaitable[Union[Value, Tuple[Value, ]]]]
 ```
 
 Evaluate the function. 
+
+
+
+**Args:**
+  *args (Value):  argument(s) for evaluation 
+
+
+
+**Returns:**
+  Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:  result(s) of evaluation or future of result(s) of evaluation if configured with async_run=True 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `run_async`
+
+```python
+run_async(
+    *args: Optional[Value, Tuple[Union[Value], ], NoneType]
+) → Union[Value, Tuple[Value, ], Awaitable[Union[Value, Tuple[Value, ]]]]
+```
+
+Evaluate the function asynchronuously. 
+
+
+
+**Args:**
+  *args (Value):  argument(s) for evaluation 
+
+
+
+**Returns:**
+  Union[Awaitable[Value], Awaitable[Tuple[Value, ...]]]:  result(s) a future of the evaluation 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `run_sync`
+
+```python
+run_sync(*args: Optional[Value, Tuple[Union[Value], ], NoneType]) → Any
+```
+
+Evaluate the function synchronuously. 
 
 
 
@@ -373,7 +431,7 @@ Evaluate the function.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `simulate`
 
@@ -396,12 +454,12 @@ Simulate execution of the function.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L567"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L697"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FheModule`
 Fhe module class, to combine computation graphs, mlir, runtime objects into a single object. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L579"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -508,7 +566,7 @@ Get all statistics of the module.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L677"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L809"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `cleanup`
 
@@ -520,7 +578,7 @@ Cleanup the temporary library output directory.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L748"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `functions`
 
@@ -532,7 +590,7 @@ Return a dictionnary containing all the functions of the module.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L652"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L784"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen`
 

@@ -149,12 +149,6 @@ Get the number of encrypted negations per tag per parameter in the circuit.
 
 ---
 
-#### <kbd>property</kbd> function_name
-
-Return the name of the circuit. 
-
----
-
 #### <kbd>property</kbd> global_p_error
 
 Get the probability of having at least one simple TLU error during the entire execution. 
@@ -325,7 +319,7 @@ Get all statistics of the circuit.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L226"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `cleanup`
 
@@ -337,7 +331,7 @@ Cleanup the temporary library output directory.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L200"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt`
 
@@ -361,7 +355,7 @@ Decrypt result(s) of evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `draw`
 
@@ -395,7 +389,7 @@ That this function requires the python `pygraphviz` package which itself require
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_fhe_execution`
 
@@ -407,7 +401,7 @@ Enable FHE execution.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L94"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_fhe_simulation`
 
@@ -419,7 +413,7 @@ Enable FHE simulation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt`
 
@@ -443,7 +437,7 @@ Encrypt argument(s) to for evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt_run_decrypt`
 
@@ -465,7 +459,7 @@ Encrypt inputs, run the circuit, and decrypt the outputs in one go.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen`
 
@@ -493,7 +487,7 @@ Generate keys required for homomorphic evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L182"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -517,7 +511,7 @@ Evaluate the circuit.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/circuit.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `simulate`
 
