@@ -1,4 +1,4 @@
-name: concrete-python release-cpu
+name: concrete-python release
 
 on:
   workflow_dispatch:
@@ -11,6 +11,7 @@ on:
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  CUDA_PATH: /usr/local/cuda-11.8
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
   SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
@@ -18,7 +19,7 @@ env:
   RELEASE_TYPE: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && 'public' || 'nightly' }}
 
 concurrency:
-  group: concrete_python_release_cpu_${{ github.ref }}
+  group: concrete_python_release_${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
@@ -42,6 +43,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        hw: ["cpu", "gpu"]
     needs: setup-instance
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
@@ -67,6 +69,24 @@ jobs:
         run: echo "__version__ = \"$(git describe --tags --abbrev=0 | grep -e '[0-9].*' -o)\"" >| frontends/concrete-python/version.txt
       - name: Expose release version from Python
         run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
+      - name: Set GPU Options
+        if: ${{ matrix.hw == 'gpu' }}
+        run: |
+          {
+            echo "CUDA_SUPPORT=ON"
+            echo "TIMING_ENABLED=ON"
+            echo "CUDA_PATH=${{ env.CUDA_PATH }}"
+            echo "DATAFLOW_EXECUTION_ENABLED=OFF"
+          } >> "${GITHUB_ENV}"
+      - name: Set CPU Options
+        if: ${{ matrix.hw == 'cpu' }}
+        run: |
+          {
+            echo "CUDA_SUPPORT=OFF"
+            echo "TIMING_ENABLED=OFF"
+            echo "CUDA_PATH="
+            echo "DATAFLOW_EXECUTION_ENABLED=ON"
+          } >> "${GITHUB_ENV}"
       - name: Build wheel
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         id: build-compiler-bindings
@@ -94,7 +114,8 @@ jobs:
             source .venv/bin/activate
 
             cd /concrete/compilers/concrete-compiler/compiler
-            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$(which python) python-bindings
+            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=${{ env.DATAFLOW_EXECUTION_ENABLED }} Python3_EXECUTABLE=$(which python) \
+              CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} TIMING_ENABLED=${{ env.TIMING_ENABLED }} CUDA_PATH=${{ env.CUDA_PATH }} python-bindings
 
             echo "Debug: ccache statistics (after the build):"
             ccache -s
@@ -108,7 +129,7 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          name: ${{ format('{0}-wheel-{1}-linux-x86', matrix.hw, matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
           retention-days: 3
       - name: Slack Notification
@@ -117,7 +138,7 @@ jobs:
         uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
         env:
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "build-linux-x86 finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "build-linux-x86(${{ matrix.hw }}/py${{matrix.python-version}}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   release-checks:
     strategy:
@@ -138,11 +159,11 @@ jobs:
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
-          path: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          name: ${{ format('cpu-wheel-{0}-linux-x86', matrix.python-version) }}
+          path: ${{ format('cpu-wheel-{0}-linux-x86', matrix.python-version) }}
       - name: Check documentation
         run: |
-          WHEEL_DIR=$(pwd)/${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          WHEEL_DIR=$(pwd)/${{ format('cpu-wheel-{0}-linux-x86', matrix.python-version) }}/
           CONCRETE_WHEEL="${WHEEL_DIR}/*.whl" .github/workflows/scripts/make_apidocs.sh
       - name: Upload docs.patch if failure
         if: ${{ failure() }}
@@ -225,7 +246,7 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
+          name: ${{ format('cpu-wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
           path: frontends/concrete-python/dist/*macos*.whl
           retention-days: 3
       - name: Slack Notification
@@ -236,7 +257,7 @@ jobs:
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "build-macos finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
-  hash:
+  hash-cpu:
     # Generate hashes for the wheels, used later for provenance.
     needs: [build-linux-x86, build-macos]
     runs-on: ubuntu-latest
@@ -246,14 +267,14 @@ jobs:
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           path: frontends/concrete-python/dist
-          pattern: wheel-*
+          pattern: 'cpu-wheel-*'
           merge-multiple: true
       - name: generate hash
         id: hash
         run: cd frontends/concrete-python/dist && echo "hash=$(sha256sum ./*.whl | base64 -w0)" >> "${GITHUB_OUTPUT}"
 
-  provenance:
-    needs: [hash]
+  provenance-cpu:
+    needs: [hash-cpu]
     permissions:
       actions: read
       id-token: write
@@ -261,11 +282,43 @@ jobs:
     # Can't pin with hash due to how this workflow works.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
-      base64-subjects: ${{ needs.hash.outputs.hash }}
+      base64-subjects: ${{ needs.hash-cpu.outputs.hash }}
+      provenance-name: cpu-wheels.intoto.jsonl
+
+  hash-gpu:
+    # Generate hashes for the wheels, used later for provenance.
+    needs: [build-linux-x86, build-macos]
+    runs-on: ubuntu-latest
+    outputs:
+      hash: ${{ steps.hash.outputs.hash }}
+    steps:
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          path: frontends/concrete-python/dist
+          pattern: 'gpu-wheel-*'
+          merge-multiple: true
+      - name: generate hash
+        id: hash
+        run: cd frontends/concrete-python/dist && echo "hash=$(sha256sum ./*.whl | base64 -w0)" >> "${GITHUB_OUTPUT}"
+
+  provenance-gpu:
+    needs: [hash-gpu]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    # Can't pin with hash due to how this workflow works.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: ${{ needs.hash-gpu.outputs.hash }}
+      provenance-name: gpu-wheels.intoto.jsonl
 
   push:
-    needs: [build-linux-x86, build-macos, provenance]
+    needs: [build-linux-x86, build-macos, provenance-cpu, provenance-gpu]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        hw: ["cpu", "gpu"]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -273,21 +326,22 @@ jobs:
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           path: wheels
-          pattern: 'wheel-*'
+          pattern: '${{ matrix.hw }}-wheel-*'
           merge-multiple: true
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          pattern: '*.intoto.jsonl'
+          pattern: '${{ matrix.hw }}*.intoto.jsonl'
       # When building a new public tag, create a new draft release.
       - name: create draft release
         if: ${{ env.RELEASE_TYPE == 'public'}}
         run: |
           TAG=$(git describe --tags --abbrev=0)
+          HW=${{ matrix.hw }}
           export TAG
           echo "${TAG}"
           gh release create --draft --repo ${{ github.repository }} \
           --verify-tag "${TAG}" \
-          --title "${TAG}" \
+          --title "${TAG} - ${HW^^}" \
           wheels/* ./*.intoto.jsonl/*
         env:
           GH_TOKEN: ${{ github.token }}
@@ -302,7 +356,7 @@ jobs:
         run: |
           pip install boto3 bigtree
           # upload wheels
-          aws s3 sync ./wheels/ "s3://${S3_BUCKET_NAME}/cpu/concrete-python"
+          aws s3 sync ./wheels/ "s3://${S3_BUCKET_NAME}/${{ matrix.hw }}/concrete-python"
           # update indexes and invalidate cloudfront cache
           python .github/workflows/scripts/s3_update_html_indexes.py
       - name: Slack Notification
@@ -313,7 +367,7 @@ jobs:
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "push finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
-  test-linux-x86:
+  test-linux-x86-cpu:
     needs: [setup-instance, build-linux-x86]
     continue-on-error: true
     strategy:
@@ -336,8 +390,8 @@ jobs:
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          name: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
-          path: ${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          name: ${{ format('cpu-wheel-{0}-linux-x86', matrix.python-version) }}
+          path: ${{ format('cpu-wheel-{0}-linux-x86', matrix.python-version) }}
       - name: Checkout the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -345,7 +399,7 @@ jobs:
           path: repo
       - name: Test wheel
         run: |
-          WHEEL_DIR=$(pwd)/${{ format('wheel-{0}-linux-x86', matrix.python-version) }}
+          WHEEL_DIR=$(pwd)/${{ format('cpu-wheel-{0}-linux-x86', matrix.python-version) }}/
           CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
 
           # Initialize an empty test environment
@@ -378,10 +432,10 @@ jobs:
         uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
         env:
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "test-linux-x86 (${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "test-linux-x86-cpu (${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   teardown-instance:
-    needs: [ setup-instance, test-linux-x86 ]
+    needs: [ setup-instance, test-linux-x86-cpu ]
     if: ${{ always() && needs.setup-instance.result != 'skipped' }}
     runs-on: ubuntu-latest
     steps:
@@ -394,6 +448,106 @@ jobs:
           slab-url: ${{ secrets.SLAB_BASE_URL }}
           job-secret: ${{ secrets.JOB_SECRET }}
           label: ${{ needs.setup-instance.outputs.runner-name }}
+
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Instance teardown finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+
+  setup-gpu-test-instance:
+    runs-on: ubuntu-latest
+    needs: [build-linux-x86]
+    outputs:
+      runner-name: ${{ steps.start-instance.outputs.label }}
+    steps:
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@f26b8d611b2e695158fb0a6980834f0612f65ef8 # v1.4.0
+        with:
+          mode: start
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          backend: aws
+          profile: gpu-test
+
+  test-linux-x86-gpu:
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+      fail-fast: false
+    needs: [setup-gpu-test-instance, build-linux-x86]
+    runs-on: ${{ needs.setup-gpu-test-instance.outputs.runner-name }}
+    steps:
+      # HOME is needed by actions-rs/toolchain
+      - run: |
+          echo "HOME=/home/ubuntu" >> "${GITHUB_ENV}"
+      - name: Install rust
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
+        with:
+          toolchain: nightly
+          default: true
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download wheels
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: ${{ format('gpu-wheel-{0}-linux-x86', matrix.python-version) }}
+          path: ${{ format('gpu-wheel-{0}-linux-x86', matrix.python-version) }}
+
+      - name: Install concrete-python
+        run: |
+          WHEEL_DIR=$(pwd)/${{ format('gpu-wheel-{0}-linux-x86', matrix.python-version) }}/
+          pip install "${WHEEL_DIR}"/*.whl
+
+      - name: Checkout the repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: repo
+
+      - name: Test wheel
+        run: |
+          CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
+
+          # Install extra requirements for tests
+          sudo apt update -y
+          sudo apt install -y graphviz libgraphviz-dev
+          pip install -r "${CONCRETE_PYTHON}"/requirements.extra-full.txt
+          pip install -r "${CONCRETE_PYTHON}"/requirements.dev.txt
+
+          # Running tests
+          cd "${CONCRETE_PYTHON}"
+          make pytest-gpu
+
+      - name: Slack Notification
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "test-linux-x86-gpu (${{ matrix.python-version }}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
+
+
+  teardown-gpu-test-instance:
+    needs: [ setup-gpu-test-instance, test-linux-x86-gpu ]
+    if: ${{ always() && needs.setup-gpu-test-instance.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@f26b8d611b2e695158fb0a6980834f0612f65ef8 # v1.4.0
+        with:
+          mode: stop
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          label: ${{ needs.setup-gpu-test-instance.outputs.runner-name }}
 
       - name: Slack Notification
         if: ${{ failure() }}
@@ -418,8 +572,8 @@ jobs:
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          name: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
-          path: ${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
+          name: ${{ format('cpu-wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
+          path: ${{ format('cpu-wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
       - name: Checkout the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -427,7 +581,7 @@ jobs:
           path: repo
       - name: Test wheel
         run: |
-          WHEEL_DIR=$(pwd)/${{ format('wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
+          WHEEL_DIR=$(pwd)/${{ format('cpu-wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}/
           CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
           PYTHON=${{ format('python{0}', matrix.python-version) }}
 
