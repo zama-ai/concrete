@@ -420,7 +420,7 @@ Enable FHE simulation.
 ```python
 encrypt(
     *args: Optional[int, ndarray, List]
-) → Union[Value, Tuple[Union[Value, NoneType], ], NoneType]
+) → Union[Value, Tuple[Optional[Value], ], NoneType]
 ```
 
 Encrypt argument(s) to for evaluation. 
@@ -493,7 +493,7 @@ Generate keys required for homomorphic evaluation.
 
 ```python
 run(
-    *args: Optional[Value, Tuple[Union[Value], ], NoneType]
+    *args: Optional[Value, Tuple[Optional[Value], ]]
 ) → Union[Value, Tuple[Value, ]]
 ```
 

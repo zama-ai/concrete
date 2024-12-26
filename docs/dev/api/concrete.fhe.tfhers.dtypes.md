@@ -5,16 +5,6 @@
 # <kbd>module</kbd> `concrete.fhe.tfhers.dtypes`
 Declaration of `TFHERSIntegerType` class. 
 
-**Global Variables**
----------------
-- **int8**
-- **uint8**
-- **int16**
-- **uint16**
-- **int8_2_2**
-- **uint8_2_2**
-- **int16_2_2**
-- **uint16_2_2**
 
 
 ---

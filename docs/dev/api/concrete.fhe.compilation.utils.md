@@ -8,8 +8,6 @@ Declaration of various functions and constants related to compilation.
 **Global Variables**
 ---------------
 - **TYPE_CHECKING**
-- **SignedInteger**
-- **UnsignedInteger**
 
 ---
 
@@ -106,7 +104,7 @@ Fuse appropriate subgraphs in a graph to a single Operation.Generic node.
 find_float_subgraph_with_unique_terminal_node(
     graph: Graph,
     processed_terminal_nodes: Set[Node]
-) → Union[Tuple[Dict[Node, NoneType], Dict[Node, NoneType], Node], NoneType]
+) → Optional[Tuple[Dict[Node, NoneType], Dict[Node, NoneType], Node]]
 ```
 
 Find a subgraph with float computations that end with an integer output. 
@@ -134,7 +132,7 @@ Find a subgraph with float computations that end with an integer output.
 find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_ancestor(
     graph: Graph,
     processed_terminal_nodes: Set[Node]
-) → Union[Tuple[Dict[Node, NoneType], Dict[Node, NoneType], Node], NoneType]
+) → Optional[Tuple[Dict[Node, NoneType], Dict[Node, NoneType], Node]]
 ```
 
 Find a subgraph with a tlu computation that has multiple variable inputs     where all variable inputs share a common ancestor. 
@@ -159,7 +157,7 @@ Find a subgraph with a tlu computation that has multiple variable inputs     whe
 ## <kbd>function</kbd> `find_single_lca`
 
 ```python
-find_single_lca(graph: Graph, nodes: List[Node]) → Union[Node, NoneType]
+find_single_lca(graph: Graph, nodes: List[Node]) → Optional[Node]
 ```
 
 Find the single lowest common ancestor of a list of nodes. 
@@ -281,7 +279,7 @@ convert_subgraph_to_subgraph_node(
     all_nodes: Dict[Node, NoneType],
     start_nodes: Dict[Node, NoneType],
     terminal_node: Node
-) → Union[Tuple[Node, Node], NoneType]
+) → Optional[Tuple[Node, Node]]
 ```
 
 Convert a subgraph to Operation.Generic node. 

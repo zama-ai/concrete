@@ -60,7 +60,7 @@ Return an iterator over composition rules.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/wiring.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/wiring.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `WireOutput`
 A protocol for wire outputs. 
@@ -83,7 +83,7 @@ Return an iterator over the possible outputs of the wire output.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/wiring.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/wiring.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `WireInput`
 A protocol for wire inputs. 

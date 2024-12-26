@@ -91,7 +91,7 @@ Decrypt result(s) of evaluation.
 encrypt(
     *args: Optional[int, ndarray, List],
     function_name: Optional[str] = None
-) → Union[Value, Tuple[Union[Value, NoneType], ], NoneType]
+) → Union[Value, Tuple[Optional[Value], ], NoneType]
 ```
 
 Encrypt argument(s) to for evaluation. 
@@ -216,7 +216,7 @@ Simulate decryption of result(s) of evaluation.
 simulate_encrypt(
     *args: Optional[int, ndarray, List],
     function_name: Optional[str] = None
-) → Union[Value, Tuple[Union[Value, NoneType], ], NoneType]
+) → Union[Value, Tuple[Optional[Value], ], NoneType]
 ```
 
 Simulate encryption of argument(s) for evaluation. 

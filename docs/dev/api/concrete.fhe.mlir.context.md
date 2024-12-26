@@ -411,8 +411,8 @@ conditional(
     resulting_type: Optional[ConversionType],
     condition: Conversion,
     then_builder: Callable[[], Optional[Conversion]],
-    else_builder: Optional[Callable[[], Union[Conversion]], NoneType] = None
-) → Union[Conversion, NoneType]
+    else_builder: Optional[Callable[[], Optional[Conversion]]] = None
+) → Optional[Conversion]
 ```
 
 Create an if conditional. 
@@ -680,10 +680,10 @@ flatten(x: Conversion) → Conversion
 for_loop(
     lower_bound: int,
     upper_bound: int,
-    body: Optional[Callable[[Conversion], Union[Conversion]], Callable[[Conversion, Conversion], Optional[Conversion]]],
+    body: Union[Callable[[Conversion], Optional[Conversion]], Callable[[Conversion, Conversion], Optional[Conversion]]],
     output: Optional[Conversion] = None,
     step: int = 1
-) → Union[Conversion, NoneType]
+) → Optional[Conversion]
 ```
 
 Create a for loop. 
@@ -1534,7 +1534,7 @@ try_comparison_with_clipping_trick(
     x: Conversion,
     y: Conversion,
     accept: Set[Comparison]
-) → Union[Conversion, NoneType]
+) → Optional[Conversion]
 ```
 
 Compare encrypted values using clipping trick. 

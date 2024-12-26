@@ -61,7 +61,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, Type[Any], _SupportsDType[dtype[Any]], str, Tuple[Any, int], Tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], List[Any], _DTypeDict, Tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
 ) → Tracer
 ```
 
@@ -247,7 +247,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, Type[Any], _SupportsDType[dtype[Any]], str, Tuple[Any, int], Tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], List[Any], _DTypeDict, Tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
 ) → Tracer
 ```
 
@@ -433,7 +433,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, Type[Any], _SupportsDType[dtype[Any]], str, Tuple[Any, int], Tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], List[Any], _DTypeDict, Tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
 ) → Tracer
 ```
 
@@ -619,7 +619,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, Type[Any], _SupportsDType[dtype[Any]], str, Tuple[Any, int], Tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], List[Any], _DTypeDict, Tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
 ) → Tracer
 ```
 

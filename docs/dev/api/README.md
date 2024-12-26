@@ -103,6 +103,15 @@
 - [`composition.CompositionPolicy`](./concrete.fhe.compilation.composition.md): A protocol for composition policies.
 - [`composition.CompositionRule`](./concrete.fhe.compilation.composition.md): A raw composition rule.
 - [`configuration.ApproximateRoundingConfig`](./concrete.fhe.compilation.configuration.md): Controls the behavior of approximate rounding.
+- [`configuration.BitwiseStrategy`](./concrete.fhe.compilation.configuration.md): BitwiseStrategy, to specify implementation preference for bitwise operations.
+- [`configuration.ComparisonStrategy`](./concrete.fhe.compilation.configuration.md): ComparisonStrategy, to specify implementation preference for comparisons.
+- [`configuration.Configuration`](./concrete.fhe.compilation.configuration.md): Configuration class, to allow the compilation process to be customized.
+- [`configuration.Exactness`](./concrete.fhe.compilation.configuration.md).
+- [`configuration.MinMaxStrategy`](./concrete.fhe.compilation.configuration.md): MinMaxStrategy, to specify implementation preference for minimum and maximum operations.
+- [`configuration.MultiParameterStrategy`](./concrete.fhe.compilation.configuration.md): MultiParamStrategy, to set optimization strategy for multi-parameter.
+- [`configuration.MultivariateStrategy`](./concrete.fhe.compilation.configuration.md): MultivariateStrategy, to specify implementation preference for multivariate operations.
+- [`configuration.ParameterSelectionStrategy`](./concrete.fhe.compilation.configuration.md): ParameterSelectionStrategy, to set optimization strategy.
+- [`configuration.SecurityLevel`](./concrete.fhe.compilation.configuration.md): Security level used to optimize the circuit parameters.
 - [`decorators.Compilable`](./concrete.fhe.compilation.decorators.md): Compilable class, to wrap a function and provide methods to trace and compile it.
 - [`evaluation_keys.EvaluationKeys`](./concrete.fhe.compilation.evaluation_keys.md): EvaluationKeys required for execution.
 - [`keys.Keys`](./concrete.fhe.compilation.keys.md): Keys class, to manage generate/reuse keys.

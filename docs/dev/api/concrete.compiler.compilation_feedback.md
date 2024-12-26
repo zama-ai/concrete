@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `concrete.compiler.compilation_feedback`
 Compilation feedback. 
 
-**Global Variables**
----------------
-- **REGEX_LOCATION**
 
 ---
 

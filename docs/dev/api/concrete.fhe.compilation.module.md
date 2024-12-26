@@ -322,7 +322,7 @@ That this function requires the python `pygraphviz` package which itself require
 ```python
 encrypt(
     *args: Optional[int, ndarray, List]
-) → Union[Value, Tuple[Union[Value, NoneType], ], NoneType]
+) → Union[Value, Tuple[Optional[Value], ], NoneType]
 ```
 
 Encrypt argument(s) to for evaluation. 
@@ -367,7 +367,7 @@ Encrypt inputs, run the function, and decrypt the outputs in one go.
 
 ```python
 run(
-    *args: Optional[Value, Tuple[Union[Value], ], NoneType]
+    *args: Optional[Value, Tuple[Optional[Value], ]]
 ) → Union[Value, Tuple[Value, ], Awaitable[Union[Value, Tuple[Value, ]]]]
 ```
 
@@ -391,7 +391,7 @@ Evaluate the function.
 
 ```python
 run_async(
-    *args: Optional[Value, Tuple[Union[Value], ], NoneType]
+    *args: Optional[Value, Tuple[Optional[Value], ]]
 ) → Union[Value, Tuple[Value, ], Awaitable[Union[Value, Tuple[Value, ]]]]
 ```
 
@@ -414,7 +414,7 @@ Evaluate the function asynchronuously.
 ### <kbd>method</kbd> `run_sync`
 
 ```python
-run_sync(*args: Optional[Value, Tuple[Union[Value], ], NoneType]) → Any
+run_sync(*args: Optional[Value, Tuple[Optional[Value], ]]) → Any
 ```
 
 Evaluate the function synchronuously. 

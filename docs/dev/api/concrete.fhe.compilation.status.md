@@ -9,7 +9,7 @@ Declaration of `EncryptionStatus` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/status.py#L11"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/status.py#L10"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `EncryptionStatus`
 EncryptionStatus enum, to represent encryption status of parameters. 

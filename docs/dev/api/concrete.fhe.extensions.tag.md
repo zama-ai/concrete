@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `concrete.fhe.extensions.tag`
 Declaration of `tag` context manager, to allow tagging certain nodes. 
 
-**Global Variables**
----------------
-- **tag_context**
 
 ---
 

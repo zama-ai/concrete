@@ -118,7 +118,7 @@ __init__(functions: List[FunctionDef], composition: CompositionPolicy)
 
 ```python
 compile(
-    inputsets: Optional[Dict[str, Union[Iterable[Any], Iterable[Tuple[Any, ]]]], NoneType] = None,
+    inputsets: Optional[Dict[str, Optional[Iterable[Any], Iterable[Tuple[Any, ]]]]] = None,
     configuration: Optional[Configuration] = None,
     module_artifacts: Optional[ModuleDebugArtifacts] = None,
     **kwargs

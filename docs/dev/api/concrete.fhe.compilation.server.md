@@ -419,7 +419,7 @@ Load the server from the given path in zip format.
 ### <kbd>method</kbd> `memory_usage_per_location`
 
 ```python
-memory_usage_per_location(function: str) → Dict[str, Union[int, NoneType]]
+memory_usage_per_location(function: str) → Dict[str, Optional[int]]
 ```
 
 Get the memory usage of operations per location. 
@@ -536,7 +536,7 @@ Get the number of programmable bootstraps per tag per parameter in the compiled 
 
 ```python
 run(
-    *args: Optional[Value, Tuple[Union[Value], ], NoneType],
+    *args: Optional[Value, Tuple[Optional[Value], ]],
     evaluation_keys: Optional[EvaluationKeys] = None,
     function_name: Optional[str] = None
 ) → Union[Value, Tuple[Value, ]]

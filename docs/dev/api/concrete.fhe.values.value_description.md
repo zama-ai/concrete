@@ -5,9 +5,6 @@
 # <kbd>module</kbd> `concrete.fhe.values.value_description`
 Declaration of `ValueDescription` class. 
 
-**Global Variables**
----------------
-- **UnsignedInteger**
 
 
 ---

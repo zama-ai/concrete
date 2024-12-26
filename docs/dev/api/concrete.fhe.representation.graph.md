@@ -7,7 +7,6 @@ Declaration of `Graph` class.
 
 **Global Variables**
 ---------------
-- **UnsignedInteger**
 - **P_ERROR_PER_ERROR_SIZE_CACHE**
 
 
@@ -204,7 +203,7 @@ integer_range(
     operation_filter: Optional[str, List[str], Pattern] = None,
     is_encrypted_filter: Optional[bool] = None,
     custom_filter: Optional[Callable[[Node], bool]] = None
-) → Union[Tuple[int, int], NoneType]
+) → Optional[Tuple[int, int]]
 ```
 
 Get integer range of the graph. 
