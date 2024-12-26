@@ -68,7 +68,11 @@ jobs:
         if: ${{ env.RELEASE_TYPE == 'public' }}
         run: echo "__version__ = \"$(git describe --tags --abbrev=0 | grep -e '[0-9].*' -o)\"" >| frontends/concrete-python/version.txt
       - name: Expose release version from Python
-        run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
+        run: |
+          # remove old version
+          sed '/^__version__/d' -i frontends/concrete-python/concrete/fhe/version.py
+          # add new version
+          cat frontends/concrete-python/version.txt >> frontends/concrete-python/concrete/fhe/version.py
       - name: Set GPU Options
         if: ${{ matrix.hw == 'gpu' }}
         run: |
@@ -209,7 +213,11 @@ jobs:
         if: ${{ env.RELEASE_TYPE == 'public' }}
         run: echo "__version__ = \"$(git describe --tags --abbrev=0 | grep -e '[0-9].*' -o)\"" >| frontends/concrete-python/version.txt
       - name: Expose release version from Python
-        run: cp frontends/concrete-python/version.txt frontends/concrete-python/concrete/fhe/version.py
+        run: |
+          # remove old version
+          sed -e '/^__version__/d' -i '' frontends/concrete-python/concrete/fhe/version.py
+          # add new version
+          cat frontends/concrete-python/version.txt >> frontends/concrete-python/concrete/fhe/version.py
       - name: Build wheel
         run: |
           CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
