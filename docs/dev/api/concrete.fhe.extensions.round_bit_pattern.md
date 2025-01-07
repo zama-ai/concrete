@@ -8,7 +8,6 @@ Declaration of `round_bit_pattern` function, to provide an interface for rounded
 **Global Variables**
 ---------------
 - **MAXIMUM_TLU_BIT_WIDTH**
-- **local**
 
 ---
 

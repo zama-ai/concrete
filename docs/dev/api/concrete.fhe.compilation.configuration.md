@@ -14,7 +14,18 @@ Declaration of `Configuration` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `SecurityLevel`
+Security level used to optimize the circuit parameters. 
+
+
+
+
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ParameterSelectionStrategy`
 ParameterSelectionStrategy, to set optimization strategy. 
@@ -25,7 +36,7 @@ ParameterSelectionStrategy, to set optimization strategy.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultiParameterStrategy`
 MultiParamStrategy, to set optimization strategy for multi-parameter. 
@@ -36,7 +47,7 @@ MultiParamStrategy, to set optimization strategy for multi-parameter.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Exactness`
 Exactness, to specify for specific operator the implementation preference (default and local). 
@@ -47,14 +58,14 @@ Exactness, to specify for specific operator the implementation preference (defau
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ApproximateRoundingConfig`
 Controls the behavior of approximate rounding. 
 
 In the following `k` is the ideal rounding output precision. Often the precision used after rounding is `k`+1 to avoid overflow. `logical_clipping`, `approximate_clipping_start_precision` can be used to stay at precision `k`, either logically or physically at the successor TLU. See examples in https://github.com/zama-ai/concrete/blob/main/docs/core-features/rounding.md. 
 
-<a href="../../tempdirectoryforapidocs/<string>"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../<string>"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -77,7 +88,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ComparisonStrategy`
 ComparisonStrategy, to specify implementation preference for comparisons. 
@@ -88,7 +99,7 @@ ComparisonStrategy, to specify implementation preference for comparisons.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L507"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BitwiseStrategy`
 BitwiseStrategy, to specify implementation preference for bitwise operations. 
@@ -99,7 +110,7 @@ BitwiseStrategy, to specify implementation preference for bitwise operations.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L695"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L705"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultivariateStrategy`
 MultivariateStrategy, to specify implementation preference for multivariate operations. 
@@ -110,7 +121,7 @@ MultivariateStrategy, to specify implementation preference for multivariate oper
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L804"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L814"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MinMaxStrategy`
 MinMaxStrategy, to specify implementation preference for minimum and maximum operations. 
@@ -121,12 +132,12 @@ MinMaxStrategy, to specify implementation preference for minimum and maximum ope
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L939"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L949"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Configuration`
 Configuration class, to allow the compilation process to be customized. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L998"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L1012"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -184,7 +195,11 @@ __init__(
     detect_overflow_in_simulation: bool = False,
     dynamic_indexing_check_out_of_bounds: bool = True,
     dynamic_assignment_check_out_of_bounds: bool = True,
-    simulate_encrypt_run_decrypt: bool = False
+    simulate_encrypt_run_decrypt: bool = False,
+    range_restriction: Optional[RangeRestriction] = None,
+    keyset_restriction: Optional[KeysetRestriction] = None,
+    auto_schedule_run: bool = False,
+    security_level: SecurityLevel = <SecurityLevel.SECURITY_128_BITS: 128>
 )
 ```
 
@@ -197,7 +212,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L1180"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L1204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fork`
 
@@ -255,7 +270,11 @@ fork(
     detect_overflow_in_simulation: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     dynamic_indexing_check_out_of_bounds: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     dynamic_assignment_check_out_of_bounds: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
-    simulate_encrypt_run_decrypt: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>
+    simulate_encrypt_run_decrypt: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    range_restriction: Optional[Keep, RangeRestriction] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    keyset_restriction: Optional[Keep, KeysetRestriction] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    auto_schedule_run: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    security_level: Union[Keep, SecurityLevel] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>
 ) → Configuration
 ```
 

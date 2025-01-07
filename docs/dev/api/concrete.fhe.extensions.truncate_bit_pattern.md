@@ -8,7 +8,6 @@ Declaration of `truncate_bit_pattern` extension.
 **Global Variables**
 ---------------
 - **MAXIMUM_TLU_BIT_WIDTH**
-- **local**
 
 ---
 

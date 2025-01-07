@@ -7,74 +7,20 @@ Compiler submodule.
 
 **Global Variables**
 ---------------
-- **wrapper**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+- **utils**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 #  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
 
-- **compilation_options**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
+- **compilation_feedback**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 #  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
 
 - **compilation_context**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
 #  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
 
-- **key_set_cache**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **lwe_secret_key**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **client_parameters**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **parameter**
-- **compilation_feedback**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **evaluation_keys**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **key_set**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **value**
-- **public_result**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **public_arguments**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **utils**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **lambda_argument**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **library_compilation_result**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **library_lambda**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **client_support**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **library_support**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
 - **tfhers_int**
-- **value_decrypter**
-- **value_exporter**
-- **simulated_value_decrypter**
-- **simulated_value_exporter**
-- **server_circuit**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
-- **server_program**: #  Part of the Concrete Compiler Project, under the BSD3 License with Zama Exceptions.
-#  See https://github.com/zama-ai/concrete/blob/main/LICENSE.txt for license information.
-
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `init_dfr`
 
@@ -89,7 +35,7 @@ It is not always required to initialize the dataflow runtime as it can be implic
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L59"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_gpu_enabled`
 
@@ -104,7 +50,7 @@ GPU offloading is not always available, in particular in non-GPU wheels.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_gpu_available`
 
@@ -117,7 +63,7 @@ Check whether a CUDA device is available and online.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `round_trip`
 

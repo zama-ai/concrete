@@ -7,7 +7,6 @@ Declaration of `Graph` class.
 
 **Global Variables**
 ---------------
-- **UnsignedInteger**
 - **P_ERROR_PER_ERROR_SIZE_CACHE**
 
 

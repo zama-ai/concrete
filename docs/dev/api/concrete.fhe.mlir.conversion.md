@@ -5,14 +5,6 @@
 # <kbd>module</kbd> `concrete.fhe.mlir.conversion`
 Declaration of `ConversionType` and `Conversion` classes. 
 
-**Global Variables**
----------------
-- **SCALAR_INT_SEARCH_REGEX**
-- **SCALAR_INDEX_SEARCH_REGEX**
-- **SCALAR_EINT_SEARCH_REGEX**
-- **TENSOR_INT_SEARCH_REGEX**
-- **TENSOR_INDEX_SEARCH_REGEX**
-- **TENSOR_EINT_SEARCH_REGEX**
 
 
 ---

@@ -8,8 +8,6 @@ Declaration of various functions and constants related to compilation.
 **Global Variables**
 ---------------
 - **TYPE_CHECKING**
-- **SignedInteger**
-- **UnsignedInteger**
 
 ---
 
