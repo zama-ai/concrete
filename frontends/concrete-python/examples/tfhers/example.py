@@ -4,7 +4,7 @@ from functools import partial
 import click
 import numpy as np
 
-from concrete import fhe
+import concrete.fhe as fhe
 from concrete.fhe import tfhers
 
 ### Options ###########################
@@ -87,9 +87,10 @@ def keygen(output_secret_key: str, secret_key: str, concrete_keyset_path: str):
         print("full keygen")
         circuit.keygen()
 
-    print(f"saving Concrete keyset")
-    circuit.client.keys.save(concrete_keyset_path)
-    print(f"saved Concrete keyset to '{concrete_keyset_path}'")
+    print("saving Concrete Evaluation Keys")
+    with open(concrete_keyset_path, "wb") as f:
+        f.write(circuit.client.evaluation_keys.serialize())
+    print(f"saved Concrete Evaluation Keys to '{concrete_keyset_path}'")
 
     sk: bytes = tfhers_bridge.serialize_input_secret_key(input_idx=0)
     print(f"writing secret key of size {len(sk)} to '{output_secret_key}'")
@@ -100,7 +101,7 @@ def keygen(output_secret_key: str, secret_key: str, concrete_keyset_path: str):
 @cli.command()
 @click.option("-c1", "--rust-ct-1", type=str, required=True)
 @click.option("-c2", "--rust-ct-2", type=str, required=True)
-@click.option("-o", "--output-rust-ct", type=str, required=False)
+@click.option("-o", "--output-rust-ct", type=str, required=True)
 @click.option("-k", "--concrete-keyset-path", type=str, required=True)
 def run(rust_ct_1: str, rust_ct_2: str, output_rust_ct: str, concrete_keyset_path: str):
     """Run circuit"""
@@ -109,7 +110,8 @@ def run(rust_ct_1: str, rust_ct_2: str, output_rust_ct: str, concrete_keyset_pat
     if not os.path.exists(concrete_keyset_path):
         raise RuntimeError("cannot find keys, you should run keygen before")
     print(f"loading keys from '{concrete_keyset_path}'")
-    circuit.client.keys.load(concrete_keyset_path)
+    with open(concrete_keyset_path, "rb") as f:
+        eval_keys = fhe.EvaluationKeys.deserialize(f.read())
 
     # read tfhers int from file
     with open(rust_ct_1, "rb") as f:
@@ -125,20 +127,15 @@ def run(rust_ct_1: str, rust_ct_2: str, output_rust_ct: str, concrete_keyset_pat
 
     encrypted_x, encrypted_y = tfhers_uint8_x, tfhers_uint8_y
 
-    print(f"Homomorphic evaluation...")
-    encrypted_result = circuit.run(encrypted_x, encrypted_y)
+    print("Homomorphic evaluation...")
+    encrypted_result = circuit.server.run(encrypted_x, encrypted_y, evaluation_keys=eval_keys)
 
-    if output_rust_ct:
-        print("exporting Rust ciphertexts")
-        # export fheuint8
-        buff = tfhers_bridge.export_value(encrypted_result, output_idx=0)
-        # write it to file
-        with open(output_rust_ct, "wb") as f:
-            f.write(buff)
-    else:
-        result = circuit.decrypt(encrypted_result)
-        decoded = tfhers_type.decode(result)
-        print(f"Concrete decryption result: raw({result}), decoded({decoded})")
+    print("exporting Rust ciphertexts")
+    # export fheuint8
+    buff = tfhers_bridge.export_value(encrypted_result, output_idx=0)
+    # write it to file
+    with open(output_rust_ct, "wb") as f:
+        f.write(buff)
 
 
 if __name__ == "__main__":
