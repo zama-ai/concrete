@@ -201,6 +201,12 @@ When options are specified both in the `configuration` and as kwargs in the `com
 #### single_precision: bool = False
 - Use single precision for the whole circuit.
 
+#### range_restriction: Optional[RangeRestriction] = None
+- A range restriction to pass to the optimizer to restrict the available crypto-parameters.
+
+#### keyset_restriction: Optional[KeysetRestriction] = None
+- A keyset restriction to pass to the optimizer to restrict the available crypto-parameters.
+
 #### use_gpu: bool = False
 - Enable generating code for GPU in the compiler.
 
