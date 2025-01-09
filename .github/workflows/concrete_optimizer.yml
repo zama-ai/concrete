@@ -42,6 +42,11 @@ jobs:
           cargo --version
           cd compilers/concrete-optimizer
           cargo fmt --check
+      - name: Fix fontconfig on ubuntu
+        if: ${{ matrix.runson == 'ubuntu-latest' }}
+        run: |
+          sudo apt update
+          sudo apt -y install libfontconfig1-dev
       - name: Build
         run: |
           cd compilers/concrete-optimizer

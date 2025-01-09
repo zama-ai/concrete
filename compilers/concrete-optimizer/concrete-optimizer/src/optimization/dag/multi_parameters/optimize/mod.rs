@@ -536,7 +536,7 @@ fn apply_fks_variance_and_cost_or_lower_bound(
         // if an optimized fks is applicable and is not to be optimized
         // we use the already optimized fks instead of a lower bound
         if let Some(this_fks) = initial_fks[src.0][dst.0] {
-            let to_be_optimized = fks_to_optimize[src.0].map_or(false, |fdst| dst == fdst);
+            let to_be_optimized = fks_to_optimize[src.0] == Some(dst);
             if !to_be_optimized {
                 if input_glwe == &this_fks.src_glwe_param && output_glwe == &this_fks.dst_glwe_param
                 {
