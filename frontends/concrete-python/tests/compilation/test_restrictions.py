@@ -45,9 +45,7 @@ def test_range_restriction():
     range_restriction.add_available_ks_level_count(ks_level_count)
     ks_base_log = 6
     range_restriction.add_available_ks_base_log(ks_base_log)
-    module = Module.compile(
-        {"inc": inputset}, enable_unsafe_features=True, range_restriction=range_restriction
-    )
+    module = Module.compile({"inc": inputset}, range_restriction=range_restriction)
     keyset_info = module.keys.specs.program_info.get_keyset_info()
     assert keyset_info.bootstrap_keys()[0].polynomial_size() == 2**glwe_log_polynomial_size
     assert keyset_info.bootstrap_keys()[0].input_lwe_dimension() == internal_lwe_dimension
@@ -83,21 +81,17 @@ def test_keyset_restriction():
 
     big_module = Big.compile(
         {"inc": big_inputset},
-        enable_unsafe_features=True,
     )
     big_keyset_info = big_module.keys.specs.program_info.get_keyset_info()
 
     small_module = Small.compile(
         {"inc": small_inputset},
-        enable_unsafe_features=True,
     )
     small_keyset_info = small_module.keys.specs.program_info.get_keyset_info()
     assert big_keyset_info != small_keyset_info
 
     restriction = big_keyset_info.get_restriction()
-    restricted_module = Small.compile(
-        {"inc": small_inputset}, enable_unsafe_features=True, keyset_restriction=restriction
-    )
+    restricted_module = Small.compile({"inc": small_inputset}, keyset_restriction=restriction)
     restricted_keyset_info = restricted_module.keys.specs.program_info.get_keyset_info()
     assert big_keyset_info == restricted_keyset_info
     assert small_keyset_info != restricted_keyset_info
@@ -121,7 +115,6 @@ def test_generic_restriction():
     inputset = [np.random.randint(1, 200, size=()) for _ in range(100)]
     restricted_module = Module.compile(
         {"inc": inputset},
-        enable_unsafe_features=True,
         keyset_restriction=generic_keyset_info.get_restriction(),
     )
     compiled_keyset_info = restricted_module.keys.specs.program_info.get_keyset_info()
