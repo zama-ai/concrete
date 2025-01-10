@@ -72,7 +72,7 @@ std::string getSharedLibraryPath(std::string outputDirPath) {
   llvm::sys::path::append(
       sharedLibraryPath,
       "sharedlib" +
-          mlir::concretelang::CompilerEngine::Library::DOT_SHARED_LIB_EXT);
+          mlir::concretelang::Library::DOT_SHARED_LIB_EXT);
   return sharedLibraryPath.str().str();
 }
 
@@ -82,7 +82,7 @@ std::string getStaticLibraryPath(std::string outputDirPath) {
   llvm::sys::path::append(
       staticLibraryPath,
       "staticlib" +
-          mlir::concretelang::CompilerEngine::Library::DOT_STATIC_LIB_EXT);
+          mlir::concretelang::Library::DOT_STATIC_LIB_EXT);
   return staticLibraryPath.str().str();
 }
 
@@ -276,18 +276,18 @@ CompilerEngine::materializeOptimizerPartitionFrontiers(CompilationResult &res) {
   return mlir::success();
 }
 
-using OptionalLib = std::optional<std::shared_ptr<CompilerEngine::Library>>;
+using OptionalLib = std::optional<std::shared_ptr<Library>>;
 // Compile the sources managed by the source manager `sm` to the
 // target dialect `target`. If successful, the result can be retrieved
 // using `getModule()` and `getLLVMModule()`, respectively depending
 // on the target dialect.
-llvm::Expected<CompilerEngine::CompilationResult>
+llvm::Expected<CompilationResult>
 CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   std::unique_ptr<mlir::SourceMgrDiagnosticVerifierHandler> smHandler;
   std::string diagnosticsMsg;
   llvm::raw_string_ostream diagnosticsOS(diagnosticsMsg);
   auto errorDiag = [&](std::string prefixMsg)
-      -> llvm::Expected<CompilerEngine::CompilationResult> {
+      -> llvm::Expected<CompilationResult> {
     return StreamStringError(prefixMsg + "\n" + diagnosticsOS.str());
   };
 
@@ -324,7 +324,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   return compile(mlirModuleRef.release(), target, lib);
 }
 
-llvm::Expected<CompilerEngine::CompilationResult>
+llvm::Expected<CompilationResult>
 CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
                         OptionalLib lib) {
   CompilationResult res(this->compilationContext);
@@ -735,7 +735,7 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
 /// Compile the source `s` to the target dialect `target`. If successful, the
 /// result can be retrieved using `getModule()` and `getLLVMModule()`,
 /// respectively depending on the target dialect.
-llvm::Expected<CompilerEngine::CompilationResult>
+llvm::Expected<CompilationResult>
 CompilerEngine::compile(llvm::StringRef s, Target target, OptionalLib lib) {
   std::unique_ptr<llvm::MemoryBuffer> mb = llvm::MemoryBuffer::getMemBuffer(s);
   return this->compile(std::move(mb), target, lib);
@@ -745,7 +745,7 @@ CompilerEngine::compile(llvm::StringRef s, Target target, OptionalLib lib) {
 /// `target`. If successful, the result can be retrieved using
 /// `getModule()` and `getLLVMModule()`, respectively depending on the
 /// target dialect.
-llvm::Expected<CompilerEngine::CompilationResult>
+llvm::Expected<CompilationResult>
 CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
                         Target target, OptionalLib lib) {
   llvm::SourceMgr sm;
@@ -754,15 +754,15 @@ CompilerEngine::compile(std::unique_ptr<llvm::MemoryBuffer> buffer,
   return this->compile(sm, target, lib);
 }
 
-llvm::Expected<CompilerEngine::Library>
+llvm::Expected<Library>
 CompilerEngine::compile(std::vector<std::string> inputs,
                         std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
                         bool generateCompilationFeedback) {
-  using Library = mlir::concretelang::CompilerEngine::Library;
+  using Library = mlir::concretelang::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
-  auto target = CompilerEngine::Target::LIBRARY;
+  auto target = Target::LIBRARY;
   for (auto input : inputs) {
     auto compilation = compile(input, target, outputLib);
     if (!compilation) {
@@ -779,15 +779,15 @@ CompilerEngine::compile(std::vector<std::string> inputs,
 }
 
 template <typename T>
-llvm::Expected<CompilerEngine::Library>
+llvm::Expected<Library>
 compileModuleOrSource(CompilerEngine *engine, T module,
                       std::string outputDirPath, std::string runtimeLibraryPath,
                       bool generateSharedLib, bool generateStaticLib,
                       bool generateClientParameters,
                       bool generateCompilationFeedback) {
-  using Library = mlir::concretelang::CompilerEngine::Library;
+  using Library = mlir::concretelang::Library;
   auto outputLib = std::make_shared<Library>(outputDirPath, runtimeLibraryPath);
-  auto target = CompilerEngine::Target::LIBRARY;
+  auto target = Target::LIBRARY;
 
   auto compilation = engine->compile(module, target, outputLib);
   if (!compilation) {
@@ -803,7 +803,7 @@ compileModuleOrSource(CompilerEngine *engine, T module,
   return *outputLib.get();
 }
 
-llvm::Expected<CompilerEngine::Library>
+llvm::Expected<Library>
 CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
@@ -813,7 +813,7 @@ CompilerEngine::compile(llvm::SourceMgr &sm, std::string outputDirPath,
       generateStaticLib, generateClientParameters, generateCompilationFeedback);
 }
 
-llvm::Expected<CompilerEngine::Library>
+llvm::Expected<Library>
 CompilerEngine::compile(mlir::ModuleOp module, std::string outputDirPath,
                         std::string runtimeLibraryPath, bool generateSharedLib,
                         bool generateStaticLib, bool generateClientParameters,
@@ -823,33 +823,33 @@ CompilerEngine::compile(mlir::ModuleOp module, std::string outputDirPath,
       generateStaticLib, generateClientParameters, generateCompilationFeedback);
 }
 
-const std::string CompilerEngine::Library::OBJECT_EXT = ".o";
-const std::string CompilerEngine::Library::LINKER = "ld";
+const std::string Library::OBJECT_EXT = ".o";
+const std::string Library::LINKER = "ld";
 #ifdef __APPLE__
 // We need to tell the linker that some symbols will be missing during
 // linking, this symbols should be available during runtime however.
 // Starting from Mac 11 (Big Sur), it appears we need to add -L
 // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem for
 // the sharedlib to link properly.
-const std::string CompilerEngine::Library::LINKER_SHARED_OPT =
+const std::string Library::LINKER_SHARED_OPT =
     " -dylib -undefined dynamic_lookup -L "
     "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -lSystem "
     "-o ";
-const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".dylib";
+const std::string Library::DOT_SHARED_LIB_EXT = ".dylib";
 #else // Linux
-const std::string CompilerEngine::Library::LINKER_SHARED_OPT = " --shared -o ";
-const std::string CompilerEngine::Library::DOT_SHARED_LIB_EXT = ".so";
+const std::string Library::LINKER_SHARED_OPT = " --shared -o ";
+const std::string Library::DOT_SHARED_LIB_EXT = ".so";
 #endif
-const std::string CompilerEngine::Library::AR = "ar";
-const std::string CompilerEngine::Library::AR_STATIC_OPT = " rcs ";
-const std::string CompilerEngine::Library::DOT_STATIC_LIB_EXT = ".a";
+const std::string Library::AR = "ar";
+const std::string Library::AR_STATIC_OPT = " rcs ";
+const std::string Library::DOT_STATIC_LIB_EXT = ".a";
 
-void CompilerEngine::Library::addExtraObjectFilePath(std::string path) {
+void Library::addExtraObjectFilePath(std::string path) {
   objectsPath.push_back(path);
 }
 
 Result<Message<concreteprotocol::ProgramInfo>>
-CompilerEngine::Library::getProgramInfo() {
+Library::getProgramInfo() {
   if (!programInfo.has_value()) {
     programInfo = Message<concreteprotocol::ProgramInfo>();
     auto path = this->getProgramInfoPath();
@@ -866,31 +866,31 @@ CompilerEngine::Library::getProgramInfo() {
   return programInfo.value();
 }
 
-const std::string &CompilerEngine::Library::getOutputDirPath() const {
+const std::string &Library::getOutputDirPath() const {
   return outputDirPath;
 }
 
 /// Returns the path of the shared library
-std::string CompilerEngine::Library::getSharedLibraryPath() const {
+std::string Library::getSharedLibraryPath() const {
   return ::getSharedLibraryPath(getOutputDirPath());
 }
 
 /// Returns the path of the static library
-std::string CompilerEngine::Library::getStaticLibraryPath() const {
+std::string Library::getStaticLibraryPath() const {
   return ::getStaticLibraryPath(getOutputDirPath());
 };
 
 /// Returns the path of the program info
-std::string CompilerEngine::Library::getProgramInfoPath() const {
+std::string Library::getProgramInfoPath() const {
   return ::getProgramInfoPath(getOutputDirPath());
 };
 
 /// Returns the path of the compilation feedback
-std::string CompilerEngine::Library::getCompilationFeedbackPath() const {
+std::string Library::getCompilationFeedbackPath() const {
   return ::getCompilationFeedbackPath(getOutputDirPath());
 };
 
-llvm::Expected<std::string> CompilerEngine::Library::emitProgramInfoJSON() {
+llvm::Expected<std::string> Library::emitProgramInfoJSON() {
   auto programInfoPath = ::getProgramInfoPath(outputDirPath);
   std::error_code error;
   llvm::raw_fd_ostream out(programInfoPath, error);
@@ -906,7 +906,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitProgramInfoJSON() {
 }
 
 llvm::Expected<std::string>
-CompilerEngine::Library::emitCompilationFeedbackJSON() {
+Library::emitCompilationFeedbackJSON() {
   auto path = ::getCompilationFeedbackPath(outputDirPath);
   llvm::json::Value value(compilationFeedback);
   std::error_code error;
@@ -938,7 +938,7 @@ void printTluFusing(mlir::Value v1, mlir::Value v2, mlir::Value v1v2) {
 }
 
 llvm::Expected<std::string>
-CompilerEngine::Library::setCompilationResult(CompilationResult &compilation) {
+Library::setCompilationResult(CompilationResult &compilation) {
   llvm::Module *module = compilation.llvmModule.get();
   auto sourceName = module->getSourceFileName();
   if (sourceName == "" || sourceName == "LLVMDialectModule") {
@@ -971,12 +971,12 @@ std::string removeDotExt(std::string path, std::string dotExt) {
 }
 
 std::string ensureLibDotExt(std::string path, std::string dotExt) {
-  path = removeDotExt(path, CompilerEngine::Library::DOT_STATIC_LIB_EXT);
-  path = removeDotExt(path, CompilerEngine::Library::DOT_SHARED_LIB_EXT);
+  path = removeDotExt(path, Library::DOT_STATIC_LIB_EXT);
+  path = removeDotExt(path, Library::DOT_SHARED_LIB_EXT);
   return path + dotExt;
 }
 
-llvm::Expected<std::string> CompilerEngine::Library::emit(
+llvm::Expected<std::string> Library::emit(
     std::string path, std::string dotExt, std::string linker,
     std::optional<std::vector<std::string>> extraArgs) {
   auto pathDotExt = ensureLibDotExt(path, dotExt);
@@ -988,7 +988,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emit(
   return pathDotExt;
 }
 
-llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
+llvm::Expected<std::string> Library::emitShared() {
   std::vector<std::string> extraArgs;
   std::string fullRuntimeLibraryName = "";
 #ifdef __APPLE__
@@ -1060,7 +1060,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitShared() {
   return path;
 }
 
-llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
+llvm::Expected<std::string> Library::emitStatic() {
   auto path = emit(::getStaticLibraryPath(outputDirPath), DOT_STATIC_LIB_EXT,
                    AR + AR_STATIC_OPT);
   if (path) {
@@ -1069,7 +1069,7 @@ llvm::Expected<std::string> CompilerEngine::Library::emitStatic() {
   return path;
 }
 
-llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
+llvm::Error Library::emitArtifacts(bool sharedLib,
                                                    bool staticLib,
                                                    bool clientParameters,
                                                    bool compilationFeedback) {
@@ -1098,7 +1098,7 @@ llvm::Error CompilerEngine::Library::emitArtifacts(bool sharedLib,
   return llvm::Error::success();
 }
 
-CompilerEngine::Library::~Library() {
+Library::~Library() {
   if (cleanUp) {
     for (auto path : objectsPath) {
       remove(path.c_str());
