@@ -125,6 +125,27 @@ impl Viz for crate::dag::unparametrized::DagOperator<'_> {
     }
 }
 
+impl Viz for crate::optimization::dag::multi_parameters::partition_cut::PrePartitionDag {
+    fn viz_node(&self) -> String {
+        let mut output = self.dag.viz_node();
+        self.p_cut
+            .rnorm2
+            .iter()
+            .enumerate()
+            .for_each(|(i, rnorm2)| {
+                let circuit = &self.dag.circuit_tags[i];
+                // let color = partition.0 + 1;
+                output.push_str(&format!("subgraph cluster_circuit_{circuit} {{\n"));
+                output.push_str(&format!("rnorm2_{i} [label =\"{rnorm2}\"];\n"));
+                output.push_str(&format!(
+                    "rnorm2_{i} -> {i} [arrowhead=none, color=gray80, weight=99];\n"
+                ));
+                output.push_str("}\n");
+            });
+        output
+    }
+}
+
 impl Viz for crate::optimization::dag::multi_parameters::analyze::PartitionedDag {
     fn viz_node(&self) -> String {
         let mut output = self.dag.viz_node();
@@ -174,6 +195,38 @@ impl Viz for crate::optimization::dag::multi_parameters::analyze::VariancedDag {
                 ));
                 output.push_str(&format!(
                     "{i} -> info_{i} [arrowhead=none, color=gray90, weight=99];\n"
+                ));
+                output.push_str("}\n");
+            });
+        output
+    }
+}
+
+impl Viz for crate::optimization::dag::multi_parameters::analyze::AnalyzedDag {
+    fn viz_node(&self) -> String {
+        let mut output = self.dag.viz_node();
+        self.variance_constraints
+            .iter()
+            .enumerate()
+            .for_each(|(symb, constraint)| {
+                let i = constraint.operator_index.0;
+                let circuit = &self.dag.circuit_tags[i];
+                let constraint_string = format!("{}", constraint);
+                let constraint_string = constraint_string.replace("<", "\\<");
+                let constraint_string = constraint_string.replace("(", "|(");
+                let constraint_string = constraint_string.replace("|(2²)", "(2²)");
+                let label = format!("\"{{Constraint | {constraint_string} }}\"");
+                output.push_str(&format!("subgraph cluster_circuit_{circuit} {{\n"));
+                let color = if self.undominated_variance_constraints.contains(constraint) {
+                    "gray80".to_string()
+                } else {
+                    "gray90".to_string()
+                };
+                output.push_str(&format!(
+                    "constraint_{symb} [label ={label} color=gray70 fillcolor={color}];\n"
+                ));
+                output.push_str(&format!(
+                    "{i} -> constraint_{symb} [arrowhead=none, color=gray70, weight=99];\n"
                 ));
                 output.push_str("}\n");
             });
