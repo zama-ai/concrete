@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  setup-instance:
+  start-instance:
     runs-on: ubuntu-latest
     steps:
       - name: Start instance
@@ -38,8 +38,8 @@ jobs:
 
   build-and-run-test:
     # The distributed-ci runner is registered on the instance configured in the slurm-cluster profile.
-    # It's why we need to setup-instance
-    needs: setup-instance
+    # It's why we need to start-instance
+    needs: start-instance
     runs-on: distributed-ci
     steps:
       - name: Instance cleanup
@@ -83,9 +83,9 @@ jobs:
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "build-and-run-test finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
-  teardown-instance:
-    needs: [ setup-instance, build-and-run-test ]
-    if: ${{ always() && needs.setup-instance.result != 'skipped' }}
+  stop-instance:
+    needs: [ start-instance, build-and-run-test ]
+    if: ${{ always() && needs.start-instance.result != 'skipped' }}
     runs-on: ubuntu-latest
     steps:
       - name: Stop instance
