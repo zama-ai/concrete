@@ -277,22 +277,21 @@ vectorToProtoPayload(const std::vector<T> &input) {
   auto output = Message<concreteprotocol::Payload>();
   auto elmsPerBlob = capnp::MAX_TEXT_SIZE / sizeof(T);
   auto remainingElms = input.size() % elmsPerBlob;
+  auto nbCompleteBlobs = (input.size() / elmsPerBlob);
   auto nbBlobs = (input.size() / elmsPerBlob) + (remainingElms > 0);
   auto dataBuilder = output.asBuilder().initData(nbBlobs);
   // Process all but the last blob, which store as much as `Data` allow.
-  if (nbBlobs > 1) {
-    for (size_t blobIndex = 0; blobIndex < nbBlobs - 1; blobIndex++) {
-      auto blobPtr = input.data() + blobIndex * elmsPerBlob;
-      auto blobLen = elmsPerBlob * sizeof(T);
-      dataBuilder.set(
-          blobIndex,
-          capnp::Data::Reader(reinterpret_cast<const unsigned char *>(blobPtr),
-                              blobLen));
-    }
+  for (size_t blobIndex = 0; blobIndex < nbCompleteBlobs; blobIndex++) {
+    auto blobPtr = input.data() + blobIndex * elmsPerBlob;
+    auto blobLen = elmsPerBlob * sizeof(T);
+    dataBuilder.set(
+        blobIndex,
+        capnp::Data::Reader(reinterpret_cast<const unsigned char *>(blobPtr),
+                            blobLen));
   }
-
   // Process the last blob which store the remainder.
-  if (nbBlobs > 0) {
+  if (remainingElms > 0) {
+    assert(nbCompleteBlobs == nbBlobs - 1);
     auto lastBlobIndex = nbBlobs - 1;
     auto lastBlobPtr = input.data() + lastBlobIndex * elmsPerBlob;
     auto lastBlobLen = remainingElms * sizeof(T);
