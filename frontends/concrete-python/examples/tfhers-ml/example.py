@@ -4,6 +4,7 @@ from functools import partial
 
 import click
 import numpy as np
+from mlir._mlir_libs._concretelang._compiler import RangeRestriction
 
 import concrete.fhe as fhe
 from concrete.fhe import tfhers
@@ -17,7 +18,8 @@ IS_SIGNED = True
 #######################################
 
 tfhers_type = tfhers.get_type_from_params(
-    TFHERS_PARAMS_FILE,
+    "/home/stoiana/Private/Work/concrete/frontends/concrete-python/examples/tfhers-ml/"
+    + TFHERS_PARAMS_FILE,
     is_signed=IS_SIGNED,
     precision=FHEUINT_PRECISION,
 )
@@ -92,9 +94,15 @@ def ccompilee():
     # Print the number of bits rounded
     print(f"lsbs_to_remove: {rounder.lsbs_to_remove}")
 
-    circuit = compiler.compile(inputset)
+    restriction = RangeRestriction()
+    #    for v in range(8, 14):
+    #        restriction.add_available_glwe_log_polynomial_size(v)
+
+    circuit = compiler.compile(inputset, range_restriction=restriction, p_error=0.1)
 
     tfhers_bridge = tfhers.new_bridge(circuit)
+
+    print(circuit.graph.format())
     return circuit, tfhers_bridge
 
 
@@ -173,4 +181,7 @@ def run(rust_ct: str, output_rust_ct: str, concrete_keyset_path: str):
 
 
 if __name__ == "__main__":
+
+    circuit, tfhers_bridge = ccompilee()
+    print(circuit.graph.format())
     cli()
