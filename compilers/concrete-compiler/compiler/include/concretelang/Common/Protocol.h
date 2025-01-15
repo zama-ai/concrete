@@ -274,6 +274,17 @@ template struct Message<concreteprotocol::GateInfo>;
 template <typename T>
 Message<concreteprotocol::Payload>
 vectorToProtoPayload(const std::vector<T> &input) {
+  auto is_big_endian = []() {
+    union {
+      uint32_t i;
+      char c[4];
+    } bint = {0x01020304};
+
+    return bint.c[0] == 1;
+  };
+
+  assert(is_big_endian() == false &&
+         "we assume it's always LE for now. Rust-side use LE for protos.");
   auto output = Message<concreteprotocol::Payload>();
   auto elmsPerBlob = capnp::MAX_TEXT_SIZE / sizeof(T);
   auto remainingElms = input.size() % elmsPerBlob;
