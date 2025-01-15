@@ -42,7 +42,7 @@ jobs:
   build-and-run-tests:
     strategy:
       matrix:
-        python-version: ["3.8"]
+        python-version: ["3.10"]
     needs: setup-instance
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
@@ -104,7 +104,7 @@ jobs:
           CONCRETE_PYTHON_WHEEL="$(pwd)/frontends/concrete-python/dist/*manylinux*.whl"
           apt update
           apt install git git-lfs -y
-          pip install poetry==1.7.1
+          pip install poetry==1.8.4
           ./ci/scripts/test_cml.sh --use-wheel "${CONCRETE_PYTHON_WHEEL}" --verbose
       - name: Slack Notification
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
