@@ -1176,6 +1176,29 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
             return concrete_optimizer::restriction::KeysetRestriction{output};
           },
           "Return the search space restriction associated to this keyset info.")
+      .def_static(
+          "deserialize",
+          [](const pybind11::bytes &buffer) {
+            auto keysetInfo = Message<concreteprotocol::KeysetInfo>();
+            auto maybeError = keysetInfo.readBinaryFromString(
+                buffer, mlir::concretelang::python::DESER_OPTIONS);
+            if (maybeError.has_failure()) {
+              throw std::runtime_error("Failed to deserialize keyset info." +
+                                       maybeError.as_failure().error().mesg);
+            }
+            return keysetInfo;
+          },
+          "Deserialize a KeysetInfo from bytes.", arg("bytes"))
+      .def(
+          "serialize",
+          [](KeysetInfo &keySetInfo) {
+            auto maybeBuffer = keySetInfo.writeBinaryToString();
+            if (maybeBuffer.has_failure()) {
+              throw std::runtime_error("Failed to serialize keyset info.");
+            }
+            return pybind11::bytes(maybeBuffer.value());
+          },
+          "Serialize a KeysetInfo to bytes.")
       .def(pybind11::self == pybind11::self)
       .def(pybind11::self != pybind11::self)
       .doc() = "Parameters of a complete keyset.";
