@@ -54,7 +54,7 @@ Return the associated client specs if any.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
@@ -125,6 +125,24 @@ Load keys from a location.
 
 <a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+### <kbd>method</kbd> `load_from_bytes`
+
+```python
+load_from_bytes(serialized_keys: bytes)
+```
+
+Load keys from bytes. 
+
+
+
+**Args:**
+ 
+ - <b>`serialized_keys`</b> (bytes):  serialized keys to load from 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ### <kbd>method</kbd> `load_if_exists_generate_and_save_otherwise`
 
 ```python
@@ -164,7 +182,7 @@ Saved keys are not encrypted, so be careful how you store/transfer them!
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 
@@ -183,7 +201,7 @@ Serialized keys are not encrypted, so be careful how you store/transfer them! `s
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/keys.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize_to_file`
 
