@@ -6,7 +6,9 @@
 #ifndef CONCRETELANG_SUPPORT_VARIANTS_H_
 #define CONCRETELANG_SUPPORT_VARIANTS_H_
 
-template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template <class... Ts> struct overloaded : Ts... {
+  using Ts::operator()...;
+};
 template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 #endif

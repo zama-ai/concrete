@@ -1,4 +1,4 @@
 black==24.4.0
-pylint==2.11.1
+pylint==3.3.3
 mypy==1.11.2
 numpy>=1.23,<2.0

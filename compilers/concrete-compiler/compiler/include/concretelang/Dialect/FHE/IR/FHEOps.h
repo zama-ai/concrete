@@ -37,8 +37,7 @@ void emitErrorBadLutSize(Op &op, std::string lutName, std::string inputName,
   auto s = op.emitOpError();
   s << ": `" << lutName << "` (operand #2)"
     << " inner dimension should have size " << expectedSize << "(=2^"
-    << bitWidth << ") to match "
-    << "`" << inputName << "` (operand #1)"
+    << bitWidth << ") to match " << "`" << inputName << "` (operand #1)"
     << " elements bitwidth (" << bitWidth << ")";
 }
 
