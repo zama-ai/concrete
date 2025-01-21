@@ -57,9 +57,8 @@ LogicalResult verifyTensorBroadcastingRules(
         op->emitOpError() << "has the dimension #"
                           << (operandsShapes[j].size() - k)
                           << " of the operand #" << j
-                          << " incompatible with other operands"
-                          << ", got " << operandDim << " expect 1 or "
-                          << expectedResultDim;
+                          << " incompatible with other operands" << ", got "
+                          << operandDim << " expect 1 or " << expectedResultDim;
         return mlir::failure();
       }
 
@@ -706,9 +705,9 @@ template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
     // 1xMxN @ KxLxNxP -> KxLxMxP
 
     if (lhsShape[lhsDims - 1] != rhsShape[rhsDims - 2]) {
-      op.emitOpError() << "should have the same size "
-                       << "on dimension #" << lhsDims - 1 << " of operand #0 "
-                       << "and dimension #" << rhsDims - 2 << " of operand #1";
+      op.emitOpError() << "should have the same size " << "on dimension #"
+                       << lhsDims - 1 << " of operand #0 " << "and dimension #"
+                       << rhsDims - 2 << " of operand #1";
       return mlir::failure();
     }
 
@@ -759,8 +758,8 @@ template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
 
     if (rhsShape[rhsDims - 2] != lhsShape[0]) {
       op.emitOpError() << "should have the same size "
-                       << "on dimension #0 of operand #0 "
-                       << "and dimension #" << rhsDims - 2 << " of operand #1";
+                       << "on dimension #0 of operand #0 " << "and dimension #"
+                       << rhsDims - 2 << " of operand #1";
       return mlir::failure();
     }
 
@@ -777,8 +776,8 @@ template <typename MatMulOp> mlir::LogicalResult verifyMatmul(MatMulOp &op) {
     // KxLxMxN @ N -> KxLxM
 
     if (lhsShape[lhsDims - 1] != rhsShape[0]) {
-      op.emitOpError() << "should have the same size "
-                       << "on dimension #" << lhsDims - 1 << " of operand #0 "
+      op.emitOpError() << "should have the same size " << "on dimension #"
+                       << lhsDims - 1 << " of operand #0 "
                        << "and dimension #0 of operand #1";
       return mlir::failure();
     }
@@ -1091,11 +1090,10 @@ mlir::LogicalResult Maxpool2dOp::verify() {
   const FHE::FheIntegerInterface outputElementTy = outputTy.getElementType();
 
   if (inputElementTy != outputElementTy) {
-    this->emitOpError() << "expected output element type "
-                        << "(" << outputElementTy << ") "
-                        << "to be the same with input element type "
-                        << "(" << inputElementTy << ") "
-                        << "but it is not";
+    this->emitOpError() << "expected output element type " << "("
+                        << outputElementTy << ") "
+                        << "to be the same with input element type " << "("
+                        << inputElementTy << ") " << "but it is not";
     return mlir::failure();
   }
 
@@ -1125,10 +1123,9 @@ mlir::LogicalResult Maxpool2dOp::verify() {
       kernelShapeAttrTy.getShape();
 
   if (kernelShapeAttrShape.size() != 1 || kernelShapeAttrShape[0] != 2) {
-    this->emitOpError() << "expected kernel shape to be of shape "
-                        << "(2) "
-                        << "but it is of shape "
-                        << "(" << kernelShapeAttrShape << ")";
+    this->emitOpError() << "expected kernel shape to be of shape " << "(2) "
+                        << "but it is of shape " << "(" << kernelShapeAttrShape
+                        << ")";
     return mlir::failure();
   }
 
@@ -1149,10 +1146,9 @@ mlir::LogicalResult Maxpool2dOp::verify() {
     const llvm::ArrayRef<int64_t> stridesAttrShape = stridesAttrTy.getShape();
 
     if (stridesAttrShape.size() != 1 || stridesAttrShape[0] != 2) {
-      this->emitOpError() << "expected strides to be of shape "
-                          << "(2) "
-                          << "but it is of shape "
-                          << "(" << stridesAttrShape << ")";
+      this->emitOpError() << "expected strides to be of shape " << "(2) "
+                          << "but it is of shape " << "(" << stridesAttrShape
+                          << ")";
       return mlir::failure();
     }
 
@@ -1183,10 +1179,9 @@ mlir::LogicalResult Maxpool2dOp::verify() {
         dilationsAttrTy.getShape();
 
     if (dilationsAttrShape.size() != 1 || dilationsAttrShape[0] != 2) {
-      this->emitOpError() << "expected dilations to be of shape "
-                          << "(2) "
-                          << "but it is of shape "
-                          << "(" << dilationsAttrShape << ")";
+      this->emitOpError() << "expected dilations to be of shape " << "(2) "
+                          << "but it is of shape " << "(" << dilationsAttrShape
+                          << ")";
       return mlir::failure();
     }
 
@@ -1218,9 +1213,8 @@ mlir::LogicalResult Maxpool2dOp::verify() {
   };
 
   if (outputShape != llvm::ArrayRef(expectedOutputShape)) {
-    this->emitOpError() << "expected output to be of shape "
-                        << "(" << expectedOutputShape << ") "
-                        << "but it is of shape "
+    this->emitOpError() << "expected output to be of shape " << "("
+                        << expectedOutputShape << ") " << "but it is of shape "
                         << "(" << outputShape << ")";
     return mlir::failure();
   }

@@ -50,6 +50,12 @@ jobs:
           sudo apt install moreutils
           cd compilers/concrete-compiler/compiler
           ./scripts/format_cpp.sh
+      - name: Upload format diff
+        if: failure()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: format_diff
+          path: compilers/concrete-compiler/compiler/format_diff.patch
       - name: Format with cmake-format (Cmake)
         run: |
           pip3 install cmakelang

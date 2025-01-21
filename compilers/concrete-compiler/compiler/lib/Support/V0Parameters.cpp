@@ -195,13 +195,13 @@ void displayOptimizer(const Solution &solution,
   }
   // Print the actual correctness of the solution
   llvm::errs() << "-- Solution correctness\n"
-               << "  For each pbs call: "
-               << " 1/" << int(1.0 / solution.p_error) << ", p_error ("
+               << "  For each pbs call: " << " 1/"
+               << int(1.0 / solution.p_error) << ", p_error ("
                << solution.p_error << ")\n";
   if (descr.dag && !std::isnan(solution.global_p_error)) {
-    llvm::errs() << "  For the full circuit:"
-                 << " 1/" << int(1.0 / solution.global_p_error)
-                 << " global_p_error(" << solution.global_p_error << ")\n";
+    llvm::errs() << "  For the full circuit:" << " 1/"
+                 << int(1.0 / solution.global_p_error) << " global_p_error("
+                 << solution.global_p_error << ")\n";
   }
   auto complexity_label =
       descr.dag ? "for the full circuit" : "for each Pbs call";
