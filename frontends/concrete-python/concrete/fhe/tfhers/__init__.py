@@ -4,6 +4,7 @@ tfhers module to represent, and compute on tfhers integer values.
 
 import json
 from math import log2
+from typing import Dict
 
 from .bridge import new_bridge
 from .dtypes import (
@@ -40,6 +41,23 @@ def get_type_from_params(
     # Read crypto parameters from TFHE-rs in the json file
     with open(path_to_params_json) as f:
         crypto_param_dict = json.load(f)
+
+    return get_type_from_params_dict(crypto_param_dict, is_signed, precision)
+
+
+def get_type_from_params_dict(
+    crypto_param_dict: Dict, is_signed: bool, precision: int
+) -> TFHERSIntegerType:
+    """Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
+
+    Args:
+        crypto_param_dict (Dict): dictionary of TFHE-rs parameters
+        is_signed (bool): sign of the result type
+        precision (int): precision of the result type
+
+    Returns:
+        TFHERSIntegerType: constructed type from the loaded parameters
+    """
 
     lwe_dim = crypto_param_dict["lwe_dimension"]
     glwe_dim = crypto_param_dict["glwe_dimension"]
