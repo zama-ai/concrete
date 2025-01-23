@@ -364,6 +364,7 @@
 - [`utils.format_constant`](./concrete.fhe.representation.utils.md): Get the textual representation of a constant.
 - [`utils.format_indexing_element`](./concrete.fhe.representation.utils.md): Format an indexing element.
 - [`tfhers.get_type_from_params`](./concrete.fhe.tfhers.md): Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
+- [`tfhers.get_type_from_params_dict`](./concrete.fhe.tfhers.md): Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
 - [`bridge.new_bridge`](./concrete.fhe.tfhers.bridge.md): Create a TFHErs bridge from a circuit or module.
 - [`tracing.from_native`](./concrete.fhe.tfhers.tracing.md): Convert a Concrete integer to the tfhers representation.
 - [`tracing.to_native`](./concrete.fhe.tfhers.tracing.md): Convert a tfhers integer to the Concrete representation.
