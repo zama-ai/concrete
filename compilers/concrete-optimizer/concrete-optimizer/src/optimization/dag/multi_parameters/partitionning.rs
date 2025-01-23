@@ -390,7 +390,7 @@ pub mod tests {
     }
 
     pub const GLWE_PARAMS: GlweParameters = GlweParameters {
-        log2_polynomial_size: 11,
+        log2_polynomial_size: 12,
         glwe_dimension: 1,
     };
 
@@ -398,7 +398,7 @@ pub mod tests {
 
     pub const TFHERS_MACRO_PARAMS: MacroParameters = MacroParameters {
         glwe_params: GLWE_PARAMS,
-        internal_dim: 841,
+        internal_dim: 909,
     };
 
     pub fn get_tfhers_noise_br() -> f64 {

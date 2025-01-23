@@ -1029,6 +1029,7 @@ pub fn optimize(
         .or(Some(PartitionCut::for_each_precision(dag)));
 
     let mut dag = analyze(dag, &noise_config, &dag_p_cut, default_partition)?;
+    crate::utils::viz::viz!(&dag);
     let kappa =
         error::sigma_scale_of_error_probability(config.maximum_acceptable_error_probability);
 

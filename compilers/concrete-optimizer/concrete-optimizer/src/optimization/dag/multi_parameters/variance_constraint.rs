@@ -1,4 +1,4 @@
-use crate::dag::operator::{Location, Precision};
+use crate::dag::operator::{Location, OperatorIndex, Precision};
 use crate::optimization::dag::multi_parameters::partitions::PartitionIndex;
 use std::fmt;
 
@@ -18,6 +18,7 @@ pub struct VarianceConstraint {
     pub noise_expression: NoiseExpression,
     pub noise_evaluator: Option<NoiseEvaluator>,
     pub location: Location,
+    pub operator_index: OperatorIndex,
 }
 
 impl fmt::Display for VarianceConstraint {

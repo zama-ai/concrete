@@ -391,6 +391,8 @@ getSolution(optimizer::Description &descr, ProgramCompilationFeedback &feedback,
       if (sol.is_feasible || !config.composition_rules.empty()) {
         displayOptimizer(sol, descr, config);
         return toCompilerSolution(sol, feedback, config);
+      } else {
+          assert(false);
       }
     }
     config.strategy = optimizer::Strategy::DAG_MONO;

@@ -5,10 +5,12 @@ Declaration of `TFHERSIntegerType` class.
 from enum import Enum
 from functools import partial
 from typing import Any, Union
+import math
 
 import numpy as np
 
 from ..dtypes import Integer
+from mlir._mlir_libs._concretelang._compiler import ExternalPartitionDefinition
 
 
 class EncryptionKeyChoice(Enum):
@@ -211,6 +213,23 @@ class TFHERSIntegerType(Integer):
 
         cts = value.reshape((-1, expected_ct_shape))
         return np.array([self.decode(ct) for ct in cts]).reshape(value.shape[:-1])
+
+    def external_partition_definition(self) -> ExternalPartitionDefinition:
+        """Get the associated external partition definition.
+
+        This will return the associated external partition definition to be used in a virtual circuit generation.
+
+        Returns:
+            ExternalPartitionDefinition: The definition
+        """
+        return ExternalPartitionDefinition(
+            f"TFHERS_{self.carry_width}_{self.msg_width}",
+            int(math.log2(self.params.polynomial_size)),
+            self.params.glwe_dimension,
+            self.params.lwe_dimension,
+            self.params.pbs_level,
+            self.params.pbs_base_log
+        )
 
 
 int8 = partial(TFHERSIntegerType, True, 8)
