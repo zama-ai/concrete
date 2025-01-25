@@ -1,4 +1,5 @@
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+use concrete_cpu_noise_model::gaussian_noise::complexity::estimate_min_complexity;
 
 use super::config::{Config, SearchSpace};
 use super::decomposition::cmux::CmuxComplexityNoise;
@@ -179,7 +180,19 @@ pub fn optimize_one(
     // assume this noise is increasing with lwe_intern_dim
     let min_internal_lwe_dimensions = search_space.internal_lwe_dimensions[0];
     let lower_bound_cut = |glwe_log_poly_size| {
-        // TODO: cut if min complexity is higher than current best
+        // If we have a best solution, check if minimum complexity exceeds it
+        if let Some(best) = &state.best_solution {
+            let min_complexity = estimate_min_complexity(
+                min_internal_lwe_dimensions,
+                glwe_log_poly_size,
+                ciphertext_modulus_log,
+                &consts.config,
+            );
+            if min_complexity > best.complexity {
+                return true;
+            }
+        }
+        
         CUTS && estimate_modulus_switching_noise_with_binary_key(
             min_internal_lwe_dimensions,
             glwe_log_poly_size,
