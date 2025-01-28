@@ -18,6 +18,7 @@ add_mlir_library(
   LINK_LIBS
   PUBLIC
   FHELinalgDialect
+  GLWEDialect
   FHELinalgDialectTransforms
   FHETensorOpsToLinalg
   FHEDialectTransforms
