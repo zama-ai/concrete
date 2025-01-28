@@ -1,5 +1,5 @@
 module attributes {
-    glwe.test = #glwe.expr<@a div @b>
+    glwe.test = #glwe.expr<((@n * ((@q ** 2. div (96.0 * ( @new_q div 2.0 ) ** 2.)) + 1.0 div 48.0)) div @q**2.0) + @input_variance>
     //glwe.symbol = #glwe.expr<@a>,
     //glwe.constant = #glwe.expr<1.>,
     //glwe.add = #glwe.expr<@a + @b>,

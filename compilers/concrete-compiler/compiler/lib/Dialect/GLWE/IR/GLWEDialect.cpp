@@ -98,7 +98,7 @@ GlweExpr parseGlweExpr(GlweExpr lhs, ::mlir::AsmParser &parser) {
     if (succeeded(parser.parseOptionalLParen())) {
       lhs = parseGlweExpr({}, parser);
       if (lhs && parser.parseRParen().succeeded()) {
-        return lhs;
+        return parseGlweExpr(lhs, parser);
       }
       return {};
     }
