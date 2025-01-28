@@ -17,6 +17,7 @@ class GlweConstantExprStorage;
 } // namespace detail
 
 enum class GlweExprKind {
+  NoOp,
   /// @brief Addition of two expressions, glwe-expr `+` glwe-expr.
   Add,
   /// @brief Substraction of two expressions, glwe-expr `-` glwe-expr.
