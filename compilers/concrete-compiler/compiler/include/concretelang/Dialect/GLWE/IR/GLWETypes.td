@@ -37,4 +37,25 @@ def GLWE_GLWE : GLWE_Type<"GLWE", "glwe"> {
   );
 }
 
+def GLWE_RadixGLWE : GLWE_Type<"RadixGLWE", "radix_glwe"> {
+
+  let summary = "Represents a decomposed GLWE ciphertext";
+
+  let description = [{
+    A type describing a decomposed GLWE ciphertext:"
+      - params: GLWE parameters
+      - decomp: Parameters of the decomposition
+      - partial: Indicates if the decomposition is partial or not. Partial decomposition means that the body is not decomposed.
+      - variance: An optional variance expression
+  }];
+
+  let parameters = (ins
+    "GLWEParametersAttr":$params,
+    "DecompositionParametersAttr":$decomp,
+    DefaultValuedParameter<"bool", "false">:$partial,
+    OptionalParameter<"GLWEExprAttr">: $variance
+  );
+
+}
+
 #endif

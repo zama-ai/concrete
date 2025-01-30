@@ -43,3 +43,65 @@ func.func @test_glwe_ciphertext_with_minimal_variance(%arg0: !glwe_ciphertext_wi
 func.func @test_glwe_ciphertext_resolved(%arg0: !glwe_ciphertext_resolved) {
     return
 }
+
+/////////////////////////////////////////////////
+// RadixGLWE Ciphertext /////////////////////////
+/////////////////////////////////////////////////
+
+// A unparametrized fully decomposed glwe ciphertext
+!glwe_full_decomposed = !glwe.radix_glwe<
+  params = #glwe.glwe_params<
+    dimension = <@K>,
+    poly_size = <@N>,
+    mask_modulus = <@m>,
+    body_modulus = <@m>
+  >,
+  decomp = #glwe.decomp<
+    base_log = <@b>,
+    level = <@l>
+  >
+>
+
+// CHECK: %arg0: !glwe.radix_glwe<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base_log = <@b>, level = <@l>>>
+func.func @test_radix_glwe(%arg0 : !glwe_full_decomposed) {
+  return
+}
+
+// A unparametrized partially decomposed glwe ciphertext
+!glwe_partial_decomposed = !glwe.radix_glwe<
+  params = #glwe.glwe_params<
+    dimension = <@K>,
+    poly_size = <@N>,
+    mask_modulus = <@m>,
+    body_modulus = <@m>
+  >,
+  decomp = #glwe.decomp<
+    base_log = <@b>,
+    level = <@l>
+  >,
+  partial = true
+>
+// CHECK: %arg0: !glwe.radix_glwe<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base_log = <@b>, level = <@l>>, partial = true>
+func.func @test_radix_glwe_partial(%arg0 : !glwe_partial_decomposed) {
+  return 
+}
+
+// A unparametrized fully decomposed glwe ciphertext
+!glwe_full_decomposed_with_variance = !glwe.radix_glwe<
+  params = #glwe.glwe_params<
+    dimension = <@K>,
+    poly_size = <@N>,
+    mask_modulus = <@m>,
+    body_modulus = <@m>
+  >,
+  decomp = #glwe.decomp<
+    base_log = <@b>,
+    level = <@l>
+  >,
+  variance = <2.0 ** (2.0 * max(@slope * (@K * @N) + @bias, 2.0 - @m))>
+>
+
+// CHECK: %arg0: !glwe.radix_glwe<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base_log = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
+func.func @test_radix_glwe_with_variance(%arg0 : !glwe_full_decomposed_with_variance) {
+  return
+}
