@@ -17,4 +17,14 @@
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h.inc"
 
+namespace mlir {
+namespace concretelang {
+namespace GLWE {
+GLWEExprAttr getGlweConstantExprAttr(double value,
+                                     ::mlir::MLIRContext *context);
+
+} // namespace GLWE
+} // namespace concretelang
+} // namespace mlir
+
 #endif

@@ -29,4 +29,67 @@ def GLWE_GLWEExprAttr: AttrDef<GLWE_Dialect, "GLWEExpr">{
     let hasCustomAssemblyFormat = 1;
 }
 
+def GLWE_GLWESizeAttr: GLWE_Attr<"GLWESize", "size"> {
+    let summary = "Represent the size of a GLWE.";
+
+    let description = [{
+        - dimension: The dimension of GLWE
+        - poly_size: The size of the polynom
+    }];
+
+    let parameters = (ins
+        GLWE_GLWEExprAttr: $dimension,
+        GLWE_GLWEExprAttr: $poly_size
+    );
+}
+
+def GLWE_GLWESecretKeyDistributionAttr: GLWE_Attr<"GLWESecretKeDistribution", "distribution"> {
+
+    let summary = "Represent distribution of a secret key.";
+
+    let parameters = (ins
+        GLWE_GLWEExprAttr: $average_mean,
+        GLWE_GLWEExprAttr: $average_variance
+    );
+
+}
+
+def GLWE_GLWESecretKeyAttr: GLWE_Attr<"GLWESecretKey", "secret_key"> {
+
+    let summary = "Represent secret key parameters.";
+
+    let description = [{
+        - size: The size of the secret key
+        - nb_keys: The number of secret key
+        - distribution: The distribution of the secret key
+    }];
+
+    let parameters = (ins
+        GLWE_GLWESizeAttr: $size,
+        DefaultValuedParameter<"GLWEExprAttr", "mlir::concretelang::GLWE::getGlweConstantExprAttr(1, $_ctxt)">: $nb_keys,
+        GLWE_GLWESecretKeyDistributionAttr: $distribution
+    );
+
+}
+
+def GLWE_GLWEEncodingAttr: GLWE_Attr<"GLWEEncoding", "encoding"> {
+    let summary = "Represent encoding of a GLWE.";
+
+    let description = [{
+        - body_modulus: The encoding modulus of the body
+        - mask_modulus: The encoding modulus of the mask
+        - message_modulus: Parameter
+        - right_padding: The number of bit of the right padding
+        - left_padding: The number of bit of the left padding
+    }];
+
+    let parameters = (ins
+        GLWE_GLWEExprAttr: $body_modulus,
+        GLWE_GLWEExprAttr: $mask_modulus,
+        GLWE_GLWEExprAttr: $message_modulus,
+        GLWE_GLWEExprAttr: $right_padding,
+        GLWE_GLWEExprAttr: $left_padding
+    );
+}
+
 #endif

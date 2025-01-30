@@ -7,9 +7,20 @@
 #include "concretelang/Dialect/GLWE/IR/GLWEOps.h"
 #include "concretelang/Dialect/GLWE/IR/GLWETypes.h"
 #include "mlir/IR/DialectImplementation.h"
-// #include "mlir/lib/AsmParser/AsmParserImpl.h"
 
-// #include "concretelang/Dialect/GLWE/Interfaces/GLWEInterfaces.h"
+namespace mlir {
+namespace concretelang {
+namespace GLWE {
+
+GLWEExprAttr getGlweConstantExprAttr(double value,
+                                     ::mlir::MLIRContext *context) {
+  GLWEExpr expr = getGlweConstantExpr(value, context);
+  return GLWEExprAttr::get(context, expr);
+}
+
+} // namespace GLWE
+} // namespace concretelang
+} // namespace mlir
 
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.cpp.inc"
