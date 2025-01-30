@@ -53,6 +53,7 @@
 #include "concretelang/Dialect/SDFG/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/SDFG/Transforms/SDFGConvertibleOpInterfaceImpl.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEDialect.h"
 #include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
 #include "concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/TypeInference/IR/TypeInferenceDialect.h"
@@ -130,6 +131,7 @@ mlir::MLIRContext *CompilationContext::getMLIRContext() {
         mlir::concretelang::RT::RTDialect, mlir::concretelang::FHE::FHEDialect,
         mlir::concretelang::TFHE::TFHEDialect,
         mlir::concretelang::FHELinalg::FHELinalgDialect,
+        mlir::concretelang::GLWE::GLWEDialect,
         mlir::concretelang::Concrete::ConcreteDialect,
         mlir::concretelang::SDFG::SDFGDialect, mlir::func::FuncDialect,
         mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect,
