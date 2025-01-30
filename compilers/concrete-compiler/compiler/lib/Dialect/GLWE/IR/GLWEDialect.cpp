@@ -43,24 +43,24 @@ void GLWEDialect::initialize() {
       >();
 }
 
-// GlweExpr ///////////////////////////////////////
+// GLWEExpr ///////////////////////////////////////
 
 ::mlir::Attribute
-mlir::concretelang::GLWE::GlweExprAttr::parse(::mlir::AsmParser &parser,
+mlir::concretelang::GLWE::GLWEExprAttr::parse(::mlir::AsmParser &parser,
                                               ::mlir::Type odsType) {
   // parse '<'
   if (parser.parseLess())
     return {};
 
-  GlweExpr result = GlweExpr::parse(parser);
+  GLWEExpr result = GLWEExpr::parse(parser);
 
   // parse '>'
   if (parser.parseGreater())
     return {};
-  return GlweExprAttr::get(parser.getContext(), result);
+  return GLWEExprAttr::get(parser.getContext(), result);
 }
 
-void mlir::concretelang::GLWE::GlweExprAttr::print(
+void mlir::concretelang::GLWE::GLWEExprAttr::print(
     ::mlir::AsmPrinter &printer) const {
   printer << "<";
   this->getExpr().print(printer);

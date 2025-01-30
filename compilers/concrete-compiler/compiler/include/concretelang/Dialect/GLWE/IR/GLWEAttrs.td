@@ -20,11 +20,11 @@ class GLWE_Attr<string name, string attrMnemonic, list<Trait> traits = []>: Attr
     let assemblyFormat = "`<` struct(params) `>`";
 }
 
-def GLWE_GlweExprAttr: AttrDef<GLWE_Dialect, "GlweExpr">{
+def GLWE_GLWEExprAttr: AttrDef<GLWE_Dialect, "GLWEExpr">{
     let mnemonic = "expr";
 
     let parameters = (ins
-        "::mlir::concretelang::GLWE::GlweExpr": $expr
+        "::mlir::concretelang::GLWE::GLWEExpr": $expr
     );
     let hasCustomAssemblyFormat = 1;
 }

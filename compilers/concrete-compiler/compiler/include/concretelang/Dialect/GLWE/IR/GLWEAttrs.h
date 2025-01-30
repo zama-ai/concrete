@@ -12,7 +12,7 @@
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/DialectImplementation.h>
 
-#include "concretelang/Dialect/GLWE/IR/GlweExpr.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEExpr.h"
 
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h.inc"

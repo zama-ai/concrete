@@ -1,7 +1,7 @@
-#ifndef CONCRETELANG_DIALECT_GLWE_IR_GLWEEXPRDETAIL_H
-#define CONCRETELANG_DIALECT_GLWE_IR_GLWEEXPRDETAIL_H
+#ifndef CONCRETELANG_DIALECT_GLWE_IR_GLWEExprDETAIL_H
+#define CONCRETELANG_DIALECT_GLWE_IR_GLWEExprDETAIL_H
 
-#include "concretelang/Dialect/GLWE/IR/GlweExpr.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEExpr.h"
 
 namespace mlir {
 class MLIRContext;
@@ -10,23 +10,23 @@ namespace GLWE {
 
 namespace detail {
 
-struct GlweExprStorage : public StorageUniquer::BaseStorage {
+struct GLWEExprStorage : public StorageUniquer::BaseStorage {
   MLIRContext *context;
-  GlweExprKind kind;
+  GLWEExprKind kind;
 };
 
-struct GlweSymbolExprStorage : public GlweExprStorage {
+struct GlweSymbolExprStorage : public GLWEExprStorage {
   using KeyTy = std::pair<unsigned, llvm::StringRef>;
 
   bool operator==(const KeyTy &key) const {
-    return kind == static_cast<GlweExprKind>(key.first) &&
+    return kind == static_cast<GLWEExprKind>(key.first) &&
            symbolName == key.second;
   }
 
   static GlweSymbolExprStorage *
   construct(StorageUniquer::StorageAllocator &allocator, const KeyTy &key) {
     auto *result = allocator.allocate<GlweSymbolExprStorage>();
-    result->kind = static_cast<GlweExprKind>(key.first);
+    result->kind = static_cast<GLWEExprKind>(key.first);
     result->symbolName = key.second;
     return result;
   }
@@ -34,17 +34,17 @@ struct GlweSymbolExprStorage : public GlweExprStorage {
   llvm::StringRef symbolName;
 };
 
-struct GlweConstantExprStorage : public GlweExprStorage {
+struct GlweConstantExprStorage : public GLWEExprStorage {
   using KeyTy = std::pair<unsigned, double>;
 
   bool operator==(const KeyTy &key) const {
-    return kind == static_cast<GlweExprKind>(key.first) && value == key.second;
+    return kind == static_cast<GLWEExprKind>(key.first) && value == key.second;
   }
 
   static GlweConstantExprStorage *
   construct(StorageUniquer::StorageAllocator &allocator, const KeyTy &key) {
     auto *result = allocator.allocate<GlweConstantExprStorage>();
-    result->kind = static_cast<GlweExprKind>(key.first);
+    result->kind = static_cast<GLWEExprKind>(key.first);
     result->value = key.second;
     return result;
   }
@@ -52,46 +52,46 @@ struct GlweConstantExprStorage : public GlweExprStorage {
   double value;
 };
 
-struct GlweUnaryExprStorage : public GlweExprStorage {
-  using KeyTy = std::pair<unsigned, GlweExpr>;
+struct GlweUnaryExprStorage : public GLWEExprStorage {
+  using KeyTy = std::pair<unsigned, GLWEExpr>;
 
   bool operator==(const KeyTy &key) const {
-    return kind == static_cast<GlweExprKind>(key.first) &&
-           operand == static_cast<GlweExpr>(key.second);
+    return kind == static_cast<GLWEExprKind>(key.first) &&
+           operand == static_cast<GLWEExpr>(key.second);
   }
 
   static GlweUnaryExprStorage *
   construct(StorageUniquer::StorageAllocator &allocator, const KeyTy &key) {
     auto *result = allocator.allocate<GlweUnaryExprStorage>();
-    result->kind = static_cast<GlweExprKind>(key.first);
-    result->operand = static_cast<GlweExpr>(key.second);
+    result->kind = static_cast<GLWEExprKind>(key.first);
+    result->operand = static_cast<GLWEExpr>(key.second);
     return result;
   }
 
-  GlweExpr operand;
+  GLWEExpr operand;
 };
 
-struct GlweBinaryExprStorage : public GlweExprStorage {
-  using KeyTy = std::tuple<unsigned, GlweExpr, GlweExpr>;
+struct GlweBinaryExprStorage : public GLWEExprStorage {
+  using KeyTy = std::tuple<unsigned, GLWEExpr, GLWEExpr>;
 
   bool operator==(const KeyTy &key) const {
-    return kind == static_cast<GlweExprKind>(std::get<0>(key)) &&
-           lhs == static_cast<GlweExpr>(std::get<1>(key)) &&
-           rhs == static_cast<GlweExpr>(std::get<2>(key));
+    return kind == static_cast<GLWEExprKind>(std::get<0>(key)) &&
+           lhs == static_cast<GLWEExpr>(std::get<1>(key)) &&
+           rhs == static_cast<GLWEExpr>(std::get<2>(key));
   }
 
   static GlweBinaryExprStorage *
   construct(StorageUniquer::StorageAllocator &allocator, const KeyTy &key) {
     auto *result = allocator.allocate<GlweBinaryExprStorage>();
-    result->kind = static_cast<GlweExprKind>(std::get<0>(key));
-    result->lhs = static_cast<GlweExpr>(std::get<1>(key));
-    result->rhs = static_cast<GlweExpr>(std::get<2>(key));
+    result->kind = static_cast<GLWEExprKind>(std::get<0>(key));
+    result->lhs = static_cast<GLWEExpr>(std::get<1>(key));
+    result->rhs = static_cast<GLWEExpr>(std::get<2>(key));
 
     return result;
   }
 
-  GlweExpr lhs;
-  GlweExpr rhs;
+  GLWEExpr lhs;
+  GLWEExpr rhs;
 };
 
 } // namespace detail

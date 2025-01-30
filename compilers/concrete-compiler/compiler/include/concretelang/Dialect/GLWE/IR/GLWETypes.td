@@ -14,7 +14,7 @@ include "concretelang/Dialect/GLWE/IR/GLWEDialect.td"
 include "mlir/IR/BuiltinTypes.td"
 
 class GLWE_Type<string name, string mnemonic_, list<Trait> traits = []> :
-  TypeDef<GLWE_Dialect, name, traits> { 
+  TypeDef<GLWE_Dialect, name, traits> {
       let mnemonic = mnemonic_;
 
       let assemblyFormat = "`<` struct(params) `>`";
@@ -27,6 +27,6 @@ def GLWE_GLWE : GLWE_Type<"GLWE", "glwe"> {
   let parameters = (ins
     "unsigned":$params
   );
-
 }
+
 #endif

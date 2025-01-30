@@ -1,17 +1,17 @@
-#include "GlweExprDetail.h"
+#include "GLWEExprDetail.h"
 
 namespace mlir {
 namespace concretelang {
 namespace GLWE {
 
-GlweExprKind GlweExpr::getKind() const { return expr->kind; }
+GLWEExprKind GLWEExpr::getKind() const { return expr->kind; }
 
-void GlweExpr::print(mlir::AsmPrinter &printer) {
+void GLWEExpr::print(mlir::AsmPrinter &printer) {
   switch (this->getKind()) {
-  case GlweExprKind::SymbolId:
+  case GLWEExprKind::SymbolId:
     this->dyn_cast<GlweSymbolExpr>().print(printer);
     return;
-  case GlweExprKind::Constant:
+  case GLWEExprKind::Constant:
     this->dyn_cast<GlweConstantExpr>().print(printer);
     return;
   default:
@@ -24,7 +24,7 @@ void GlweExpr::print(mlir::AsmPrinter &printer) {
     }
     break;
   }
-  llvm_unreachable("unknown GlweExpr");
+  llvm_unreachable("unknown GLWEExpr");
 };
 
 // GlweSymbolExpr
@@ -36,7 +36,7 @@ llvm::StringRef GlweSymbolExpr::getSymbolName() const {
   return static_cast<GlweSymbolExpr::ImplType *>(expr)->symbolName;
 }
 
-GlweExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context) {
+GLWEExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context) {
   auto assignCtx = [context](detail::GlweSymbolExprStorage *storage) {
     storage->context = context;
   };
@@ -45,7 +45,7 @@ GlweExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context) {
   uniquer.registerParametricStorageType<detail::GlweSymbolExprStorage>();
 
   return uniquer.get<detail::GlweSymbolExprStorage>(
-      assignCtx, static_cast<unsigned>(GlweExprKind::SymbolId), symbolName);
+      assignCtx, static_cast<unsigned>(GLWEExprKind::SymbolId), symbolName);
 }
 
 // GlweConstantExpr
@@ -57,7 +57,7 @@ double GlweConstantExpr::getValue() const {
   return static_cast<GlweConstantExpr::ImplType *>(expr)->value;
 }
 
-GlweExpr getGlweConstantExpr(double value, MLIRContext *context) {
+GLWEExpr getGlweConstantExpr(double value, MLIRContext *context) {
   auto assignCtx = [context](detail::GlweConstantExprStorage *storage) {
     storage->context = context;
   };
@@ -66,27 +66,27 @@ GlweExpr getGlweConstantExpr(double value, MLIRContext *context) {
   uniquer.registerParametricStorageType<detail::GlweConstantExprStorage>();
 
   return uniquer.get<detail::GlweConstantExprStorage>(
-      assignCtx, static_cast<unsigned>(GlweExprKind::Constant), value);
+      assignCtx, static_cast<unsigned>(GLWEExprKind::Constant), value);
 }
 
 // GlweUnaryExpr
 void GlweUnaryExpr::print(mlir::AsmPrinter &printer) {
   switch (getKind()) {
-  case GlweExprKind::Neg:
+  case GLWEExprKind::Neg:
     printer << "- ";
     getOperand().print(printer);
     return;
-  case GlweExprKind::Abs:
+  case GLWEExprKind::Abs:
     printer << "abs(";
     getOperand().print(printer);
     printer << ")";
     return;
-  case GlweExprKind::Floor:
+  case GLWEExprKind::Floor:
     printer << "floor(";
     getOperand().print(printer);
     printer << ")";
     return;
-  case GlweExprKind::Ceil:
+  case GLWEExprKind::Ceil:
     printer << "ceil(";
     getOperand().print(printer);
     printer << ")";
@@ -97,11 +97,11 @@ void GlweUnaryExpr::print(mlir::AsmPrinter &printer) {
   llvm_unreachable("unknown GlweUnaryExpr");
 }
 
-GlweExpr GlweUnaryExpr::getOperand() const {
+GLWEExpr GlweUnaryExpr::getOperand() const {
   return static_cast<GlweUnaryExpr::ImplType *>(expr)->operand;
 }
 
-GlweExpr getGlweUnaryExpr(GlweExprKind kind, GlweExpr operand,
+GLWEExpr getGlweUnaryExpr(GLWEExprKind kind, GLWEExpr operand,
                           MLIRContext *context) {
   auto assignCtx = [context](detail::GlweUnaryExprStorage *storage) {
     storage->context = context;
@@ -115,10 +115,10 @@ GlweExpr getGlweUnaryExpr(GlweExprKind kind, GlweExpr operand,
 }
 
 // GlweBinaryExpr
-void printWithOptionalParen(GlweExpr expr, mlir::AsmPrinter &printer) {
+void printWithOptionalParen(GLWEExpr expr, mlir::AsmPrinter &printer) {
   auto kind = expr.getKind();
-  if (kind == GlweExprKind::Add || kind == GlweExprKind::Sub ||
-      kind == GlweExprKind::Mul || kind == GlweExprKind::Pow) {
+  if (kind == GLWEExprKind::Add || kind == GLWEExprKind::Sub ||
+      kind == GLWEExprKind::Mul || kind == GLWEExprKind::Pow) {
     printer << "(";
     expr.print(printer);
     printer << ")";
@@ -129,14 +129,14 @@ void printWithOptionalParen(GlweExpr expr, mlir::AsmPrinter &printer) {
 
 void GlweBinaryExpr::print(mlir::AsmPrinter &printer) {
   switch (getKind()) {
-  case GlweExprKind::Max:
+  case GLWEExprKind::Max:
     printer << "max(";
     getLHS().print(printer);
     printer << ", ";
     getRHS().print(printer);
     printer << ")";
     return;
-  case GlweExprKind::Min:
+  case GLWEExprKind::Min:
     printer << "min(";
     getLHS().print(printer);
     printer << ", ";
@@ -148,20 +148,20 @@ void GlweBinaryExpr::print(mlir::AsmPrinter &printer) {
   }
   printWithOptionalParen(getLHS(), printer);
   switch (getKind()) {
-  case GlweExprKind::Add:
+  case GLWEExprKind::Add:
     printer << " + ";
     break;
-  case GlweExprKind::Sub:
+  case GLWEExprKind::Sub:
     printer << " - ";
     break;
 
-  case GlweExprKind::Mul:
+  case GLWEExprKind::Mul:
     printer << " * ";
     break;
-  case GlweExprKind::Pow:
+  case GLWEExprKind::Pow:
     printer << " ** ";
     break;
-  case GlweExprKind::Div:
+  case GLWEExprKind::Div:
     printer << " div ";
     break;
   default:
@@ -171,15 +171,15 @@ void GlweBinaryExpr::print(mlir::AsmPrinter &printer) {
   printWithOptionalParen(getRHS(), printer);
 }
 
-GlweExpr GlweBinaryExpr::getLHS() const {
+GLWEExpr GlweBinaryExpr::getLHS() const {
   return static_cast<GlweBinaryExpr::ImplType *>(expr)->lhs;
 }
 
-GlweExpr GlweBinaryExpr::getRHS() const {
+GLWEExpr GlweBinaryExpr::getRHS() const {
   return static_cast<GlweBinaryExpr::ImplType *>(expr)->rhs;
 }
 
-GlweExpr getGlweBinaryExpr(GlweExprKind kind, GlweExpr lhs, GlweExpr rhs,
+GLWEExpr getGlweBinaryExpr(GLWEExprKind kind, GLWEExpr lhs, GLWEExpr rhs,
                            MLIRContext *context) {
   auto assignCtx = [context](detail::GlweBinaryExprStorage *storage) {
     storage->context = context;
@@ -192,34 +192,34 @@ GlweExpr getGlweBinaryExpr(GlweExprKind kind, GlweExpr lhs, GlweExpr rhs,
       assignCtx, static_cast<unsigned>(kind), lhs, rhs);
 }
 
-// GlweExpr parser
-GlweExpr parseGlweExpr(GlweExpr lhs, ::mlir::AsmParser &parser);
+// GLWEExpr parser
+GLWEExpr parseGLWEExpr(GLWEExpr lhs, ::mlir::AsmParser &parser);
 
-std::optional<GlweExprKind> parseLowPrecedenceKind(::mlir::AsmParser &parser) {
-  std::optional<GlweExprKind> binKind;
+std::optional<GLWEExprKind> parseLowPrecedenceKind(::mlir::AsmParser &parser) {
+  std::optional<GLWEExprKind> binKind;
   if (succeeded(parser.parseOptionalPlus())) {
-    binKind.emplace(GlweExprKind::Add);
+    binKind.emplace(GLWEExprKind::Add);
   }
   if (succeeded(parser.parseOptionalMinus())) {
-    binKind.emplace(GlweExprKind::Sub);
+    binKind.emplace(GLWEExprKind::Sub);
   }
   return binKind;
 }
 
-std::optional<GlweExprKind> parseHighPrecedenceKind(::mlir::AsmParser &parser) {
-  std::optional<GlweExprKind> binKind;
+std::optional<GLWEExprKind> parseHighPrecedenceKind(::mlir::AsmParser &parser) {
+  std::optional<GLWEExprKind> binKind;
   if (succeeded(parser.parseOptionalStar())) {
-    binKind.emplace(GlweExprKind::Mul);
+    binKind.emplace(GLWEExprKind::Mul);
     if (succeeded(parser.parseOptionalStar())) {
-      binKind.emplace(GlweExprKind::Pow);
+      binKind.emplace(GLWEExprKind::Pow);
     }
   } else if (succeeded(parser.parseOptionalKeyword("div"))) {
-    binKind.emplace(GlweExprKind::Div);
+    binKind.emplace(GLWEExprKind::Div);
   }
   return binKind;
 }
 
-std::optional<GlweExprKind> parseBinaryKind(::mlir::AsmParser &parser) {
+std::optional<GLWEExprKind> parseBinaryKind(::mlir::AsmParser &parser) {
   auto binKind = parseLowPrecedenceKind(parser);
   if (!binKind.has_value()) {
     binKind = parseHighPrecedenceKind(parser);
@@ -227,15 +227,15 @@ std::optional<GlweExprKind> parseBinaryKind(::mlir::AsmParser &parser) {
   return binKind;
 }
 
-GlweExpr parseGlweOperandExpr(GlweExpr lhs, mlir::AsmParser &parser) {
+GLWEExpr parseGlweOperandExpr(GLWEExpr lhs, mlir::AsmParser &parser) {
   if (auto kind = parseBinaryKind(parser); kind.has_value()) {
     if (lhs) {
       parser.emitError(parser.getCurrentLocation(),
                        "missing right operand of binary operator");
     } else {
-      if (kind.value() == GlweExprKind::Sub) {
-        if ((lhs = parseGlweExpr({}, parser))) {
-          return getGlweUnaryExpr(GlweExprKind::Neg, lhs, parser.getContext());
+      if (kind.value() == GLWEExprKind::Sub) {
+        if ((lhs = parseGLWEExpr({}, parser))) {
+          return getGlweUnaryExpr(GLWEExprKind::Neg, lhs, parser.getContext());
         }
       }
       parser.emitError(parser.getCurrentLocation(),
@@ -245,7 +245,7 @@ GlweExpr parseGlweOperandExpr(GlweExpr lhs, mlir::AsmParser &parser) {
   }
   // Parse parenthetical expression
   if (parser.parseOptionalLParen().succeeded()) {
-    lhs = parseGlweExpr({}, parser);
+    lhs = parseGLWEExpr({}, parser);
     if (lhs && parser.parseRParen().succeeded()) {
       return lhs;
     }
@@ -261,38 +261,38 @@ GlweExpr parseGlweOperandExpr(GlweExpr lhs, mlir::AsmParser &parser) {
     return getGlweConstantExpr(constant, parser.getContext());
   }
   // Parse unary expression
-  std::optional<GlweExprKind> unKind;
+  std::optional<GLWEExprKind> unKind;
   if (succeeded(parser.parseOptionalKeyword("abs"))) {
-    unKind.emplace(GlweExprKind::Abs);
+    unKind.emplace(GLWEExprKind::Abs);
   } else if (succeeded(parser.parseOptionalKeyword("floor"))) {
-    unKind.emplace(GlweExprKind::Floor);
+    unKind.emplace(GLWEExprKind::Floor);
   } else if (succeeded(parser.parseOptionalKeyword("ceil"))) {
-    unKind.emplace(GlweExprKind::Ceil);
+    unKind.emplace(GLWEExprKind::Ceil);
   }
   if (unKind.has_value()) {
     if (failed(parser.parseLParen()))
       return {};
-    lhs = parseGlweExpr({}, parser);
+    lhs = parseGLWEExpr({}, parser);
     if (failed(parser.parseRParen()))
       return {};
     return getGlweUnaryExpr(unKind.value(), lhs, parser.getContext());
   }
   // Parse binary expression
-  std::optional<GlweExprKind> binKind;
+  std::optional<GLWEExprKind> binKind;
   if (succeeded(parser.parseOptionalKeyword("max"))) {
-    binKind.emplace(GlweExprKind::Max);
+    binKind.emplace(GLWEExprKind::Max);
   } else if (succeeded(parser.parseOptionalKeyword("min"))) {
-    binKind.emplace(GlweExprKind::Min);
+    binKind.emplace(GLWEExprKind::Min);
   }
   if (binKind.has_value()) {
     if (failed(parser.parseLParen())) {
       return {};
     }
-    lhs = parseGlweExpr({}, parser);
+    lhs = parseGLWEExpr({}, parser);
     if (failed(parser.parseComma())) {
       return {};
     }
-    auto rhs = parseGlweExpr({}, parser);
+    auto rhs = parseGLWEExpr({}, parser);
     if (failed(parser.parseRParen())) {
       return {};
     }
@@ -301,9 +301,9 @@ GlweExpr parseGlweOperandExpr(GlweExpr lhs, mlir::AsmParser &parser) {
   return nullptr;
 }
 
-GlweExpr parseHighPrecedenceExpr(GlweExpr llhs, GlweExprKind llhsOp,
+GLWEExpr parseHighPrecedenceExpr(GLWEExpr llhs, GLWEExprKind llhsOp,
                                  mlir::AsmParser &parser) {
-  GlweExpr lhs;
+  GLWEExpr lhs;
   lhs = parseGlweOperandExpr(llhs, parser);
 
   if (!lhs) {
@@ -325,9 +325,9 @@ GlweExpr parseHighPrecedenceExpr(GlweExpr llhs, GlweExprKind llhsOp,
   return lhs;
 }
 
-GlweExpr parseGlweLowPrecedenceExpr(GlweExpr llhs, GlweExprKind llhsOp,
+GLWEExpr parseGlweLowPrecedenceExpr(GLWEExpr llhs, GLWEExprKind llhsOp,
                                     ::mlir::AsmParser &parser) {
-  GlweExpr lhs = parseGlweOperandExpr(llhs, parser);
+  GLWEExpr lhs = parseGlweOperandExpr(llhs, parser);
   if (!lhs) {
     return {};
   }
@@ -363,12 +363,12 @@ GlweExpr parseGlweLowPrecedenceExpr(GlweExpr llhs, GlweExprKind llhsOp,
   return lhs;
 }
 
-GlweExpr parseGlweExpr(GlweExpr lhs, ::mlir::AsmParser &parser) {
-  return parseGlweLowPrecedenceExpr(nullptr, GlweExprKind::NoOp, parser);
+GLWEExpr parseGLWEExpr(GLWEExpr lhs, ::mlir::AsmParser &parser) {
+  return parseGlweLowPrecedenceExpr(nullptr, GLWEExprKind::NoOp, parser);
 }
 
-GlweExpr GlweExpr::parse(::mlir::AsmParser &parser) {
-  return parseGlweExpr({}, parser);
+GLWEExpr GLWEExpr::parse(::mlir::AsmParser &parser) {
+  return parseGLWEExpr({}, parser);
 }
 
 } // namespace GLWE

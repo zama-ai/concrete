@@ -1,22 +1,22 @@
 
 #include <mlir/IR/DialectImplementation.h>
 
-#ifndef CONCRETELANG_DIALECT_GLWE_IR_GLWEEXPR_H
-#define CONCRETELANG_DIALECT_GLWE_IR_GLWEEXPR_H
+#ifndef CONCRETELANG_DIALECT_GLWE_IR_GLWEExpr_H
+#define CONCRETELANG_DIALECT_GLWE_IR_GLWEExpr_H
 
 namespace mlir {
 namespace concretelang {
 namespace GLWE {
 
 namespace detail {
-class GlweExprStorage;
+class GLWEExprStorage;
 class GlweUnaryExprStorage;
 class GlweBinaryExprStorage;
 class GlweSymbolExprStorage;
 class GlweConstantExprStorage;
 } // namespace detail
 
-enum class GlweExprKind {
+enum class GLWEExprKind {
   NoOp,
   /// @brief Addition of two expressions, glwe-expr `+` glwe-expr.
   Add,
@@ -54,27 +54,27 @@ enum class GlweExprKind {
   SymbolId,
 };
 
-class GlweExpr {
+class GLWEExpr {
 public:
-  using ImplType = detail::GlweExprStorage;
+  using ImplType = detail::GLWEExprStorage;
 
-  constexpr GlweExpr() {}
-  /* implicit */ GlweExpr(const ImplType *expr)
+  constexpr GLWEExpr() {}
+  /* implicit */ GLWEExpr(const ImplType *expr)
       : expr(const_cast<ImplType *>(expr)) {}
 
-  bool operator==(GlweExpr other) const { return expr == other.expr; }
-  bool operator!=(GlweExpr other) const { return !(*this == other); }
+  bool operator==(GLWEExpr other) const { return expr == other.expr; }
+  bool operator!=(GLWEExpr other) const { return !(*this == other); }
 
   explicit operator bool() const { return expr; }
   bool operator!() const { return expr == nullptr; }
 
-  friend ::llvm::hash_code hash_value(GlweExpr arg);
+  friend ::llvm::hash_code hash_value(GLWEExpr arg);
 
   // Return the kind of the expression.
-  GlweExprKind getKind() const;
+  GLWEExprKind getKind() const;
 
   // Parse an expression.
-  static GlweExpr parse(mlir::AsmParser &parser);
+  static GLWEExpr parse(mlir::AsmParser &parser);
 
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer);
@@ -89,15 +89,15 @@ protected:
   ImplType *expr{nullptr};
 };
 
-inline ::llvm::hash_code hash_value(GlweExpr arg) {
+inline ::llvm::hash_code hash_value(GLWEExpr arg) {
   return ::llvm::hash_value(arg.expr);
 }
 
 /// A symbolic identifier appearing in an affine expression.
-class GlweSymbolExpr : public GlweExpr {
+class GlweSymbolExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweSymbolExprStorage;
-  /* implicit */ GlweSymbolExpr(GlweExpr::ImplType *ptr) : GlweExpr(ptr) {};
+  /* implicit */ GlweSymbolExpr(GLWEExpr::ImplType *ptr) : GLWEExpr(ptr) {};
 
   llvm::StringRef getSymbolName() const;
 
@@ -106,11 +106,11 @@ public:
 };
 
 /// An integer constant appearing in affine expression.
-class GlweConstantExpr : public GlweExpr {
+class GlweConstantExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweConstantExprStorage;
-  /* implicit */ GlweConstantExpr(GlweExpr::ImplType *ptr = nullptr)
-      : GlweExpr(ptr) {};
+  /* implicit */ GlweConstantExpr(GLWEExpr::ImplType *ptr = nullptr)
+      : GLWEExpr(ptr) {};
 
   double getValue() const;
 
@@ -119,55 +119,55 @@ public:
 };
 
 /// @brief A Glwe unary expression.
-class GlweUnaryExpr : public GlweExpr {
+class GlweUnaryExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweUnaryExprStorage;
-  /* implicit */ GlweUnaryExpr(GlweExpr::ImplType *ptr = nullptr)
-      : GlweExpr(ptr) {};
-  GlweExpr getOperand() const;
+  /* implicit */ GlweUnaryExpr(GLWEExpr::ImplType *ptr = nullptr)
+      : GLWEExpr(ptr) {};
+  GLWEExpr getOperand() const;
 
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer);
 };
 
 /// @brief A Glwe binary expression.
-class GlweBinaryExpr : public GlweExpr {
+class GlweBinaryExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweBinaryExprStorage;
-  /* implicit */ GlweBinaryExpr(GlweExpr::ImplType *ptr = nullptr)
-      : GlweExpr(ptr) {};
-  GlweExpr getLHS() const;
-  GlweExpr getRHS() const;
+  /* implicit */ GlweBinaryExpr(GLWEExpr::ImplType *ptr = nullptr)
+      : GLWEExpr(ptr) {};
+  GLWEExpr getLHS() const;
+  GLWEExpr getRHS() const;
 
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer);
 };
 
-template <typename U> constexpr bool GlweExpr::isa() const {
+template <typename U> constexpr bool GLWEExpr::isa() const {
   if constexpr (std::is_same_v<U, GlweSymbolExpr>)
-    return getKind() == GlweExprKind::SymbolId;
+    return getKind() == GLWEExprKind::SymbolId;
   if constexpr (std::is_same_v<U, GlweConstantExpr>)
-    return getKind() == GlweExprKind::Constant;
+    return getKind() == GLWEExprKind::Constant;
   if constexpr (std::is_same_v<U, GlweBinaryExpr>)
-    return getKind() <= GlweExprKind::LAST_BINARY_OP;
+    return getKind() <= GLWEExprKind::LAST_BINARY_OP;
   if constexpr (std::is_same_v<U, GlweUnaryExpr>)
-    return getKind() > GlweExprKind::LAST_BINARY_OP &&
-           getKind() <= GlweExprKind::LAST_UNARY_OP;
+    return getKind() > GLWEExprKind::LAST_BINARY_OP &&
+           getKind() <= GLWEExprKind::LAST_UNARY_OP;
   return false;
 }
 
-template <typename U> U GlweExpr::dyn_cast() const {
+template <typename U> U GLWEExpr::dyn_cast() const {
   if (isa<U>())
     return U(expr);
   return U(nullptr);
 }
 
-GlweExpr getGlweUnaryExpr(GlweExprKind kind, GlweExpr operand,
+GLWEExpr getGlweUnaryExpr(GLWEExprKind kind, GLWEExpr operand,
                           MLIRContext *context);
-GlweExpr getGlweBinaryExpr(GlweExprKind kind, GlweExpr lhs, GlweExpr rhs,
+GLWEExpr getGlweBinaryExpr(GLWEExprKind kind, GLWEExpr lhs, GLWEExpr rhs,
                            MLIRContext *context);
-GlweExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context);
-GlweExpr getGlweConstantExpr(double value, MLIRContext *context);
+GLWEExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context);
+GLWEExpr getGlweConstantExpr(double value, MLIRContext *context);
 
 } // namespace GLWE
 } // namespace concretelang
@@ -175,23 +175,23 @@ GlweExpr getGlweConstantExpr(double value, MLIRContext *context);
 
 namespace llvm {
 
-// GlweExpr hash just like pointers
-template <> struct DenseMapInfo<mlir::concretelang::GLWE::GlweExpr> {
-  static mlir::concretelang::GLWE::GlweExpr getEmptyKey() {
+// GLWEExpr hash just like pointers
+template <> struct DenseMapInfo<mlir::concretelang::GLWE::GLWEExpr> {
+  static mlir::concretelang::GLWE::GLWEExpr getEmptyKey() {
     auto *pointer = llvm::DenseMapInfo<void *>::getEmptyKey();
-    return mlir::concretelang::GLWE::GlweExpr(
-        static_cast<mlir::concretelang::GLWE::GlweExpr::ImplType *>(pointer));
+    return mlir::concretelang::GLWE::GLWEExpr(
+        static_cast<mlir::concretelang::GLWE::GLWEExpr::ImplType *>(pointer));
   }
-  static mlir::concretelang::GLWE::GlweExpr getTombstoneKey() {
+  static mlir::concretelang::GLWE::GLWEExpr getTombstoneKey() {
     auto *pointer = llvm::DenseMapInfo<void *>::getTombstoneKey();
-    return mlir::concretelang::GLWE::GlweExpr(
-        static_cast<mlir::concretelang::GLWE::GlweExpr::ImplType *>(pointer));
+    return mlir::concretelang::GLWE::GLWEExpr(
+        static_cast<mlir::concretelang::GLWE::GLWEExpr::ImplType *>(pointer));
   }
-  static unsigned getHashValue(mlir::concretelang::GLWE::GlweExpr val) {
+  static unsigned getHashValue(mlir::concretelang::GLWE::GLWEExpr val) {
     return mlir::concretelang::GLWE::hash_value(val);
   }
-  static bool isEqual(mlir::concretelang::GLWE::GlweExpr LHS,
-                      mlir::concretelang::GLWE::GlweExpr RHS) {
+  static bool isEqual(mlir::concretelang::GLWE::GLWEExpr LHS,
+                      mlir::concretelang::GLWE::GLWEExpr RHS) {
     return LHS == RHS;
   }
 };
