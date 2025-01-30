@@ -162,7 +162,7 @@ void GlweBinaryExpr::print(mlir::AsmPrinter &printer) {
     printer << " ** ";
     break;
   case GLWEExprKind::Div:
-    printer << " div ";
+    printer << " / ";
     break;
   default:
     llvm_unreachable("unknown GlweBinaryExpr");
@@ -213,7 +213,7 @@ std::optional<GLWEExprKind> parseHighPrecedenceKind(::mlir::AsmParser &parser) {
     if (succeeded(parser.parseOptionalStar())) {
       binKind.emplace(GLWEExprKind::Pow);
     }
-  } else if (succeeded(parser.parseOptionalKeyword("div"))) {
+  } else if (succeeded(parser.parseOptionalSlash())) {
     binKind.emplace(GLWEExprKind::Div);
   }
   return binKind;
