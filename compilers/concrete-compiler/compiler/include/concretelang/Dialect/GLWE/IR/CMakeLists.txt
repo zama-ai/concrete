@@ -1,0 +1,18 @@
+set(LLVM_TARGET_DEFINITIONS GLWEAttrs.td)
+mlir_tablegen(GLWEAttrs.h.inc -gen-attrdef-decls -attrdefs-dialect=glwe)
+mlir_tablegen(GLWEAttrs.cpp.inc -gen-attrdef-defs -attrdefs-dialect=glwe)
+
+set(LLVM_TARGET_DEFINITIONS GLWEOps.td)
+mlir_tablegen(GLWEOps.h.inc -gen-op-decls)
+mlir_tablegen(GLWEOps.cpp.inc -gen-op-defs)
+mlir_tablegen(GLWETypes.h.inc -gen-typedef-decls -typedefs-dialect=glwe)
+mlir_tablegen(GLWETypes.cpp.inc -gen-typedef-defs -typedefs-dialect=glwe)
+mlir_tablegen(GLWEDialect.h.inc -gen-dialect-decls -dialect=glwe)
+mlir_tablegen(GLWEDialect.cpp.inc -gen-dialect-defs -dialect=glwe)
+add_public_tablegen_target(MLIRGLWEOpsIncGen)
+add_dependencies(mlir-headers MLIRGLWEOpsIncGen)
+
+add_concretelang_doc(GLWEOps GLWEDialect concretelang/ -gen-dialect-doc -dialect=glwe)
+add_concretelang_doc(GLWEOps GLWEOps concretelang/ -gen-op-doc)
+add_concretelang_doc(GLWEOps GLWEAttrs concretelang/ -gen-attrdef-doc)
+add_concretelang_doc(GLWETypes GLWETypes concretelang/ -gen-typedef-doc)
