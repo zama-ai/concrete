@@ -10,7 +10,7 @@
 #define CONCRETELANG_DIALECT_GLWE_IR_GLWE_TYPES
 
 include "concretelang/Dialect/GLWE/IR/GLWEDialect.td"
-// include "concretelang/Dialect/GLWE/Interfaces/GLWEInterfaces.td"
+include "concretelang/Dialect/GLWE/IR/GLWEAttrs.td"
 include "mlir/IR/BuiltinTypes.td"
 
 class GLWE_Type<string name, string mnemonic_, list<Trait> traits = []> :
@@ -22,10 +22,18 @@ class GLWE_Type<string name, string mnemonic_, list<Trait> traits = []> :
 
 def GLWE_GLWE : GLWE_Type<"GLWE", "glwe"> {
 
-  let summary = "Represents GLWE ciphertext";
+  let summary = "Represents a GLWE ciphertext";
+
+  let description = [{
+    An type describing a GLWE ciphertext:
+      - params: GLWE parameters
+      - variance: An optional variance expression
+  }];
 
   let parameters = (ins
-    "unsigned":$params
+    "GLWEParametersAttr":$params,
+    OptionalParameter<"GLWEExprAttr">: $variance
+
   );
 }
 

@@ -29,4 +29,23 @@ def GLWE_GLWEExprAttr: AttrDef<GLWE_Dialect, "GLWEExpr">{
     let hasCustomAssemblyFormat = 1;
 }
 
+def GLWE_GLWEParametersAttr: GLWE_Attr<"GLWEParameters", "glwe_params"> {
+
+  let description = [{
+    An attribute describing GLWE parameters :
+      - dimension: the dimension of GLWE
+      - mask_modulus: the modulus of the mask
+      - body_modulus: the modulus of the body
+      - polynomial_size: The size of the polynomial
+  }];
+
+  let parameters = (ins
+      GLWE_GLWEExprAttr: $dimension,
+      GLWE_GLWEExprAttr: $poly_size,
+      GLWE_GLWEExprAttr: $mask_modulus,
+      GLWE_GLWEExprAttr: $body_modulus
+  );
+
+}
+
 #endif
