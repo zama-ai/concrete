@@ -1,6 +1,7 @@
 add_subdirectory(FHE)
 add_subdirectory(FHELinalg)
 add_subdirectory(TFHE)
+add_subdirectory(GLWE)
 add_subdirectory(Concrete)
 add_subdirectory(RT)
 add_subdirectory(SDFG)
