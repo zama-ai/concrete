@@ -38,4 +38,29 @@ def GLWE_GLWE : GLWE_Type<"GLWE", "glwe"> {
   );
 }
 
+def GLWE_RadixGLWE : GLWE_Type<"RadixGLWE", "radix_glwe"> {
+
+  let summary = "Represents a decomposed GLWE ciphertext";
+
+  let description = [{
+    A type describing a decomposed GLWE ciphertext:"
+      - secret_key: The secret key encryption parameters
+      - encoding: The encoding parameters
+      - decomp: Parameters of the decomposition
+      - mask: Indicates if the mask is decomposed
+      - body: Indicates if the body is decomposed
+      - variance: An optional variance expression
+  }];
+
+  let parameters = (ins
+    "GLWESecretKeyAttr":$secret_key,
+    "GLWEEncodingAttr": $encoding,
+    "DecompositionParametersAttr":$decomp,
+    DefaultValuedParameter<"bool", "true">:$mask,
+    DefaultValuedParameter<"bool", "true">:$body,
+    OptionalParameter<"GLWEExprAttr">: $variance
+  );
+
+}
+
 #endif
