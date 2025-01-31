@@ -90,4 +90,18 @@ def GLWE_GLWEEncodingAttr: GLWE_Attr<"GLWEEncoding", "encoding"> {
     );
 }
 
+def GLWE_DecompositionParameters: GLWE_Attr<"DecompositionParameters", "decomp"> {
+
+    let description = [{
+      An attribute describing decomposition parameters:
+        - base_log: log2 of the decomposition base
+        - level: the number of level of the decomposition
+    }];
+
+    let parameters = (ins
+        GLWE_GLWEExprAttr: $base_log,
+        GLWE_GLWEExprAttr: $level
+    );
+}
+
 #endif
