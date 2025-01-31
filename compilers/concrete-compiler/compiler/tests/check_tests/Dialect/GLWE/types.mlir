@@ -19,6 +19,9 @@
   left_padding = <1.>
 >
 
+// Define the formula of the minimum encryption variance
+#minimal_variance = #glwe.expr<2.0 ** (2.0 * max(@slope * (@K * @N) + @bias, 2.0 - @m))>
+
 // A unparametrized glwe ciphertext
 !glwe_ciphertext = !glwe.glwe<
   secret_key = #secret_key,
@@ -51,7 +54,7 @@ func.func @test_glwe_ciphertext_with_several_bodies(%arg0: !glwe_ciphertext_with
 !glwe_ciphertext_with_variance = !glwe.glwe<
   secret_key = #secret_key,
   encoding = #native_encoding,
-  variance = <2.0 ** (2.0 * max(@slope * (@K * @N) + @bias, 2.0 - @m))>
+  variance = #minimal_variance
 >
 
 // CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>>
@@ -83,5 +86,57 @@ func.func @test_glwe_ciphertext_with_variance(%arg0: !glwe_ciphertext) {
 
 // CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <1.000000e+00>, poly_size = <5.120000e+02>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <2.000000e+00 ** 6.400000e+01>, mask_modulus = <2.000000e+00 ** 6.400000e+01>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, variance = <4.896863592478985E-7>>
 func.func @test_glwe_ciphertext_resolved(%arg0: !glwe_ciphertext_resolved) {
+    return
+}
+
+/////////////////////////////////////////////////
+// GLWE Ciphertext //////////////////////////////
+/////////////////////////////////////////////////
+
+// A unparametrized radix glwe ciphertext
+!glwe_radix_ciphertext = !glwe.radix_glwe<
+  secret_key = #secret_key,
+  encoding = #native_encoding,
+  decomp = <
+    base_log = <@b>,
+    level = <@l>
+  >
+>
+
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomp = <base_log = <@b>, level = <@l>>>
+func.func @test_glwe_radix_ciphertext(%arg0: !glwe_radix_ciphertext) {
+    return
+}
+
+// A glwe ciphertext with only mask descomposed
+!glwe_radix_ciphertext_mask_only = !glwe.radix_glwe<
+  secret_key = #secret_key,
+  encoding = #native_encoding,
+  decomp = <
+    base_log = <@b>,
+    level = <@l>
+  >,
+  mask = true,
+  body = false
+>
+
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomp = <base_log = <@b>, level = <@l>>, body = false>
+func.func @test_glwe_radix_ciphertext_mask_only(%arg0: !glwe_radix_ciphertext_mask_only) {
+    return
+}
+
+// A unparametrized radix glwe ciphertext with user defined variance
+!glwe_radix_ciphertext_with_variance = !glwe.radix_glwe<
+  secret_key = #secret_key,
+  encoding = #native_encoding,
+  decomp = <
+    base_log = <@b>,
+    level = <@l>
+  >,
+  variance = #minimal_variance
+>
+
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomp = <base_log = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
+func.func @test_glwe_radix_ciphertext_with_variance(%arg0: !glwe_radix_ciphertext_with_variance) {
     return
 }
