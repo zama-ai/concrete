@@ -24,7 +24,15 @@
 ## About
 
 ### What is Concrete
-**Concrete** is an open-source FHE Compiler that simplifies the use of fully homomorphic encryption (FHE). Concrete framework contains a TFHE Compiler based on LLVM, making writing FHE programs an easy task for developers.
+**Concrete** is an open-source FHE Compiler that simplifies the use of fully homomorphic encryption (FHE). Built on TFHE technology and leveraging LLVM, Concrete makes writing FHE programs accessible to developers without deep cryptography expertise.
+
+#### Key Features
+- 🚀 Simple Python API for FHE operations
+- 🔒 Built-in security guarantees
+- ⚡ GPU acceleration support
+- 🛠 Automatic parameter selection
+- 📊 Built-in performance analysis tools
+- 🔄 Seamless integration with existing Python code
 
 Fully Homomorphic Encryption (FHE) enables performing computations on encrypted data directly without the need to decrypt it first. FHE allows developers to build services that ensure privacy for all users. FHE is also an excellent solution against data breaches as everything is performed on encrypted data. Even if the server is compromised, no sensitive data will be leaked.
 
@@ -51,36 +59,42 @@ Concrete is a versatile library that can be used for a variety of purposes. For 
 
 ## Getting Started
 
+### System Requirements
+- Python 3.8 - 3.12
+- 8GB RAM minimum (16GB recommended)
+- x86_64 or ARM64 processor
+
 ###  Installation
-Depending on your OS, Concrete may be installed with Docker or with pip:
+We provide multiple installation methods to suit your needs:
 
-|               OS / HW                       | Available on Docker | Available on PyPI |
-| :-----------------------------------------: | :-----------------: | :--------------: |
-|                Linux                        |         Yes         |       Yes        |
-|               Windows                       |         Yes         |        No        |
-|     Windows Subsystem for Linux             |         Yes         |       Yes        |
-|            macOS 11+ (Intel)                |         Yes         |       Yes        |
-| macOS 11+ (Apple Silicon: M1, M2, etc.)     |      Coming soon    |       Yes        |
-
-
-#### Pip
-The preferred way to install Concrete is through PyPI:
-
+#### 1. PyPI Installation (Recommended)
+For CPU-only version:
 ```shell
 pip install -U pip wheel setuptools
 pip install concrete-python
 ```
 
-**Note:** Not all versions are available on PyPI. If you need a version that is not on PyPI (including nightly releases), you can install it from our package index by adding `--index-url https://pypi.zama.ai/cpu`.
-
-**Note:** Wheels with GPU support are not on PyPI. You can install it from our package index by adding `--index-url https://pypi.zama.ai/gpu`, more information on GPU wheels [here](https://docs.zama.ai/concrete/execution-analysis/gpu_acceleration).
-
-#### Docker
-You can get the concrete-python docker image by pulling the latest docker image:
-
+For GPU-accelerated version:
 ```shell
-docker pull zamafhe/concrete-python:v2.0.0
+pip install -U pip wheel setuptools
+pip install concrete-python --index-url https://pypi.zama.ai/gpu
 ```
+
+#### 2. Docker Installation
+```shell
+# CPU version
+docker pull zamafhe/concrete-python:v2.0.0
+
+# GPU version
+docker pull zamafhe/concrete-python:v2.0.0-gpu
+```
+
+#### Version Matrix
+
+| Concrete Version | Python Version | CUDA Support |
+|-----------------|----------------|--------------|
+| 2.0.0           | 3.8 - 3.12     | ≥ 11.8      |
+| 1.1.0           | 3.8 - 3.10     | ≥ 11.7      |
 
 *Find more detailed installation instructions in [this part of the documentation](https://docs.zama.ai/concrete/getting-started/installing)*
 
