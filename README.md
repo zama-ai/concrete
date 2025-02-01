@@ -34,11 +34,6 @@
 - 📊 Built-in performance analysis tools
 - 🔄 Seamless integration with existing Python code
 
-### System Requirements
-- Python 3.8 - 3.11
-- 8GB RAM minimum (16GB recommended)
-- x86_64 or ARM64 processor
-
 Fully Homomorphic Encryption (FHE) enables performing computations on encrypted data directly without the need to decrypt it first. FHE allows developers to build services that ensure privacy for all users. FHE is also an excellent solution against data breaches as everything is performed on encrypted data. Even if the server is compromised, no sensitive data will be leaked.
 
 Concrete is a versatile library that can be used for a variety of purposes. For instance, [Concrete ML](https://github.com/zama-ai/concrete-ml) is built on top of Concrete to simplify Machine-Learning oriented use cases.
@@ -63,6 +58,11 @@ Concrete is a versatile library that can be used for a variety of purposes. For 
 
 
 ## Getting Started
+
+### System Requirements
+- Python 3.8 - 3.12
+- 8GB RAM minimum (16GB recommended)
+- x86_64 or ARM64 processor
 
 ###  Installation
 We provide multiple installation methods to suit your needs:
@@ -93,7 +93,7 @@ docker pull zamafhe/concrete-python:v2.0.0-gpu
 
 | Concrete Version | Python Version | CUDA Support |
 |-----------------|----------------|--------------|
-| 2.0.0           | 3.8 - 3.11     | ≥ 11.8      |
+| 2.0.0           | 3.8 - 3.12     | ≥ 11.8      |
 | 1.1.0           | 3.8 - 3.10     | ≥ 11.7      |
 
 *Find more detailed installation instructions in [this part of the documentation](https://docs.zama.ai/concrete/getting-started/installing)*
