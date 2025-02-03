@@ -62,13 +62,13 @@ public:
   /* implicit */ GLWEExpr(const ImplType *expr)
       : expr(const_cast<ImplType *>(expr)) {}
 
-  bool operator==(GLWEExpr other) const { return expr == other.expr; }
-  bool operator!=(GLWEExpr other) const { return !(*this == other); }
+  bool operator==(const GLWEExpr &other) const { return expr == other.expr; }
+  bool operator!=(const GLWEExpr &other) const { return !(*this == other); }
 
   explicit operator bool() const { return expr; }
   bool operator!() const { return expr == nullptr; }
 
-  friend ::llvm::hash_code hash_value(GLWEExpr arg);
+  friend ::llvm::hash_code hash_value(const GLWEExpr &arg);
 
   // Return the kind of the expression.
   GLWEExprKind getKind() const;
@@ -77,7 +77,7 @@ public:
   static GLWEExpr parse(mlir::AsmParser &parser);
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer);
+  void print(mlir::AsmPrinter &printer) const;
 
   template <typename U> constexpr bool isa() const;
 
@@ -89,7 +89,7 @@ protected:
   ImplType *expr{nullptr};
 };
 
-inline ::llvm::hash_code hash_value(GLWEExpr arg) {
+inline ::llvm::hash_code hash_value(const GLWEExpr &arg) {
   return ::llvm::hash_value(arg.expr);
 }
 
@@ -102,7 +102,7 @@ public:
   llvm::StringRef getSymbolName() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer);
+  void print(mlir::AsmPrinter &printer) const;
 };
 
 /// An integer constant appearing in affine expression.
@@ -115,7 +115,7 @@ public:
   double getValue() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer);
+  void print(mlir::AsmPrinter &printer) const;
 };
 
 /// @brief A Glwe unary expression.
@@ -127,7 +127,7 @@ public:
   GLWEExpr getOperand() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer);
+  void print(mlir::AsmPrinter &printer) const;
 };
 
 /// @brief A Glwe binary expression.
@@ -140,7 +140,7 @@ public:
   GLWEExpr getRHS() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer);
+  void print(mlir::AsmPrinter &printer) const;
 };
 
 template <typename U> constexpr bool GLWEExpr::isa() const {
