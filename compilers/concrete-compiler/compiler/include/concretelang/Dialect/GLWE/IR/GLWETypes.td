@@ -55,9 +55,34 @@ def GLWE_RadixGLWE : GLWE_Type<"RadixGLWE", "radix_glwe"> {
   let parameters = (ins
     "GLWESecretKeyAttr":$secret_key,
     "GLWEEncodingAttr": $encoding,
-    "DecompositionParametersAttr":$decomp,
+    "DecompositionParametersAttr":$decomposition,
     DefaultValuedParameter<"bool", "true">:$mask,
     DefaultValuedParameter<"bool", "true">:$body,
+    OptionalParameter<"GLWEExprAttr">: $variance
+  );
+
+}
+
+def GLWE_GLev : GLWE_Type<"GLev", "glev"> {
+
+  let summary = "Represents a GLev ciphertext i.e. a collection of GLWE ciphertext";
+
+  let description = [{
+    A type describing a GLev ciphertext:"
+      - secret_key: The secret key encryption parameters
+      - encoding: The encoding parameters
+      - decomp: Parameters of the decomposition
+      - average_message:
+      - shape: The shape of the GLWE ciphertext
+      - variance: An optional variance expression
+  }];
+
+  let parameters = (ins
+    "GLWESecretKeyAttr":$secret_key,
+    "GLWEEncodingAttr": $encoding,
+    "DecompositionParametersAttr":$decomposition,
+    "GLWEExprAttr": $average_message,
+    ArrayRefParameter<"GLWEExprAttr">:$shape,
     OptionalParameter<"GLWEExprAttr">: $variance
   );
 
