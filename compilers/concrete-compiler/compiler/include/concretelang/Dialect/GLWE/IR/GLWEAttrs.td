@@ -92,7 +92,7 @@ def GLWE_GLWEEncodingAttr: GLWE_Attr<"GLWEEncoding", "encoding"> {
     );
 }
 
-def GLWE_DecompositionParameters: GLWE_Attr<"DecompositionParameters", "decomp"> {
+def GLWE_DecompositionParametersAttr: GLWE_Attr<"DecompositionParameters", "decomposition"> {
 
     let description = [{
       An attribute describing decomposition parameters:
