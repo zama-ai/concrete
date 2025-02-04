@@ -244,8 +244,7 @@ GLWEExpr parseGlweOperandExpr(GLWEExpr lhs, mlir::AsmParser &parser) {
   // Parse leaf expression (symbol and constant)
   if (succeeded(parser.parseOptionalSymbolName(symbol))) {
     return getGlweSymbolExpr(symbol.getValue(), parser.getContext());
-  } else if (succeeded(parser.parseFloat(constant))) {
-    // TODO: putain d'optional!
+  } else if (succeeded(parser.parseOptionalFloat(constant))) {
     return getGlweConstantExpr(constant, parser.getContext());
   }
   // Parse unary expression
