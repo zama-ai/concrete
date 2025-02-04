@@ -110,6 +110,7 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
+            cargo install cxxbridge-cmd
             make DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all
             echo "Debug: ccache statistics (after the build):"
             ccache -s

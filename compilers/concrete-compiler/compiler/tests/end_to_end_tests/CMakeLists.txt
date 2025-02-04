@@ -3,7 +3,16 @@ add_compile_options(-fexceptions)
 
 function(add_concretecompiler_unittest test_name)
   add_unittest(ConcreteCompilerUnitTests ${test_name} ${ARGN})
-  target_link_libraries(${test_name} PRIVATE ConcretelangSupport EndToEndFixture ${RPATH_FLAGS})
+  target_link_libraries(
+    ${test_name}
+    PRIVATE
+    ConcretelangSupport
+    ConcretelangClientLib
+    ConcretelangServerLib
+    ConcretelangRuntime
+    EndToEndFixture
+    ${RPATH_FLAGS}
+  )
   set_source_files_properties(${ARGN} PROPERTIES COMPILE_FLAGS "-fno-rtti")
 endfunction()
 

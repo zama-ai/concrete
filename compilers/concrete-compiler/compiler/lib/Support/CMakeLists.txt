@@ -38,9 +38,9 @@ add_mlir_library(
   concrete_optimizer
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
-  ConcretelangRuntime
-  ConcretelangClientLib
-  ConcretelangServerLib
+  concrete-protocol
+  capnp
+  kj
   TFHEDialectAnalysis
   ConcreteDialectAnalysis)
 
