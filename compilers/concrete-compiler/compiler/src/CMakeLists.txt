@@ -18,6 +18,7 @@ target_link_libraries(
           SDFGDialect
           OptimizerDialect
           ConcretelangSupport
+          ConcretelangRuntime
           ConcretelangTransforms
           MLIRIR
           MLIRLLVMIRTransforms

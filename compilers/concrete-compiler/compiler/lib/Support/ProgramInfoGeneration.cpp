@@ -14,7 +14,6 @@
 #include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Common/Security.h"
-#include "concretelang/Common/Values.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Dialect/Concrete/IR/ConcreteTypes.h"
 #include "concretelang/Dialect/FHE/IR/FHETypes.h"
@@ -35,6 +34,22 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Config/abi-breaking.h"
 #include "llvm/Support/Error.h"
+
+size_t getCorrespondingPrecision(size_t originalPrecision) {
+  if (originalPrecision <= 8) {
+    return 8;
+  }
+  if (originalPrecision <= 16) {
+    return 16;
+  }
+  if (originalPrecision <= 32) {
+    return 32;
+  }
+  if (originalPrecision <= 64) {
+    return 64;
+  }
+  assert(false);
+}
 
 using concretelang::protocol::Message;
 
@@ -152,14 +167,14 @@ generateGate(mlir::Type inputType,
     auto plaintextGateInfo = output.asBuilder().initTypeInfo().initPlaintext();
     plaintextGateInfo.setShape(inputShape);
     plaintextGateInfo.setIntegerPrecision(
-        ::concretelang::values::getCorrespondingPrecision(
+        getCorrespondingPrecision(
             inputType.getIntOrFloatBitWidth()));
     plaintextGateInfo.setIsSigned(inputType.isSignedInteger());
 
     auto rawInfo = output.asBuilder().initRawInfo();
     rawInfo.setShape(inputShape);
     rawInfo.setIntegerPrecision(
-        ::concretelang::values::getCorrespondingPrecision(
+        getCorrespondingPrecision(
             inputType.getIntOrFloatBitWidth()));
     rawInfo.setIsSigned(inputType.isSignedInteger());
   } else if (inputEncoding.hasIndex()) {

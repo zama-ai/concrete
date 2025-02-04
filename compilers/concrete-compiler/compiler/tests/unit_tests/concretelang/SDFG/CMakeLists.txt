@@ -4,7 +4,14 @@ add_dependencies(ConcretelangUnitTests SDFGUnitTests)
 
 function(add_concretecompiler_lib_test test_name)
   add_unittest(SDFGUnitTests ${test_name} ${ARGN})
-  target_link_libraries(${test_name} PRIVATE ConcretelangSupport)
+  target_link_libraries(
+    ${test_name}
+    PRIVATE
+    ConcretelangSupport
+    ConcretelangClientLib
+    ConcretelangServerLib
+    ConcretelangRuntime
+  )
   set_source_files_properties(${ARGN} PROPERTIES COMPILE_FLAGS "-fno-rtti")
 endfunction()
 

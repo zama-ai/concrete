@@ -16,5 +16,4 @@ add_mlir_library(
   DEPENDS
   mlir-headers
   LINK_LIBS
-  ConcretelangRuntime
   ConcretelangCommon)

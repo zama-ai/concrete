@@ -6,8 +6,6 @@
 #ifndef CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 #define CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 
-#include "capnp/message.h"
-#include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Support/Encodings.h"

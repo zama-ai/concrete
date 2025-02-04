@@ -1,5 +1,13 @@
 add_compile_options(-fsized-deallocation)
 
+add_library(
+    _ConcreteSys_ConcretelangRuntime_Dfr
+    STATIC
+    DFRuntime.cpp
+    GPUDFG.cpp
+    utils.cpp
+)
+
 if(CONCRETELANG_CUDA_SUPPORT)
   add_library(
     ConcretelangRuntime SHARED
@@ -67,7 +75,15 @@ target_link_libraries(
          dl
          $<TARGET_OBJECTS:mlir_c_runner_utils>
          $<TARGET_OBJECTS:mlir_float16_utils>
-         $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
+         $<TARGET_OBJECTS:MLIRSparseTensorRuntime>
+)
+target_link_libraries(
+    ConcretelangRuntime
+    PRIVATE
+    LLVMSupport
+    LLVMTarget
+    LLVMAArch64CodeGen
+)
 
 if(CONCRETELANG_CUDA_SUPPORT)
   install(TARGETS ConcretelangRuntime omp tfhe_cuda_backend EXPORT ConcretelangRuntime)

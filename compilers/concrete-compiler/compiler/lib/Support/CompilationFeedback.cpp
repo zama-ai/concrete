@@ -13,6 +13,26 @@
 
 using concretelang::protocol::Message;
 
+
+// TODO: the two following functions are the only dependencies on `concrete-cpu`.
+// Unfortunately, having both `concrete-cpu` and `concrete-optimizer` linked statically does
+// not work (because of non-mangled private duplicate symbols clashing). This is in the process of
+// being solved on the rustc side, but it will likely take a bit of time.
+//
+// In the meantime, since the function is fairly straightforward, we copy it here.
+size_t concrete_cpu_bootstrap_key_size_u64(size_t decomposition_level_count,
+                                           size_t glwe_dimension,
+                                           size_t polynomial_size,
+                                           size_t input_lwe_dimension){
+    return input_lwe_dimension * decomposition_level_count * polynomial_size * (glwe_dimension + 1) * (glwe_dimension + 1);
+}
+
+size_t concrete_cpu_keyswitch_key_size_u64(size_t decomposition_level_count,
+                                           size_t input_dimension,
+                                           size_t output_dimension) {
+    return input_dimension * decomposition_level_count * (output_dimension + 1);
+}
+
 namespace mlir {
 namespace concretelang {
 
