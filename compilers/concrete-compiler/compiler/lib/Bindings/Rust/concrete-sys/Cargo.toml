@@ -1,0 +1,13 @@
+[package]
+name = "concrete-sys"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cxx = "1.0"
+
+[build-dependencies]
+cxx-build = "1.0"
+
+[dev-dependencies]
+ar = "0.9"

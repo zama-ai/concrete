@@ -56,7 +56,6 @@
 #include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
 #include "concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/TypeInference/IR/TypeInferenceDialect.h"
-#include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Encodings.h"
 #include "concretelang/Support/Error.h"
@@ -69,20 +68,18 @@ namespace {
 /// Returns the path of the shared library
 std::string getSharedLibraryPath(std::string outputDirPath) {
   llvm::SmallString<0> sharedLibraryPath(outputDirPath);
-  llvm::sys::path::append(
-      sharedLibraryPath,
-      "sharedlib" +
-          mlir::concretelang::Library::DOT_SHARED_LIB_EXT);
+  llvm::sys::path::append(sharedLibraryPath,
+                          "sharedlib" +
+                              mlir::concretelang::Library::DOT_SHARED_LIB_EXT);
   return sharedLibraryPath.str().str();
 }
 
 /// Returns the path of the static library
 std::string getStaticLibraryPath(std::string outputDirPath) {
   llvm::SmallString<0> staticLibraryPath(outputDirPath);
-  llvm::sys::path::append(
-      staticLibraryPath,
-      "staticlib" +
-          mlir::concretelang::Library::DOT_STATIC_LIB_EXT);
+  llvm::sys::path::append(staticLibraryPath,
+                          "staticlib" +
+                              mlir::concretelang::Library::DOT_STATIC_LIB_EXT);
   return staticLibraryPath.str().str();
 }
 
@@ -286,8 +283,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   std::unique_ptr<mlir::SourceMgrDiagnosticVerifierHandler> smHandler;
   std::string diagnosticsMsg;
   llvm::raw_string_ostream diagnosticsOS(diagnosticsMsg);
-  auto errorDiag = [&](std::string prefixMsg)
-      -> llvm::Expected<CompilationResult> {
+  auto errorDiag =
+      [&](std::string prefixMsg) -> llvm::Expected<CompilationResult> {
     return StreamStringError(prefixMsg + "\n" + diagnosticsOS.str());
   };
 
@@ -337,9 +334,6 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       options.autoParallelize || options.dataflowParallelize;
   auto loopParallelize = options.autoParallelize || options.loopParallelize;
 
-  if (loopParallelize)
-    mlir::concretelang::dfr::_dfr_set_use_omp(true);
-
   // Sanity checks for enabling GPU usage: the compiler must have been
   // compiled with Cuda support (especially important when building
   // python wheels), and at least one device must be available to
@@ -348,35 +342,38 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
     // If this compiler is not compiled using Cuda support, then
     // requesting GPU is forbidden - instead of a hard error, issue a
     // warning and disable the GPU option.
-    if (!mlir::concretelang::gpu_dfg::check_cuda_runtime_enabled()) {
-      // Allow compilation to complete if only code generation is expected.
-      if (target != Target::LIBRARY) {
-        warnx("This instance of the Concrete compiler does not support GPU "
-              "acceleration."
-              " Allowing code generation to proceed, but execution will not be "
-              "possible.");
-      } else {
-        warnx("This instance of the Concrete compiler does not support GPU "
-              "acceleration."
-              " If you are using Concrete-Python, it means that the module "
-              "installed is not GPU enabled.\n"
-              "Continuing without GPU acceleration.");
-        options.emitGPUOps = false;
-        options.emitSDFGOps = false;
-        options.batchTFHEOps = false;
-      }
-    } else {
-      // Ensure that at least one Cuda device is available if GPU option
-      // is used
-      if (!mlir::concretelang::gpu_dfg::check_cuda_device_available()) {
-        warnx("No Cuda device available on this system (either not present or "
-              "the driver is not online).\n"
-              "Continuing without GPU acceleration.");
-        options.emitGPUOps = false;
-        options.emitSDFGOps = false;
-        options.batchTFHEOps = false;
-      }
+
+#ifdef CONCRETELANG_CUDA_SUPPORT
+    // Ensure that at least one Cuda device is available if GPU option
+    // is used
+    int num;
+    if (cudaGetDeviceCount(&num) != cudaSuccess) {
+      warnx("No Cuda device available on this system (either not present or "
+            "the driver is not online).\n"
+            "Continuing without GPU acceleration.");
+      options.emitGPUOps = false;
+      options.emitSDFGOps = false;
+      options.batchTFHEOps = false;
     }
+#else
+    // Allow compilation to complete if only code generation is expected.
+    if (target != Target::LIBRARY) {
+      warnx("This instance of the Concrete compiler does not support GPU "
+            "acceleration."
+            " Allowing code generation to proceed, but execution will not be "
+            "possible.");
+    } else {
+      warnx("This instance of the Concrete compiler does not support GPU "
+            "acceleration."
+            " If you are using Concrete-Python, it means that the module "
+            "installed is not GPU enabled.\n"
+            "Continuing without GPU acceleration.");
+      options.emitGPUOps = false;
+      options.emitSDFGOps = false;
+      options.batchTFHEOps = false;
+    }
+
+#endif
 
     // Finally for now we cannot allow dataflow parallelization at the
     // same time as GPU usage.  This restriction will be relaxed later.
@@ -387,11 +384,6 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       dataflowParallelize = false;
     }
   }
-
-  // If dataflow parallelization will proceed, mark it for
-  // initialising the runtime
-  if (dataflowParallelize)
-    mlir::concretelang::dfr::_dfr_set_required(true);
 
   mlir::OwningOpRef<mlir::ModuleOp> mlirModuleRef(moduleOp);
   res.mlirModuleRef = std::move(mlirModuleRef);
@@ -848,8 +840,7 @@ void Library::addExtraObjectFilePath(std::string path) {
   objectsPath.push_back(path);
 }
 
-Result<Message<concreteprotocol::ProgramInfo>>
-Library::getProgramInfo() {
+Result<Message<concreteprotocol::ProgramInfo>> Library::getProgramInfo() {
   if (!programInfo.has_value()) {
     programInfo = Message<concreteprotocol::ProgramInfo>();
     auto path = this->getProgramInfoPath();
@@ -866,9 +857,7 @@ Library::getProgramInfo() {
   return programInfo.value();
 }
 
-const std::string &Library::getOutputDirPath() const {
-  return outputDirPath;
-}
+const std::string &Library::getOutputDirPath() const { return outputDirPath; }
 
 /// Returns the path of the shared library
 std::string Library::getSharedLibraryPath() const {
@@ -905,8 +894,7 @@ llvm::Expected<std::string> Library::emitProgramInfoJSON() {
   return programInfoPath;
 }
 
-llvm::Expected<std::string>
-Library::emitCompilationFeedbackJSON() {
+llvm::Expected<std::string> Library::emitCompilationFeedbackJSON() {
   auto path = ::getCompilationFeedbackPath(outputDirPath);
   llvm::json::Value value(compilationFeedback);
   std::error_code error;
@@ -976,9 +964,9 @@ std::string ensureLibDotExt(std::string path, std::string dotExt) {
   return path + dotExt;
 }
 
-llvm::Expected<std::string> Library::emit(
-    std::string path, std::string dotExt, std::string linker,
-    std::optional<std::vector<std::string>> extraArgs) {
+llvm::Expected<std::string>
+Library::emit(std::string path, std::string dotExt, std::string linker,
+              std::optional<std::vector<std::string>> extraArgs) {
   auto pathDotExt = ensureLibDotExt(path, dotExt);
   auto error = mlir::concretelang::emitLibrary(objectsPath, pathDotExt, linker,
                                                extraArgs);
@@ -1069,10 +1057,9 @@ llvm::Expected<std::string> Library::emitStatic() {
   return path;
 }
 
-llvm::Error Library::emitArtifacts(bool sharedLib,
-                                                   bool staticLib,
-                                                   bool clientParameters,
-                                                   bool compilationFeedback) {
+llvm::Error Library::emitArtifacts(bool sharedLib, bool staticLib,
+                                   bool clientParameters,
+                                   bool compilationFeedback) {
   // Create output directory if doesn't exist
   llvm::sys::fs::create_directory(outputDirPath);
   if (sharedLib) {

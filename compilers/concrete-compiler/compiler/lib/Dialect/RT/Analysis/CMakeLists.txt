@@ -12,5 +12,4 @@ add_mlir_library(
   LINK_LIBS
   PUBLIC
   MLIRIR
-  RTDialect
-  ConcretelangRuntime)
+  RTDialect)

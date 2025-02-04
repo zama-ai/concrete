@@ -10,12 +10,10 @@ add_mlir_library(
   Transformers.cpp
   Security.cpp
   Values.cpp
-  DEPENDS
-  concrete-protocol
   LINK_LIBS
   PUBLIC
-  concrete_cpu
-  kj
-  capnp)
+  concrete-protocol
+  capnp
+  kj)
 
 target_include_directories(ConcretelangCommon PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
