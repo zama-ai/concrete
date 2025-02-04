@@ -4,19 +4,16 @@ if(CONCRETELANG_CUDA_SUPPORT)
   add_library(
     ConcretelangRuntime SHARED
     context.cpp
-    utils.cpp
     simulation.cpp
     wrappers.cpp
     DFRuntime.cpp
     key_manager.cpp
     GPUDFG.cpp
     time_util.cpp)
-  target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 else()
   add_library(
     ConcretelangRuntime SHARED
     context.cpp
-    utils.cpp
     simulation.cpp
     wrappers.cpp
     DFRuntime.cpp
@@ -25,10 +22,10 @@ else()
     time_util.cpp)
 endif()
 
-add_dependencies(ConcretelangRuntime concrete_cpu concrete_cpu_noise_model concrete-protocol)
+add_dependencies(ConcretelangRuntime rust_deps_bundle concrete-protocol)
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
-  target_link_libraries(ConcretelangRuntime PRIVATE HPX::hpx HPX::iostreams_component)
+  target_link_libraries(ConcretelangRuntime PUBLIC HPX::hpx HPX::iostreams_component HPX::component)
   set_source_files_properties(DFRuntime.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
   target_include_directories(ConcretelangRuntime PUBLIC ${HPX_INCLUDE_DIRS})
 endif()
@@ -56,18 +53,18 @@ target_include_directories(
   ConcretelangRuntime
   PUBLIC ${CONCRETE_CPU_INCLUDE_DIR}
   PUBLIC ${CONCRETE_CPU_NOISE_MODEL_INCLUDE_DIR})
+
 target_link_libraries(
   ConcretelangRuntime
-  PUBLIC concrete_cpu
-         concrete-protocol
-         concrete_cpu_noise_model
-         ConcretelangCommon
-         pthread
-         m
-         dl
-         $<TARGET_OBJECTS:mlir_c_runner_utils>
-         $<TARGET_OBJECTS:mlir_float16_utils>
-         $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
+  PRIVATE rust_deps_bundle
+          concrete-protocol
+          pthread
+          m
+          dl
+          $<TARGET_OBJECTS:mlir_c_runner_utils>
+          $<TARGET_OBJECTS:mlir_float16_utils>
+          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>
+          ConcretelangCommon)
 
 if(CONCRETELANG_CUDA_SUPPORT)
   install(TARGETS ConcretelangRuntime omp tfhe_cuda_backend EXPORT ConcretelangRuntime)
@@ -75,3 +72,39 @@ else()
   install(TARGETS ConcretelangRuntime omp EXPORT ConcretelangRuntime)
 endif()
 install(EXPORT ConcretelangRuntime DESTINATION "./")
+
+######
+
+add_library(
+  ConcretelangRuntimeStatic
+  context.cpp
+  simulation.cpp
+  wrappers.cpp
+  DFRuntime.cpp
+  key_manager.cpp
+  GPUDFG.cpp
+  time_util.cpp
+)
+
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_libraries(ConcretelangRuntimeStatic PUBLIC omp)
+else()
+  target_link_libraries(ConcretelangRuntimeStatic PUBLIC -Wl,--no-as-needed omp)
+endif()
+
+target_include_directories(
+  ConcretelangRuntimeStatic
+  PUBLIC ${CONCRETE_CPU_INCLUDE_DIR}
+  PUBLIC ${CONCRETE_CPU_NOISE_MODEL_INCLUDE_DIR})
+
+target_link_libraries(
+  ConcretelangRuntimeStatic
+  PUBLIC rust_deps_bundle
+          concrete-protocol
+          pthread
+          m
+          dl
+          $<TARGET_OBJECTS:mlir_c_runner_utils>
+          $<TARGET_OBJECTS:mlir_float16_utils>
+          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)

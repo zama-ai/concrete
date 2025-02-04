@@ -1,0 +1,14 @@
+[package]
+name = "rust_deps_bundle"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+concrete-cpu = { path = "../../backends/concrete-cpu/implementation", features = [
+    "nightly",
+] }
+concrete-cpu-noise-model = { path = "../../backends/concrete-cpu/noise-model" }
+concrete-optimizer-cpp = { path = "../../compilers/concrete-optimizer/concrete-optimizer-cpp" }
+
+[lib]
+crate-type = ["staticlib"]

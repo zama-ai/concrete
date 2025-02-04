@@ -64,5 +64,4 @@ include_directories(${CAPNP_INCLUDE_DIR})
 add_library(concrete-protocol STATIC
   ${CAPNP_GENERATED_CPP}
   ${CAPNP_GENERATED_HDR})
-target_link_libraries(concrete-protocol PUBLIC capnp capnp-json kj)
-
+target_link_libraries(concrete-protocol PRIVATE capnp capnp-json kj)

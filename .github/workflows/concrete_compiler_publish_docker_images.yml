@@ -37,6 +37,7 @@ jobs:
           backend: aws
           profile: cpu-test
 
+  # Not sure what to do about this one...
   hpx-image:
     needs: [setup-instance]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
