@@ -69,20 +69,18 @@ namespace {
 /// Returns the path of the shared library
 std::string getSharedLibraryPath(std::string outputDirPath) {
   llvm::SmallString<0> sharedLibraryPath(outputDirPath);
-  llvm::sys::path::append(
-      sharedLibraryPath,
-      "sharedlib" +
-          mlir::concretelang::Library::DOT_SHARED_LIB_EXT);
+  llvm::sys::path::append(sharedLibraryPath,
+                          "sharedlib" +
+                              mlir::concretelang::Library::DOT_SHARED_LIB_EXT);
   return sharedLibraryPath.str().str();
 }
 
 /// Returns the path of the static library
 std::string getStaticLibraryPath(std::string outputDirPath) {
   llvm::SmallString<0> staticLibraryPath(outputDirPath);
-  llvm::sys::path::append(
-      staticLibraryPath,
-      "staticlib" +
-          mlir::concretelang::Library::DOT_STATIC_LIB_EXT);
+  llvm::sys::path::append(staticLibraryPath,
+                          "staticlib" +
+                              mlir::concretelang::Library::DOT_STATIC_LIB_EXT);
   return staticLibraryPath.str().str();
 }
 
@@ -286,8 +284,8 @@ CompilerEngine::compile(llvm::SourceMgr &sm, Target target, OptionalLib lib) {
   std::unique_ptr<mlir::SourceMgrDiagnosticVerifierHandler> smHandler;
   std::string diagnosticsMsg;
   llvm::raw_string_ostream diagnosticsOS(diagnosticsMsg);
-  auto errorDiag = [&](std::string prefixMsg)
-      -> llvm::Expected<CompilationResult> {
+  auto errorDiag =
+      [&](std::string prefixMsg) -> llvm::Expected<CompilationResult> {
     return StreamStringError(prefixMsg + "\n" + diagnosticsOS.str());
   };
 
@@ -848,8 +846,7 @@ void Library::addExtraObjectFilePath(std::string path) {
   objectsPath.push_back(path);
 }
 
-Result<Message<concreteprotocol::ProgramInfo>>
-Library::getProgramInfo() {
+Result<Message<concreteprotocol::ProgramInfo>> Library::getProgramInfo() {
   if (!programInfo.has_value()) {
     programInfo = Message<concreteprotocol::ProgramInfo>();
     auto path = this->getProgramInfoPath();
@@ -866,9 +863,7 @@ Library::getProgramInfo() {
   return programInfo.value();
 }
 
-const std::string &Library::getOutputDirPath() const {
-  return outputDirPath;
-}
+const std::string &Library::getOutputDirPath() const { return outputDirPath; }
 
 /// Returns the path of the shared library
 std::string Library::getSharedLibraryPath() const {
@@ -905,8 +900,7 @@ llvm::Expected<std::string> Library::emitProgramInfoJSON() {
   return programInfoPath;
 }
 
-llvm::Expected<std::string>
-Library::emitCompilationFeedbackJSON() {
+llvm::Expected<std::string> Library::emitCompilationFeedbackJSON() {
   auto path = ::getCompilationFeedbackPath(outputDirPath);
   llvm::json::Value value(compilationFeedback);
   std::error_code error;
@@ -976,9 +970,9 @@ std::string ensureLibDotExt(std::string path, std::string dotExt) {
   return path + dotExt;
 }
 
-llvm::Expected<std::string> Library::emit(
-    std::string path, std::string dotExt, std::string linker,
-    std::optional<std::vector<std::string>> extraArgs) {
+llvm::Expected<std::string>
+Library::emit(std::string path, std::string dotExt, std::string linker,
+              std::optional<std::vector<std::string>> extraArgs) {
   auto pathDotExt = ensureLibDotExt(path, dotExt);
   auto error = mlir::concretelang::emitLibrary(objectsPath, pathDotExt, linker,
                                                extraArgs);
@@ -1069,10 +1063,9 @@ llvm::Expected<std::string> Library::emitStatic() {
   return path;
 }
 
-llvm::Error Library::emitArtifacts(bool sharedLib,
-                                                   bool staticLib,
-                                                   bool clientParameters,
-                                                   bool compilationFeedback) {
+llvm::Error Library::emitArtifacts(bool sharedLib, bool staticLib,
+                                   bool clientParameters,
+                                   bool compilationFeedback) {
   // Create output directory if doesn't exist
   llvm::sys::fs::create_directory(outputDirPath);
   if (sharedLib) {

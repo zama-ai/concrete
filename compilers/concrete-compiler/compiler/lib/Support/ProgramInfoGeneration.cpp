@@ -167,15 +167,13 @@ generateGate(mlir::Type inputType,
     auto plaintextGateInfo = output.asBuilder().initTypeInfo().initPlaintext();
     plaintextGateInfo.setShape(inputShape);
     plaintextGateInfo.setIntegerPrecision(
-        getCorrespondingPrecision(
-            inputType.getIntOrFloatBitWidth()));
+        getCorrespondingPrecision(inputType.getIntOrFloatBitWidth()));
     plaintextGateInfo.setIsSigned(inputType.isSignedInteger());
 
     auto rawInfo = output.asBuilder().initRawInfo();
     rawInfo.setShape(inputShape);
     rawInfo.setIntegerPrecision(
-        getCorrespondingPrecision(
-            inputType.getIntOrFloatBitWidth()));
+        getCorrespondingPrecision(inputType.getIntOrFloatBitWidth()));
     rawInfo.setIsSigned(inputType.isSignedInteger());
   } else if (inputEncoding.hasIndex()) {
     // TODO - The index type is dependant of the target architecture,

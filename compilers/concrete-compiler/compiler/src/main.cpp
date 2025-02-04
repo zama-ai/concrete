@@ -544,11 +544,12 @@ cmdlineCompilationOptions() {
 /// requested transformations succeeded.
 ///
 /// Compilation output is written to the stream specified by `os`.
-mlir::LogicalResult processInputBuffer(
-    std::unique_ptr<llvm::MemoryBuffer> buffer, std::string sourceFileName,
-    mlir::concretelang::CompilationOptions &options, enum Action action,
-    llvm::raw_ostream &os,
-    std::shared_ptr<mlir::concretelang::Library> outputLib) {
+mlir::LogicalResult
+processInputBuffer(std::unique_ptr<llvm::MemoryBuffer> buffer,
+                   std::string sourceFileName,
+                   mlir::concretelang::CompilationOptions &options,
+                   enum Action action, llvm::raw_ostream &os,
+                   std::shared_ptr<mlir::concretelang::Library> outputLib) {
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
 

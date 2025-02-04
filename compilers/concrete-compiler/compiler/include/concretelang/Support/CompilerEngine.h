@@ -313,9 +313,6 @@ enum class Target {
 
 class CompilerEngine {
 public:
-
-
-
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(), compilerOptions(),
         generateProgramInfo(true),
