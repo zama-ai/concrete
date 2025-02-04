@@ -1,5 +1,12 @@
 add_compile_options(-fexceptions -fsized-deallocation -fno-rtti)
 
+add_library(
+    _ConcreteSys_ConcretelangCommon_Sec
+    STATIC
+    Security.cpp
+)
+target_include_directories(_ConcreteSys_ConcretelangCommon_Sec PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
+
 add_mlir_library(
   ConcretelangCommon
   Protocol.cpp
@@ -14,7 +21,6 @@ add_mlir_library(
   concrete-protocol
   LINK_LIBS
   PUBLIC
-  concrete_cpu
   kj
   capnp)
 

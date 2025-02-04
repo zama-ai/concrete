@@ -1,0 +1,5 @@
+[workspace]
+
+members = ["concrete-sys"]
+
+resolver = "2"
