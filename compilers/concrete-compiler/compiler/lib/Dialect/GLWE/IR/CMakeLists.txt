@@ -3,6 +3,7 @@ add_mlir_dialect_library(
   GLWEDialect.cpp
   GLWEExpr.cpp
   GLWEExprDetail.cpp
+  GLWEOps.cpp
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/GLWE
   DEPENDS
