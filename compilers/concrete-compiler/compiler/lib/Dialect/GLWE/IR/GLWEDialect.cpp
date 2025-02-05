@@ -11,6 +11,44 @@
 
 // #include "concretelang/Dialect/GLWE/Interfaces/GLWEInterfaces.h"
 
+namespace mlir {
+
+template <>
+struct FieldParser<::llvm::SmallVector<concretelang::GLWE::GLWEExprAttr>> {
+  static FailureOr<::llvm::SmallVector<concretelang::GLWE::GLWEExprAttr>>
+  parse(AsmParser &parser) {
+    if (parser.parseLParen())
+      return failure();
+    ::llvm::SmallVector<concretelang::GLWE::GLWEExprAttr> elements;
+    auto elementParser = [&]() {
+      auto element =
+          FieldParser<concretelang::GLWE::GLWEExprAttr>::parse(parser);
+      if (failed(element))
+        return failure();
+      elements.push_back(*element);
+      return success();
+    };
+    if (parser.parseCommaSeparatedList(elementParser))
+      return failure();
+    if (parser.parseRParen())
+      return failure();
+
+    return elements;
+  }
+};
+
+template <>
+void AsmPrinter::printStrippedAttrOrType(
+    ::llvm::ArrayRef<concretelang::GLWE::GLWEExprAttr> attrOrTypes) {
+  getStream() << "(";
+  llvm::interleaveComma(attrOrTypes, getStream(),
+                        [this](concretelang::GLWE::GLWEExprAttr attrOrType) {
+                          printStrippedAttrOrType(attrOrType);
+                        });
+  getStream() << ")";
+}
+} // namespace mlir
+
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.cpp.inc"
 
