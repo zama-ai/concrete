@@ -160,3 +160,44 @@ func.func @test_glwe_radix_ciphertext_with_variance(%arg0: !glwe_radix_ciphertex
 func.func @test_glev(%arg0 : !bootstrap_key) {
   return
 }
+
+// A unparametrized partial glev ciphertext
+!glev_partial_decomposed = !glwe.glev<
+  params = #glwe.glwe_params<
+    dimension = <@K>,
+    poly_size = <@N>,
+    mask_modulus = <@m>,
+    body_modulus = <@m>
+  >,
+  decomp = #glwe.decomp<
+    base_log = <@b>,
+    level = <@l>
+  >,
+  size = <@n>,
+  partial = true
+>
+// CHECK: %arg0: !glwe.glev<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base_log = <@b>, level = <@l>>, size = <@n>, partial = true>
+func.func @test_glev_partial(%arg0 : !glev_partial_decomposed) {
+  return
+}
+
+// A unparametrized fully decomposed glev ciphertext
+!glev_partial_decomposed_with_variance = !glwe.glev<
+  params = #glwe.glwe_params<
+    dimension = <@K>,
+    poly_size = <@N>,
+    mask_modulus = <@m>,
+    body_modulus = <@m>
+  >,
+  decomp = #glwe.decomp<
+    base_log = <@b>,
+    level = <@l>
+  >,
+  size = <@n>,
+  variance = <2.0 ** (2.0 * max(@slope * (@K * @N) + @bias, 2.0 - @m))>
+>
+
+// CHECK: %arg0: !glwe.radix_glwe<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base_log = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
+func.func @glev_partial_decomposed_with_variance(%arg0 : !glwe_full_decomposed_with_variance) {
+  return
+}
