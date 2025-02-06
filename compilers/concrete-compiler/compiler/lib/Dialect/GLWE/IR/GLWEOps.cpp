@@ -44,6 +44,41 @@ mlir::LogicalResult ModulusSwitch::verify() {
   }
   return mlir::success();
 }
+
+mlir::LogicalResult ExactDecompose::verify() {
+  auto input = this->getInput().getType().dyn_cast<GLWEType>();
+  auto inputSK = input.getSecretKey();
+  auto output = this->getOutput().getType().dyn_cast<RadixGLWEType>();
+  auto outputSK = output.getSecretKey();
+  if (inputSK != outputSK) {
+    this->emitOpError("failed to verify that the input and output {secret_key} "
+                      "parameters are equals");
+    return mlir::failure();
+  }
+  auto inputEncoding = input.getEncoding();
+  auto outputEncoding = output.getEncoding();
+  if (inputEncoding != outputEncoding) {
+    this->emitOpError("failed to verify that the input and output {encoding} "
+                      "parameters are equals");
+    return mlir::failure();
+  }
+  if (output.getDecomposition() != this->getDecomposition()) {
+    this->emitOpError("failed to verify that the op and output {decomposition} "
+                      "parameters are equals");
+    return mlir::failure();
+  }
+  if (output.getBody() != this->getBody()) {
+    this->emitOpError("failed to verify that the op and output {body} "
+                      "parameters are equals");
+    return mlir::failure();
+  }
+  if (output.getMask() != this->getMask()) {
+    this->emitOpError("failed to verify that the op and output {body} "
+                      "parameters are equals");
+    return mlir::failure();
+  }
+  return mlir::success();
+}
 } // namespace GLWE
 } // namespace concretelang
 } // namespace mlir

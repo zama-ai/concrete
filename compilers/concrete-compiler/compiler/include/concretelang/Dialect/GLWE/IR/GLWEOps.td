@@ -46,4 +46,33 @@ def GLWE_ModulusSwitch: GLWE_Op<"modulus_switch"> {
     let hasVerifier = 1;
 }
 
+def GLWE_ExactDecompose: GLWE_Op<"exact_decompose"> {
+
+    let summary = "Decompose a GLWE ciphertext in `level` elements in a given `base`.";
+
+    let description = [{
+        Change the mask and/or the body modulus of the input GLWE ciphertext by the one given in attribute:
+            - input: The input ciphertext
+            - decomposition: The decomposition to apply
+            - mask: Optional attribute to indicate if the mask is decomposed, default: true
+            - body: Optional attribute to indicate if the body is decomposed, default: true
+
+        The input GWLE and output RadixGLWE types must share all their parameters.
+        The output RadixGLWE must have the same decomposition, mask and body parameter that the decomposition, mask and body parameter of the op.
+    }];
+
+    let arguments = (ins
+        GLWE_GLWE:$input,
+        GLWE_DecompositionParametersAttr: $decomposition,
+        DefaultValuedAttr<BoolAttr, "true">: $mask,
+        DefaultValuedAttr<BoolAttr, "true">: $body
+    );
+
+    let results = (outs GLWE_RadixGLWE:$output);
+
+    let assemblyFormat = "operands attr-dict `:` type($input) `->` type($output)";
+
+    let hasVerifier = 1;
+}
+
 #endif
