@@ -63,4 +63,17 @@ def GLWE_DecompositionParameters: GLWE_Attr<"DecompositionParameters", "decomp">
 
 }
 
+def GLWE_Domain: GLWE_Attr<"Domain", "domain"> {
+    let description = [{
+      An attribute defining the domain for a variable
+    }];
+
+    let parameters = (ins
+        "GLWESymbolName":$var,
+        "std::variant<::llvm::SmallVector<int64_t>, ::llvm::SmallVector<double>>" : $values
+    );
+
+    let assemblyFormat = "`<` $var `in` `[` $values `]` `>`";
+}
+
 #endif

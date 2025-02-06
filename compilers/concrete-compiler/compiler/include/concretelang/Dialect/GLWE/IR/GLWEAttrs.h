@@ -14,6 +14,32 @@
 
 #include "concretelang/Dialect/GLWE/IR/GLWEExpr.h"
 
+namespace mlir {
+namespace concretelang {
+namespace GLWE {
+struct GLWESymbolName {
+  GLWESymbolName(mlir::StringAttr name) : name(name) {}
+  bool operator==(const GLWESymbolName &var) const {
+    return var.getName() == getName();
+  }
+
+  mlir::StringAttr getName() const { return name; }
+  mlir::StringAttr name;
+};
+
+::llvm::hash_code hash_value(const GLWESymbolName &arg) {
+  return ::llvm::hash_value(arg.getName());
+}
+
+llvm::raw_ostream &
+operator<<(llvm::raw_ostream &os,
+           mlir::concretelang::GLWE::GLWESymbolName const &var) {
+  return os << "@" << var.getName().strref();
+}
+} // namespace GLWE
+} // namespace concretelang
+} // namespace mlir
+
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h.inc"
 
