@@ -16,7 +16,7 @@ git --no-pager diff --patience
 git --no-pager diff --exit-code && exit 0
 
 # write diff to file
-git diff > format_diff.patch
+git diff > format_cpp_diff.patch
 
 echo
 echo "Formatting issue: Please run 'scripts/format_cpp.sh' in compilers/concrete-compiler/compiler and 'git add -p'"
