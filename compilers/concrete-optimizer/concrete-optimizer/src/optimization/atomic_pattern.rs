@@ -138,6 +138,26 @@ fn update_state_with_best_decompositions(
 
 const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
+/// Estimates the minimum possible complexity for given parameters
+fn estimate_min_complexity(
+    internal_dim: u64,
+    glwe_log_poly_size: u64, 
+    ciphertext_modulus_log: u64,
+    config: &Config,
+) -> f64 {
+    // Minimum complexity includes:
+    // 1. Complexity of modulus switching
+    let modulus_switching_complexity = (internal_dim * (1 << glwe_log_poly_size)) as f64;
+    
+    // 2. Minimum complexity of the keyswitch operation
+    let min_ks_complexity = internal_dim.pow(2) as f64;
+    
+    // 3. Minimum complexity of blind rotation
+    let min_br_complexity = (1 << glwe_log_poly_size) as f64 * internal_dim as f64;
+
+    modulus_switching_complexity + min_ks_complexity + min_br_complexity
+}
+
 pub fn optimize_one(
     sum_size: u64,
     precision: u64,
