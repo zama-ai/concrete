@@ -75,4 +75,36 @@ def GLWE_ExactDecompose: GLWE_Op<"exact_decompose"> {
     let hasVerifier = 1;
 }
 
+def GLWE_ExactRecompose: GLWE_Op<"exact_recompose"> {
+
+    let summary = "Recompose a RadiwGLWE ciphertext using a glev.";
+
+    let description = [{
+        Change the mask and/or the body modulus of the input GLWE ciphertext by the one given in attribute:
+            - input: The input ciphertext
+            - glev: The glev used for the recomposition
+            - grouping_factor: TODO
+            - mantissa_size: TODO
+
+        The polynomial size of the input GWLE secret key + the number of bodies of the input ciphertext
+        (i.e. if body == true its the nb_keys of the input else 0) must be equal to the size of the glev.
+        The input RadixGLWE and the GLev must have the same decomposition parameter.
+        mask and body parameter of the op.
+    }];
+
+    let arguments = (ins
+        GLWE_RadixGLWE:$input,
+        GLWE_GLev:$glev,
+        // TODO - GLWE_GLWEExprAttr
+        DefaultValuedAttr<I64Attr, "1">:$grouping_factor,
+        DefaultValuedAttr<I64Attr, "53">: $mantissa_size
+    );
+
+    let results = (outs GLWE_GLWE:$output);
+
+    let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
+
+    let hasVerifier = 1;
+}
+
 #endif
