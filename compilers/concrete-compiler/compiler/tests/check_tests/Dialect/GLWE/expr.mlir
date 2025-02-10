@@ -11,6 +11,7 @@ module attributes {
     // CHECK: glwe.e11_abs = #glwe.expr<abs(@a)>
     // CHECK: glwe.e12_floor = #glwe.expr<floor(@a)>
     // CHECK: glwe.e13_ceil = #glwe.expr<ceil(@a)>
+    // CHECK: glwe.e14_log2 = #glwe.expr<log2(@a)>
     // CHECK: glwe.ms_variance = #glwe.expr<((@n * ((@q ** 2.000000e+00) / ((9.600000e+01 * @new_q / 2.000000e+00) ** 2.000000e+00) + 1.000000e+00 / 4.800000e+01)) / @q ** 2.000000e+00) + @input_variance>
     glwe.e00_constant = #glwe.expr<2.1>,
     glwe.e01_symbol = #glwe.expr<@mysymbol>,
@@ -25,6 +26,7 @@ module attributes {
     glwe.e11_abs = #glwe.expr<abs(@a)>,
     glwe.e12_floor = #glwe.expr<floor(@a)>,
     glwe.e13_ceil = #glwe.expr<ceil(@a)>,
+    glwe.e14_log2 = #glwe.expr<log2(@a)>,
     glwe.ms_variance = #glwe.expr< (@n * ((@q ** 2. / (96.0 * ( @new_q / 2.0 ) ** 2.)) + 1.0 / 48.0)) / @q**2. + @input_variance>
 } {
 

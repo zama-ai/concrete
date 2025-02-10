@@ -45,8 +45,10 @@ enum class GLWEExprKind {
   Floor,
   /// @brief Ceil of an expression, `ceil(` glwe-expr `)`.
   Ceil,
+  /// @brief Log of an expression to the base 2, `log2(` glwe-expr `)`.
+  Log2,
 
-  LAST_UNARY_OP = Ceil,
+  LAST_UNARY_OP = Log2,
 
   /// @brief Constant float.
   Constant,
@@ -79,11 +81,37 @@ public:
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer) const;
 
+  // Returns a simplified expression
+  // Note: just constant folding for now
+  GLWEExpr simplify() const;
+
+  GLWEExpr replace(std::function<GLWEExpr(GLWEExpr e)> f) const;
+
   template <typename U> constexpr bool isa() const;
 
   template <typename U> U dyn_cast() const;
 
-  friend ::llvm::hash_code hash_value(AffineExpr arg);
+  MLIRContext *getContext() const;
+
+  GLWEExpr operator+(GLWEExpr other) const;
+  GLWEExpr operator+(double other) const;
+  GLWEExpr operator+(std::string other) const;
+  GLWEExpr operator-(GLWEExpr other) const;
+  GLWEExpr operator-(double other) const;
+  GLWEExpr operator*(GLWEExpr other) const;
+  GLWEExpr operator*(double other) const;
+  GLWEExpr operator/(GLWEExpr other) const;
+  GLWEExpr operator/(double other) const;
+  GLWEExpr pow(GLWEExpr other) const;
+  GLWEExpr pow(double other) const;
+  GLWEExpr max(GLWEExpr other) const;
+  GLWEExpr max(double other) const;
+  GLWEExpr min(GLWEExpr other) const;
+  GLWEExpr min(double other) const;
+  GLWEExpr abs() const;
+  GLWEExpr floor() const;
+  GLWEExpr ceil() const;
+  GLWEExpr log2() const;
 
 protected:
   ImplType *expr{nullptr};
@@ -97,12 +125,14 @@ inline ::llvm::hash_code hash_value(const GLWEExpr &arg) {
 class GlweSymbolExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweSymbolExprStorage;
-  /* implicit */ GlweSymbolExpr(GLWEExpr::ImplType *ptr) : GLWEExpr(ptr){};
+  /* implicit */ GlweSymbolExpr(GLWEExpr::ImplType *ptr) : GLWEExpr(ptr) {};
 
   llvm::StringRef getSymbolName() const;
 
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer) const;
+
+  GLWEExpr simplify() const;
 };
 
 /// An integer constant appearing in affine expression.
@@ -110,12 +140,14 @@ class GlweConstantExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweConstantExprStorage;
   /* implicit */ GlweConstantExpr(GLWEExpr::ImplType *ptr = nullptr)
-      : GLWEExpr(ptr){};
+      : GLWEExpr(ptr) {};
 
   double getValue() const;
 
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer) const;
+
+  GLWEExpr simplify() const;
 };
 
 /// @brief A Glwe unary expression.
@@ -123,11 +155,13 @@ class GlweUnaryExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweUnaryExprStorage;
   /* implicit */ GlweUnaryExpr(GLWEExpr::ImplType *ptr = nullptr)
-      : GLWEExpr(ptr){};
+      : GLWEExpr(ptr) {};
   GLWEExpr getOperand() const;
 
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer) const;
+
+  GLWEExpr simplify() const;
 };
 
 /// @brief A Glwe binary expression.
@@ -135,12 +169,14 @@ class GlweBinaryExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweBinaryExprStorage;
   /* implicit */ GlweBinaryExpr(GLWEExpr::ImplType *ptr = nullptr)
-      : GLWEExpr(ptr){};
+      : GLWEExpr(ptr) {};
   GLWEExpr getLHS() const;
   GLWEExpr getRHS() const;
 
   // Print the expression in the output stream.
   void print(mlir::AsmPrinter &printer) const;
+
+  GLWEExpr simplify() const;
 };
 
 template <typename U> constexpr bool GLWEExpr::isa() const {
@@ -169,6 +205,22 @@ GLWEExpr getGlweBinaryExpr(GLWEExprKind kind, GLWEExpr lhs, GLWEExpr rhs,
 GLWEExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context);
 GLWEExpr getGlweConstantExpr(double value, MLIRContext *context);
 
+mlir::concretelang::GLWE::GLWEExpr
+operator+(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs);
+mlir::concretelang::GLWE::GLWEExpr
+operator-(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs);
+mlir::concretelang::GLWE::GLWEExpr
+operator/(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs);
+mlir::concretelang::GLWE::GLWEExpr
+operator*(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs);
+mlir::concretelang::GLWE::GLWEExpr pow(double lhs,
+                                       mlir::concretelang::GLWE::GLWEExpr rhs);
+mlir::concretelang::GLWE::GLWEExpr max(mlir::concretelang::GLWE::GLWEExpr lhs,
+                                       mlir::concretelang::GLWE::GLWEExpr rhs);
+mlir::concretelang::GLWE::GLWEExpr max(double lhs,
+                                       mlir::concretelang::GLWE::GLWEExpr rhs);
+mlir::concretelang::GLWE::GLWEExpr max(mlir::concretelang::GLWE::GLWEExpr lhs,
+                                       double rhs);
 } // namespace GLWE
 } // namespace concretelang
 } // namespace mlir
