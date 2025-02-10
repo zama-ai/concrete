@@ -1,5 +1,7 @@
 #include "GLWEExprDetail.h"
 
+#include <cmath>
+
 namespace mlir {
 namespace concretelang {
 namespace GLWE {
@@ -27,15 +29,126 @@ void GLWEExpr::print(mlir::AsmPrinter &printer) const {
   llvm_unreachable("unknown GLWEExpr");
 };
 
+GLWEExpr GLWEExpr::simplify() const {
+  switch (this->getKind()) {
+  case GLWEExprKind::SymbolId:
+    return this->dyn_cast<GlweSymbolExpr>().simplify();
+
+  case GLWEExprKind::Constant:
+    return this->dyn_cast<GlweConstantExpr>().simplify();
+
+  default:
+    if (auto binExpr = this->dyn_cast<GlweBinaryExpr>()) {
+      return binExpr.simplify();
+    } else if (auto unExpr = this->dyn_cast<GlweUnaryExpr>()) {
+      return unExpr.simplify();
+    }
+    break;
+  }
+  llvm_unreachable("unknown GLWEExpr");
+}
+
+GLWEExpr GLWEExpr::replace(std::function<GLWEExpr(GLWEExpr e)> f) const {
+  auto expr = *this;
+  if (auto binExpr = this->dyn_cast<GlweBinaryExpr>()) {
+    expr = getGlweBinaryExpr(binExpr.getKind(), binExpr.getLHS().replace(f),
+                             binExpr.getRHS().replace(f), expr.getContext());
+  } else if (auto unExpr = this->dyn_cast<GlweUnaryExpr>()) {
+    expr = getGlweUnaryExpr(unExpr.getKind(), unExpr.getOperand().replace(f),
+                            getContext());
+  }
+  return f(expr);
+}
+
 mlir::AsmPrinter &operator<<(mlir::AsmPrinter &p, const GLWEExpr &expr) {
   expr.print(p);
   return p;
+}
+
+MLIRContext *GLWEExpr::getContext() const { return expr->context; }
+
+GLWEExpr GLWEExpr::operator+(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Add, *this, other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator+(double other) const {
+  return *this + getGlweConstantExpr(other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator+(std::string other) const {
+  return *this + getGlweSymbolExpr(other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator-(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Sub, *this, other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator-(double other) const {
+  return *this - getGlweConstantExpr(other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator*(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Mul, *this, other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator*(double other) const {
+  return *this * getGlweConstantExpr(other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator/(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Div, *this, other, getContext());
+}
+
+GLWEExpr GLWEExpr::operator/(double other) const {
+  return *this / getGlweConstantExpr(other, getContext());
+}
+
+GLWEExpr GLWEExpr::pow(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Pow, *this, other, getContext());
+}
+
+GLWEExpr GLWEExpr::pow(double other) const {
+  return this->pow(getGlweConstantExpr(other, getContext()));
+}
+
+GLWEExpr GLWEExpr::max(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Max, *this, other, getContext());
+}
+
+GLWEExpr GLWEExpr::max(double other) const {
+  return this->max(getGlweConstantExpr(other, getContext()));
+}
+
+GLWEExpr GLWEExpr::min(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Min, *this, other, getContext());
+}
+
+GLWEExpr GLWEExpr::min(double other) const {
+  return this->min(getGlweConstantExpr(other, getContext()));
+}
+
+GLWEExpr GLWEExpr::abs() const {
+  return getGlweUnaryExpr(GLWEExprKind::Abs, *this, getContext());
+}
+
+GLWEExpr GLWEExpr::floor() const {
+  return getGlweUnaryExpr(GLWEExprKind::Floor, *this, getContext());
+}
+
+GLWEExpr GLWEExpr::ceil() const {
+  return getGlweUnaryExpr(GLWEExprKind::Ceil, *this, getContext());
+}
+
+GLWEExpr GLWEExpr::log2() const {
+  return getGlweUnaryExpr(GLWEExprKind::Log2, *this, getContext());
 }
 
 // GlweSymbolExpr
 void GlweSymbolExpr::print(mlir::AsmPrinter &printer) const {
   printer.printSymbolName(getSymbolName());
 }
+
+GLWEExpr GlweSymbolExpr::simplify() const { return *this; }
 
 llvm::StringRef GlweSymbolExpr::getSymbolName() const {
   return static_cast<GlweSymbolExpr::ImplType *>(expr)->symbolName;
@@ -57,6 +170,8 @@ GLWEExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context) {
 void GlweConstantExpr::print(mlir::AsmPrinter &printer) const {
   printer.printFloat(llvm::APFloat(getValue()));
 }
+
+GLWEExpr GlweConstantExpr::simplify() const { return *this; }
 
 double GlweConstantExpr::getValue() const {
   return static_cast<GlweConstantExpr::ImplType *>(expr)->value;
@@ -89,10 +204,35 @@ void GlweUnaryExpr::print(mlir::AsmPrinter &printer) const {
   case GLWEExprKind::Ceil:
     printer << "ceil(" << getOperand() << ")";
     return;
+  case GLWEExprKind::Log2:
+    printer << "log2(" << getOperand() << ")";
+    return;
   default:
     break;
   }
   llvm_unreachable("unknown GlweUnaryExpr");
+}
+
+GLWEExpr GlweUnaryExpr::simplify() const {
+  auto operand = this->getOperand().simplify();
+  if (auto constant = operand.dyn_cast<GlweConstantExpr>()) {
+    switch (this->getKind()) {
+    case GLWEExprKind::Neg:
+      return getGlweConstantExpr(-constant.getValue(), getContext());
+    case GLWEExprKind::Abs:
+      return getGlweConstantExpr(std::abs(constant.getValue()), getContext());
+    case GLWEExprKind::Floor:
+      return getGlweConstantExpr(std::floor(constant.getValue()), getContext());
+    case GLWEExprKind::Ceil:
+      return getGlweConstantExpr(std::ceil(constant.getValue()), getContext());
+    case GLWEExprKind::Log2:
+      return getGlweConstantExpr(std::log2(constant.getValue()), getContext());
+    default:
+      llvm_unreachable("unknown GlweUnaryExpr");
+      break;
+    }
+  }
+  return getGlweUnaryExpr(this->getKind(), operand, getContext());
 }
 
 GLWEExpr GlweUnaryExpr::getOperand() const {
@@ -157,6 +297,41 @@ void GlweBinaryExpr::print(mlir::AsmPrinter &printer) const {
     break;
   }
   printWithOptionalParen(getRHS(), printer);
+}
+
+GLWEExpr GlweBinaryExpr::simplify() const {
+  auto lhs = this->getLHS().simplify();
+  auto rhs = this->getRHS().simplify();
+  auto lhsCst = lhs.dyn_cast<GlweConstantExpr>();
+  auto rhsCst = rhs.dyn_cast<GlweConstantExpr>();
+  if (lhsCst && rhsCst) {
+    switch (this->getKind()) {
+    case GLWEExprKind::Add:
+      return getGlweConstantExpr(lhsCst.getValue() + rhsCst.getValue(),
+                                 getContext());
+    case GLWEExprKind::Sub:
+      return getGlweConstantExpr(lhsCst.getValue() - rhsCst.getValue(),
+                                 getContext());
+    case GLWEExprKind::Mul:
+      return getGlweConstantExpr(lhsCst.getValue() * rhsCst.getValue(),
+                                 getContext());
+    case GLWEExprKind::Pow:
+      return getGlweConstantExpr(std::pow(lhsCst.getValue(), rhsCst.getValue()),
+                                 getContext());
+    case GLWEExprKind::Div:
+      return getGlweConstantExpr(lhsCst.getValue() / rhsCst.getValue(),
+                                 getContext());
+    case GLWEExprKind::Max:
+      return getGlweConstantExpr(std::max(lhsCst.getValue(), rhsCst.getValue()),
+                                 getContext());
+    case GLWEExprKind::Min:
+      return getGlweConstantExpr(std::min(lhsCst.getValue(), rhsCst.getValue()),
+                                 getContext());
+    default:
+      llvm_unreachable("unknown GlweUnaryExpr");
+    }
+  }
+  return getGlweBinaryExpr(this->getKind(), lhs, rhs, getContext());
 }
 
 GLWEExpr GlweBinaryExpr::getLHS() const {
@@ -255,6 +430,8 @@ GLWEExpr parseGlweOperandExpr(GLWEExpr lhs, mlir::AsmParser &parser) {
     unKind.emplace(GLWEExprKind::Floor);
   } else if (succeeded(parser.parseOptionalKeyword("ceil"))) {
     unKind.emplace(GLWEExprKind::Ceil);
+  } else if (succeeded(parser.parseOptionalKeyword("log2"))) {
+    unKind.emplace(GLWEExprKind::Log2);
   }
   if (unKind.has_value()) {
     if (failed(parser.parseLParen()))
@@ -356,6 +533,54 @@ GLWEExpr parseGLWEExpr(GLWEExpr lhs, ::mlir::AsmParser &parser) {
 
 GLWEExpr GLWEExpr::parse(::mlir::AsmParser &parser) {
   return parseGLWEExpr({}, parser);
+}
+
+mlir::concretelang::GLWE::GLWEExpr
+operator+(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs) {
+  return mlir::concretelang::GLWE::getGlweConstantExpr(lhs, rhs.getContext()) +
+         rhs;
+}
+
+mlir::concretelang::GLWE::GLWEExpr
+operator-(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs) {
+  return mlir::concretelang::GLWE::getGlweConstantExpr(lhs, rhs.getContext()) -
+         rhs;
+}
+
+mlir::concretelang::GLWE::GLWEExpr
+operator*(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs) {
+  return mlir::concretelang::GLWE::getGlweConstantExpr(lhs, rhs.getContext()) *
+         rhs;
+}
+
+mlir::concretelang::GLWE::GLWEExpr
+operator/(double lhs, mlir::concretelang::GLWE::GLWEExpr rhs) {
+  return mlir::concretelang::GLWE::getGlweConstantExpr(lhs, rhs.getContext()) /
+         rhs;
+}
+
+mlir::concretelang::GLWE::GLWEExpr pow(double lhs,
+                                       mlir::concretelang::GLWE::GLWEExpr rhs) {
+  return mlir::concretelang::GLWE::getGlweConstantExpr(lhs, rhs.getContext())
+      .pow(rhs);
+}
+
+mlir::concretelang::GLWE::GLWEExpr max(mlir::concretelang::GLWE::GLWEExpr lhs,
+                                       mlir::concretelang::GLWE::GLWEExpr rhs) {
+  return getGlweBinaryExpr(mlir::concretelang::GLWE::GLWEExprKind::Max, lhs,
+                           rhs, rhs.getContext());
+}
+
+mlir::concretelang::GLWE::GLWEExpr max(double lhs,
+                                       mlir::concretelang::GLWE::GLWEExpr rhs) {
+  return max(
+      mlir::concretelang::GLWE::getGlweConstantExpr(lhs, rhs.getContext()),
+      rhs);
+}
+
+mlir::concretelang::GLWE::GLWEExpr max(mlir::concretelang::GLWE::GLWEExpr lhs,
+                                       double rhs) {
+  return max(rhs, lhs);
 }
 
 } // namespace GLWE
