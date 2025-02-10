@@ -32,6 +32,12 @@ mlir::AsmPrinter &operator<<(mlir::AsmPrinter &p, const GLWEExpr &expr) {
   return p;
 }
 
+MLIRContext *GLWEExpr::getContext() const { return expr->context; }
+
+GLWEExpr GLWEExpr::operator+(GLWEExpr other) const {
+  return getGlweBinaryExpr(GLWEExprKind::Add, *this, other, getContext());
+}
+
 // GlweSymbolExpr
 void GlweSymbolExpr::print(mlir::AsmPrinter &printer) const {
   printer.printSymbolName(getSymbolName());

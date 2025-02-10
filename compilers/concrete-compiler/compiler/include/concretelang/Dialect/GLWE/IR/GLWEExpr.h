@@ -83,7 +83,9 @@ public:
 
   template <typename U> U dyn_cast() const;
 
-  friend ::llvm::hash_code hash_value(AffineExpr arg);
+  MLIRContext *getContext() const;
+
+  GLWEExpr operator+(GLWEExpr other) const;
 
 protected:
   ImplType *expr{nullptr};
@@ -97,7 +99,7 @@ inline ::llvm::hash_code hash_value(const GLWEExpr &arg) {
 class GlweSymbolExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweSymbolExprStorage;
-  /* implicit */ GlweSymbolExpr(GLWEExpr::ImplType *ptr) : GLWEExpr(ptr){};
+  /* implicit */ GlweSymbolExpr(GLWEExpr::ImplType *ptr) : GLWEExpr(ptr) {};
 
   llvm::StringRef getSymbolName() const;
 
@@ -110,7 +112,7 @@ class GlweConstantExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweConstantExprStorage;
   /* implicit */ GlweConstantExpr(GLWEExpr::ImplType *ptr = nullptr)
-      : GLWEExpr(ptr){};
+      : GLWEExpr(ptr) {};
 
   double getValue() const;
 
@@ -123,7 +125,7 @@ class GlweUnaryExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweUnaryExprStorage;
   /* implicit */ GlweUnaryExpr(GLWEExpr::ImplType *ptr = nullptr)
-      : GLWEExpr(ptr){};
+      : GLWEExpr(ptr) {};
   GLWEExpr getOperand() const;
 
   // Print the expression in the output stream.
@@ -135,7 +137,7 @@ class GlweBinaryExpr : public GLWEExpr {
 public:
   using ImplType = detail::GlweBinaryExprStorage;
   /* implicit */ GlweBinaryExpr(GLWEExpr::ImplType *ptr = nullptr)
-      : GLWEExpr(ptr){};
+      : GLWEExpr(ptr) {};
   GLWEExpr getLHS() const;
   GLWEExpr getRHS() const;
 
