@@ -1,3 +1,5 @@
+build:
+	cargo build --release
 
 # install wasm-pack first: cargo install wasm-pack
 wasm-build:

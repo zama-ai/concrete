@@ -62,7 +62,7 @@ tfhers-utils:
 	cd ${TFHERS_UTILS_DIRECTORY} && $(MAKE) build
 
 concrete-rust:
-	cd ../../tools/concrete-rust && cargo build --release
+	cd ../concrete-rust && $(MAKE) build
 
 pytest: pytest-default
 
