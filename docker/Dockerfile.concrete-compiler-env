@@ -20,6 +20,18 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
 RUN rustup install nightly-2024-09-30
+# Install Cap'n Proto
+ENV CAPNP_VERSION=1.1.0
+# hadolint ignore=DL3003
+RUN mkdir /capnproto && \
+    cd /capnproto && \
+    curl -O https://capnproto.org/capnproto-c++-${CAPNP_VERSION}.tar.gz && \
+    tar zxf capnproto-c++-${CAPNP_VERSION}.tar.gz && \
+    cd capnproto-c++-${CAPNP_VERSION} && \
+    ./configure && \
+    make -j6 check && \
+    make install && \
+    rm -rf /capnproto
 # Install boost
 ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
 RUN tar -xzvf /boost_1_71_0.tar.gz

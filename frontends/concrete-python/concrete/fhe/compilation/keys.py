@@ -141,6 +141,20 @@ class Keys:
         self._keyset = keys._keyset
         # pylint: enable=protected-access
 
+    def load_from_bytes(self, serialized_keys: bytes):
+        """
+        Load keys from bytes.
+
+        Args:
+            serialized_keys (bytes): serialized keys to load from
+        """
+
+        keys = Keys.deserialize(serialized_keys)
+
+        # pylint: disable=protected-access
+        self._keyset = keys._keyset
+        # pylint: enable=protected-access
+
     def load_if_exists_generate_and_save_otherwise(
         self,
         location: Union[str, Path],
