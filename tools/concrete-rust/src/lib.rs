@@ -24,6 +24,9 @@
 //! - `build_key`: A macro for building a Cap'n Proto message for a key with the specified key information and builder type.
 use std::u128;
 
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
+
 use crate::concrete_protocol_capnp::*;
 use capnp::message::{HeapAllocator, ReaderOptions};
 use capnp::serialize::{self, OwnedSegments};
@@ -457,6 +460,39 @@ pub fn generate_keyset(
         &mut init_lwe_secret_keys,
     );
     serialize::write_message_to_words(&builder)
+}
+
+/// Generate a Concrete keyset based on the provided keyset information and seeds.
+///
+/// The function generates secret keys, bootstrap keys, keyswitch keys, and packing keyswitch keys based on the keyset information.
+///
+/// # Arguments
+///
+/// * `keyset_info_buffer`: The serialized keyset information.
+/// * `secret_seed_lsb`: The seed for the secret random generator (lsb part).
+/// * `secret_seed_msb`: The seed for the secret random generator (msb part).
+/// * `enc_seed_lsb`: The seed for the encryption random generator (lsb part).
+/// * `enc_seed_lsb`: The seed for the encryption random generator (msb part).
+/// # Returns
+/// A serialized keyset.
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub fn generate_keyset_wasm(
+    keyset_info_buffer: &[u8],
+    secret_seed_lsb: u64,
+    secret_seed_msb: u64,
+    enc_seed_lsb: u64,
+    enc_seed_msb: u64,
+) -> Vec<u8> {
+    let secret_seed = (secret_seed_msb as u128) << 64 | secret_seed_lsb as u128;
+    let enc_seed = (enc_seed_msb as u128) << 64 | enc_seed_lsb as u128;
+    generate_keyset(
+        keyset_info_buffer,
+        secret_seed,
+        enc_seed,
+        // TODO: support init secret keys
+        &mut std::collections::HashMap::new(),
+    )
 }
 
 /// Reads a secret key from a file and returns the key ID and Cap'n Proto reader.
