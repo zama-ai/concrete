@@ -24,6 +24,7 @@
 //! - `build_key`: A macro for building a Cap'n Proto message for a key with the specified key information and builder type.
 use std::u128;
 
+use tfhe::core_crypto::commons::math::random::CompressionSeed;
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -32,10 +33,12 @@ use capnp::message::{HeapAllocator, ReaderOptions};
 use capnp::serialize::{self, OwnedSegments};
 use concrete_csprng::generators::SoftwareRandomGenerator;
 use tfhe::core_crypto::prelude::{
-    generate_lwe_keyswitch_key, par_generate_circuit_bootstrap_lwe_pfpksk_list,
-    par_generate_lwe_bootstrap_key, CiphertextModulus, EncryptionRandomGenerator,
+    generate_lwe_keyswitch_key, generate_seeded_lwe_keyswitch_key,
+    par_generate_circuit_bootstrap_lwe_pfpksk_list, par_generate_lwe_bootstrap_key,
+    par_generate_seeded_lwe_bootstrap_key, CiphertextModulus, EncryptionRandomGenerator,
     FunctionalPackingKeyswitchKeyCount, Gaussian, GlweSecretKey, LweBootstrapKey, LweKeyswitchKey,
-    LwePrivateFunctionalPackingKeyswitchKeyList, LweSecretKey, SecretRandomGenerator, Variance,
+    LwePrivateFunctionalPackingKeyswitchKeyList, LweSecretKey, SecretRandomGenerator,
+    SeededLweBootstrapKey, SeededLweKeyswitchKey, Variance,
 };
 use tfhe::core_crypto::seeders::new_seeder;
 use tfhe::shortint::prelude::{
@@ -119,7 +122,6 @@ fn generate_sk(
 
 /// Generates an `LweBootstrapKey` with the specified parameters and random generator.
 fn generate_bsk(
-    compression: Compression,
     enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
     input_sk: &LweSecretKey<Vec<u64>>,
     output_sk: &LweSecretKey<Vec<u64>>,
@@ -130,8 +132,6 @@ fn generate_bsk(
     decomp_base_log: usize,
     variance: f64,
 ) -> LweBootstrapKey<Vec<u64>> {
-    // TODO: support compressed keys
-    assert!(compression == Compression::None);
     let mut bsk = LweBootstrapKey::new(
         0,
         GlweDimension(output_glwe_dimension).to_glwe_size(),
@@ -156,9 +156,47 @@ fn generate_bsk(
     bsk
 }
 
+/// Generates a `SeededLweBootstrapKey` with the specified parameters and random generator.
+fn generate_seeded_bsk(
+    input_sk: &LweSecretKey<Vec<u64>>,
+    output_sk: &LweSecretKey<Vec<u64>>,
+    input_lwe_dimension: usize,
+    output_polynomial_size: usize,
+    output_glwe_dimension: usize,
+    decomp_level_count: usize,
+    decomp_base_log: usize,
+    variance: f64,
+) -> SeededLweBootstrapKey<Vec<u64>> {
+    let mut boxed_seeder = new_seeder();
+    let mut bsk = SeededLweBootstrapKey::new(
+        0,
+        GlweDimension(output_glwe_dimension).to_glwe_size(),
+        PolynomialSize(output_polynomial_size),
+        DecompositionBaseLog(decomp_base_log),
+        DecompositionLevelCount(decomp_level_count),
+        LweDimension(input_lwe_dimension),
+        CompressionSeed {
+            seed: boxed_seeder.seed(),
+        },
+        CiphertextModulus::new_native(),
+    );
+    let output_glwe_sk = GlweSecretKey::from_container(
+        output_sk.clone().into_container(),
+        PolynomialSize(output_polynomial_size),
+    );
+    let seeder = boxed_seeder.as_mut();
+    par_generate_seeded_lwe_bootstrap_key(
+        input_sk,
+        &output_glwe_sk,
+        &mut bsk,
+        Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
+        seeder,
+    );
+    bsk
+}
+
 /// Generates an `LweKeyswitchKey` with the specified parameters and random generator.
 fn generate_ksk(
-    compression: Compression,
     enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
     input_sk: &LweSecretKey<Vec<u64>>,
     output_sk: &LweSecretKey<Vec<u64>>,
@@ -168,8 +206,6 @@ fn generate_ksk(
     decomp_base_log: usize,
     variance: f64,
 ) -> LweKeyswitchKey<Vec<u64>> {
-    // TODO: support compressed keys
-    assert!(compression == Compression::None);
     let mut ksk: LweKeyswitchKey<Vec<u64>> = LweKeyswitchKey::new(
         0,
         DecompositionBaseLog(decomp_base_log),
@@ -184,6 +220,39 @@ fn generate_ksk(
         &mut ksk,
         Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
         enc_random_generator,
+    );
+    ksk
+}
+
+/// Generates a `SeededLweKeyswitchKey` with the specified parameters and random generator.
+fn generate_seeded_ksk(
+    input_sk: &LweSecretKey<Vec<u64>>,
+    output_sk: &LweSecretKey<Vec<u64>>,
+    input_lwe_dimension: usize,
+    output_lwe_dimension: usize,
+    decomp_level_count: usize,
+    decomp_base_log: usize,
+    variance: f64,
+) -> SeededLweKeyswitchKey<Vec<u64>> {
+    let mut boxed_seeder = new_seeder();
+    let mut ksk: SeededLweKeyswitchKey<Vec<u64>> = SeededLweKeyswitchKey::new(
+        0,
+        DecompositionBaseLog(decomp_base_log),
+        DecompositionLevelCount(decomp_level_count),
+        LweDimension(input_lwe_dimension),
+        LweDimension(output_lwe_dimension),
+        CompressionSeed {
+            seed: boxed_seeder.seed(),
+        },
+        CiphertextModulus::new_native(),
+    );
+    let seeder = boxed_seeder.as_mut();
+    generate_seeded_lwe_keyswitch_key(
+        input_sk,
+        output_sk,
+        &mut ksk,
+        Gaussian::from_dispersion_parameter(Variance::from_variance(variance), 0.0),
+        seeder,
     );
     ksk
 }
@@ -245,6 +314,134 @@ macro_rules! build_key {
             .unwrap();
         key_builder
     }};
+}
+
+/// Build a Cap'n Proto message containing appropriate bootstrapping key.
+fn build_bsk(
+    bsk_info: lwe_bootstrap_key_info::Reader,
+    generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
+    mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
+) -> capnp::message::Builder<HeapAllocator> {
+    let params = bsk_info.get_params().unwrap();
+    let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
+    let output_glwe_dimension = params.get_glwe_dimension() as usize;
+    let output_polynomial_size = params.get_polynomial_size() as usize;
+    let decomp_level_count = params.get_level_count() as usize;
+    let decomp_base_log = params.get_base_log() as usize;
+    let variance = params.get_variance();
+    let compression = bsk_info.get_compression().unwrap();
+    let input_sk = generated_secret_keys.get(&bsk_info.get_input_id()).unwrap();
+    let output_sk = generated_secret_keys
+        .get(&&bsk_info.get_output_id())
+        .unwrap();
+    match compression {
+        Compression::None => {
+            let bsk = generate_bsk(
+                &mut enc_random_generator,
+                input_sk,
+                output_sk,
+                input_lwe_dimension,
+                output_polynomial_size,
+                output_glwe_dimension,
+                decomp_level_count,
+                decomp_base_log,
+                variance,
+            );
+            build_key!(bsk, bsk_info, lwe_bootstrap_key::Builder)
+        }
+        Compression::Seed => {
+            let bsk = generate_seeded_bsk(
+                input_sk,
+                output_sk,
+                input_lwe_dimension,
+                output_polynomial_size,
+                output_glwe_dimension,
+                decomp_level_count,
+                decomp_base_log,
+                variance,
+            );
+            build_key!(bsk, bsk_info, lwe_bootstrap_key::Builder)
+        }
+        Compression::Paillier => panic!("Paillier compression is not supported"),
+    }
+}
+
+/// Build a Cap'n Proto message containing appropriate keyswitching key.
+fn build_ksk(
+    ksk_info: lwe_keyswitch_key_info::Reader,
+    generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
+    mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
+) -> capnp::message::Builder<HeapAllocator> {
+    let params = ksk_info.get_params().unwrap();
+    let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
+    let output_lwe_dimension = params.get_output_lwe_dimension() as usize;
+    let decomp_level_count = params.get_level_count() as usize;
+    let decomp_base_log = params.get_base_log() as usize;
+    let variance = params.get_variance();
+    let compression = ksk_info.get_compression().unwrap();
+    let input_sk = generated_secret_keys.get(&ksk_info.get_input_id()).unwrap();
+    let output_sk = generated_secret_keys
+        .get(&&ksk_info.get_output_id())
+        .unwrap();
+    match compression {
+        Compression::None => {
+            let ksk = generate_ksk(
+                &mut enc_random_generator,
+                input_sk,
+                output_sk,
+                input_lwe_dimension,
+                output_lwe_dimension,
+                decomp_level_count,
+                decomp_base_log,
+                variance,
+            );
+            build_key!(ksk, ksk_info, lwe_keyswitch_key::Builder)
+        }
+        Compression::Seed => {
+            let ksk = generate_seeded_ksk(
+                input_sk,
+                output_sk,
+                input_lwe_dimension,
+                output_lwe_dimension,
+                decomp_level_count,
+                decomp_base_log,
+                variance,
+            );
+            build_key!(ksk, ksk_info, lwe_keyswitch_key::Builder)
+        }
+        Compression::Paillier => panic!("Paillier compression is not supported"),
+    }
+}
+
+/// Build a Cap'n Proto message containing appropriate packing keyswitch key.
+fn build_pksk(
+    pksk_info: packing_keyswitch_key_info::Reader,
+    generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
+    mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
+) -> capnp::message::Builder<HeapAllocator> {
+    let params = pksk_info.get_params().unwrap();
+    let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
+    let glwe_dimension = params.get_glwe_dimension() as usize;
+    let decomp_level_count = params.get_level_count() as usize;
+    let decomp_base_log = params.get_base_log() as usize;
+    let poly_size = params.get_polynomial_size() as usize;
+    let variance = params.get_variance();
+    let pksk = generate_pksk(
+        &mut enc_random_generator,
+        generated_secret_keys
+            .get(&pksk_info.get_input_id())
+            .unwrap(),
+        generated_secret_keys
+            .get(&&pksk_info.get_output_id())
+            .unwrap(),
+        input_lwe_dimension,
+        glwe_dimension,
+        poly_size,
+        decomp_level_count,
+        decomp_base_log,
+        variance,
+    );
+    build_key!(pksk, pksk_info, packing_keyswitch_key::Builder)
 }
 
 /// Generates a Cap'n Proto message containing the keyset based on the provided keyset information and seeds.
@@ -323,30 +520,7 @@ fn generate_keyset_message(
         .init_packing_keyswitch_keys(info.get_packing_keyswitch_keys().unwrap().len());
     // Generate bootstrap keys
     for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
-        // we generate a new bootstrapping key
-        let params = bsk_info.get_params().unwrap();
-        let input_lwe_dim = params.get_input_lwe_dimension() as usize;
-        let glwe_dim = params.get_glwe_dimension() as usize;
-        let poly_size = params.get_polynomial_size() as usize;
-        let decomp_level_count = params.get_level_count() as usize;
-        let decomp_base_log = params.get_base_log() as usize;
-        let variance = params.get_variance();
-        let compression = bsk_info.get_compression().unwrap();
-        let bsk = generate_bsk(
-            compression,
-            &mut enc_random_generator,
-            generated_secret_keys.get(&bsk_info.get_input_id()).unwrap(),
-            generated_secret_keys
-                .get(&&bsk_info.get_output_id())
-                .unwrap(),
-            input_lwe_dim,
-            poly_size,
-            glwe_dim,
-            decomp_level_count,
-            decomp_base_log,
-            variance,
-        );
-        let bsk_builder = build_key!(bsk, bsk_info, lwe_bootstrap_key::Builder);
+        let bsk_builder = build_bsk(bsk_info, &generated_secret_keys, &mut enc_random_generator);
         server_keyset
             .reborrow()
             .get_lwe_bootstrap_keys()
@@ -356,28 +530,7 @@ fn generate_keyset_message(
     }
     // Generate keyswitch keys
     for ksk_info in info.get_lwe_keyswitch_keys().unwrap().iter() {
-        // we generate a new keyswitching key
-        let params = ksk_info.get_params().unwrap();
-        let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
-        let output_lwe_dimension = params.get_output_lwe_dimension() as usize;
-        let decomp_level_count = params.get_level_count() as usize;
-        let decomp_base_log = params.get_base_log() as usize;
-        let variance = params.get_variance();
-        let compression = ksk_info.get_compression().unwrap();
-        let ksk = generate_ksk(
-            compression,
-            &mut enc_random_generator,
-            generated_secret_keys.get(&ksk_info.get_input_id()).unwrap(),
-            generated_secret_keys
-                .get(&&ksk_info.get_output_id())
-                .unwrap(),
-            input_lwe_dimension,
-            output_lwe_dimension,
-            decomp_level_count,
-            decomp_base_log,
-            variance,
-        );
-        let ksk_builder = build_key!(ksk, ksk_info, lwe_keyswitch_key::Builder);
+        let ksk_builder = build_ksk(ksk_info, &generated_secret_keys, &mut enc_random_generator);
         server_keyset
             .reborrow()
             .get_lwe_keyswitch_keys()
@@ -387,30 +540,7 @@ fn generate_keyset_message(
     }
     // Generate packing keyswitch keys
     for pksk_info in info.get_packing_keyswitch_keys().unwrap().iter() {
-        // we generate a new packing keyswitch key
-        let params = pksk_info.get_params().unwrap();
-        let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
-        let glwe_dimension = params.get_glwe_dimension() as usize;
-        let decomp_level_count = params.get_level_count() as usize;
-        let decomp_base_log = params.get_base_log() as usize;
-        let poly_size = params.get_polynomial_size() as usize;
-        let variance = params.get_variance();
-        let pksk = generate_pksk(
-            &mut enc_random_generator,
-            generated_secret_keys
-                .get(&pksk_info.get_input_id())
-                .unwrap(),
-            generated_secret_keys
-                .get(&&pksk_info.get_output_id())
-                .unwrap(),
-            input_lwe_dimension,
-            glwe_dimension,
-            poly_size,
-            decomp_level_count,
-            decomp_base_log,
-            variance,
-        );
-        let pksk_builder = build_key!(pksk, pksk_info, packing_keyswitch_key::Builder);
+        let pksk_builder = build_pksk(pksk_info, &generated_secret_keys, &mut enc_random_generator);
         server_keyset
             .reborrow()
             .get_packing_keyswitch_keys()
