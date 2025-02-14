@@ -13,17 +13,20 @@ path = "src/keygen.rs"
 [lib]
 name = "concrete_rust"
 path = "src/lib.rs"
+crate-type = ["cdylib", "lib"]
 
 [build-dependencies]
 capnpc = "0.20.1"
 
 [dependencies]
+
 capnp = "0.20.3"
 clap = { version = "4.5.16", features = ["derive"] }
 
-concrete-csprng = { version = "0.4.1", optional = true, features = ["generator_fallback"] }
+wasm-bindgen = { version = ">=0.2.86,<0.2.94", features = ["serde-serialize"], optional = true}
 
-tfhe = { version = "0.10.0", features = ["integer"] }
+tfhe = { version = "0.10.0", features = ["integer"]}
+concrete-csprng = { version = "0.4.1", optional = true, features = ["generator_fallback"] }
 
 [target.x86_64-unknown-linux-gnu.dependencies]
 tfhe = { version = "0.10.0", features = ["integer", "x86_64-unix"] }
@@ -38,3 +41,6 @@ tfhe = { version = "0.10.0", features = ["integer", "x86_64"] }
 
 default = ["csprng"]
 csprng = ["concrete-csprng"]
+# TODO: shortint and HL API are only required because that's how we can build tfhe-rs with wasm
+# newer version should have fixed this and we can remove them
+wasm = ["dep:wasm-bindgen", "tfhe/shortint-client-js-wasm-api", "tfhe/high-level-client-js-wasm-api"]
