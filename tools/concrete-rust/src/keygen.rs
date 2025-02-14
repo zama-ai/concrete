@@ -1,3 +1,5 @@
+use std::io::{Read, Write};
+
 use clap::{Arg, Command};
 use concrete_rust::{generate_keyset, read_secret_key_from_file};
 
@@ -69,11 +71,23 @@ pub fn main() {
         })
         .collect();
 
-    generate_keyset(
-        keyset_info_path,
+    let mut keyset_info_file =
+        std::fs::File::open(keyset_info_path).expect("Failed to open keyset info file");
+    let keyset_info_file_metadata =
+        std::fs::metadata(&keyset_info_path).expect("unable to read metadata");
+    let mut keyset_info_buffer: Vec<u8> = vec![0; keyset_info_file_metadata.len() as usize];
+    keyset_info_file
+        .read(&mut keyset_info_buffer)
+        .expect("buffer overflow");
+
+    let keyset_buffer = generate_keyset(
+        keyset_info_buffer.as_slice(),
         sec_seed,
         enc_seed,
-        keyset_path,
         &initial_secret_keys,
     );
+    let mut keyset_file = std::fs::File::create(keyset_path).expect("Failed to create keyset file");
+    keyset_file
+        .write(keyset_buffer.as_slice())
+        .expect("Failed to write keyset file");
 }
