@@ -429,25 +429,21 @@ fn generate_keyset_message(
 ///
 /// # Arguments
 ///
-/// * `keyset_info_path`: The path to the keyset information file.
+/// * `keyset_info_buffer`: The serialized keyset information.
 /// * `secret_seed`: The seed for the secret random generator.
 /// * `enc_seed`: The seed for the encryption random generator.
-/// * `keyset_path`: The path to the output keyset file.
 /// * `init_secret_keys`: A map of initial secret keys to use instead of generating them.
-///
-/// # Panics
-///  This function panics if it fails to open the keyset info file or create the keyset file.
+/// # Returns
+/// A serialized keyset.
 pub fn generate_keyset(
-    keyset_info_path: &str,
+    mut keyset_info_buffer: &[u8],
     secret_seed: u128,
     enc_seed: u128,
-    keyset_path: &str,
     init_secret_keys: &std::collections::HashMap<u32, capnp::message::Reader<OwnedSegments>>,
-) {
-    // read keyset info from input file
-    let file = std::fs::File::open(keyset_info_path).expect("Failed to open keyset info file");
+) -> Vec<u8> {
     let reader =
-        serialize::read_message(std::io::BufReader::new(file), ReaderOptions::new()).unwrap();
+        serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
+            .unwrap();
     let key_set_info = reader.get_root::<keyset_info::Reader>().unwrap();
     // keygen
     let mut init_lwe_secret_keys = init_secret_keys
@@ -456,13 +452,11 @@ pub fn generate_keyset(
         .collect::<std::collections::HashMap<u32, lwe_secret_key::Reader>>();
     let builder = generate_keyset_message(
         key_set_info,
-        secret_seed,
-        enc_seed,
+        secret_seed as u128,
+        enc_seed as u128,
         &mut init_lwe_secret_keys,
     );
-    // write keyset to output file
-    let output = std::fs::File::create(keyset_path).expect("Failed to create keyset file");
-    serialize::write_message(output, &builder).unwrap();
+    serialize::write_message_to_words(&builder)
 }
 
 /// Reads a secret key from a file and returns the key ID and Cap'n Proto reader.
