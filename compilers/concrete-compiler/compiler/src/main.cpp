@@ -64,6 +64,11 @@ enum Action {
   DUMP_LLVM_IR,
   DUMP_OPTIMIZED_LLVM_IR,
   COMPILE,
+
+  // Run the glwe optimization pipeline (TODO: this is propably a temporary
+  // action while it's not integrated in the compilation pipeline or in anothre
+  // tool)
+  GLWE_OPTIMIZE,
 };
 
 namespace cmdline {
@@ -176,7 +181,9 @@ static llvm::cl::opt<enum Action> action(
                                 "dump-optimized-llvm-ir",
                                 "Lower to LLVM-IR, optimize and dump result")),
     llvm::cl::values(clEnumValN(Action::COMPILE, "compile",
-                                "Lower to LLVM-IR, compile to a file")));
+                                "Lower to LLVM-IR, compile to a file")),
+    llvm::cl::values(clEnumValN(Action::GLWE_OPTIMIZE, "glwe-optimize",
+                                "Run the glwe optimization pipeline")));
 
 llvm::cl::opt<bool> verifyDiagnostics(
     "verify-diagnostics",
@@ -568,6 +575,9 @@ mlir::LogicalResult processInputBuffer(
   switch (action) {
   case Action::ROUND_TRIP:
     target = mlir::concretelang::CompilerEngine::Target::ROUND_TRIP;
+    break;
+  case Action::GLWE_OPTIMIZE:
+    target = mlir::concretelang::CompilerEngine::Target::GLWE_OPTIMIZE;
     break;
   case Action::DUMP_FHE:
     target = mlir::concretelang::CompilerEngine::Target::FHE;

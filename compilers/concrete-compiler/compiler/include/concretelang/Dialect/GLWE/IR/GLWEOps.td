@@ -12,11 +12,12 @@
 include "concretelang/Dialect/GLWE/IR/GLWEDialect.td"
 include "concretelang/Dialect/GLWE/IR/GLWETypes.td"
 include "concretelang/Dialect/GLWE/IR/GLWEAttrs.td"
+include "concretelang/Dialect/GLWE/IR/GLWEInterfaces.td"
 
 class GLWE_Op<string mnemonic, list<Trait> traits = []> :
     Op<GLWE_Dialect, mnemonic, traits>;
 
-def GLWE_ModulusSwitch: GLWE_Op<"modulus_switch"> {
+def GLWE_ModulusSwitch: GLWE_Op<"modulus_switch", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
 
     let summary = "Change the modulus of the a GLWE ciphertext.";
 
@@ -46,7 +47,7 @@ def GLWE_ModulusSwitch: GLWE_Op<"modulus_switch"> {
     let hasVerifier = 1;
 }
 
-def GLWE_ExactDecompose: GLWE_Op<"exact_decompose"> {
+def GLWE_ExactDecompose: GLWE_Op<"exact_decompose", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
 
     let summary = "Decompose a GLWE ciphertext in `level` elements in a given `base`.";
 
@@ -65,7 +66,8 @@ def GLWE_ExactDecompose: GLWE_Op<"exact_decompose"> {
         GLWE_GLWE:$input,
         GLWE_DecompositionParametersAttr: $decomposition,
         DefaultValuedAttr<BoolAttr, "true">: $mask,
-        DefaultValuedAttr<BoolAttr, "true">: $body
+        DefaultValuedAttr<BoolAttr, "true">: $body,
+        OptionalAttr<GLWE_GLWEExprAttr>: $variance
     );
 
     let results = (outs GLWE_RadixGLWE:$output);
@@ -75,7 +77,7 @@ def GLWE_ExactDecompose: GLWE_Op<"exact_decompose"> {
     let hasVerifier = 1;
 }
 
-def GLWE_ExactRecompose: GLWE_Op<"exact_recompose"> {
+def GLWE_ExactRecompose: GLWE_Op<"exact_recompose", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
 
     let summary = "Recompose a RadiwGLWE ciphertext using a glev.";
 
@@ -97,7 +99,9 @@ def GLWE_ExactRecompose: GLWE_Op<"exact_recompose"> {
         GLWE_GLev:$glev,
         // TODO - GLWE_GLWEExprAttr
         DefaultValuedAttr<I64Attr, "1">:$grouping_factor,
-        DefaultValuedAttr<I64Attr, "53">: $mantissa_size
+        DefaultValuedAttr<I64Attr, "53">: $mantissa_size,
+        DefaultValuedAttr<BoolAttr, "false">: $fft,
+        OptionalAttr<GLWE_GLWEExprAttr>: $variance
     );
 
     let results = (outs GLWE_GLWE:$output);

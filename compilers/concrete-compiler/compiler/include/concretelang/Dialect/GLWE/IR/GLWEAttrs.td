@@ -12,6 +12,7 @@
 
 include "concretelang/Dialect/GLWE/IR/GLWEDialect.td"
 include "concretelang/Dialect/GLWE/IR/GLWETypes.td"
+include "concretelang/Dialect/GLWE/IR/GLWEEnums.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/OpBase.td"
 
@@ -19,6 +20,15 @@ class GLWE_Attr<string name, string attrMnemonic, list<Trait> traits = []>: Attr
     let mnemonic = attrMnemonic;
     let assemblyFormat = "`<` struct(params) `>`";
 }
+
+def GLWE_SecretKeyDistributionAttr : EnumAttr<GLWE_Dialect, GLWE_SecretKeyDistribution, "secret_key_distribution"> {
+  let assemblyFormat = "`<` $value `>`";
+}
+
+def GLWE_NoiseDistributionAttr : EnumAttr<GLWE_Dialect, GLWE_NoiseDistribution, "noise_distribution"> {
+  let assemblyFormat = "`<` $value `>`";
+}
+
 
 def GLWE_GLWEExprAttr: AttrDef<GLWE_Dialect, "GLWEExpr">{
     let mnemonic = "expr";
@@ -43,17 +53,6 @@ def GLWE_GLWESizeAttr: GLWE_Attr<"GLWESize", "size"> {
     );
 }
 
-def GLWE_GLWESecretKeyDistributionAttr: GLWE_Attr<"GLWESecretKeDistribution", "distribution"> {
-
-    let summary = "Represent distribution of a secret key.";
-
-    let parameters = (ins
-        GLWE_GLWEExprAttr: $average_mean,
-        GLWE_GLWEExprAttr: $average_variance
-    );
-
-}
-
 def GLWE_GLWESecretKeyAttr: GLWE_Attr<"GLWESecretKey", "secret_key"> {
 
     let summary = "Represent secret key parameters.";
@@ -67,7 +66,7 @@ def GLWE_GLWESecretKeyAttr: GLWE_Attr<"GLWESecretKey", "secret_key"> {
     let parameters = (ins
         GLWE_GLWESizeAttr: $size,
         DefaultValuedParameter<"GLWEExprAttr", "mlir::concretelang::GLWE::getGlweConstantExprAttr(1, $_ctxt)">: $nb_keys,
-        GLWE_GLWESecretKeyDistributionAttr: $distribution
+        DefaultValuedParameter<"SecretKeyDistributionAttr", "SecretKeyDistributionAttr::get($_ctxt, SecretKeyDistribution::Binary)">: $distribution
     );
 
 }

@@ -13,6 +13,7 @@
 #include <mlir/Dialect/Arith/IR/Arith.h>
 
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEInterfaces.h"
 
 #define GET_TYPEDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWETypes.h.inc"
