@@ -4,8 +4,9 @@
 // for license information.
 
 #include "concretelang/Dialect/GLWE/IR/GLWEDialect.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h"
 #include "concretelang/Dialect/GLWE/IR/GLWEOps.h"
-#include "concretelang/Dialect/GLWE/IR/GLWETypes.h"
+
 #include "mlir/IR/DialectImplementation.h"
 
 namespace mlir {
@@ -59,6 +60,8 @@ void AsmPrinter::printStrippedAttrOrType(
   getStream() << ")";
 }
 } // namespace mlir
+
+#include "concretelang/Dialect/GLWE/IR/GLWEEnums.cpp.inc"
 
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.cpp.inc"

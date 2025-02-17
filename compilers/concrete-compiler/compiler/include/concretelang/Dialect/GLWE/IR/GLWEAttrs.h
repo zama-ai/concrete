@@ -13,6 +13,7 @@
 #include <mlir/IR/DialectImplementation.h>
 
 #include "concretelang/Dialect/GLWE/IR/GLWEExpr.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEInterfaces.h"
 
 #define GET_ATTRDEF_CLASSES
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h.inc"
@@ -22,6 +23,9 @@ namespace concretelang {
 namespace GLWE {
 GLWEExprAttr getGlweConstantExprAttr(double value,
                                      ::mlir::MLIRContext *context);
+
+NoiseDistributionAttr getNoiseDistributionAttr(NoiseDistribution value,
+                                               ::mlir::MLIRContext *context);
 
 } // namespace GLWE
 } // namespace concretelang

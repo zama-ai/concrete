@@ -4,11 +4,12 @@
 // GLWE Ciphertext //////////////////////////////
 /////////////////////////////////////////////////
 
-// Define a secret key (with gaussian distribution)
+//#test = #glwe.noise_distribution
+
+// Define a secret key (with binary distribution which is the default one)
 #secret_key = #glwe.secret_key<
   size = <dimension=<@K>, poly_size=<@N>>,
-  // TODO - + nb_keys?
-  distribution = <average_mean=<0.5>, average_variance=<0.25>>
+  distribution = <Binary>
 >
 
 // Define an encoding (6 bits native)
@@ -29,7 +30,7 @@
   encoding = #native_encoding
 >
 
-// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>>
+// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>>
 func.func @test_glwe_ciphertext(%arg0: !glwe_ciphertext) {
     return
 }
@@ -37,7 +38,7 @@ func.func @test_glwe_ciphertext(%arg0: !glwe_ciphertext) {
 // Define a secret key with nb_keys != 1
 #secret_key_with_nb_keys = #glwe.secret_key<
   size = <dimension=<@K>, poly_size=<@N>>,
-  distribution = <average_mean=<0.5>, average_variance=<0.25>>,
+  distribution = <Binary>,
   nb_keys = <3.>
 >
 
@@ -46,7 +47,7 @@ func.func @test_glwe_ciphertext(%arg0: !glwe_ciphertext) {
   encoding = #native_encoding
 >
 
-// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, nb_keys = <3.000000e+00>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>>
+// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, nb_keys = <3.000000e+00>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>>
 func.func @test_glwe_ciphertext_with_several_bodies(%arg0: !glwe_ciphertext_with_several_bodies) {
     return
 }
@@ -58,7 +59,7 @@ func.func @test_glwe_ciphertext_with_several_bodies(%arg0: !glwe_ciphertext_with
   variance = #minimal_variance
 >
 
-// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>>
+// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>>
 func.func @test_glwe_ciphertext_with_variance(%arg0: !glwe_ciphertext) {
     return
 }
@@ -70,10 +71,7 @@ func.func @test_glwe_ciphertext_with_variance(%arg0: !glwe_ciphertext) {
       dimension=<1.>,
       poly_size=<512.>
     >,
-    distribution = <
-      average_mean=<0.5>,
-      average_variance=<0.25>
-    >
+    distribution = <Binary>
   >,
   encoding = <
     body_modulus = <2. ** 64.>,
@@ -85,7 +83,7 @@ func.func @test_glwe_ciphertext_with_variance(%arg0: !glwe_ciphertext) {
   variance = <4.896863592478985e-07>
 >
 
-// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <1.000000e+00>, poly_size = <5.120000e+02>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <2.000000e+00 ** 6.400000e+01>, mask_modulus = <2.000000e+00 ** 6.400000e+01>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, variance = <4.896863592478985E-7>>
+// CHECK: %arg0: !glwe.glwe<secret_key = <size = <dimension = <1.000000e+00>, poly_size = <5.120000e+02>>>, encoding = <body_modulus = <2.000000e+00 ** 6.400000e+01>, mask_modulus = <2.000000e+00 ** 6.400000e+01>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, variance = <4.896863592478985E-7>>
 func.func @test_glwe_ciphertext_resolved(%arg0: !glwe_ciphertext_resolved) {
     return
 }
@@ -104,7 +102,7 @@ func.func @test_glwe_ciphertext_resolved(%arg0: !glwe_ciphertext_resolved) {
   >
 >
 
-// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>>
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>>
 func.func @test_glwe_radix_ciphertext(%arg0: !glwe_radix_ciphertext) {
     return
 }
@@ -121,7 +119,7 @@ func.func @test_glwe_radix_ciphertext(%arg0: !glwe_radix_ciphertext) {
   body = false
 >
 
-// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>, body = false>
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>, body = false>
 func.func @test_glwe_radix_ciphertext_mask_only(%arg0: !glwe_radix_ciphertext_mask_only) {
     return
 }
@@ -137,7 +135,7 @@ func.func @test_glwe_radix_ciphertext_mask_only(%arg0: !glwe_radix_ciphertext_ma
   variance = #minimal_variance
 >
 
-// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
 func.func @test_glwe_radix_ciphertext_with_variance(%arg0: !glwe_radix_ciphertext_with_variance) {
     return
 }
@@ -158,7 +156,7 @@ func.func @test_glwe_radix_ciphertext_with_variance(%arg0: !glwe_radix_ciphertex
   average_message = <@_secret_key.distribution.average_mean>
 >
 
-// CHECK: %arg0: !glwe.glev<secret_key = <size = <dimension = <@K>, poly_size = <@N>>, distribution = <average_mean = <5.000000e-01>, average_variance = <2.500000e-01>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b_bs>, level = <@l_bs>>, average_message = <@_secret_key.distribution.average_mean>, shape = (<@_secret_key.size.dimension>, <@_secret_key.size.poly_size>)>
+// CHECK: %arg0: !glwe.glev<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b_bs>, level = <@l_bs>>, average_message = <@_secret_key.distribution.average_mean>, shape = (<@_secret_key.size.dimension>, <@_secret_key.size.poly_size>)>
 func.func @test_glev(%arg0 : !bootstrap_key) {
   return
 }

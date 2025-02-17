@@ -13,6 +13,7 @@
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEInterfaces.h"
 #include "concretelang/Dialect/GLWE/IR/GLWETypes.h"
 
 #define GET_OP_CLASSES

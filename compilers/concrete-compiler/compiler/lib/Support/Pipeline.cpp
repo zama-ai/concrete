@@ -46,6 +46,7 @@
 #include "concretelang/Dialect/FHE/Transforms/Max/Max.h"
 #include "concretelang/Dialect/FHE/Transforms/Optimizer/Optimizer.h"
 #include "concretelang/Dialect/FHELinalg/Transforms/Tiling.h"
+#include "concretelang/Dialect/GLWE/Transforms/Transforms.h"
 #include "concretelang/Dialect/RT/Analysis/Autopar.h"
 #include "concretelang/Dialect/RT/Transforms/Passes.h"
 #include "concretelang/Dialect/SDFG/Transforms/Passes.h"
@@ -92,6 +93,20 @@ addPotentiallyNestedPass(mlir::PassManager &pm, std::unique_ptr<Pass> pass,
     mlir::OpPassManager &p = pm.nest(*pass->getOpName());
     p.addPass(std::move(pass));
   }
+}
+
+mlir::LogicalResult
+GLWEOptimization(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass) {
+  mlir::PassManager pm(&context);
+  pipelinePrinting("GLWEOptimization", pm, context);
+
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::GLWE::createInjectDefaultVariances(), enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::GLWE::createPropagateVariances(), enablePass);
+
+  return pm.run(module.getOperation());
 }
 
 llvm::Expected<std::optional<optimizer::Description>>

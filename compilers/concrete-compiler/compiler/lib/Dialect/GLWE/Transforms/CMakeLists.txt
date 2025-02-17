@@ -1,0 +1,14 @@
+add_mlir_library(
+  GLWEDialectTransforms
+  InjectDefaultVariances.cpp
+  PropagateVariances.cpp
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/include/concretelang/Dialect/GLWE
+  DEPENDS
+  GLWEDialect
+  ConcretelangGLWETransformsPassIncGen
+  mlir-headers
+  LINK_LIBS
+  PUBLIC
+  MLIRIR
+  GLWEDialect)

@@ -16,6 +16,10 @@ namespace mlir {
 namespace concretelang {
 namespace pipeline {
 
+mlir::LogicalResult
+GLWEOptimization(mlir::MLIRContext &context, mlir::ModuleOp &module,
+                 std::function<bool(mlir::Pass *)> enablePass);
+
 mlir::LogicalResult autopar(mlir::MLIRContext &context, mlir::ModuleOp &module,
                             std::function<bool(mlir::Pass *)> enablePass);
 

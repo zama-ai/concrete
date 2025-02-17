@@ -46,6 +46,7 @@
 #include "concretelang/Dialect/Concrete/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/FHE/IR/FHEDialect.h"
 #include "concretelang/Dialect/FHELinalg/IR/FHELinalgDialect.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEDialect.h"
 #include "concretelang/Dialect/Optimizer/IR/OptimizerDialect.h"
 #include "concretelang/Dialect/RT/IR/RTDialect.h"
 #include "concretelang/Dialect/RT/Transforms/BufferizableOpInterfaceImpl.h"
@@ -53,7 +54,6 @@
 #include "concretelang/Dialect/SDFG/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/SDFG/Transforms/SDFGConvertibleOpInterfaceImpl.h"
 #include "concretelang/Dialect/TFHE/IR/TFHEDialect.h"
-#include "concretelang/Dialect/GLWE/IR/GLWEDialect.h"
 #include "concretelang/Dialect/Tracing/IR/TracingDialect.h"
 #include "concretelang/Dialect/Tracing/Transforms/BufferizableOpInterfaceImpl.h"
 #include "concretelang/Dialect/TypeInference/IR/TypeInferenceDialect.h"
@@ -401,6 +401,15 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
 
   if (target == Target::ROUND_TRIP)
     return std::move(res);
+
+  if (target == Target::GLWE_OPTIMIZE) {
+    if (mlir::concretelang::pipeline::GLWEOptimization(mlirContext, module,
+                                                       enablePass)
+            .failed()) {
+      return StreamStringError("GLWE Optimization failed");
+    }
+    return std::move(res);
+  }
 
   // Retrieves the encoding informations before any transformation is performed
   // on the `FHE` dialect.

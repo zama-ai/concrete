@@ -12,6 +12,21 @@ mlir_tablegen(GLWEDialect.cpp.inc -gen-dialect-defs -dialect=glwe)
 add_public_tablegen_target(MLIRGLWEOpsIncGen)
 add_dependencies(mlir-headers MLIRGLWEOpsIncGen)
 
+set(LLVM_TARGET_DEFINITIONS GLWEInterfaces.td)
+mlir_tablegen(GLWEInterfaces.h.inc -gen-op-interface-decls)
+mlir_tablegen(GLWEInterfaces.cpp.inc -gen-op-interface-defs)
+add_public_tablegen_target(GLWEInterfacesIncGen)
+
+set(LLVM_TARGET_DEFINITIONS GLWETypeInterfaces.td)
+mlir_tablegen(GLWETypeInterfaces.h.inc -gen-type-interface-decls)
+mlir_tablegen(GLWETypeInterfaces.cpp.inc -gen-type-interface-defs)
+add_public_tablegen_target(GLWETypeInterfacesIncGen)
+
+set(LLVM_TARGET_DEFINITIONS GLWEEnums.td)
+mlir_tablegen(GLWEEnums.h.inc -gen-enum-decls)
+mlir_tablegen(GLWEEnums.cpp.inc -gen-enum-defs)
+add_public_tablegen_target(GLWEEnumsIncGen)
+
 add_concretelang_doc(GLWEOps GLWEDialect concretelang/ -gen-dialect-doc -dialect=glwe)
 add_concretelang_doc(GLWEOps GLWEOps concretelang/ -gen-op-doc)
 add_concretelang_doc(GLWEOps GLWEAttrs concretelang/ -gen-attrdef-doc)

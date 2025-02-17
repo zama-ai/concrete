@@ -125,7 +125,8 @@ struct CompilationOptions {
         batchTFHEOps(false), maxBatchSize(std::numeric_limits<int64_t>::max()),
         emitSDFGOps(false), unrollLoopsWithSDFGConvertibleOps(false),
         optimizeTFHE(true), chunkIntegers(false), chunkSize(4), chunkWidth(2),
-        encodings(std::nullopt), enableTluFusing(true), printTluFusing(false){};
+        encodings(std::nullopt), enableTluFusing(true),
+        printTluFusing(false) {};
 
   /// @brief Constructor for CompilationOptions with default parameters for a
   /// specific backend.
@@ -250,6 +251,11 @@ public:
   enum class Target {
     /// Only read sources and produce corresponding MLIR module
     ROUND_TRIP,
+
+    /// Read sources and run the GLWE optimization pipeline (TODO: this is
+    /// propably a temporary action while it's not integrated in the compilation
+    /// pipeline or in another tool)
+    GLWE_OPTIMIZE,
 
     /// Read sources and exit before any lowering
     FHE,

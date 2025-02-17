@@ -11,6 +11,7 @@
 
 include "concretelang/Dialect/GLWE/IR/GLWEDialect.td"
 include "concretelang/Dialect/GLWE/IR/GLWEAttrs.td"
+include "concretelang/Dialect/GLWE/IR/GLWETypeInterfaces.td"
 include "mlir/IR/BuiltinTypes.td"
 
 class GLWE_Type<string name, string mnemonic_, list<Trait> traits = []> :
@@ -20,7 +21,7 @@ class GLWE_Type<string name, string mnemonic_, list<Trait> traits = []> :
       let assemblyFormat = "`<` struct(params) `>`";
   }
 
-def GLWE_GLWE : GLWE_Type<"GLWE", "glwe"> {
+def GLWE_GLWE : GLWE_Type<"GLWE", "glwe", [DeclareTypeInterfaceMethods<GLWETypeInterface>]> {
 
   let summary = "Represents a GLWE ciphertext";
 
@@ -38,7 +39,7 @@ def GLWE_GLWE : GLWE_Type<"GLWE", "glwe"> {
   );
 }
 
-def GLWE_RadixGLWE : GLWE_Type<"RadixGLWE", "radix_glwe"> {
+def GLWE_RadixGLWE : GLWE_Type<"RadixGLWE", "radix_glwe", [DeclareTypeInterfaceMethods<GLWETypeInterface>]> {
 
   let summary = "Represents a decomposed GLWE ciphertext";
 
@@ -55,7 +56,8 @@ def GLWE_RadixGLWE : GLWE_Type<"RadixGLWE", "radix_glwe"> {
   let parameters = (ins
     "GLWESecretKeyAttr":$secret_key,
     "GLWEEncodingAttr": $encoding,
-    "DecompositionParametersAttr":$decomposition,
+    "DecompositionParametersAttr": $decomposition,
+    OptionalParameter<"GLWEExprAttr">: $number_of_non_zeros_coefs,
     DefaultValuedParameter<"bool", "true">:$mask,
     DefaultValuedParameter<"bool", "true">:$body,
     OptionalParameter<"GLWEExprAttr">: $variance
@@ -63,7 +65,7 @@ def GLWE_RadixGLWE : GLWE_Type<"RadixGLWE", "radix_glwe"> {
 
 }
 
-def GLWE_GLev : GLWE_Type<"GLev", "glev"> {
+def GLWE_GLev : GLWE_Type<"GLev", "glev", [DeclareTypeInterfaceMethods<GLWETypeInterface>]> {
 
   let summary = "Represents a GLev ciphertext i.e. a collection of GLWE ciphertext";
 

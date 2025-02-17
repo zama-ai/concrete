@@ -19,6 +19,7 @@ add_mlir_library(
   PUBLIC
   FHELinalgDialect
   GLWEDialect
+  GLWEDialectTransforms
   FHELinalgDialectTransforms
   FHETensorOpsToLinalg
   FHEDialectTransforms
