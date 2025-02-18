@@ -934,7 +934,10 @@ class Converter:
         tfhers_int = preds[0]
         dtype: TFHERSIntegerType = node.properties["attributes"]["type"]
         result_bit_width, carry_width, msg_width = (
-            dtype.bit_width,
+            # even if TFHE-rs value are using non-variable bit-width, we want the output
+            # to be pluggable into the rest of the computation. For example, two 8bits TFHE-rs
+            # integers could be used in a 9bits addition.
+            ctx.typeof(node).bit_width,
             dtype.carry_width,
             dtype.msg_width,
         )
@@ -989,16 +992,7 @@ class Converter:
         else:
             result = sum_result
 
-        # even if TFHE-rs value are using non-variable bit-width, we want the output
-        # to be pluggable into the rest of the computation. For example, two 8bits TFHE-rs integers
-        # could be used in a 9bits addition. If we don't cast, it won't pass the bitwidth
-        # compatibility check.
-        output_bit_width = ctx.typeof(node).bit_width
-        casted_result_type = ctx.tensor(
-            ctx.esint(output_bit_width) if dtype.is_signed else ctx.eint(output_bit_width),
-            result_shape,
-        )
-        return ctx.cast(casted_result_type, result)
+        return result
 
     def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
