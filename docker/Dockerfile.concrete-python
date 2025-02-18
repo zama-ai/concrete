@@ -7,5 +7,10 @@ ARG version
 RUN apt-get update && apt-get install --no-install-recommends -y binutils graphviz \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
+# Add a non-root user and group
+RUN groupadd -g 10001 grp02 && \
+    useradd -u 10000 -g grp02 usr01 && \
+    mkdir -p /home/usr01 && chown -R usr01:grp02 /home/usr01
+# Switch to the non-root user
+USER usr01:grp02
 RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.zama.ai/cpu/ concrete-python==${version}
