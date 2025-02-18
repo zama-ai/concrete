@@ -1,4 +1,4 @@
-// Copyright © 2022 ZAMA.
+// Copyright © 2025 ZAMA.
 // All rights reserved.
 
 #ifndef CONCRETE_CPU_FFI_H
