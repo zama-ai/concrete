@@ -10,6 +10,22 @@ from typing import List, Optional, Tuple, Union, get_type_hints
 
 import numpy as np
 from mlir._mlir_libs._concretelang._compiler import KeysetRestriction, RangeRestriction
+from concrete.compiler import (
+    Backend,
+    ClientProgram,
+    CompilationContext,
+    CompilationOptions,
+    Compiler,
+    KeyType,
+    Library,
+    MoreCircuitCompilationFeedback,
+    OptimizerMultiParameterStrategy,
+    OptimizerStrategy,
+    Parameter,
+    PrimitiveOperation,
+    ProgramInfo,
+    ServerProgram,
+)
 
 from ..dtypes import Integer
 from ..representation import GraphProcessor
@@ -1291,6 +1307,83 @@ class Configuration:
                 for name in get_type_hints(Configuration.__init__)
             }
         )
+
+    def to_compilation_options(self) -> CompilationOptions:
+
+        backend = Backend.GPU if self.use_gpu else Backend.CPU
+        options = CompilationOptions(backend)
+        options.set_loop_parallelize(self.loop_parallelize)
+        options.set_dataflow_parallelize(self.dataflow_parallelize)
+        options.set_auto_parallelize(self.auto_parallelize)
+        options.set_compress_evaluation_keys(self.compress_evaluation_keys)
+        options.set_compress_input_ciphertexts(self.compress_input_ciphertexts)
+        options.set_enable_overflow_detection_in_simulation(
+            self.detect_overflow_in_simulation
+        )
+        options.set_composable(self.composable)
+
+
+        global_p_error_is_set = self.global_p_error is not None
+        p_error_is_set = self.p_error is not None
+
+        if global_p_error_is_set and p_error_is_set:  # pragma: no cover
+            options.set_global_p_error(self.global_p_error)
+            options.set_p_error(self.p_error)
+
+        elif global_p_error_is_set:  # pragma: no cover
+            options.set_global_p_error(self.global_p_error)
+            options.set_p_error(1.0)
+
+        elif p_error_is_set:  # pragma: no cover
+            options.set_global_p_error(1.0)
+            options.set_p_error(self.p_error)
+
+        else:  # pragma: no cover
+            if DEFAULT_GLOBAL_P_ERROR is not None:
+                options.set_global_p_error(DEFAULT_GLOBAL_P_ERROR)
+            else:
+                options.set_global_p_error(1.0)
+
+            if DEFAULT_P_ERROR is not None:
+                options.set_p_error(DEFAULT_P_ERROR)
+            else:
+                options.set_p_error(1.0)
+
+        show_optimizer = (
+            self.show_optimizer
+            if self.show_optimizer is not None
+            else self.verbose
+        )
+        options.set_display_optimizer_choice(show_optimizer)
+
+        parameter_selection_strategy = self.parameter_selection_strategy
+        if parameter_selection_strategy == ParameterSelectionStrategy.V0:  # pragma: no cover
+            options.set_optimizer_strategy(OptimizerStrategy.V0)
+        elif parameter_selection_strategy == ParameterSelectionStrategy.MONO:  # pragma: no cover
+            options.set_optimizer_strategy(OptimizerStrategy.DAG_MONO)
+        elif parameter_selection_strategy == ParameterSelectionStrategy.MULTI:  # pragma: no cover
+            options.set_optimizer_strategy(OptimizerStrategy.DAG_MULTI)
+
+        multi_parameter_strategy = self.multi_parameter_strategy
+        converter = {
+            MultiParameterStrategy.PRECISION: OptimizerMultiParameterStrategy.PRECISION,
+            MultiParameterStrategy.PRECISION_AND_NORM2: (
+                OptimizerMultiParameterStrategy.PRECISION_AND_NORM2
+            ),
+        }
+        options.set_optimizer_multi_parameter_strategy(converter[multi_parameter_strategy])
+
+        options.set_enable_tlu_fusing(self.enable_tlu_fusing)
+        options.set_print_tlu_fusing(self.print_tlu_fusing)
+        if self.keyset_restriction:
+            options.set_keyset_restriction(self.keyset_restriction)
+
+        if self.range_restriction:
+            options.set_range_restriction(self.range_restriction)
+
+        options.set_security_level(self.security_level)
+
+        return options
 
     def _validate(self):
         """

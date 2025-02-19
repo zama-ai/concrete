@@ -472,6 +472,7 @@ impl DagBuilder<'_> {
             | Operator::UnsafeCast { input, .. }
             | Operator::Round { input, .. }
             | Operator::ChangePartition { input, .. } => self.dag.out_shapes[input.0].clone(),
+
             Operator::Dot {
                 kind: DotKind::Simple | DotKind::Tensor | DotKind::CompatibleTensor,
                 ..
