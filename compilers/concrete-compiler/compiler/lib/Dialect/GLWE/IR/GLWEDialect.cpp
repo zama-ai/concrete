@@ -51,6 +51,7 @@ template <typename T> size_t hash_value(const llvm::SmallVector<T> &v) {
 
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.h"
 #include "concretelang/Dialect/GLWE/IR/GLWEDialect.h"
+#include "concretelang/Dialect/GLWE/IR/GLWEExpr.h"
 #include "concretelang/Dialect/GLWE/IR/GLWEOps.h"
 #include "concretelang/Dialect/GLWE/IR/GLWETypes.h"
 #include "concretelang/Dialect/SDFG/IR/SDFGOps.h"
@@ -247,6 +248,25 @@ mlir::AsmPrinter &operator<<(mlir::AsmPrinter &p,
                              const std::variant<T1, OtherTs...> &v) {
   return printVariant<std::variant<T1, OtherTs...>, T1, OtherTs...>(p, v);
 }
+
+mlir::AsmPrinter &operator<<(mlir::AsmPrinter &p,
+                             const ::mlir::concretelang::GLWE::GLWEExpr &e) {
+  e.doPrint(p);
+  return p;
+}
+
+template <> struct FieldParser<::mlir::concretelang::GLWE::GLWEExpr> {
+  static FailureOr<::mlir::concretelang::GLWE::GLWEExpr>
+  parse(AsmParser &parser) {
+    ::mlir::concretelang::GLWE::GLWEExpr expr =
+        mlir::concretelang::GLWE::GLWEExpr::parse(parser);
+
+    if (expr)
+      return expr;
+
+    return failure();
+  }
+};
 } // namespace mlir
 
 #define GET_ATTRDEF_CLASSES
@@ -279,28 +299,4 @@ void GLWEDialect::initialize() {
 #define GET_ATTRDEF_LIST
 #include "concretelang/Dialect/GLWE/IR/GLWEAttrs.cpp.inc"
       >();
-}
-
-// GLWEExpr ///////////////////////////////////////
-
-::mlir::Attribute
-mlir::concretelang::GLWE::GLWEExprAttr::parse(::mlir::AsmParser &parser,
-                                              ::mlir::Type odsType) {
-  // parse '<'
-  if (parser.parseLess())
-    return {};
-
-  GLWEExpr result = GLWEExpr::parse(parser);
-
-  // parse '>'
-  if (parser.parseGreater())
-    return {};
-  return GLWEExprAttr::get(parser.getContext(), result);
-}
-
-void mlir::concretelang::GLWE::GLWEExprAttr::print(
-    ::mlir::AsmPrinter &printer) const {
-  printer << "<";
-  this->getExpr().print(printer);
-  printer << ">";
 }

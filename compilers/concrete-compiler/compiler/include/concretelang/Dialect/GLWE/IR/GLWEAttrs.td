@@ -26,7 +26,8 @@ def GLWE_GLWEExprAttr: AttrDef<GLWE_Dialect, "GLWEExpr">{
     let parameters = (ins
         "::mlir::concretelang::GLWE::GLWEExpr": $expr
     );
-    let hasCustomAssemblyFormat = 1;
+
+    let assemblyFormat = "`<` $expr `>`";
 }
 
 def GLWE_GLWEParametersAttr: GLWE_Attr<"GLWEParameters", "glwe_params"> {

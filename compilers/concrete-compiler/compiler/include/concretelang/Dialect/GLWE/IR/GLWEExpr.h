@@ -77,7 +77,7 @@ public:
   static GLWEExpr parse(mlir::AsmParser &parser);
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer) const;
+  void doPrint(mlir::AsmPrinter &printer) const;
 
   template <typename U> constexpr bool isa() const;
 
@@ -102,7 +102,7 @@ public:
   llvm::StringRef getSymbolName() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer) const;
+  void doPrint(mlir::AsmPrinter &printer) const;
 };
 
 /// An integer constant appearing in affine expression.
@@ -115,7 +115,7 @@ public:
   double getValue() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer) const;
+  void doPrint(mlir::AsmPrinter &printer) const;
 };
 
 /// @brief A Glwe unary expression.
@@ -127,7 +127,7 @@ public:
   GLWEExpr getOperand() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer) const;
+  void doPrint(mlir::AsmPrinter &printer) const;
 };
 
 /// @brief A Glwe binary expression.
@@ -140,7 +140,7 @@ public:
   GLWEExpr getRHS() const;
 
   // Print the expression in the output stream.
-  void print(mlir::AsmPrinter &printer) const;
+  void doPrint(mlir::AsmPrinter &printer) const;
 };
 
 template <typename U> constexpr bool GLWEExpr::isa() const {
