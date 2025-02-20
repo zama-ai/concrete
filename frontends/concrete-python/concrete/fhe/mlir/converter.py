@@ -1060,19 +1060,64 @@ class Converter:
                 )
             )
 
-        result = ctx.concatenate(result_type_msg, extracted_bits, axis=-1)
-
-        # if we expect more ciphertexts than we have in the message: we pad the result with zeros
+        # if we expect more ciphertexts than we have in the message: we pad the result
         if num_cts_msg != num_cts:
             result_shape = native_int.shape + (num_cts,)
             result_type = ctx.tensor(ctx.eint(msg_width + carry_width), result_shape)
-            padding = ctx.zeros(
-                ctx.tensor(
+            # if it's signed then we have to move the sign bit to the msb
+            if dtype.is_signed:
+                # special case where the sign_bit is already isolated into a single ciphertext
+                if native_int.bit_width % msg_width == 1:
+                    sign_bits = extracted_bits.pop()
+                else:
+                    msbs = extracted_bits.pop()
+                    sign_bit_idx = ((native_int.bit_width % msg_width) - 1) % msg_width
+                    sign_bits = ctx.extract_bits(
+                        bits_shape,
+                        msbs,
+                        bits=sign_bit_idx,
+                    )
+                    # extend sign bit in msbs
+                    # For example: we have this message |0000|0110| where sign_bit_idx is 2
+                    # we want the result to be |0000|1110| extending the sign bit (1) to the
+                    # remaining MSBs
+                    sign_extension = 2**msg_width - 1 - (2 ** (sign_bit_idx + 1) - 1)
+                    extend_sign_bit_table = [
+                        i + sign_extension if i & 2**sign_bit_idx else i
+                        for i in range(2**msg_width)
+                    ] * 2**carry_width
+                    msbs_with_extended_sign = ctx.tlu(bits_shape, msbs, extend_sign_bit_table)
+                    extracted_bits.append(msbs_with_extended_sign)
+
+                extend_sign_bit_table = [0, (2**msg_width) - 1] * 2 ** (carry_width + msg_width - 1)
+                extended_sign_bits = ctx.tlu(bits_shape, sign_bits, extend_sign_bit_table)
+                # padding will contain the sign
+                padding_length = num_cts - len(extracted_bits)
+                padding_type = ctx.tensor(
                     ctx.eint(msg_width + carry_width),
-                    result_shape_msg[:-1] + (num_cts - num_cts_msg,),
+                    result_shape_msg[:-1] + (padding_length,),
                 )
+                padding = ctx.zeros(padding_type)
+                padding = ctx.add(padding_type, extended_sign_bits, padding)
+            else:
+                padding_length = num_cts - len(extracted_bits)
+                padding = ctx.zeros(
+                    ctx.tensor(
+                        ctx.eint(msg_width + carry_width),
+                        result_shape_msg[:-1] + (padding_length,),
+                    )
+                )
+
+            result = ctx.concatenate(
+                result_type,
+                extracted_bits
+                + [
+                    padding,
+                ],
+                axis=-1,
             )
-            result = ctx.concatenate(result_type, [result, padding], axis=-1)
+        else:
+            result = ctx.concatenate(result_type_msg, extracted_bits, axis=-1)
 
         return ctx.change_partition(result, dest_partition=dtype.params)
 
