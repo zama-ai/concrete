@@ -8,20 +8,20 @@ namespace GLWE {
 
 GLWEExprKind GLWEExpr::getKind() const { return expr->kind; }
 
-void GLWEExpr::print(mlir::AsmPrinter &printer) const {
+void GLWEExpr::doPrint(mlir::AsmPrinter &printer) const {
   switch (this->getKind()) {
   case GLWEExprKind::SymbolId:
-    this->dyn_cast<GlweSymbolExpr>().print(printer);
+    this->dyn_cast<GlweSymbolExpr>().doPrint(printer);
     return;
   case GLWEExprKind::Constant:
-    this->dyn_cast<GlweConstantExpr>().print(printer);
+    this->dyn_cast<GlweConstantExpr>().doPrint(printer);
     return;
   default:
     if (auto binExpr = this->dyn_cast<GlweBinaryExpr>()) {
-      binExpr.print(printer);
+      binExpr.doPrint(printer);
       return;
     } else if (auto unExpr = this->dyn_cast<GlweUnaryExpr>()) {
-      unExpr.print(printer);
+      unExpr.doPrint(printer);
       return;
     }
     break;
@@ -61,7 +61,7 @@ GLWEExpr GLWEExpr::replace(std::function<GLWEExpr(GLWEExpr e)> f) const {
 }
 
 mlir::AsmPrinter &operator<<(mlir::AsmPrinter &p, const GLWEExpr &expr) {
-  expr.print(p);
+  expr.doPrint(p);
   return p;
 }
 
@@ -144,7 +144,7 @@ GLWEExpr GLWEExpr::log2() const {
 }
 
 // GlweSymbolExpr
-void GlweSymbolExpr::print(mlir::AsmPrinter &printer) const {
+void GlweSymbolExpr::doPrint(mlir::AsmPrinter &printer) const {
   printer.printSymbolName(getSymbolName());
 }
 
@@ -167,7 +167,7 @@ GLWEExpr getGlweSymbolExpr(llvm::StringRef symbolName, MLIRContext *context) {
 }
 
 // GlweConstantExpr
-void GlweConstantExpr::print(mlir::AsmPrinter &printer) const {
+void GlweConstantExpr::doPrint(mlir::AsmPrinter &printer) const {
   printer.printFloat(llvm::APFloat(getValue()));
 }
 
@@ -190,7 +190,7 @@ GLWEExpr getGlweConstantExpr(double value, MLIRContext *context) {
 }
 
 // GlweUnaryExpr
-void GlweUnaryExpr::print(mlir::AsmPrinter &printer) const {
+void GlweUnaryExpr::doPrint(mlir::AsmPrinter &printer) const {
   switch (getKind()) {
   case GLWEExprKind::Neg:
     printer << "- " << getOperand();
@@ -260,10 +260,10 @@ void printWithOptionalParen(GLWEExpr expr, mlir::AsmPrinter &printer) {
     printer << "(" << expr << ")";
     return;
   }
-  expr.print(printer);
+  expr.doPrint(printer);
 }
 
-void GlweBinaryExpr::print(mlir::AsmPrinter &printer) const {
+void GlweBinaryExpr::doPrint(mlir::AsmPrinter &printer) const {
   switch (getKind()) {
   case GLWEExprKind::Max:
     printer << "max(" << getLHS() << ", " << getRHS() << ")";
