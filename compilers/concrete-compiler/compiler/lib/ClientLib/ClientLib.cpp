@@ -209,11 +209,53 @@ Result<TransportValue> importTfhersInteger(llvm::ArrayRef<uint8_t> buffer,
   std::function<int64_t(const uint8_t *, size_t, uint64_t *, size_t,
                         TfhersFheIntDescription)>
       conversion_func;
-  if (integerDesc.width == 8) {
+  if (integerDesc.width == 2) {
+    if (integerDesc.is_signed) { // fheint2
+      conversion_func = concrete_cpu_tfhers_int2_to_lwe_array;
+    } else { // fheuint2
+      conversion_func = concrete_cpu_tfhers_uint2_to_lwe_array;
+    }
+  } else if (integerDesc.width == 4) {
+    if (integerDesc.is_signed) { // fheint4
+      conversion_func = concrete_cpu_tfhers_int4_to_lwe_array;
+    } else { // fheuint4
+      conversion_func = concrete_cpu_tfhers_uint4_to_lwe_array;
+    }
+  } else if (integerDesc.width == 6) {
+    if (integerDesc.is_signed) { // fheint6
+      conversion_func = concrete_cpu_tfhers_int6_to_lwe_array;
+    } else { // fheuint6
+      conversion_func = concrete_cpu_tfhers_uint6_to_lwe_array;
+    }
+  } else if (integerDesc.width == 8) {
     if (integerDesc.is_signed) { // fheint8
       conversion_func = concrete_cpu_tfhers_int8_to_lwe_array;
     } else { // fheuint8
       conversion_func = concrete_cpu_tfhers_uint8_to_lwe_array;
+    }
+  } else if (integerDesc.width == 10) {
+    if (integerDesc.is_signed) { // fheint10
+      conversion_func = concrete_cpu_tfhers_int10_to_lwe_array;
+    } else { // fheuint10
+      conversion_func = concrete_cpu_tfhers_uint10_to_lwe_array;
+    }
+  } else if (integerDesc.width == 12) {
+    if (integerDesc.is_signed) { // fheint12
+      conversion_func = concrete_cpu_tfhers_int12_to_lwe_array;
+    } else { // fheuint12
+      conversion_func = concrete_cpu_tfhers_uint12_to_lwe_array;
+    }
+  } else if (integerDesc.width == 14) {
+    if (integerDesc.is_signed) { // fheint14
+      conversion_func = concrete_cpu_tfhers_int14_to_lwe_array;
+    } else { // fheuint14
+      conversion_func = concrete_cpu_tfhers_uint14_to_lwe_array;
+    }
+  } else if (integerDesc.width == 16) {
+    if (integerDesc.is_signed) { // fheint16
+      conversion_func = concrete_cpu_tfhers_int16_to_lwe_array;
+    } else { // fheuint16
+      conversion_func = concrete_cpu_tfhers_uint16_to_lwe_array;
     }
   } else {
     std::ostringstream stringStream;
@@ -273,11 +315,53 @@ exportTfhersInteger(TransportValue value, TfhersFheIntDescription integerDesc) {
   std::function<size_t(const uint64_t *, uint8_t *, size_t, size_t,
                        TfhersFheIntDescription)>
       conversion_func;
-  if (integerDesc.width == 8) {
+  if (integerDesc.width == 2) {
+    if (integerDesc.is_signed) { // fheint2
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int2;
+    } else { // fheuint2
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint2;
+    }
+  } else if (integerDesc.width == 4) {
+    if (integerDesc.is_signed) { // fheint4
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int4;
+    } else { // fheuint4
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint4;
+    }
+  } else if (integerDesc.width == 6) {
+    if (integerDesc.is_signed) { // fheint6
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int6;
+    } else { // fheuint6
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint6;
+    }
+  } else if (integerDesc.width == 8) {
     if (integerDesc.is_signed) { // fheint8
       conversion_func = concrete_cpu_lwe_array_to_tfhers_int8;
     } else { // fheuint8
       conversion_func = concrete_cpu_lwe_array_to_tfhers_uint8;
+    }
+  } else if (integerDesc.width == 10) {
+    if (integerDesc.is_signed) { // fheint10
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int10;
+    } else { // fheuint10
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint10;
+    }
+  } else if (integerDesc.width == 12) {
+    if (integerDesc.is_signed) { // fheint12
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int12;
+    } else { // fheuint12
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint12;
+    }
+  } else if (integerDesc.width == 14) {
+    if (integerDesc.is_signed) { // fheint14
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int14;
+    } else { // fheuint14
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint14;
+    }
+  } else if (integerDesc.width == 16) {
+    if (integerDesc.is_signed) { // fheint16
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_int16;
+    } else { // fheuint16
+      conversion_func = concrete_cpu_lwe_array_to_tfhers_uint16;
     }
   } else {
     std::ostringstream stringStream;
