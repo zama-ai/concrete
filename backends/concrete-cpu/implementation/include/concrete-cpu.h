@@ -369,11 +369,95 @@ void concrete_cpu_keyswitch_lwe_ciphertext_u64(uint64_t *ct_out,
                                                size_t input_dimension,
                                                size_t output_dimension);
 
+size_t concrete_cpu_lwe_array_to_tfhers_int10(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *buffer,
+                                              size_t buffer_len,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_int12(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *buffer,
+                                              size_t buffer_len,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_int14(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *buffer,
+                                              size_t buffer_len,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_int16(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *buffer,
+                                              size_t buffer_len,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_int2(const uint64_t *lwe_vec_buffer,
+                                             uint8_t *buffer,
+                                             size_t buffer_len,
+                                             size_t n_elem,
+                                             struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_int4(const uint64_t *lwe_vec_buffer,
+                                             uint8_t *buffer,
+                                             size_t buffer_len,
+                                             size_t n_elem,
+                                             struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_int6(const uint64_t *lwe_vec_buffer,
+                                             uint8_t *buffer,
+                                             size_t buffer_len,
+                                             size_t n_elem,
+                                             struct TfhersFheIntDescription desc);
+
 size_t concrete_cpu_lwe_array_to_tfhers_int8(const uint64_t *lwe_vec_buffer,
                                              uint8_t *buffer,
                                              size_t buffer_len,
                                              size_t n_elem,
                                              struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_uint10(const uint64_t *lwe_vec_buffer,
+                                               uint8_t *buffer,
+                                               size_t buffer_len,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_uint12(const uint64_t *lwe_vec_buffer,
+                                               uint8_t *buffer,
+                                               size_t buffer_len,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_uint14(const uint64_t *lwe_vec_buffer,
+                                               uint8_t *buffer,
+                                               size_t buffer_len,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_uint16(const uint64_t *lwe_vec_buffer,
+                                               uint8_t *buffer,
+                                               size_t buffer_len,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_uint2(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *buffer,
+                                              size_t buffer_len,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_uint4(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *buffer,
+                                              size_t buffer_len,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+size_t concrete_cpu_lwe_array_to_tfhers_uint6(const uint64_t *lwe_vec_buffer,
+                                              uint8_t *buffer,
+                                              size_t buffer_len,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
 
 size_t concrete_cpu_lwe_array_to_tfhers_uint8(const uint64_t *lwe_vec_buffer,
                                               uint8_t *buffer,
@@ -422,11 +506,95 @@ size_t concrete_cpu_serialize_lwe_secret_key_u64(const uint64_t *lwe_sk,
 
 size_t concrete_cpu_tfhers_fheint_buffer_size_u64(size_t lwe_size, size_t n_cts, size_t n_elem);
 
+int64_t concrete_cpu_tfhers_int10_to_lwe_array(const uint8_t *buffer,
+                                               size_t buffer_len,
+                                               uint64_t *lwe_vec_buffer,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_int12_to_lwe_array(const uint8_t *buffer,
+                                               size_t buffer_len,
+                                               uint64_t *lwe_vec_buffer,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_int14_to_lwe_array(const uint8_t *buffer,
+                                               size_t buffer_len,
+                                               uint64_t *lwe_vec_buffer,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_int16_to_lwe_array(const uint8_t *buffer,
+                                               size_t buffer_len,
+                                               uint64_t *lwe_vec_buffer,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_int2_to_lwe_array(const uint8_t *buffer,
+                                              size_t buffer_len,
+                                              uint64_t *lwe_vec_buffer,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_int4_to_lwe_array(const uint8_t *buffer,
+                                              size_t buffer_len,
+                                              uint64_t *lwe_vec_buffer,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_int6_to_lwe_array(const uint8_t *buffer,
+                                              size_t buffer_len,
+                                              uint64_t *lwe_vec_buffer,
+                                              size_t n_elem,
+                                              struct TfhersFheIntDescription desc);
+
 int64_t concrete_cpu_tfhers_int8_to_lwe_array(const uint8_t *buffer,
                                               size_t buffer_len,
                                               uint64_t *lwe_vec_buffer,
                                               size_t n_elem,
                                               struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_uint10_to_lwe_array(const uint8_t *buffer,
+                                                size_t buffer_len,
+                                                uint64_t *lwe_vec_buffer,
+                                                size_t n_elem,
+                                                struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_uint12_to_lwe_array(const uint8_t *buffer,
+                                                size_t buffer_len,
+                                                uint64_t *lwe_vec_buffer,
+                                                size_t n_elem,
+                                                struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_uint14_to_lwe_array(const uint8_t *buffer,
+                                                size_t buffer_len,
+                                                uint64_t *lwe_vec_buffer,
+                                                size_t n_elem,
+                                                struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_uint16_to_lwe_array(const uint8_t *buffer,
+                                                size_t buffer_len,
+                                                uint64_t *lwe_vec_buffer,
+                                                size_t n_elem,
+                                                struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_uint2_to_lwe_array(const uint8_t *buffer,
+                                               size_t buffer_len,
+                                               uint64_t *lwe_vec_buffer,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_uint4_to_lwe_array(const uint8_t *buffer,
+                                               size_t buffer_len,
+                                               uint64_t *lwe_vec_buffer,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
+
+int64_t concrete_cpu_tfhers_uint6_to_lwe_array(const uint8_t *buffer,
+                                               size_t buffer_len,
+                                               uint64_t *lwe_vec_buffer,
+                                               size_t n_elem,
+                                               struct TfhersFheIntDescription desc);
 
 int64_t concrete_cpu_tfhers_uint8_to_lwe_array(const uint8_t *buffer,
                                                size_t buffer_len,

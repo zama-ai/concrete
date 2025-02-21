@@ -123,7 +123,7 @@ extra_bindings = []
 
 
 [parse.expand]
-crates = []
+crates = ["concrete-cpu"]
 all_features = false
 default_features = true
 features = []
