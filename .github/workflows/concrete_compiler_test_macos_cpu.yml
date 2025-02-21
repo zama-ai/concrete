@@ -52,7 +52,7 @@ jobs:
           } >> "${GITHUB_ENV}"
       - name: Install dependencies
         run: |
-          brew install ninja ccache
+          brew install ninja ccache zstd
           ${PIP} install pytest
       - name: Build compiler
         run: |

@@ -138,6 +138,7 @@ ExternalProject_Add(
 add_library(rust_deps_bundle STATIC IMPORTED)
 set_target_properties(rust_deps_bundle PROPERTIES IMPORTED_LOCATION "${RUST_DEPS_BUNDLE_LIB}")
 add_dependencies(rust_deps_bundle rust_deps_bundle_build)
+target_link_libraries(rust_deps_bundle INTERFACE dl)
 
 # --------------------------------------------------------------------------------
 # Concrete Cuda Configuration

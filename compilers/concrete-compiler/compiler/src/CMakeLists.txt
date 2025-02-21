@@ -23,7 +23,6 @@ target_link_libraries(
           MLIRLLVMToLLVMIRTranslation
           RTDialect
           ConcretelangSupport
-          ConcretelangCommon
-          dl)
+          ConcretelangCommon)
 
 mlir_check_all_link_libraries(concretecompiler)

@@ -26,12 +26,14 @@ add_dependencies(ConcretelangRuntime rust_deps_bundle concrete-protocol)
 
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PUBLIC HPX::hpx HPX::iostreams_component HPX::component)
+  target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
   set_source_files_properties(DFRuntime.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
   target_include_directories(ConcretelangRuntime PUBLIC ${HPX_INCLUDE_DIRS})
 endif()
 
 if(CONCRETELANG_CUDA_SUPPORT)
   target_link_libraries(ConcretelangRuntime LINK_PUBLIC tfhe_cuda_backend)
+  target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -108,3 +110,7 @@ target_link_libraries(
           $<TARGET_OBJECTS:mlir_c_runner_utils>
           $<TARGET_OBJECTS:mlir_float16_utils>
           $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
+
+if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
+  target_include_directories(ConcretelangRuntimeStatic PUBLIC ${HPX_INCLUDE_DIRS})
+endif()
