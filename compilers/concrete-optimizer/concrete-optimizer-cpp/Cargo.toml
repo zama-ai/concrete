@@ -6,12 +6,12 @@ authors = [""]
 edition = "2021"
 
 [dependencies]
-cxx = "1.0"
-concrete-optimizer = {path = "../concrete-optimizer" }
+cxx = "1"
+concrete-optimizer = { path = "../concrete-optimizer" }
 
 [build-dependencies]
-cxx-build = "1.0"
+cxx-build = "1"
 
 [lib]
 path = "src/concrete-optimizer.rs"
-crate-type = ["staticlib"]
+crate-type = ["lib", "staticlib"]

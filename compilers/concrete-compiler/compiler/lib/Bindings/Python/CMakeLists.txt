@@ -22,6 +22,9 @@ declare_mlir_python_extension(
   PRIVATE_LINK_LIBS
   ConcretelangSupport
   ConcretelangCommon
+  ConcretelangRuntime
+  ConcretelangClientLib
+  ConcretelangServerLib
   EMBED_CAPI_LINK_LIBS
   MLIRCAPIRegisterEverything)
 

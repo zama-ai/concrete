@@ -21,16 +21,11 @@ The Compiler depends on some Rust libraries, including the optimizer and the con
 
 **Note:** some crates use Rust nightly currently, and it might be required to install both stable and nightly distributions.
 
-### Prerequisite: Building HPX and enable dataflow parallelism (optional)
+### Prerequisite: Enable dataflow parallelism (optional)
 
-In order to implement the dataflow parallelism and the distribution of the computation we use the [HPX Standard Library](https://hpx-docs.stellar-group.org/). You can else use your own HPX installation by set the `HPX_INSTALL_DIR` environment variable or you can install HPX on the default path of our build system thanks the following command:
+In order to implement the dataflow parallelism and the distribution of the computation we use the [HPX Standard Library](https://hpx-docs.stellar-group.org/). The build script takes care of installing HPX, but it may rely on a local installation of BOOST.
 
-```sh
-make install-hpx-from-source
-```
-
-This may fail on some systems when dependencies are missing. Some recent packages required are Cmake, HWLOC and BOOST. For full details see [HPX Quickstart guide](https://hpx-docs.stellar-group.org/tags/1.7.1/html/quickstart.html).
-Once you have a proper installation of HPX to enable the dataflow parallelism set the `DATAFLOW_EXECUTION_ENABLED=ON`.
+Once you have a proper installation of BOOST you can enable the dataflow parallelism set the `DATAFLOW_EXECUTION_ENABLED=ON`.
 
 ### Prerequisite: Fetch git submodules
 

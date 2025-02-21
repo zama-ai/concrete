@@ -400,17 +400,18 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
 
       // Check if this entry point uses a context
       Value ctx = nullptr;
-      if (dfr::_dfr_is_root_node())
-        for (auto arg : llvm::enumerate(entryPoint.getArguments()))
-          if (arg.value()
-                  .getType()
-                  .isa<mlir::concretelang::Concrete::ContextType>()) {
-            ctx = arg.value();
-            break;
-          }
-      if (!ctx)
+      for (auto arg : llvm::enumerate(entryPoint.getArguments())) {
+        if (arg.value()
+                .getType()
+                .isa<mlir::concretelang::Concrete::ContextType>()) {
+          ctx = arg.value();
+          break;
+        }
+      }
+      if (!ctx) {
         ctx = builder.create<arith::ConstantOp>(entryPoint.getLoc(),
                                                 builder.getI64IntegerAttr(0));
+      }
 
       auto startFunTy = mlir::FunctionType::get(
           entryPoint->getContext(), {useDFRVal.getType(), ctx.getType()}, {});

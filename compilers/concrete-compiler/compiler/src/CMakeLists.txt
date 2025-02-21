@@ -17,11 +17,12 @@ target_link_libraries(
           FHEDialect
           SDFGDialect
           OptimizerDialect
-          ConcretelangSupport
           ConcretelangTransforms
           MLIRIR
           MLIRLLVMIRTransforms
           MLIRLLVMToLLVMIRTranslation
-          RTDialect)
+          RTDialect
+          ConcretelangSupport
+          ConcretelangCommon)
 
 mlir_check_all_link_libraries(concretecompiler)

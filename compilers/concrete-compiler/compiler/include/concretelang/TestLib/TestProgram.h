@@ -206,7 +206,7 @@ public:
 private:
   std::string getArtifactDirectory() { return artifactDirectory; }
 
-  Result<mlir::concretelang::CompilerEngine::Library> getLibrary() {
+  Result<mlir::concretelang::Library> getLibrary() {
     if (!library.has_value()) {
       return StringError("TestProgram: compilation has not been done\n");
     }
@@ -222,7 +222,7 @@ private:
 
   std::string artifactDirectory;
   mlir::concretelang::CompilerEngine compiler;
-  std::optional<mlir::concretelang::CompilerEngine::Library> library;
+  std::optional<mlir::concretelang::Library> library;
   std::optional<Keyset> keyset;
   std::shared_ptr<csprng::EncryptionCSPRNG> encryptionCsprng;
 
