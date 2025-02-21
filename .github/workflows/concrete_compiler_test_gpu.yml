@@ -63,6 +63,7 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
+            -e CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
             --gpus all
@@ -74,6 +75,7 @@ jobs:
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make BINDINGS_PYTHON_ENABLED=OFF Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu
             echo "Debug: ccache statistics (after the build):"
+            ccache -s
       - name: Slack Notification
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true

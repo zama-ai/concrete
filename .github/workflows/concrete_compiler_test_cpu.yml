@@ -102,6 +102,7 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
+            -e CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
             -v ${{ github.workspace }}/wheels:/wheels
@@ -122,6 +123,7 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
+            -e CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
             -v ${{ github.workspace }}/wheels:/wheels
@@ -145,6 +147,7 @@ jobs:
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
+            -e CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
           shell: bash
