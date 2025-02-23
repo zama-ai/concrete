@@ -67,7 +67,7 @@ jobs:
           output: trivy-out-docker.sarif
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ steps.login.conclusion != 'skipped' }}
-        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
+        uses: github/codeql-action/upload-sarif@ff79de67cc25c7617163ae1e4b8aa23b902fdf15 # v3.27.6
         with:
           sarif_file: trivy-out-docker.sarif
           category: trivy-docker
@@ -129,7 +129,7 @@ jobs:
           output: trivy-out-docker.sarif
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ steps.login.conclusion != 'skipped' }}
-        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
+        uses: github/codeql-action/upload-sarif@ff79de67cc25c7617163ae1e4b8aa23b902fdf15 # v3.27.6
         with:
           sarif_file: trivy-out-docker.sarif
           category: trivy-docker
@@ -183,7 +183,7 @@ jobs:
           output: trivy-out-docker.sarif
       - name: Upload Trivy scan results to GitHub Security tab
         if: steps.login.conclusion != 'skipped'
-        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
+        uses: github/codeql-action/upload-sarif@ff79de67cc25c7617163ae1e4b8aa23b902fdf15 # v3.27.6
         with:
           sarif_file: trivy-out-docker.sarif
           category: trivy-docker
