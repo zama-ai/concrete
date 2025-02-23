@@ -64,7 +64,7 @@ jobs:
           output: ${{ env.TRIVY_REPORT_PREFIX }}-${{ env.DATE_FULL }}.html
 
       - name: Upload scan results as artifacts
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: ${{ env.TRIVY_REPORT_PREFIX }}-all-${{ env.DATE_FULL }}
           path: ${{ env.TRIVY_REPORT_PREFIX }}-${{ env.DATE_FULL }}.*
