@@ -1,0 +1,31 @@
+[package]
+name = "concrete"
+version = "2.10.1"
+edition = "2021"
+links = "concrete"
+readme = "../../../../../../../README.md"
+keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
+homepage = "https://zama.ai/"
+documentation = "https://docs.zama.ai/concrete"
+repository = "https://github.com/zama-ai/concrete"
+license = "BSD-3-Clause-Clear"
+description = "Concrete is an open-source FHE Compiler that simplifies the use of fully homomorphic encryption (FHE)."
+build = "build.rs"
+
+[dependencies]
+cxx = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+quote  = {version = "1.0", optional =true }
+proc-macro2 = {version = "1.0", optional = true}
+
+[build-dependencies]
+zip = "2.6"
+curl = "0.4.47"
+cxx-build = "1.0"
+
+[dev-dependencies]
+ar = "0.9"
+
+[features]
+compiler = ["dep:quote", "dep:proc-macro2"]

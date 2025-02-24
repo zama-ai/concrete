@@ -127,26 +127,32 @@ Message<concreteprotocol::Shape> Value::intoProtoShape() const {
   return dimensionsToProtoShape(getDimensions());
 }
 
-std::vector<size_t> Value::getDimensions() const {
-  if (auto tensor = getTensor<uint8_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else if (auto tensor = getTensor<uint16_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else if (auto tensor = getTensor<uint32_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else if (auto tensor = getTensor<uint64_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else if (auto tensor = getTensor<int8_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else if (auto tensor = getTensor<int16_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else if (auto tensor = getTensor<int32_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else if (auto tensor = getTensor<int64_t>(); tensor) {
-    return tensor.value().dimensions;
-  } else {
-    assert(false);
+const std::vector<size_t> &Value::getDimensions() const {
+  if (hasElementType<uint8_t>()) {
+    return std::get<Tensor<uint8_t>>(inner).dimensions;
   }
+  if (hasElementType<uint16_t>()) {
+    return std::get<Tensor<uint16_t>>(inner).dimensions;
+  }
+  if (hasElementType<uint32_t>()) {
+    return std::get<Tensor<uint32_t>>(inner).dimensions;
+  }
+  if (hasElementType<uint64_t>()) {
+    return std::get<Tensor<uint64_t>>(inner).dimensions;
+  }
+  if (hasElementType<int8_t>()) {
+    return std::get<Tensor<int8_t>>(inner).dimensions;
+  }
+  if (hasElementType<int16_t>()) {
+    return std::get<Tensor<int16_t>>(inner).dimensions;
+  }
+  if (hasElementType<int32_t>()) {
+    return std::get<Tensor<int32_t>>(inner).dimensions;
+  }
+  if (hasElementType<int64_t>()) {
+    return std::get<Tensor<int64_t>>(inner).dimensions;
+  }
+  assert(false);
 }
 
 size_t Value::getLength() const {

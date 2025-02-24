@@ -3,7 +3,9 @@
 
 """Compiler submodule."""
 import atexit
+import json
 from typing import Union
+import jsonpickle
 
 # pylint: disable=no-name-in-module,import-error
 from mlir._mlir_libs._concretelang._compiler import (
@@ -33,6 +35,8 @@ from mlir._mlir_libs._concretelang._compiler import (
     Library,
     ProgramCompilationFeedback,
     CircuitCompilationFeedback,
+    KeysetRestriction,
+    RangeRestriction,
     terminate_df_parallelization as _terminate_df_parallelization,
     init_df_parallelization as _init_df_parallelization,
     check_gpu_runtime_enabled as _check_gpu_runtime_enabled,
@@ -98,3 +102,27 @@ def round_trip(mlir_str: str) -> str:
     if not isinstance(mlir_str, str):
         raise TypeError(f"mlir_str must be of type str, not {type(mlir_str)}")
     return _round_trip(mlir_str)
+
+
+@jsonpickle.handlers.register(RangeRestriction)
+class RangeRestrictionHandler(jsonpickle.handlers.BaseHandler):
+    """Handler to serialize and deserialize range restrictions"""
+
+    def flatten(self, obj, data):
+        data["serialized"] = json.loads(obj.to_json())
+        return data
+
+    def restore(self, obj):
+        return RangeRestriction.from_json(json.dumps(obj["serialized"]))
+
+
+@jsonpickle.handlers.register(KeysetRestriction)
+class KeysetRestrictionHandler(jsonpickle.handlers.BaseHandler):
+    """Handler to serialize and deserialize keyset restrictions"""
+
+    def flatten(self, obj, data):
+        data["serialized"] = json.loads(obj.to_json())
+        return data
+
+    def restore(self, obj):
+        return KeysetRestriction.from_json(json.dumps(obj["serialized"]))

@@ -1,5 +1,3 @@
 [workspace]
-
-members = ["concrete-sys"]
-
 resolver = "2"
+members = ["concrete", "concrete-macro", "test"]

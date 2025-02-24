@@ -3,24 +3,22 @@ add_compile_options(-fsized-deallocation)
 if(CONCRETELANG_CUDA_SUPPORT)
   add_library(
     ConcretelangRuntime SHARED
-    utils.cpp
     context.cpp
-    simulation.cpp
-    wrappers.cpp
     DFRuntime.cpp
     key_manager.cpp
     GPUDFG.cpp
+    simulation.cpp
+    wrappers.cpp
     time_util.cpp)
 else()
   add_library(
     ConcretelangRuntime SHARED
-    utils.cpp
     context.cpp
-    simulation.cpp
-    wrappers.cpp
     DFRuntime.cpp
     key_manager.cpp
     GPUDFG.cpp
+    simulation.cpp
+    wrappers.cpp
     time_util.cpp)
 endif()
 
@@ -30,6 +28,7 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PUBLIC HPX::hpx HPX::iostreams_component HPX::component)
   target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
   set_source_files_properties(DFRuntime.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
+  add_dependencies(ConcretelangRuntime HPXLibs)
 endif()
 
 if(CONCRETELANG_CUDA_SUPPORT)
@@ -59,15 +58,13 @@ target_include_directories(
 
 target_link_libraries(
   ConcretelangRuntime
-  PRIVATE rust_deps_bundle
-          concrete-protocol
-          pthread
+  PRIVATE pthread
           m
           dl
           $<TARGET_OBJECTS:mlir_c_runner_utils>
           $<TARGET_OBJECTS:mlir_float16_utils>
           $<TARGET_OBJECTS:MLIRSparseTensorRuntime>
-          ConcretelangCommon)
+          $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangCommon>)
 
 if(CONCRETELANG_CUDA_SUPPORT)
   install(TARGETS ConcretelangRuntime omp tfhe_cuda_backend EXPORT ConcretelangRuntime)
@@ -81,11 +78,11 @@ install(EXPORT ConcretelangRuntime DESTINATION "./")
 add_library(
   ConcretelangRuntimeStatic STATIC
   context.cpp
-  simulation.cpp
-  wrappers.cpp
   DFRuntime.cpp
   key_manager.cpp
   GPUDFG.cpp
+  simulation.cpp
+  wrappers.cpp
   time_util.cpp)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

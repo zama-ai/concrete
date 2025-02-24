@@ -105,7 +105,7 @@ public:
                   std::shared_ptr<csprng::EncryptionCSPRNG> csprng);
 
   /// Returns a reference to the named client circuit if it exists.
-  Result<ClientCircuit> getClientCircuit(std::string circuitName);
+  Result<ClientCircuit> getClientCircuit(std::string circuitName) const;
 
 private:
   ClientProgram() = default;

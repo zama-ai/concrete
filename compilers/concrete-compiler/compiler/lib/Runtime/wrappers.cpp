@@ -18,9 +18,11 @@
 #include <vector>
 
 #include "concretelang/Common/CRT.h"
-#include "concretelang/Runtime/wrappers.h"
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
+#include "device.h"
+#include "keyswitch.h"
+#include "programmable_bootstrap.h"
 
 // CUDA memory utils function /////////////////////////////////////////////////
 

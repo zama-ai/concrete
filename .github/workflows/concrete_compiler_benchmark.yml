@@ -73,6 +73,8 @@ jobs:
           set -e
           git config --global --add safe.directory '*'
           cd compilers/concrete-compiler/compiler
+          sudo apt install -y cmake
+          cmake --version
           make BINDINGS_PYTHON_ENABLED=OFF build-benchmarks
       - name: Run compiler benchmarks
         run: |

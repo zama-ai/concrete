@@ -4,6 +4,7 @@ use crate::{
     },
     parameters::{BrDecompositionParameters, GlweParameters, KsDecompositionParameters},
 };
+use serde::{Deserialize, Serialize};
 
 use super::MacroParameters;
 
@@ -224,6 +225,7 @@ impl SearchSpaceRestriction for NoSearchSpaceRestriction {
 }
 
 /// An object restricting the search space based on smaller ranges.
+#[derive(Serialize, Deserialize)]
 pub struct RangeRestriction {
     pub glwe_log_polynomial_sizes: Vec<u64>,
     pub glwe_dimensions: Vec<u64>,
@@ -315,10 +317,12 @@ impl SearchSpaceRestriction for RangeRestriction {
 }
 
 #[allow(unused)]
+#[derive(Serialize, Deserialize)]
 pub struct LweSecretKeyInfo {
     lwe_dimension: u64,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct LweBootstrapKeyInfo {
     level_count: u64,
     base_log: u64,
@@ -327,6 +331,7 @@ pub struct LweBootstrapKeyInfo {
     input_lwe_dimension: u64,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct LweKeyswitchKeyInfo {
     level_count: u64,
     base_log: u64,
@@ -335,6 +340,7 @@ pub struct LweKeyswitchKeyInfo {
 }
 
 #[allow(unused)]
+#[derive(Serialize, Deserialize)]
 pub struct KeysetInfo {
     lwe_secret_keys: Vec<LweSecretKeyInfo>,
     lwe_bootstrap_keys: Vec<LweBootstrapKeyInfo>,
@@ -342,6 +348,7 @@ pub struct KeysetInfo {
 }
 
 /// An object restricting the search space based on a keyset.
+#[derive(Serialize, Deserialize)]
 pub struct KeysetRestriction {
     info: KeysetInfo,
 }

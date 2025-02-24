@@ -1145,6 +1145,7 @@ struct RangeRestriction final {
   ::rust::Vec<::std::uint64_t> ks_level_count;
   ::rust::Vec<::std::uint64_t> ks_base_log;
 
+  ::rust::String range_restriction_to_json() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$RangeRestriction
@@ -1370,6 +1371,7 @@ struct KeysetInfo final {
 struct KeysetRestriction final {
   ::concrete_optimizer::restriction::KeysetInfo info;
 
+  ::rust::String keyset_restriction_to_json() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetRestriction
@@ -1418,4 +1420,10 @@ namespace weights {
 } // namespace weights
 
 ::std::uint64_t NO_KEY_ID() noexcept;
+
+namespace restriction {
+::concrete_optimizer::restriction::RangeRestriction range_restriction_from_json(::rust::Str input) noexcept;
+
+::concrete_optimizer::restriction::KeysetRestriction keyset_restriction_from_json(::rust::Str input) noexcept;
+} // namespace restriction
 } // namespace concrete_optimizer
