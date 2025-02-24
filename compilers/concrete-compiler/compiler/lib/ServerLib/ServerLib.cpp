@@ -356,7 +356,7 @@ DynamicModule::open(const std::string &sharedLibPath) {
   if (!module->libraryHandle) {
     return StringError("Cannot open shared library ") << dlerror();
   }
-  mlir::concretelang::dfr::_dfr_register_lib(module->libraryHandle);
+  // mlir::concretelang::dfr::_dfr_register_lib(module->libraryHandle);
   return module;
 }
 
@@ -431,7 +431,7 @@ bool getGateIsSigned(const Message<concreteprotocol::GateInfo> &gateInfo) {
 
 Result<std::vector<TransportValue>>
 ServerCircuit::call(const ServerKeyset &serverKeyset,
-                    std::vector<TransportValue> &args) {
+                    const std::vector<TransportValue> &args) {
   std::vector<TransportValue> returns(returnsBuffer.size());
   mlir::concretelang::dfr::_dfr_register_lib(dynamicModule->libraryHandle);
   if (!mlir::concretelang::dfr::_dfr_is_root_node()) {
@@ -461,7 +461,7 @@ ServerCircuit::call(const ServerKeyset &serverKeyset,
 }
 
 Result<std::vector<TransportValue>>
-ServerCircuit::simulate(std::vector<TransportValue> &args) {
+ServerCircuit::simulate(const std::vector<TransportValue> &args) {
   ServerKeyset emptyKeyset;
   return call(emptyKeyset, args);
 }
@@ -470,23 +470,13 @@ std::string ServerCircuit::getName() {
   return circuitInfo.asReader().getName();
 }
 
-Result<ServerCircuit> ServerCircuit::fromDynamicModule(
+Result<ServerCircuit> ServerCircuit::fromFnPtr(
     const Message<concreteprotocol::CircuitInfo> &circuitInfo,
-    std::shared_ptr<DynamicModule> dynamicModule, bool useSimulation = false) {
-
+    void (*func)(void *...), bool useSimulation = false) {
   ServerCircuit output;
   output.circuitInfo = circuitInfo;
   output.useSimulation = useSimulation;
-  output.dynamicModule = dynamicModule;
-  output.func = (void (*)(void *, ...))dlsym(
-      dynamicModule->libraryHandle,
-      (std::string("_mlir_concrete_") +
-       std::string(circuitInfo.asReader().getName().cStr()))
-          .c_str());
-  if (auto err = dlerror()) {
-    return StringError("Circuit symbol not found in dynamic module: ")
-           << std::string(err);
-  }
+  output.func = func;
 
   // We prepare the args transformers used to transform transport values into
   // arg values.
@@ -553,6 +543,28 @@ Result<ServerCircuit> ServerCircuit::fromDynamicModule(
         (Message<concreteprotocol::GateInfo>)gateInfo, useSimulation);
     output.returnDescriptorSizes.push_back(descriptorSize);
     output.returnRawSize += descriptorSize;
+  }
+
+  return output;
+}
+
+Result<ServerCircuit> ServerCircuit::fromDynamicModule(
+    const Message<concreteprotocol::CircuitInfo> &circuitInfo,
+    std::shared_ptr<DynamicModule> dynamicModule, bool useSimulation = false) {
+
+  auto func = (void (*)(void *, ...))dlsym(
+      dynamicModule->libraryHandle,
+      (std::string("_mlir_concrete_") +
+       std::string(circuitInfo.asReader().getName().cStr()))
+          .c_str());
+  if (auto err = dlerror()) {
+    return StringError("Circuit symbol not found in dynamic module: ")
+           << std::string(err);
+  }
+
+  auto output = ServerCircuit::fromFnPtr(circuitInfo, func, useSimulation);
+  if (output.has_value()) {
+    output.value().dynamicModule = dynamicModule;
   }
 
   return output;

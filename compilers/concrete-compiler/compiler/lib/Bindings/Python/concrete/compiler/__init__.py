@@ -3,6 +3,8 @@
 
 """Compiler submodule."""
 import atexit
+import jsonpickle
+import json
 from typing import Union
 
 # pylint: disable=no-name-in-module,import-error
@@ -33,6 +35,8 @@ from mlir._mlir_libs._concretelang._compiler import (
     Library,
     ProgramCompilationFeedback,
     CircuitCompilationFeedback,
+    KeysetRestriction,
+    RangeRestriction,
     terminate_df_parallelization as _terminate_df_parallelization,
     init_df_parallelization as _init_df_parallelization,
     check_gpu_runtime_enabled as _check_gpu_runtime_enabled,
@@ -98,3 +102,24 @@ def round_trip(mlir_str: str) -> str:
     if not isinstance(mlir_str, str):
         raise TypeError(f"mlir_str must be of type str, not {type(mlir_str)}")
     return _round_trip(mlir_str)
+
+
+@jsonpickle.handlers.register(RangeRestriction)
+class RangeRestrictionHandler(jsonpickle.handlers.BaseHandler):
+
+    def flatten(self, object, data):
+        data["serialized"] = json.loads(object.to_json())
+        return data
+
+    def restore(self, data):
+        return RangeRestriction.from_json(json.dumps(data["serialized"]))
+
+@jsonpickle.handlers.register(KeysetRestriction)
+class KeysetRestrictionHandler(jsonpickle.handlers.BaseHandler):
+
+    def flatten(self, object, data):
+        data["serialized"] = json.loads(object.to_json())
+        return data
+
+    def restore(self, data):
+        return KeysetRestriction.from_json(json.dumps(data["serialized"]))
