@@ -4,8 +4,6 @@ if(CONCRETELANG_CUDA_SUPPORT)
   add_library(
     ConcretelangRuntime SHARED
     context.cpp
-    simulation.cpp
-    wrappers.cpp
     DFRuntime.cpp
     key_manager.cpp
     GPUDFG.cpp
@@ -14,8 +12,6 @@ else()
   add_library(
     ConcretelangRuntime SHARED
     context.cpp
-    simulation.cpp
-    wrappers.cpp
     DFRuntime.cpp
     key_manager.cpp
     GPUDFG.cpp
@@ -57,6 +53,8 @@ target_include_directories(
 
 target_link_libraries(
   ConcretelangRuntime
+  PUBLIC
+    ConcretelangCommon
   PRIVATE rust_deps_bundle
           concrete-protocol
           pthread
@@ -64,8 +62,7 @@ target_link_libraries(
           dl
           $<TARGET_OBJECTS:mlir_c_runner_utils>
           $<TARGET_OBJECTS:mlir_float16_utils>
-          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>
-          ConcretelangCommon)
+          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
 
 if(CONCRETELANG_CUDA_SUPPORT)
   install(TARGETS ConcretelangRuntime omp tfhe_cuda_backend EXPORT ConcretelangRuntime)
@@ -79,8 +76,6 @@ install(EXPORT ConcretelangRuntime DESTINATION "./")
 add_library(
   ConcretelangRuntimeStatic STATIC
   context.cpp
-  simulation.cpp
-  wrappers.cpp
   DFRuntime.cpp
   key_manager.cpp
   GPUDFG.cpp

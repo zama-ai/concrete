@@ -4,8 +4,7 @@ function(fetch_hpx_library)
     FetchContent_Declare(
         HPX
         GIT_REPOSITORY https://github.com/STEllAR-GROUP/hpx.git
-        GIT_TAG stable # release 1.10 + fixes for compilation with fopenmp with gcc and clang :,)
-        GIT_SHALLOW    TRUE
+        GIT_TAG 9c11915378e3c3901e49a5c3a67d6ee476fce3d1 # release 1.10 + fixes for compilation with fopenmp with gcc and clang :,)
         GIT_PROGRESS   TRUE
     )
     set(HPX_WITH_FETCH_ASIO ON CACHE BOOL INTERNAL)
