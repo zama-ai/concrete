@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang/Runtime/wrappers.h"
+#include "concretelang/Common/wrappers.h"
 #include "concrete-cpu.h"
 #include "concretelang/Common/Error.h"
 #include <assert.h>
@@ -18,9 +18,11 @@
 #include <vector>
 
 #include "concretelang/Common/CRT.h"
-#include "concretelang/Runtime/wrappers.h"
 
 #ifdef CONCRETELANG_CUDA_SUPPORT
+#include "device.h"
+#include "keyswitch.h"
+#include "programmable_bootstrap.h"
 
 // CUDA memory utils function /////////////////////////////////////////////////
 

@@ -1,5 +1,3 @@
-//From https://github.com/dtolnay/cxx/blob/master/include/cxx.h
-
 #pragma once
 #include <algorithm>
 #include <array>

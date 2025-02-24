@@ -174,7 +174,7 @@ struct Value {
 
   Message<concreteprotocol::Shape> intoProtoShape() const;
 
-  std::vector<size_t> getDimensions() const;
+  const std::vector<size_t> &getDimensions() const;
 
   size_t getLength() const;
 
@@ -186,6 +186,10 @@ struct Value {
     if (!hasElementType<T>()) {
       return std::nullopt;
     }
+    return std::get<Tensor<T>>(inner);
+  }
+
+  template <typename T> const Tensor<T> &getTensorRef() const {
     return std::get<Tensor<T>>(inner);
   }
 
