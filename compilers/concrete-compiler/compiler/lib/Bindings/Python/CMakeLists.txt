@@ -3,6 +3,10 @@ include(AddMLIRPython)
 # Python bindings need to throw exceptions for proper handling of errors on the python-side
 add_compile_options(-fexceptions)
 
+if(LINUX)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic")
+endif()
+
 # ######################################################################################################################
 # Declare native Python extension
 # ######################################################################################################################

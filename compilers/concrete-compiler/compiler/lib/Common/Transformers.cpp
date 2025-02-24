@@ -12,7 +12,7 @@
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keysets.h"
 #include "concretelang/Common/Values.h"
-#include "concretelang/Runtime/simulation.h"
+#include "concretelang/Common/simulation.h"
 #include <memory>
 #include <stdlib.h>
 #include <string>

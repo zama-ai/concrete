@@ -1,0 +1,8 @@
+[package]
+name = "concrete-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+concrete-macro = { path = "../concrete-macro" }
+concrete = { path = "../concrete" }

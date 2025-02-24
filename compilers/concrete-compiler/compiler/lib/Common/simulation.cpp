@@ -3,12 +3,12 @@
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang/Runtime/simulation.h"
+#include "concretelang/Common/simulation.h"
 #include "concrete-cpu-noise-model.h"
 #include "concrete-cpu.h"
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Security.h"
-#include "concretelang/Runtime/wrappers.h"
+#include "concretelang/Common/wrappers.h"
 #include "concretelang/Support/V0Parameters.h"
 #include <assert.h>
 #include <cmath>
