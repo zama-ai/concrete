@@ -119,4 +119,18 @@ def GLWE_Domain: GLWE_Attr<"Domain", "domain"> {
     let assemblyFormat = "`<` $var `in` `[` $values `]` `>`";
 }
 
+def GLWE_Constraint: GLWE_Attr<"Constraint", "constraint"> {
+    let description = [{
+      An attribute defining a constraint on GLWE expressions
+    }];
+
+    let parameters = (ins
+        "::mlir::concretelang::GLWE::GLWEExpr": $lhs,
+        "::mlir::concretelang::GLWE::GLWEComparisonOperator": $cmpOperator,
+        "::mlir::concretelang::GLWE::GLWEExpr": $rhs
+    );
+
+    let assemblyFormat = "`<` $lhs $cmpOperator $rhs `>`";
+}
+
 #endif

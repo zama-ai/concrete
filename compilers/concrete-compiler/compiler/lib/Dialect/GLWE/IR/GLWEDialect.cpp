@@ -321,6 +321,38 @@ template <> struct FieldParser<::mlir::concretelang::GLWE::GLWEExpr> {
     return failure();
   }
 };
+
+using ::mlir::concretelang::GLWE::GLWEComparisonOperator;
+
+mlir::AsmPrinter &operator<<(mlir::AsmPrinter &p,
+                             const GLWEComparisonOperator &cmpOperator) {
+  switch (cmpOperator) {
+  case GLWEComparisonOperator::Less:
+    return p << "lt";
+  case GLWEComparisonOperator::LessOrEqual:
+    return p << "le";
+  case GLWEComparisonOperator::Equal:
+    return p << "eq";
+  case GLWEComparisonOperator::Greater:
+    return p << "gt";
+  case GLWEComparisonOperator::GreaterOrEqual:
+    return p << "ge";
+  }
+
+  llvm_unreachable("Unknown GLWE comparison operator");
+}
+
+template <> struct FieldParser<GLWEComparisonOperator> {
+  static FailureOr<GLWEComparisonOperator> parse(AsmParser &parser) {
+    return mlir::AsmParser::KeywordSwitch<FailureOr<GLWEComparisonOperator>>(
+               parser)
+        .Case("lt", GLWEComparisonOperator::Less)
+        .Case("le", GLWEComparisonOperator::LessOrEqual)
+        .Case("eq", GLWEComparisonOperator::Equal)
+        .Case("gt", GLWEComparisonOperator::Greater)
+        .Case("ge", GLWEComparisonOperator::GreaterOrEqual);
+  }
+};
 } // namespace mlir
 
 #define GET_ATTRDEF_CLASSES
