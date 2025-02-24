@@ -46,6 +46,7 @@ RUN pip install --no-cache-dir numpy pybind11==2.8 PyYAML pytest wheel auditwhee
 # Setup and build compiler
 COPY / /workdir
 WORKDIR /workdir/compilers/concrete-compiler/compiler
+ENV CCACHE_DEBUG 1
 ENV CCACHE_SLOPPINESS "include_file_ctime,include_file_mtime,time_macros"
 RUN mkdir -p /build && \
     make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
