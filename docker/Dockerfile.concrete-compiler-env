@@ -7,6 +7,8 @@ RUN dnf update -y && dnf install -y ninja-build hwloc-devel ccache ncurses-devel
 RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 # Setup gcc-11 (required for cuda11.8)
 RUN dnf install -y gcc-toolset-11 && dnf clean all
+# Setup ssl
+RUN dnf install -y libatomic openssl openssl-devel && dnf clean all
 ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
 ENV PATH "/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"
@@ -18,6 +20,8 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
 RUN rustup install nightly-2024-09-30
+RUN rustup install nightly
+RUN cargo install cxxbridge-cmd
 # Install Cap'n Proto
 ENV CAPNP_VERSION=1.1.0
 # hadolint ignore=DL3003

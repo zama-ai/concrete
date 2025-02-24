@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <err.h>
+#include <functional>
 #include <hwloc.h>
 #include <iostream>
 #include <list>

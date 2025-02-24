@@ -61,6 +61,7 @@ jobs:
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
           cargo install cxxbridge-cmd
+          rm -rf build/*
           make Python3_EXECUTABLE="${PYTHON_EXEC}" all
           echo "Debug: ccache statistics (after the build):"
           ccache -s
