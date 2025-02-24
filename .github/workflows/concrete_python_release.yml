@@ -23,7 +23,22 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  check-duplicate-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        if: ${{ env.RELEASE_TYPE == 'nightly' }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Avoid releasing nightly twice
+        if: ${{ env.RELEASE_TYPE == 'nightly' }}
+        run: |
+          git log -1 --format=%D | grep "tag: nightly" && exit 1
+
   setup-instance:
+    needs: check-duplicate-nightly
     runs-on: ubuntu-latest
     outputs:
       runner-name: ${{ steps.start-instance.outputs.label }}
@@ -187,6 +202,7 @@ jobs:
           SLACK_MESSAGE: "release-checks finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   build-macos:
+    needs: check-duplicate-nightly
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
