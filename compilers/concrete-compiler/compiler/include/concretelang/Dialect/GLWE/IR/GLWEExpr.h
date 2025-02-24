@@ -54,6 +54,14 @@ enum class GLWEExprKind {
   SymbolId,
 };
 
+enum class GLWEComparisonOperator {
+  Less,
+  LessOrEqual,
+  Equal,
+  Greater,
+  GreaterOrEqual
+};
+
 class GLWEExpr {
 public:
   using ImplType = detail::GLWEExprStorage;
