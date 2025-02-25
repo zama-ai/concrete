@@ -146,7 +146,7 @@ jobs:
             export COMPILER_BUILD_DIRECTORY="/build"
             make whl
       - name: Upload concrete-compiler python-bindings
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: concrete-compiler-python-bindings-${{ matrix.python-version }}
           include-hidden-files: true
@@ -155,7 +155,7 @@ jobs:
             ./build/lib/libConcretelangRuntime.so
             ./build/tools/concretelang/python_packages/
       - name: Upload wheel
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: concrete-python-wheel-${{ matrix.python-version }}
           path: frontends/concrete-python/dist/*manylinux*.whl
@@ -195,7 +195,7 @@ jobs:
           .github/workflows/scripts/make_apidocs.sh
       - name: Upload docs.patch if failure
         if: ${{ failure() }}
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: docs-artifacts
           path: |
