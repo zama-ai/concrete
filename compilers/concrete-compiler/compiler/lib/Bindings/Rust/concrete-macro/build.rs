@@ -14,4 +14,10 @@ fn get_cargo_target_dir() -> Result<std::path::PathBuf, Box<dyn std::error::Erro
     Ok(target_dir.to_path_buf())
 }
 
-fn main() {}
+fn main() {
+    let target_dir = get_cargo_target_dir().unwrap();
+    println!(
+        "cargo:rustc-env=CONCRETE_SYS_BUILD_DIR={}",
+        target_dir.join("concrete").display()
+    );
+}
