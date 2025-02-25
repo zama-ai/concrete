@@ -124,9 +124,8 @@ std::string roundTrip(const char *module) {
   std::string backingString;
   llvm::raw_string_ostream os(backingString);
 
-  llvm::Expected<mlir::concretelang::CompilerEngine::CompilationResult>
-      retOrErr = ce.compile(
-          module, mlir::concretelang::CompilerEngine::Target::ROUND_TRIP);
+  llvm::Expected<mlir::concretelang::CompilationResult> retOrErr =
+      ce.compile(module, mlir::concretelang::Target::ROUND_TRIP);
   if (!retOrErr) {
     os << "MLIR parsing failed: " << llvm::toString(retOrErr.takeError());
     throw std::runtime_error(os.str());
@@ -226,7 +225,7 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   using pybind11::arg;
   using pybind11::array;
   using pybind11::init;
-  using Library = CompilerEngine::Library;
+  using Library = Library;
 
   m.doc() = "Concretelang compiler python API";
 

@@ -124,7 +124,7 @@ private:
   std::string artifactFolder;
   TestDescription desc;
   std::optional<TestErrorRate> errorRate;
-  std::optional<mlir::concretelang::CompilerEngine::Library> library;
+  std::optional<mlir::concretelang::Library> library;
   std::optional<TestProgram> testCircuit;
   EndToEndTestOptions options;
   std::vector<Value> args;

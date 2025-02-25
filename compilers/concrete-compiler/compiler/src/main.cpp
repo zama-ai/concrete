@@ -544,11 +544,12 @@ cmdlineCompilationOptions() {
 /// requested transformations succeeded.
 ///
 /// Compilation output is written to the stream specified by `os`.
-mlir::LogicalResult processInputBuffer(
-    std::unique_ptr<llvm::MemoryBuffer> buffer, std::string sourceFileName,
-    mlir::concretelang::CompilationOptions &options, enum Action action,
-    llvm::raw_ostream &os,
-    std::shared_ptr<mlir::concretelang::CompilerEngine::Library> outputLib) {
+mlir::LogicalResult
+processInputBuffer(std::unique_ptr<llvm::MemoryBuffer> buffer,
+                   std::string sourceFileName,
+                   mlir::concretelang::CompilationOptions &options,
+                   enum Action action, llvm::raw_ostream &os,
+                   std::shared_ptr<mlir::concretelang::Library> outputLib) {
   std::shared_ptr<mlir::concretelang::CompilationContext> ccx =
       mlir::concretelang::CompilationContext::createShared();
 
@@ -563,59 +564,59 @@ mlir::LogicalResult processInputBuffer(
           [&](const std::string &p) { return pass->getArgument() == p; });
     });
   }
-  enum mlir::concretelang::CompilerEngine::Target target;
+  enum mlir::concretelang::Target target;
 
   switch (action) {
   case Action::ROUND_TRIP:
-    target = mlir::concretelang::CompilerEngine::Target::ROUND_TRIP;
+    target = mlir::concretelang::Target::ROUND_TRIP;
     break;
   case Action::DUMP_FHE:
-    target = mlir::concretelang::CompilerEngine::Target::FHE;
+    target = mlir::concretelang::Target::FHE;
     break;
   case Action::DUMP_FHE_LINALG_GENERIC:
-    target = mlir::concretelang::CompilerEngine::Target::FHE_LINALG_GENERIC;
+    target = mlir::concretelang::Target::FHE_LINALG_GENERIC;
     break;
   case Action::DUMP_FHE_DF_PARALLELIZED:
-    target = mlir::concretelang::CompilerEngine::Target::FHE_DF_PARALLELIZED;
+    target = mlir::concretelang::Target::FHE_DF_PARALLELIZED;
     break;
   case Action::DUMP_FHE_NO_LINALG:
-    target = mlir::concretelang::CompilerEngine::Target::FHE_NO_LINALG;
+    target = mlir::concretelang::Target::FHE_NO_LINALG;
     break;
   case Action::DUMP_TFHE:
-    target = mlir::concretelang::CompilerEngine::Target::TFHE;
+    target = mlir::concretelang::Target::TFHE;
     break;
   case Action::DUMP_NORMALIZED_TFHE:
-    target = mlir::concretelang::CompilerEngine::Target::NORMALIZED_TFHE;
+    target = mlir::concretelang::Target::NORMALIZED_TFHE;
     break;
   case Action::DUMP_PARAMETRIZED_TFHE:
-    target = mlir::concretelang::CompilerEngine::Target::PARAMETRIZED_TFHE;
+    target = mlir::concretelang::Target::PARAMETRIZED_TFHE;
     break;
   case Action::DUMP_BATCHED_TFHE:
-    target = mlir::concretelang::CompilerEngine::Target::BATCHED_TFHE;
+    target = mlir::concretelang::Target::BATCHED_TFHE;
     break;
   case Action::DUMP_SIMULATED_TFHE:
-    target = mlir::concretelang::CompilerEngine::Target::SIMULATED_TFHE;
+    target = mlir::concretelang::Target::SIMULATED_TFHE;
     break;
   case Action::DUMP_CONCRETE:
-    target = mlir::concretelang::CompilerEngine::Target::CONCRETE;
+    target = mlir::concretelang::Target::CONCRETE;
     break;
   case Action::DUMP_SDFG:
-    target = mlir::concretelang::CompilerEngine::Target::SDFG;
+    target = mlir::concretelang::Target::SDFG;
     break;
   case Action::DUMP_STD:
-    target = mlir::concretelang::CompilerEngine::Target::STD;
+    target = mlir::concretelang::Target::STD;
     break;
   case Action::DUMP_LLVM_DIALECT:
-    target = mlir::concretelang::CompilerEngine::Target::LLVM;
+    target = mlir::concretelang::Target::LLVM;
     break;
   case Action::DUMP_LLVM_IR:
-    target = mlir::concretelang::CompilerEngine::Target::LLVM_IR;
+    target = mlir::concretelang::Target::LLVM_IR;
     break;
   case Action::DUMP_OPTIMIZED_LLVM_IR:
-    target = mlir::concretelang::CompilerEngine::Target::OPTIMIZED_LLVM_IR;
+    target = mlir::concretelang::Target::OPTIMIZED_LLVM_IR;
     break;
   case Action::COMPILE:
-    target = mlir::concretelang::CompilerEngine::Target::LIBRARY;
+    target = mlir::concretelang::Target::LIBRARY;
     break;
   }
   auto retOrErr = ce.compile(std::move(buffer), target, outputLib);
@@ -684,7 +685,7 @@ mlir::LogicalResult compilerMain(int argc, char **argv) {
   std::unique_ptr<llvm::ToolOutputFile> output =
       mlir::openOutputFile(outputPath, &errorMessage);
 
-  using Library = mlir::concretelang::CompilerEngine::Library;
+  using Library = mlir::concretelang::Library;
   auto outputLib = std::make_shared<Library>(cmdline::output);
 
   if (!output) {
@@ -742,6 +743,5 @@ int main(int argc, char **argv) {
   if (mlir::failed(compilerMain(argc, argv)))
     result = 1;
 
-  _dfr_terminate();
   return result;
 }

@@ -11,4 +11,5 @@ add_mlir_library(
   LINK_LIBS
   PUBLIC
   MLIRIR
-  FHEDialect)
+  FHEDialect
+  rust_deps_bundle)

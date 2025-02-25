@@ -72,8 +72,22 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
+            ccache -z
+            ccache -p
+            cargo install cxxbridge-cmd
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make BINDINGS_PYTHON_ENABLED=OFF Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu
+      - name: Ccache stats
+        if: always()
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        id: ccache-report
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          shell: bash
+          run: |
             echo "Debug: ccache statistics (after the build):"
             ccache -s
       - name: Slack Notification

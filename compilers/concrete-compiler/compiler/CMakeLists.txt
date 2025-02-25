@@ -11,6 +11,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Needed on linux with clang 15 and on MacOS because cxx emits dollars in the optimizer C++ API
 add_definitions("-Wno-dollar-in-identifier-extension")
 add_definitions("-Wno-c++98-compat-extra-semi")
+add_definitions("-Wno-strict-aliasing")
+add_definitions("-Wno-date-time")
+add_definitions("-Wno-suggest-override")
+add_definitions("-Wno-ctad-maybe-unsupported")
 add_definitions("-Wall ")
 add_definitions("-Werror ")
 add_definitions("-Wfatal-errors")
@@ -85,35 +89,7 @@ install(EXPORT concrete-protocol DESTINATION "./")
 # -------------------------------------------------------------------------------
 
 set(CONCRETE_OPTIMIZER_DIR "${PROJECT_SOURCE_DIR}/../../concrete-optimizer")
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(CONCRETE_OPTIMIZER_BUILD_DIR "${CONCRETE_OPTIMIZER_DIR}/target/debug")
-  set(CONCRETE_OPTIMIZER_PROFILE "dev")
-else()
-  set(CONCRETE_OPTIMIZER_BUILD_DIR "${CONCRETE_OPTIMIZER_DIR}/target/release")
-  set(CONCRETE_OPTIMIZER_PROFILE "release")
-endif()
 set(CONCRETE_OPTIMIZER_INCLUDE_DIR "${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp")
-set(CONCRETE_OPTIMIZER_STATIC_LIB "${CONCRETE_OPTIMIZER_BUILD_DIR}/libconcrete_optimizer_cpp.a")
-
-ExternalProject_Add(
-  concrete_optimizer_rust
-  DOWNLOAD_COMMAND ""
-  CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_OPTIMIZER_STATIC_LIB}"
-  BUILD_ALWAYS true
-  BUILD_COMMAND cargo build -p concrete-optimizer-cpp --profile ${CONCRETE_OPTIMIZER_PROFILE}
-  BINARY_DIR "${CONCRETE_OPTIMIZER_DIR}"
-  INSTALL_COMMAND cp ${CONCRETE_OPTIMIZER_STATIC_LIB} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-  LOG_BUILD ON
-  LOG_OUTPUT_ON_FAILURE ON)
-
-add_library(concrete_optimizer STATIC ${CONCRETE_OPTIMIZER_DIR}/concrete-optimizer-cpp/src/cpp/concrete-optimizer.cpp)
-
-target_link_libraries(concrete_optimizer PRIVATE pthread m dl "${CONCRETE_OPTIMIZER_STATIC_LIB}")
-install(TARGETS concrete_optimizer EXPORT concrete_optimizer)
-install(EXPORT concrete_optimizer DESTINATION "./")
-
-add_dependencies(concrete_optimizer concrete_optimizer_rust)
-# TODO - Remove the global include directory
 include_directories(${CONCRETE_OPTIMIZER_INCLUDE_DIR})
 
 # -------------------------------------------------------------------------------
@@ -127,48 +103,44 @@ set(CONCRETE_BACKENDS_DIR "${PROJECT_SOURCE_DIR}/../../../backends")
 # -------------------------------------------------------------------------------
 
 set(CONCRETE_CPU_DIR "${CONCRETE_BACKENDS_DIR}/concrete-cpu/implementation")
-set(CONCRETE_CPU_RELEASE_DIR "${CONCRETE_CPU_DIR}/target/release")
 set(CONCRETE_CPU_INCLUDE_DIR "${CONCRETE_CPU_DIR}/include")
-set(CONCRETE_CPU_STATIC_LIB "${CONCRETE_CPU_RELEASE_DIR}/libconcrete_cpu.a")
-
-ExternalProject_Add(
-  concrete_cpu_rust
-  DOWNLOAD_COMMAND ""
-  CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_CPU_STATIC_LIB}"
-  BUILD_ALWAYS true
-  BUILD_COMMAND cargo +nightly-2024-09-30 build --release --features=nightly
-  BINARY_DIR "${CONCRETE_CPU_DIR}"
-  INSTALL_COMMAND ""
-  LOG_BUILD ON
-  LOG_OUTPUT_ON_FAILURE ON)
-
-add_library(concrete_cpu STATIC IMPORTED)
-set_target_properties(concrete_cpu PROPERTIES IMPORTED_LOCATION "${CONCRETE_CPU_STATIC_LIB}")
-add_dependencies(concrete_cpu concrete_cpu_rust)
 
 # -------------------------------------------------------------------------------
 # Concrete CPU Noise Model Configuration
 # -------------------------------------------------------------------------------
 
 set(CONCRETE_CPU_NOISE_MODEL_DIR "${CONCRETE_BACKENDS_DIR}/concrete-cpu/noise-model")
-set(CONCRETE_CPU_NOISE_MODEL_RELEASE_DIR "${CONCRETE_CPU_NOISE_MODEL_DIR}/target/release")
 set(CONCRETE_CPU_NOISE_MODEL_INCLUDE_DIR "${CONCRETE_CPU_NOISE_MODEL_DIR}/include")
-set(CONCRETE_CPU_NOISE_MODEL_STATIC_LIB "${CONCRETE_CPU_NOISE_MODEL_RELEASE_DIR}/libconcrete_cpu_noise_model.a")
+
+# -------------------------------------------------------------------------------
+# RUST DEPS BUNDLE
+# -------------------------------------------------------------------------------
+
+set(RUST_DEPS_BUNDLE_DIR "${PROJECT_SOURCE_DIR}/../../../tools/rust_deps_bundle")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(RUST_DEPS_BUNDLE_BUILD_DIR "${RUST_DEPS_BUNDLE_DIR}/target/debug")
+  set(RUST_DEPS_BUNDLE_TARGET "")
+else()
+  set(RUST_DEPS_BUNDLE_BUILD_DIR "${RUST_DEPS_BUNDLE_DIR}/target/release")
+  set(RUST_DEPS_BUNDLE_TARGET "--release")
+endif()
+set(RUST_DEPS_BUNDLE_LIB "${RUST_DEPS_BUNDLE_BUILD_DIR}/librust_deps_bundle.a")
 
 ExternalProject_Add(
-  concrete_cpu_noise_model_rust
+  rust_deps_bundle_build
   DOWNLOAD_COMMAND ""
-  CONFIGURE_COMMAND "" OUTPUT "${CONCRETE_CPU_NOISE_MODEL_STATIC_LIB}"
+  CONFIGURE_COMMAND "" OUTPUT "${RUST_DEPS_BUNDLE_LIB}"
   BUILD_ALWAYS true
-  BUILD_COMMAND cargo build --release
-  BINARY_DIR "${CONCRETE_CPU_NOISE_MODEL_DIR}"
-  INSTALL_COMMAND ""
+  BUILD_COMMAND cargo +nightly-2024-09-30 build ${RUST_DEPS_BUNDLE_TARGET}
+  BINARY_DIR "${RUST_DEPS_BUNDLE_DIR}"
+  INSTALL_COMMAND cp ${RUST_DEPS_BUNDLE_LIB} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
   LOG_BUILD ON
   LOG_OUTPUT_ON_FAILURE ON)
 
-add_library(concrete_cpu_noise_model STATIC IMPORTED)
-set_target_properties(concrete_cpu_noise_model PROPERTIES IMPORTED_LOCATION "${CONCRETE_CPU_NOISE_MODEL_STATIC_LIB}")
-add_dependencies(concrete_cpu_noise_model concrete_cpu_noise_model_rust)
+add_library(rust_deps_bundle STATIC IMPORTED)
+set_target_properties(rust_deps_bundle PROPERTIES IMPORTED_LOCATION "${RUST_DEPS_BUNDLE_LIB}")
+add_dependencies(rust_deps_bundle rust_deps_bundle_build)
+target_link_libraries(rust_deps_bundle INTERFACE dl)
 
 # --------------------------------------------------------------------------------
 # Concrete Cuda Configuration
@@ -216,8 +188,9 @@ option(CONCRETELANG_TIMING_ENABLED "Enables execution timing." ON)
 if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   message(STATUS "ConcreteLang dataflow execution enabled.")
 
-  find_package(HPX REQUIRED CONFIG)
-  list(APPEND CMAKE_MODULE_PATH "${HPX_CMAKE_DIR}")
+  include(FetchHpxLibrary)
+  fetch_hpx_library()
+
   add_compile_options(-DCONCRETELANG_DATAFLOW_EXECUTION_ENABLED
                       -DHPX_DEFAULT_CONFIG_FILE="${PROJECT_SOURCE_DIR}/hpx.ini")
 

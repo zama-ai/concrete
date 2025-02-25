@@ -6,8 +6,6 @@
 #ifndef CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 #define CONCRETELANG_SUPPORT_COMPILER_ENGINE_H
 
-#include "capnp/message.h"
-#include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Protocol.h"
 #include "concretelang/Conversion/Utils/GlobalFHEContext.h"
 #include "concretelang/Support/Encodings.h"
@@ -160,161 +158,161 @@ CompilationOptions getCurrentCompilationOptions();
 /// Print table lookup fusing.
 void printTluFusing(mlir::Value v1, mlir::Value v2, mlir::Value v1v2);
 
+/// Result of an invocation of the `CompilerEngine` with optional
+/// fields for the results produced by different stages.
+class CompilationResult {
+public:
+  CompilationResult(std::shared_ptr<CompilationContext> compilationContext =
+                        CompilationContext::createShared())
+      : compilationContext(compilationContext) {}
+
+  std::optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
+  std::optional<Message<concreteprotocol::ProgramInfo>> programInfo;
+  std::optional<ProgramCompilationFeedback> feedback;
+  std::unique_ptr<llvm::Module> llvmModule;
+  std::optional<mlir::concretelang::V0FHEContext> fheContext;
+
+protected:
+  std::shared_ptr<CompilationContext> compilationContext;
+};
+
+class Library {
+  std::string outputDirPath;
+  std::vector<std::string> objectsPath;
+  /// Path to the runtime library. Will be linked to the output library if set
+  std::string runtimeLibraryPath;
+  bool cleanUp;
+  mlir::concretelang::ProgramCompilationFeedback compilationFeedback;
+  std::optional<Message<concreteprotocol::ProgramInfo>> programInfo;
+
+public:
+  /// Create a library instance on which you can add compilation results.
+  /// Then you can emit a library file with the given path.
+  /// cleanUp at false keeps intermediate .obj files for later use.
+  Library(std::string outputDirPath, std::string runtimeLibraryPath = "",
+          bool cleanUp = true)
+      : outputDirPath(outputDirPath), runtimeLibraryPath(runtimeLibraryPath),
+        cleanUp(cleanUp), programInfo() {}
+  /// Sets the compilation result used by the library
+  llvm::Expected<std::string>
+  setCompilationResult(CompilationResult &compilation);
+  /// Emit the library artifacts with the previously added compilation result
+  llvm::Error emitArtifacts(bool sharedLib, bool staticLib,
+                            bool clientParameters, bool compilationFeedback);
+  /// After a shared library has been emitted, its path is here
+  std::string sharedLibraryPath;
+  /// After a static library has been emitted, its path is here
+  std::string staticLibraryPath;
+
+  /// Returns the program info of the library.
+  Result<Message<concreteprotocol::ProgramInfo>> getProgramInfo();
+
+  /// Returns the path to the output dir.
+  const std::string &getOutputDirPath() const;
+
+  /// Returns the path of the shared library
+  std::string getSharedLibraryPath() const;
+
+  /// Returns the path of the static library
+  std::string getStaticLibraryPath() const;
+
+  /// Returns the path of the program info
+  std::string getProgramInfoPath() const;
+
+  /// Returns the path of the compilation feedback
+  std::string getCompilationFeedbackPath() const;
+
+  // For advanced use
+  const static std::string OBJECT_EXT, LINKER, LINKER_SHARED_OPT, AR,
+      AR_STATIC_OPT, DOT_STATIC_LIB_EXT, DOT_SHARED_LIB_EXT;
+  void addExtraObjectFilePath(std::string objectFilePath);
+  llvm::Expected<std::string>
+  emit(std::string path, std::string dotExt, std::string linker,
+       std::optional<std::vector<std::string>> extraArgs = {});
+  ~Library();
+
+private:
+  /// Emit a shared library with the previously added compilation result
+  llvm::Expected<std::string> emitStatic();
+  /// Emit a shared library with the previously added compilation result
+  llvm::Expected<std::string> emitShared();
+  /// Emit a json ProgramInfo corresponding to library content
+  llvm::Expected<std::string> emitProgramInfoJSON();
+  /// Emit a json CompilationFeedback corresponding to library content
+  llvm::Expected<std::string> emitCompilationFeedbackJSON();
+};
+
+/// Specification of the exit stage of the compilation pipeline
+enum class Target {
+  /// Only read sources and produce corresponding MLIR module
+  ROUND_TRIP,
+
+  /// Read sources and exit before any lowering
+  FHE,
+
+  /// Read sources, lower all FHELinalg operations to operations
+  /// from the Linalg dialect
+  FHE_LINALG_GENERIC,
+
+  /// Read sources and lower all the FHELinalg operations to FHE
+  /// operations, dump after data-flow parallelization
+  FHE_DF_PARALLELIZED,
+
+  /// Read sources and lower all the FHELinalg operations to FHE operations
+  /// and scf loops
+  FHE_NO_LINALG,
+
+  /// Read sources and lower all FHE operations to unparameterized TFHE
+  /// operations
+  TFHE,
+
+  /// Read sources and lower all FHE operations to TFHE
+  /// operations, then parametrize the TFHE operations
+  PARAMETRIZED_TFHE,
+
+  /// Batch TFHE operations
+  BATCHED_TFHE,
+
+  /// Read sources and lower all FHE operations to normalized TFHE
+  /// operations
+  NORMALIZED_TFHE,
+
+  /// Read sources and lower all FHE operations to simulated TFHE
+  SIMULATED_TFHE,
+
+  /// Read sources and lower all FHE and TFHE operations to Concrete
+  /// operations
+  CONCRETE,
+
+  /// Read sources and lower all FHE and TFHE operations to Concrete
+  /// then extract SDFG operations
+  SDFG,
+
+  /// Read sources and lower all FHE, TFHE and Concrete
+  /// operations to canonical MLIR dialects. Cryptographic operations
+  /// are lowered to invocations of the concrete library.
+  STD,
+
+  /// Read sources and lower all FHE, TFHE and Concrete
+  /// operations to operations from the LLVM dialect. Cryptographic
+  /// operations are lowered to invocations of the concrete library.
+  LLVM,
+
+  /// Same as `LLVM`, but lowers to actual LLVM IR instead of the
+  /// LLVM dialect
+  LLVM_IR,
+
+  /// Same as `LLVM_IR`, but invokes the LLVM optimization pipeline
+  /// to produce optimized LLVM IR
+  OPTIMIZED_LLVM_IR,
+
+  /// Same as `OPTIMIZED_LLVM_IR`, but compiles and add an object file to a
+  /// futur library
+  LIBRARY
+};
+
 class CompilerEngine {
 public:
-  /// Result of an invocation of the `CompilerEngine` with optional
-  /// fields for the results produced by different stages.
-  class CompilationResult {
-  public:
-    CompilationResult(std::shared_ptr<CompilationContext> compilationContext =
-                          CompilationContext::createShared())
-        : compilationContext(compilationContext) {}
-
-    std::optional<mlir::OwningOpRef<mlir::ModuleOp>> mlirModuleRef;
-    std::optional<Message<concreteprotocol::ProgramInfo>> programInfo;
-    std::optional<ProgramCompilationFeedback> feedback;
-    std::unique_ptr<llvm::Module> llvmModule;
-    std::optional<mlir::concretelang::V0FHEContext> fheContext;
-
-  protected:
-    std::shared_ptr<CompilationContext> compilationContext;
-  };
-
-  class Library {
-    std::string outputDirPath;
-    std::vector<std::string> objectsPath;
-    /// Path to the runtime library. Will be linked to the output library if set
-    std::string runtimeLibraryPath;
-    bool cleanUp;
-    mlir::concretelang::ProgramCompilationFeedback compilationFeedback;
-    std::optional<Message<concreteprotocol::ProgramInfo>> programInfo;
-
-  public:
-    /// Create a library instance on which you can add compilation results.
-    /// Then you can emit a library file with the given path.
-    /// cleanUp at false keeps intermediate .obj files for later use.
-    Library(std::string outputDirPath, std::string runtimeLibraryPath = "",
-            bool cleanUp = true)
-        : outputDirPath(outputDirPath), runtimeLibraryPath(runtimeLibraryPath),
-          cleanUp(cleanUp), programInfo() {}
-    /// Sets the compilation result used by the library
-    llvm::Expected<std::string>
-    setCompilationResult(CompilationResult &compilation);
-    /// Emit the library artifacts with the previously added compilation result
-    llvm::Error emitArtifacts(bool sharedLib, bool staticLib,
-                              bool clientParameters, bool compilationFeedback);
-    /// After a shared library has been emitted, its path is here
-    std::string sharedLibraryPath;
-    /// After a static library has been emitted, its path is here
-    std::string staticLibraryPath;
-
-    /// Returns the program info of the library.
-    Result<Message<concreteprotocol::ProgramInfo>> getProgramInfo();
-
-    /// Returns the path to the output dir.
-    const std::string &getOutputDirPath() const;
-
-    /// Returns the path of the shared library
-    std::string getSharedLibraryPath() const;
-
-    /// Returns the path of the static library
-    std::string getStaticLibraryPath() const;
-
-    /// Returns the path of the program info
-    std::string getProgramInfoPath() const;
-
-    /// Returns the path of the compilation feedback
-    std::string getCompilationFeedbackPath() const;
-
-    // For advanced use
-    const static std::string OBJECT_EXT, LINKER, LINKER_SHARED_OPT, AR,
-        AR_STATIC_OPT, DOT_STATIC_LIB_EXT, DOT_SHARED_LIB_EXT;
-    void addExtraObjectFilePath(std::string objectFilePath);
-    llvm::Expected<std::string>
-    emit(std::string path, std::string dotExt, std::string linker,
-         std::optional<std::vector<std::string>> extraArgs = {});
-    ~Library();
-
-  private:
-    /// Emit a shared library with the previously added compilation result
-    llvm::Expected<std::string> emitStatic();
-    /// Emit a shared library with the previously added compilation result
-    llvm::Expected<std::string> emitShared();
-    /// Emit a json ProgramInfo corresponding to library content
-    llvm::Expected<std::string> emitProgramInfoJSON();
-    /// Emit a json CompilationFeedback corresponding to library content
-    llvm::Expected<std::string> emitCompilationFeedbackJSON();
-  };
-
-  /// Specification of the exit stage of the compilation pipeline
-  enum class Target {
-    /// Only read sources and produce corresponding MLIR module
-    ROUND_TRIP,
-
-    /// Read sources and exit before any lowering
-    FHE,
-
-    /// Read sources, lower all FHELinalg operations to operations
-    /// from the Linalg dialect
-    FHE_LINALG_GENERIC,
-
-    /// Read sources and lower all the FHELinalg operations to FHE
-    /// operations, dump after data-flow parallelization
-    FHE_DF_PARALLELIZED,
-
-    /// Read sources and lower all the FHELinalg operations to FHE operations
-    /// and scf loops
-    FHE_NO_LINALG,
-
-    /// Read sources and lower all FHE operations to unparameterized TFHE
-    /// operations
-    TFHE,
-
-    /// Read sources and lower all FHE operations to TFHE
-    /// operations, then parametrize the TFHE operations
-    PARAMETRIZED_TFHE,
-
-    /// Batch TFHE operations
-    BATCHED_TFHE,
-
-    /// Read sources and lower all FHE operations to normalized TFHE
-    /// operations
-    NORMALIZED_TFHE,
-
-    /// Read sources and lower all FHE operations to simulated TFHE
-    SIMULATED_TFHE,
-
-    /// Read sources and lower all FHE and TFHE operations to Concrete
-    /// operations
-    CONCRETE,
-
-    /// Read sources and lower all FHE and TFHE operations to Concrete
-    /// then extract SDFG operations
-    SDFG,
-
-    /// Read sources and lower all FHE, TFHE and Concrete
-    /// operations to canonical MLIR dialects. Cryptographic operations
-    /// are lowered to invocations of the concrete library.
-    STD,
-
-    /// Read sources and lower all FHE, TFHE and Concrete
-    /// operations to operations from the LLVM dialect. Cryptographic
-    /// operations are lowered to invocations of the concrete library.
-    LLVM,
-
-    /// Same as `LLVM`, but lowers to actual LLVM IR instead of the
-    /// LLVM dialect
-    LLVM_IR,
-
-    /// Same as `LLVM_IR`, but invokes the LLVM optimization pipeline
-    /// to produce optimized LLVM IR
-    OPTIMIZED_LLVM_IR,
-
-    /// Same as `OPTIMIZED_LLVM_IR`, but compiles and add an object file to a
-    /// futur library
-    LIBRARY
-  };
-
   CompilerEngine(std::shared_ptr<CompilationContext> compilationContext)
       : overrideMaxEintPrecision(), overrideMaxMANP(), compilerOptions(),
         generateProgramInfo(true),
@@ -337,7 +335,7 @@ public:
   compile(mlir::ModuleOp module, Target target,
           std::optional<std::shared_ptr<Library>> lib = {});
 
-  llvm::Expected<CompilerEngine::Library>
+  llvm::Expected<Library>
   compile(std::vector<std::string> inputs, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
@@ -345,13 +343,13 @@ public:
 
   /// Compile and emit artifact to the given outputDirPath from an LLVM source
   /// manager.
-  llvm::Expected<CompilerEngine::Library>
+  llvm::Expected<Library>
   compile(llvm::SourceMgr &sm, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,
           bool generateCompilationFeedback = true);
 
-  llvm::Expected<CompilerEngine::Library>
+  llvm::Expected<Library>
   compile(mlir::ModuleOp module, std::string outputDirPath,
           std::string runtimeLibraryPath = "", bool generateSharedLib = true,
           bool generateStaticLib = true, bool generateClientParameters = true,

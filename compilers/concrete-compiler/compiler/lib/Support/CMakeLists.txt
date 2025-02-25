@@ -35,12 +35,9 @@ add_mlir_library(
   ConcretelangSDFGInterfaces
   LinalgExtras
   TFHEDialectTransforms
-  concrete_optimizer
+  rust_deps_bundle
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
-  ConcretelangRuntime
-  ConcretelangClientLib
-  ConcretelangServerLib
   TFHEDialectAnalysis
   ConcreteDialectAnalysis)
 

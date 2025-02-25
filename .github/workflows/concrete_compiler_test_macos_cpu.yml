@@ -52,7 +52,7 @@ jobs:
           } >> "${GITHUB_ENV}"
       - name: Install dependencies
         run: |
-          brew install ninja ccache
+          brew install ninja ccache zstd
           ${PIP} install pytest
       - name: Build compiler
         run: |
@@ -60,6 +60,7 @@ jobs:
           cd compilers/concrete-compiler/compiler
           echo "Debug: ccache statistics (prior to the build):"
           ccache -s
+          cargo install cxxbridge-cmd
           make Python3_EXECUTABLE="${PYTHON_EXEC}" all
           echo "Debug: ccache statistics (after the build):"
           ccache -s

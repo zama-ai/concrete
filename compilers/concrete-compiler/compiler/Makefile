@@ -27,13 +27,6 @@ KEYSETCACHEDEV=/tmp/KeySetCache
 KEYSETCACHECI ?= ../KeySetCache
 KEYSETCACHENAME ?= KeySetCacheV4
 
-HPX_VERSION?=1.9.1
-HPX_URL=https://github.com/STEllAR-GROUP/hpx/archive/refs/tags/v$(HPX_VERSION).tar.gz
-HPX_DIR?=$(shell pwd)
-HPX_TARBALL=hpx-$(HPX_VERSION).tar.gz
-HPX_LOCAL_DIR=$(HPX_DIR)/hpx-$(HPX_VERSION)
-HPX_INSTALL_DIR?=$(HPX_LOCAL_DIR)/build
-
 ML_BENCH_SUBSET_ID=
 
 # Find OS
@@ -120,26 +113,9 @@ ifeq ($(BUILD_TYPE),Debug)
 	LIBOMP_LINK_TO_LIBSTDCXX_OPT=-DLIBOMP_USE_STDCPPLIB=ON
 endif
 
-all: concretecompiler python-bindings build-tests build-benchmarks doc
+all: concretecompiler runtime python-bindings build-tests build-benchmarks doc concrete-sys
 
-# HPX #####################################################
-
-install-hpx-from-source: $(HPX_LOCAL_DIR)
-	mkdir -p $(HPX_LOCAL_DIR)/build
-	cd $(HPX_LOCAL_DIR)/build && cmake \
-		-DHPX_WITH_MAX_CPU_COUNT="" \
-		-DHPX_WITH_FETCH_ASIO=on \
-		-DHPX_FILESYSTEM_WITH_BOOST_FILESYSTEM_COMPATIBILITY=ON \
-		-DHPX_WITH_MALLOC=system \
-		$(CXX_COMPILER_OPTION) $(CC_COMPILER_OPTION) ..
-	cd $(HPX_LOCAL_DIR)/build && make -j2
-
-$(HPX_TARBALL):
-	mkdir -p $(HPX_DIR)
-	cd $(HPX_DIR) && curl -L $(HPX_URL) -o $(HPX_TARBALL)
-
-$(HPX_LOCAL_DIR): $(HPX_TARBALL)
-	cd $(HPX_DIR) && tar xzvf $(HPX_TARBALL)
+# COMPILER #####################################################
 
 $(BUILD_DIR)/configured.stamp:
 	mkdir -p $(BUILD_DIR)
@@ -154,12 +130,11 @@ $(BUILD_DIR)/configured.stamp:
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	-DLLVM_ENABLE_ASSERTIONS=ON \
 	-DLLVM_ENABLE_RTTI=ON \
-	-DLLVM_LINK_LLVM_DYLIB=on \
+	-DLLVM_LINK_LLVM_DYLIB=ON \
 	-DMLIR_ENABLE_BINDINGS_PYTHON=$(BINDINGS_PYTHON_ENABLED) \
 	-DCONCRETELANG_BINDINGS_PYTHON_ENABLED=$(BINDINGS_PYTHON_ENABLED) \
 	-DCONCRETELANG_DATAFLOW_EXECUTION_ENABLED=$(DATAFLOW_EXECUTION_ENABLED) \
 	-DCONCRETELANG_TIMING_ENABLED=$(TIMING_ENABLED) \
-	-DHPX_DIR=${HPX_INSTALL_DIR}/lib/cmake/HPX \
 	-DLLVM_EXTERNAL_PROJECTS=concretelang \
 	-DLLVM_EXTERNAL_CONCRETELANG_SOURCE_DIR=. \
 	-DPython3_EXECUTABLE=${Python3_EXECUTABLE} \
@@ -184,7 +159,10 @@ update-dialect-doc: doc
 concretecompiler: build-initialized
 	cmake --build $(BUILD_DIR) --target concretecompiler
 
-python-bindings: build-initialized
+runtime: build-initialized
+	cmake --build $(BUILD_DIR) --target ConcretelangRuntime
+
+python-bindings: build-initialized runtime
 	cmake --build $(BUILD_DIR) --target ConcretelangMLIRPythonModules
 	cmake --build $(BUILD_DIR) --target ConcretelangPythonModules
 	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so $(STUBGEN) -m mlir._mlir_libs._concretelang._compiler --include-docstrings -o $(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core
@@ -195,7 +173,8 @@ clientlib: build-initialized
 serverlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangServerLib
 
-
+concrete-sys: build-initialized
+	cmake --build $(BUILD_DIR) --target ConcreteSys
 
 GITHUB_URL=https://api.github.com/repos/zama-ai/concrete-compiler-internal
 GITHUB_URL_LIST_ARTIFACTS="${GITHUB_URL}/actions/artifacts?name=${KEYSETCACHENAME}&per_page=1"
@@ -233,7 +212,7 @@ endif
 
 build-tests: build-unit-tests build-end-to-end-tests
 
-run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-random-end-to-end-tests-for-each-options run-python-tests
+run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-random-end-to-end-tests-for-each-options run-python-tests run-rust-tests
 
 ## check-tests
 
@@ -250,8 +229,14 @@ run-unit-tests: build-unit-tests
 
 ## python-tests
 
-run-python-tests: python-bindings concretecompiler
+run-python-tests: python-bindings concretecompiler runtime
 	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
+
+## rust-tests
+
+run-rust-tests: concrete-sys
+	$(eval _abs_build_dir = $(realpath $(BUILD_DIR)))
+	cd lib/Bindings/Rust && COMPILER_BUILD_DIRECTORY=$(_abs_build_dir) cargo test
 
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output

@@ -50,17 +50,23 @@ jobs:
           sudo apt install moreutils
           cd compilers/concrete-compiler/compiler
           ./scripts/format_cpp.sh
-      - name: Upload format diff
+      - name: Upload format_cpp_diff
         if: failure()
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: format_diff
-          path: compilers/concrete-compiler/compiler/format_diff.patch
+          name: format_cpp_diff
+          path: compilers/concrete-compiler/compiler/format_cpp_diff.patch
       - name: Format with cmake-format (Cmake)
         run: |
           pip3 install cmakelang
           cd compilers/concrete-compiler/compiler
           ./scripts/format_cmake.sh
+      - name: Upload format_cmake_diff
+        if: failure()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: format_cmake_diff
+          path: compilers/concrete-compiler/compiler/format_cmake_diff.patch
       - name: Format with black (Python)
         run: |
           cd compilers/concrete-compiler/compiler
@@ -111,7 +117,22 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             rm -rf /build/*
+            ccache -z
+            ccache -p
+            cargo install cxxbridge-cmd
+            dnf -y install libatomic
             make DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all
+      - name: Ccache stats
+        if: always()
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        id: ccache-report
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          shell: bash
+          run: |
             echo "Debug: ccache statistics (after the build):"
             ccache -s
       - name: Check compiler dialects docs is up to date
