@@ -5,12 +5,7 @@ RUN dnf update -y && dnf install -y ninja-build hwloc-devel && dnf clean all
 RUN dnf install -y gcc-toolset-11 && dnf clean all
 ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
-# Add a non-root user and group
-RUN groupadd -g 10001 grp02 && \
-    useradd -u 10000 -g grp02 usr01 && \
-    chown -R usr01:grp02 /boost_1_71_0 /hpx
-# Switch to the non-root user
-USER usr01:grp02
+
 # Install boost
 ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
 RUN tar -xzvf /boost_1_71_0.tar.gz
@@ -23,6 +18,14 @@ RUN git checkout v1.9.1
 # empty HPX_WITH_MAX_CPU_COUNT = dynamic
 # ref https://github.com/STEllAR-GROUP/hpx/blob/1.7.1/CMakeLists.txt#L759
 WORKDIR /hpx/build
+
+# Add a non-root user and group
+RUN groupadd -g 10001 grp02 && \
+    useradd -u 10000 -g grp02 usr01 && \
+    chown -R usr01:grp02 /boost_1_71_0 /hpx
+# Switch to the non-root user
+USER usr01:grp02
+
 RUN cmake \
 	-DCMAKE_C_COMPILER=${CC_COMPILER} \
 	-DCMAKE_CXX_COMPILER=${CXX_COMPILER} \
