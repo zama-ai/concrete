@@ -164,6 +164,7 @@ jobs:
             compilers/**
             third_party/**
             tools/**
+            docker/**
       - name: Login to Registry
         id: login
         if: steps.changed-files.outputs.any_changed == 'true'
