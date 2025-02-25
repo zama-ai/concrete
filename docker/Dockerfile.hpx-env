@@ -7,7 +7,7 @@ ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
 
 # Install boost
-ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
+ADD https://archives.boost.io/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
 RUN tar -xzvf /boost_1_71_0.tar.gz
 WORKDIR /boost_1_71_0
 RUN ./bootstrap.sh && ./b2 --with-filesystem install
