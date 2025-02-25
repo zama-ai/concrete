@@ -37,52 +37,6 @@ jobs:
           backend: aws
           profile: cpu-test
 
-  # Not sure what to do about this one...
-  hpx-image:
-    needs: [setup-instance]
-    runs-on: ${{ needs.setup-instance.outputs.runner-name }}
-    env:
-      image: ghcr.io/zama-ai/hpx
-      dockerfile: docker/Dockerfile.hpx-env
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@bab30c2299617f6615ec02a68b9a40d10bd21366 # v44.5.24
-      - name: Login
-        id: login
-        if: contains(steps.changed-files.outputs.modified_files, env.dockerfile) || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
-        run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
-      - name: Build
-        if: ${{ steps.login.conclusion != 'skipped' }}
-        run: docker build -t "${{ env.image }}" -f ${{ env.dockerfile }} .
-      - name: Run Trivy vulnerability scanner
-        if: ${{ steps.login.conclusion != 'skipped' }}
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # 0.29.0
-        with:
-          image-ref: '${{ env.image }}'
-          format: 'sarif'
-          scanners: vuln,secret
-          output: trivy-out-docker.sarif
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ steps.login.conclusion != 'skipped' }}
-        uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
-        with:
-          sarif_file: trivy-out-docker.sarif
-          category: trivy-docker
-      - name: Publish
-        if: ${{ steps.login.conclusion != 'skipped' }}
-        run: docker push "${{ env.image }}:latest"
-      - name: Slack Notification
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
-        env:
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "hpx-image finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
-
   cuda-image:
     needs: [setup-instance]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
@@ -146,7 +100,7 @@ jobs:
           SLACK_MESSAGE: "cuda-image finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})"
 
   compiler-image:
-    needs: [setup-instance, hpx-image, cuda-image]
+    needs: [setup-instance, cuda-image]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     env:
       image: ghcr.io/zama-ai/concrete-compiler
