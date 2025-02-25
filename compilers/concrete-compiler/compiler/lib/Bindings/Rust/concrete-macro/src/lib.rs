@@ -76,11 +76,11 @@ fn unzip(zip_path: &Path, to: &Path) {
 pub fn testtt(input: TokenStream) -> TokenStream {
     quote! {
         macro_rules! _priv{
-            () => {
-                concrete_macro::_testtt!(file!());
+            ($($f:tt)*) => {
+                concrete_macro::_testtt!($($f)*);
             }
         }
-        priv!();
+        _priv!(file!());
     }
     .into()
 }
