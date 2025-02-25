@@ -1,6 +1,7 @@
-use concrete_macro::from_concrete_python_export_zip;
+use concrete_macro::{from_concrete_python_export_zip, testtt};
 
-from_concrete_python_export_zip!("path.zip");
+// from_concrete_python_export_zip!("test.zip");
+testtt!();
 
 #[cfg(test)]
 mod tests {
