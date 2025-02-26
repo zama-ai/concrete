@@ -62,7 +62,7 @@ jobs:
       - name: Lint
         run: |
           cd backends/concrete-cpu/implementation
-          cargo +stable clippy --all-targets
+          cargo clippy --all-targets
 
       - name: Tests
         run: |

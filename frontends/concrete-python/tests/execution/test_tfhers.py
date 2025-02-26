@@ -5,6 +5,7 @@ Tests execution of tfhers conversion operations.
 import json
 import os
 import tempfile
+from functools import partial
 from typing import List, Union
 
 import numpy as np
@@ -68,8 +69,11 @@ def is_input_and_output_tfhers(
     return True
 
 
+tfhers_int6_2_3 = partial(tfhers.TFHERSIntegerType, True, 6, 2, 3)
+
+
 @pytest.mark.parametrize(
-    "function, parameters, dtype",
+    "function, parameters, input_dtype, output_dtype",
     [
         pytest.param(
             lambda x, y: x + y,
@@ -77,6 +81,7 @@ def is_input_and_output_tfhers(
                 "x": {"range": [0, 2**14], "status": "encrypted"},
                 "y": {"range": [0, 2**14], "status": "encrypted"},
             },
+            tfhers.uint16_2_2,
             tfhers.uint16_2_2,
             id="x + y",
         ),
@@ -87,6 +92,7 @@ def is_input_and_output_tfhers(
                 "y": {"range": [2**14, 2**15 - 1], "status": "encrypted"},
             },
             tfhers.uint16_2_2,
+            tfhers.uint16_2_2,
             id="x + y big values",
         ),
         pytest.param(
@@ -95,6 +101,7 @@ def is_input_and_output_tfhers(
                 "x": {"range": [2**10, 2**14], "status": "encrypted"},
                 "y": {"range": [0, 2**10], "status": "encrypted"},
             },
+            tfhers.uint16_2_2,
             tfhers.uint16_2_2,
             id="x - y",
         ),
@@ -105,12 +112,78 @@ def is_input_and_output_tfhers(
                 "y": {"range": [0, 2**3], "status": "encrypted"},
             },
             tfhers.uint8_2_2,
+            tfhers.uint8_2_2,
             id="x * y",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**6], "status": "encrypted"},
+                "y": {"range": [0, 2**6], "status": "encrypted"},
+            },
+            tfhers.int8_2_2,
+            tfhers.int16_2_2,
+            id="signed x + y diff in/out",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [-(2**6), -1], "status": "encrypted"},
+                "y": {"range": [-(2**6), -1], "status": "encrypted"},
+            },
+            tfhers.int8_2_2,
+            tfhers.int16_2_2,
+            id="negative x + y diff in/out",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 2**3], "status": "encrypted"},
+                "y": {"range": [0, 2**3], "status": "encrypted"},
+            },
+            tfhers.uint8_2_2,
+            tfhers.uint16_2_2,
+            id="x * y diff in/out",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [-(2**3), 0], "status": "encrypted"},
+                "y": {"range": [0, 2**3], "status": "encrypted"},
+            },
+            tfhers.int8_2_2,
+            tfhers.int16_2_2,
+            id="negative x * y diff in/out",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 2**3], "status": "encrypted"},
+                "y": {"range": [0, 2**3], "status": "encrypted"},
+            },
+            tfhers.int8_2_2,
+            tfhers.int16_2_2,
+            id="signed x * y diff in/out",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [-4, -4], "status": "encrypted"},
+                "y": {"range": [3, 3], "status": "encrypted"},
+            },
+            tfhers_int6_2_3,
+            tfhers_int6_2_3,
+            # tfhers.int16_2_2,
+            id="sign extension without padding",
         ),
     ],
 )
 def test_tfhers_conversion_binary_encrypted(
-    function, parameters, dtype: tfhers.TFHERSIntegerType, helpers
+    function,
+    parameters,
+    input_dtype: tfhers.TFHERSIntegerType,
+    output_dtype: tfhers.TFHERSIntegerType,
+    helpers,
 ):
     """
     Test different operations wrapped by tfhers conversion (2 tfhers inputs).
@@ -122,22 +195,23 @@ def test_tfhers_conversion_binary_encrypted(
     if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
         return
 
-    dtype = parameterize_partial_dtype(dtype)
+    input_dtype = parameterize_partial_dtype(input_dtype)
+    output_dtype = parameterize_partial_dtype(output_dtype)
 
     compiler = fhe.Compiler(
-        lambda x, y: binary_tfhers(x, y, function, dtype),
+        lambda x, y: binary_tfhers(x, y, function, output_dtype),
         parameter_encryption_statuses,
     )
 
     inputset = [
-        tuple(tfhers.TFHERSInteger(dtype, arg) for arg in inpt)
+        tuple(tfhers.TFHERSInteger(input_dtype, arg) for arg in inpt)
         for inpt in helpers.generate_inputset(parameters)
     ]
     circuit = compiler.compile(inputset, helpers.configuration())
 
     assert is_input_and_output_tfhers(
         circuit,
-        dtype.params.polynomial_size,
+        input_dtype.params.polynomial_size,
         [0, 1],
         [
             0,
@@ -145,10 +219,10 @@ def test_tfhers_conversion_binary_encrypted(
     )
 
     sample = helpers.generate_sample(parameters)
-    encoded_sample = (dtype.encode(v) for v in sample)
+    encoded_sample = (input_dtype.encode(v) for v in sample)
     encoded_result = circuit.encrypt_run_decrypt(*encoded_sample)
 
-    assert (dtype.decode(encoded_result) == function(*sample)).all()
+    assert (output_dtype.decode(encoded_result) == function(*sample)).all()
 
 
 @pytest.mark.parametrize(
