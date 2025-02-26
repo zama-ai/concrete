@@ -2460,11 +2460,8 @@ class Context:
         cost_many_lsbs = LUT_COSTS_V0_NORM2_0[1] * (max(bits, default=0) + 1)
         if cost_one_tlu < cost_many_lsbs:
 
-            def tlu_cell_with_positive_value(i):
-                return x.type.is_unsigned or i < 2 ** (x.bit_width - 1)
-
             def tlu_cell_input_value(i):
-                if tlu_cell_with_positive_value(i):
+                if x.type.is_unsigned or i < 2 ** (x.bit_width - 1):
                     return i
                 return -(2 ** (x.bit_width) - i)
 
@@ -2473,7 +2470,11 @@ class Context:
                     ((tlu_cell_input_value(i) >> bit) & 1) << position
                     for bit, position in bits_and_their_positions
                 )
-                + (0 if tlu_cell_with_positive_value(i) else 2 ** (resulting_type.bit_width + 1))
+                + (  # padding bit
+                    0
+                    if resulting_type.is_unsigned or i < 2 ** (x.bit_width - 1)
+                    else 2**resulting_type.bit_width
+                )
                 for i in range(2**x.bit_width)
             ]
             tlu_result = self.tlu(resulting_type, x, table)
