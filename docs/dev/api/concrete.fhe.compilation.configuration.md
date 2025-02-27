@@ -137,7 +137,7 @@ MinMaxStrategy, to specify implementation preference for minimum and maximum ope
 ## <kbd>class</kbd> `Configuration`
 Configuration class, to allow the compilation process to be customized. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L1012"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L1013"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -199,7 +199,8 @@ __init__(
     range_restriction: Optional[RangeRestriction] = None,
     keyset_restriction: Optional[KeysetRestriction] = None,
     auto_schedule_run: bool = False,
-    security_level: SecurityLevel = <SecurityLevel.SECURITY_128_BITS: 128>
+    security_level: SecurityLevel = <SecurityLevel.SECURITY_128_BITS: 128>,
+    optim_lsbs_with_lut: bool = True
 )
 ```
 
@@ -212,7 +213,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L1204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/configuration.py#L1208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fork`
 
@@ -274,7 +275,8 @@ fork(
     range_restriction: Optional[Keep, RangeRestriction] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     keyset_restriction: Optional[Keep, KeysetRestriction] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
     auto_schedule_run: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
-    security_level: Union[Keep, SecurityLevel] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>
+    security_level: Union[Keep, SecurityLevel] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>,
+    optim_lsbs_with_lut: Union[Keep, bool] = <concrete.fhe.compilation.configuration.Configuration.Keep object at ADDRESS>
 ) → Configuration
 ```
 

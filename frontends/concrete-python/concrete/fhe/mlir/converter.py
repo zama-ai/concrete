@@ -997,64 +997,142 @@ class Converter:
     def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
         assert len(preds) == 1
         dtype: TFHERSIntegerType = node.properties["attributes"]["type"]
-        input_bit_width, carry_width, msg_width = (
+        output_tfhers_bit_width, carry_width, msg_width = (
             dtype.bit_width,
             dtype.carry_width,
             dtype.msg_width,
         )
         native_int = preds[0]
 
+        # output_tfhers_bit_width is the target bitwidth while native_int.bit_width is the number
+        # of bits containing the actual message
+        assert output_tfhers_bit_width >= native_int.bit_width, (
+            f"output_tfhers_bit_width: {output_tfhers_bit_width}, "
+            f"native_int.bit_width: {native_int.bit_width}"
+        )
         assert (
-            input_bit_width >= native_int.bit_width
-        ), f"input_bit_width: {input_bit_width}, native_int.bit_width: {native_int.bit_width}"
-        assert (
-            input_bit_width % msg_width == 0
-        ), f"input_bit_width: {input_bit_width}, msg_width: {msg_width}"
-
-        # TODO: we may want to remove the cast and work with the number of bits provided
-        # this will make the operation faster by avoiding unnecessary bit extractions
-        if native_int.bit_width < input_bit_width:
-            native_int = ctx.cast(
-                ctx.tensor(
-                    (
-                        ctx.eint(input_bit_width)
-                        if native_int.is_unsigned
-                        else ctx.esint(input_bit_width)
-                    ),
-                    native_int.shape,
-                ),
-                native_int,
-            )
+            output_tfhers_bit_width % msg_width == 0
+        ), f"output_tfhers_bit_width: {output_tfhers_bit_width}, msg_width: {msg_width}"
 
         # number of ciphertexts representing a single integer
-        num_cts = input_bit_width // msg_width
+        num_cts = output_tfhers_bit_width // msg_width
+        # number of ciphertexts representing the actual part of the message
+        num_full_cts_msg = native_int.bit_width // msg_width
+        remaining_bits = native_int.bit_width % msg_width
+        num_half_cts_msg = 0 if remaining_bits == 0 else 1
+        num_cts_msg = num_full_cts_msg + num_half_cts_msg
 
         # adds a dimension of ciphertexts for the result
-        result_shape = native_int.shape + (num_cts,)
-        result_type = ctx.tensor(ctx.eint(msg_width + carry_width), result_shape)
+        result_shape_msg = native_int.shape + (num_cts_msg,)
 
         # we reshape so that we can concatenate later over the last dim (ciphertext dim)
         reshaped_native_int = ctx.reshape(native_int, native_int.shape + (1,))
 
-        # TODO: remove this when we want to optimize computation so that we don't compute
-        # on empty ciphertexts, based on the bit_width assignment. (e.g. if only two lsb
-        # ciphertexts are used, then we don't want to extract bits from the remaining ones)
-        reshaped_native_int.set_original_bit_width(input_bit_width)
-
         # we want to extract `msg_width` bits at a time, and store them
         # in a `msg_width + carry_width` bits eint
-        bits_shape = ctx.tensor(ctx.eint(msg_width + carry_width), reshaped_native_int.shape)
+        bits_type = ctx.tensor(ctx.eint(msg_width + carry_width), reshaped_native_int.shape)
         # we extract lsb first
         extracted_bits = [
             ctx.extract_bits(
-                bits_shape,
+                bits_type,
                 reshaped_native_int,
                 bits=slice(i * msg_width, (i + 1) * msg_width, 1),
             )
-            for i in range(num_cts)
+            for i in range(num_full_cts_msg)
         ]
+        # we need to extract the remaining bits if any
+        if num_half_cts_msg:
+            # in the unsigned case, we won't do anything to this half full ciphertext: so we target
+            # the final bitwidth directly
+            target_bitwidth = remaining_bits if dtype.is_signed else (msg_width + carry_width)
+            remaining_bits_type = ctx.tensor(
+                ctx.eint(target_bitwidth),
+                reshaped_native_int.shape,
+            )
+            extracted_bits.append(
+                ctx.extract_bits(
+                    remaining_bits_type,
+                    reshaped_native_int,
+                    bits=slice(
+                        num_full_cts_msg * msg_width,
+                        num_full_cts_msg * msg_width + remaining_bits,
+                        1,
+                    ),
+                )
+            )
 
-        result = ctx.concatenate(result_type, extracted_bits, axis=-1)
+        # if we expect more ciphertexts than we have in the message: we pad the result
+        # if we have one non-full ct (when signed): we extend the sign bit
+        if num_cts_msg != num_cts or (num_half_cts_msg and dtype.is_signed):
+            # if it's signed then we have to move the sign bit to the msb
+            if dtype.is_signed:
+                # special case where the sign_bit is already isolated into a single ciphertext
+                if remaining_bits == 1:
+                    sign_bits = extracted_bits.pop()
+                else:  # remaining_bits either > 1 or == 0
+                    msbs = extracted_bits.pop()
+                    sign_bit_idx = (remaining_bits - 1) % msg_width
+                    sign_bits = ctx.extract_bits(
+                        ctx.tensor(ctx.eint(1), reshaped_native_int.shape),
+                        msbs,
+                        bits=sign_bit_idx,
+                    )
+                    if remaining_bits > 1:
+                        # extend sign bit in msbs
+                        # For example: we have this message |0000|0110| where sign_bit_idx is 2
+                        # we want the result to be |0000|1110| extending the sign bit (1) to the
+                        # remaining MSBs
+                        sign_extension = 2**msg_width - 1 - (2 ** (sign_bit_idx + 1) - 1)
+                        extend_sign_bit_table = [
+                            i + sign_extension if i & 2**sign_bit_idx else i
+                            for i in range(2**remaining_bits)
+                        ]
+                        msbs_with_extended_sign = ctx.tlu(bits_type, msbs, extend_sign_bit_table)
+                        extracted_bits.append(msbs_with_extended_sign)
+                    else:  # remaining_bits == 0
+                        # no need to extend the sign bit
+                        extracted_bits.append(msbs)
+
+                # padding will contain the sign
+                padding_length = num_cts - len(extracted_bits)
+                if padding_length:
+                    extend_sign_bit_table = [0, (2**msg_width) - 1]
+                    extended_sign_bits = ctx.tlu(bits_type, sign_bits, extend_sign_bit_table)
+                    padding_type = ctx.tensor(
+                        ctx.eint(msg_width + carry_width),
+                        result_shape_msg[:-1] + (padding_length,),
+                    )
+                    padding = ctx.zeros(padding_type)
+                    padding = ctx.add(padding_type, extended_sign_bits, padding)
+                    to_concat = extracted_bits + [
+                        padding,
+                    ]
+                else:
+                    # no need to pad: we only extended the sign bit
+                    to_concat = extracted_bits
+            else:
+                padding_length = num_cts - len(extracted_bits)
+                assert padding_length > 0
+                padding = ctx.zeros(
+                    ctx.tensor(
+                        ctx.eint(msg_width + carry_width),
+                        result_shape_msg[:-1] + (padding_length,),
+                    )
+                )
+                to_concat = extracted_bits + [
+                    padding,
+                ]
+        else:
+            # no need to pad: we have the right number of ciphertexts
+            to_concat = extracted_bits
+
+        result_shape = native_int.shape + (num_cts,)
+        result_type = ctx.tensor(ctx.eint(msg_width + carry_width), result_shape)
+        result = ctx.concatenate(
+            result_type,
+            to_concat,
+            axis=-1,
+        )
         return ctx.change_partition(result, dest_partition=dtype.params)
 
     # pylint: enable=missing-function-docstring,unused-argument

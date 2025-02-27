@@ -1008,6 +1008,7 @@ class Configuration:
     keyset_restriction: Optional[KeysetRestriction]
     auto_schedule_run: bool
     security_level: SecurityLevel
+    optim_lsbs_with_lut: bool
 
     def __init__(
         self,
@@ -1081,6 +1082,7 @@ class Configuration:
         keyset_restriction: Optional[KeysetRestriction] = None,
         auto_schedule_run: bool = False,
         security_level: SecurityLevel = SecurityLevel.SECURITY_128_BITS,
+        optim_lsbs_with_lut: bool = True,
     ):
         self.verbose = verbose
         self.compiler_debug_mode = compiler_debug_mode
@@ -1194,6 +1196,8 @@ class Configuration:
 
         self.security_level = security_level
 
+        self.optim_lsbs_with_lut = optim_lsbs_with_lut
+
         self._validate()
 
     class Keep:
@@ -1273,6 +1277,7 @@ class Configuration:
         keyset_restriction: Union[Keep, Optional[KeysetRestriction]] = KEEP,
         auto_schedule_run: Union[Keep, bool] = KEEP,
         security_level: Union[Keep, SecurityLevel] = KEEP,
+        optim_lsbs_with_lut: Union[Keep, bool] = KEEP,
     ) -> "Configuration":
         """
         Get a new configuration from another one specified changes.
