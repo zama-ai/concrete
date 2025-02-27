@@ -3,9 +3,9 @@
 // Test a specification of an external product
 
 // Define the decomposition with free variables @b and @l,
-// respectivly for base_log and level parameters of the decomposition 
+// respectivly for base and level parameters of the decomposition
 #decomposition = #glwe.decomposition<
-  base_log = <@b>,
+  base = <@b>,
   level = <@l>
 >
 
@@ -34,7 +34,7 @@
   encoding = #encoding_in
 >
 
-// Define the encoding of the GLWE switched ciphertex 
+// Define the encoding of the GLWE switched ciphertex
 #encoding_switched = #glwe.encoding<
   body_modulus = #external_product_modulus,
   mask_modulus = #external_product_modulus,

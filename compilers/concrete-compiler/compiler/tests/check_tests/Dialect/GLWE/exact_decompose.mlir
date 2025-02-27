@@ -14,7 +14,7 @@
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <@level>
 >
 

@@ -97,12 +97,12 @@ func.func @test_glwe_ciphertext_resolved(%arg0: !glwe_ciphertext_resolved) {
   secret_key = #secret_key,
   encoding = #native_encoding,
   decomposition = <
-    base_log = <@b>,
+    base = <@b>,
     level = <@l>
   >
 >
 
-// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>>
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base = <@b>, level = <@l>>>
 func.func @test_glwe_radix_ciphertext(%arg0: !glwe_radix_ciphertext) {
     return
 }
@@ -112,14 +112,14 @@ func.func @test_glwe_radix_ciphertext(%arg0: !glwe_radix_ciphertext) {
   secret_key = #secret_key,
   encoding = #native_encoding,
   decomposition = <
-    base_log = <@b>,
+    base = <@b>,
     level = <@l>
   >,
   mask = true,
   body = false
 >
 
-// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>, body = false>
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base = <@b>, level = <@l>>, body = false>
 func.func @test_glwe_radix_ciphertext_mask_only(%arg0: !glwe_radix_ciphertext_mask_only) {
     return
 }
@@ -129,13 +129,13 @@ func.func @test_glwe_radix_ciphertext_mask_only(%arg0: !glwe_radix_ciphertext_ma
   secret_key = #secret_key,
   encoding = #native_encoding,
   decomposition = <
-    base_log = <@b>,
+    base = <@b>,
     level = <@l>
   >,
   variance = #minimal_variance
 >
 
-// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
+// CHECK: %arg0: !glwe.radix_glwe<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
 func.func @test_glwe_radix_ciphertext_with_variance(%arg0: !glwe_radix_ciphertext_with_variance) {
     return
 }
@@ -149,14 +149,14 @@ func.func @test_glwe_radix_ciphertext_with_variance(%arg0: !glwe_radix_ciphertex
   secret_key = #secret_key,
   encoding = #native_encoding,
   decomposition = <
-    base_log = <@b_bs>,
+    base = <@b_bs>,
     level = <@l_bs>
   >,
   shape = (<@_secret_key.size.dimension>, <@_secret_key.size.poly_size >),
   average_message = <@_secret_key.distribution.average_mean>
 >
 
-// CHECK: %arg0: !glwe.glev<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base_log = <@b_bs>, level = <@l_bs>>, average_message = <@_secret_key.distribution.average_mean>, shape = (<@_secret_key.size.dimension>, <@_secret_key.size.poly_size>)>
+// CHECK: %arg0: !glwe.glev<secret_key = <size = <dimension = <@K>, poly_size = <@N>>>, encoding = <body_modulus = <@m>, mask_modulus = <@m>, message_modulus = <2.000000e+00 ** 6.000000e+00>, right_padding = <1.000000e+00>, left_padding = <1.000000e+00>>, decomposition = <base = <@b_bs>, level = <@l_bs>>, average_message = <@_secret_key.distribution.average_mean>, shape = (<@_secret_key.size.dimension>, <@_secret_key.size.poly_size>)>
 func.func @test_glev(%arg0 : !bootstrap_key) {
   return
 }
@@ -170,13 +170,13 @@ func.func @test_glev(%arg0 : !bootstrap_key) {
     body_modulus = <@m>
   >,
   decomp = #glwe.decomp<
-    base_log = <@b>,
+    base = <@b>,
     level = <@l>
   >,
   size = <@n>,
   partial = true
 >
-// CHECK: %arg0: !glwe.glev<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base_log = <@b>, level = <@l>>, size = <@n>, partial = true>
+// CHECK: %arg0: !glwe.glev<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base = <@b>, level = <@l>>, size = <@n>, partial = true>
 func.func @test_glev_partial(%arg0 : !glev_partial_decomposed) {
   return
 }
@@ -190,14 +190,14 @@ func.func @test_glev_partial(%arg0 : !glev_partial_decomposed) {
     body_modulus = <@m>
   >,
   decomp = #glwe.decomp<
-    base_log = <@b>,
+    base = <@b>,
     level = <@l>
   >,
   size = <@n>,
   variance = <2.0 ** (2.0 * max(@slope * (@K * @N) + @bias, 2.0 - @m))>
 >
 
-// CHECK: %arg0: !glwe.radix_glwe<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base_log = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
+// CHECK: %arg0: !glwe.radix_glwe<params = <dimension = <@K>, poly_size = <@N>, mask_modulus = <@m>, body_modulus = <@m>>, decomp = <base = <@b>, level = <@l>>, variance = <2.000000e+00 ** (2.000000e+00 * max((@slope * (@K * @N)) + @bias, 2.000000e+00 - @m))>>
 func.func @glev_partial_decomposed_with_variance(%arg0 : !glwe_full_decomposed_with_variance) {
   return
 }

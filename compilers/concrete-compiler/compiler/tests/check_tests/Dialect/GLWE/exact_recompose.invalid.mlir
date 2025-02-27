@@ -32,7 +32,7 @@
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <@level>
 >
 
@@ -95,7 +95,7 @@ func.func @test_exact_recompose(%arg0: !glwe_in, %glev: !glev) ->  !glwe_out {
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <@level>
 >
 
@@ -159,12 +159,12 @@ func.func @test_exact_recompose(%arg0: !glwe_in, %glev: !glev) ->  !glwe_out {
 >
 
 #decomposition_in = #glwe.decomposition<
-  base_log = <1.>,
+  base = <1.>,
   level = <@level>
 >
 
 #decomposition_glev = #glwe.decomposition<
-  base_log = <2.>,
+  base = <2.>,
   level = <@level>
 >
 
@@ -211,7 +211,7 @@ func.func @test_exact_recompose(%arg0: !glwe_in, %glev: !glev) ->  !glwe_out {
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <@level>
 >
 
@@ -299,7 +299,7 @@ func.func @test_exact_recompose_mask_only(%arg0: !glwe_in_mask_only, %glev: !gle
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <2.>,
+  base = <2.>,
   level = <@level>
 >
 
@@ -370,7 +370,7 @@ func.func @test_exact_recompose(%arg0: !glwe_in, %glev: !glev) ->  !glwe_out {
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <2.>,
+  base = <2.>,
   level = <@level>
 >
 
@@ -433,7 +433,7 @@ func.func @test_exact_recompose(%arg0: !glwe_in, %glev: !glev) ->  !glwe_out {
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <2.>,
+  base = <2.>,
   level = <@level>
 >
 
