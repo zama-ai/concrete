@@ -17,6 +17,20 @@ include "concretelang/Dialect/GLWE/IR/GLWEInterfaces.td"
 class GLWE_Op<string mnemonic, list<Trait> traits = []> :
     Op<GLWE_Dialect, mnemonic, traits>;
 
+def GLWE_GenericOP: GLWE_Op<"generic", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
+    let summary = "Generic GLWE operator";
+
+    let arguments = (ins
+        Variadic<GLWETypeInterface>:$in,
+        OptionalAttr<GLWE_GLWEExprAttr>: $variance
+    );
+
+    let results = (outs GLWETypeInterface:$out);
+
+    let assemblyFormat = "operands attr-dict `:` type($in) `->` type($out)";
+
+}
+
 def GLWE_ModulusSwitch: GLWE_Op<"modulus_switch", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
 
     let summary = "Change the modulus of the a GLWE ciphertext.";
