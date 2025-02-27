@@ -192,7 +192,11 @@ def test_bad_plain_bit_extraction(
         pytest.param(10, False, lambda x: fhe.bits(x)[5:15], id="unsigned-10b[5:15]"),
     ],
 )
-def test_bit_extraction(input_bit_width, input_is_signed, operation, helpers):
+@pytest.mark.parametrize(
+    "optim_lsbs_with_lut",
+    [True, False],
+)
+def test_bit_extraction(input_bit_width, input_is_signed, operation, optim_lsbs_with_lut, helpers):
     """
     Test bit extraction.
     """
@@ -208,7 +212,9 @@ def test_bit_extraction(input_bit_width, input_is_signed, operation, helpers):
         ]
 
         compiler = fhe.Compiler(operation, {"x": "encrypted"})
-        circuit = compiler.compile(inputset, helpers.configuration())
+        circuit = compiler.compile(
+            inputset, helpers.configuration().fork(optim_lsbs_with_lut=optim_lsbs_with_lut)
+        )
         values = inputset if len(inputset) <= 8 else random.sample(inputset, 8)
         for value in values:
             helpers.check_execution(circuit, operation, value, retries=3)

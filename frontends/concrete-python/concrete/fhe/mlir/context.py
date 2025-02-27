@@ -2456,29 +2456,30 @@ class Context:
         )
 
         # we optimize bulk extract in low precision, used for identity
-        cost_one_tlu = LUT_COSTS_V0_NORM2_0.get(x.bit_width, float("inf"))
-        cost_many_lsbs = LUT_COSTS_V0_NORM2_0[1] * (max(bits, default=0) + 1)
-        if cost_one_tlu < cost_many_lsbs:
+        if self.configuration.optim_lsbs_with_lut:
+            cost_one_tlu = LUT_COSTS_V0_NORM2_0.get(x.bit_width, float("inf"))
+            cost_many_lsbs = LUT_COSTS_V0_NORM2_0[1] * (max(bits, default=0) + 1)
+            if cost_one_tlu < cost_many_lsbs:
 
-            def tlu_cell_input_value(i):
-                if x.type.is_unsigned or i < 2 ** (x.bit_width - 1):
-                    return i
-                return -(2 ** (x.bit_width) - i)
+                def tlu_cell_input_value(i):
+                    if x.type.is_unsigned or i < 2 ** (x.bit_width - 1):
+                        return i
+                    return -(2 ** (x.bit_width) - i)
 
-            table = [
-                sum(
-                    ((tlu_cell_input_value(i) >> bit) & 1) << position
-                    for bit, position in bits_and_their_positions
-                )
-                + (  # padding bit
-                    0
-                    if resulting_type.is_unsigned or i < 2 ** (x.bit_width - 1)
-                    else 2**resulting_type.bit_width
-                )
-                for i in range(2**x.bit_width)
-            ]
-            tlu_result = self.tlu(resulting_type, x, table)
-            return self.to_signedness(tlu_result, of=resulting_type)
+                table = [
+                    sum(
+                        ((tlu_cell_input_value(i) >> bit) & 1) << position
+                        for bit, position in bits_and_their_positions
+                    )
+                    + (  # padding bit
+                        0
+                        if resulting_type.is_unsigned or i < 2 ** (x.bit_width - 1)
+                        else 2**resulting_type.bit_width
+                    )
+                    for i in range(2**x.bit_width)
+                ]
+                tlu_result = self.tlu(resulting_type, x, table)
+                return self.to_signedness(tlu_result, of=resulting_type)
 
         current_bit = 0
         max_bit = x.original_bit_width
