@@ -3,6 +3,8 @@
 
 """Compiler submodule."""
 import atexit
+import jsonpickle
+import json
 from typing import Union
 
 # pylint: disable=no-name-in-module,import-error
@@ -98,3 +100,22 @@ def round_trip(mlir_str: str) -> str:
     if not isinstance(mlir_str, str):
         raise TypeError(f"mlir_str must be of type str, not {type(mlir_str)}")
     return _round_trip(mlir_str)
+
+
+@jsonpickle.handlers.register(mlir._mlir_libs._concretelang._compiler.RangeRestriction)
+class RangeRestrictionHandler(jsonpickle.handlers.BaseHandler):
+
+    def flatten(object, data):
+        data.update(json.loads(object.to_json()))
+
+    def restore(data):
+        return mlir._mlir_libs._concretelang._compiler.RangeRestriction.from_json(json.dumps(data))
+
+@jsonpickle.handlers.register(mlir._mlir_libs._concretelang._compiler.KeysetRestriction)
+class KeysetRestrictionHandler(jsonpickle.handlers.BaseHandler):
+
+    def flatten(object, data):
+        data.update(json.loads(object.to_json()))
+
+    def restore(data):
+        return mlir._mlir_libs._concretelang._compiler.KeysetRestriction.from_json(json.dumps(data))

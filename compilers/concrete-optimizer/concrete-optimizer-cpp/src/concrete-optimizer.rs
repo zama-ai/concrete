@@ -2,6 +2,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use core::panic;
+use serde::{Deserialize, Serialize};
 
 use concrete_optimizer::computing_cost::cpu::CpuComplexity;
 use concrete_optimizer::config;
@@ -975,6 +976,26 @@ impl Into<Encoding> for ffi::Encoding {
     }
 }
 
+impl ffi::RangeRestriction {
+    fn range_restriction_to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+fn range_restriction_from_json(input: &str) -> ffi::RangeRestriction {
+    serde_json::from_str(input).unwrap()
+}
+
+impl ffi::KeysetRestriction {
+    fn keyset_restriction_to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+fn keyset_restriction_from_json(input: &str) -> ffi::KeysetRestriction {
+    serde_json::from_str(input).unwrap()
+}
+
 #[allow(
     unused_must_use,
     clippy::needless_lifetimes,
@@ -1156,6 +1177,18 @@ mod ffi {
         fn get_output_indices(self: &Dag) -> Vec<OperatorIndex>;
 
         fn NO_KEY_ID() -> u64;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn range_restriction_to_json(self: &RangeRestriction) -> String;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn range_restriction_from_json(input: &str) -> RangeRestriction;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn keyset_restriction_to_json(self: &KeysetRestriction) -> String;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn keyset_restriction_from_json(input: &str) -> KeysetRestriction;
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -1219,7 +1252,7 @@ mod ffi {
     }
 
     #[namespace = "concrete_optimizer::restriction"]
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct RangeRestriction {
         pub glwe_log_polynomial_sizes: Vec<u64>,
         pub glwe_dimensions: Vec<u64>,
@@ -1356,13 +1389,13 @@ mod ffi {
     }
 
     #[namespace = "concrete_optimizer::restriction"]
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct LweSecretKeyInfo {
         pub lwe_dimension: u64,
     }
 
     #[namespace = "concrete_optimizer::restriction"]
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct LweBootstrapKeyInfo {
         pub level_count: u64,
         pub base_log: u64,
@@ -1372,7 +1405,7 @@ mod ffi {
     }
 
     #[namespace = "concrete_optimizer::restriction"]
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct LweKeyswitchKeyInfo {
         pub level_count: u64,
         pub base_log: u64,
@@ -1381,7 +1414,7 @@ mod ffi {
     }
 
     #[namespace = "concrete_optimizer::restriction"]
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct KeysetInfo {
         pub lwe_secret_keys: Vec<LweSecretKeyInfo>,
         pub lwe_bootstrap_keys: Vec<LweBootstrapKeyInfo>,
@@ -1389,7 +1422,7 @@ mod ffi {
     }
 
     #[namespace = "concrete_optimizer::restriction"]
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct KeysetRestriction {
         pub info: KeysetInfo,
     }

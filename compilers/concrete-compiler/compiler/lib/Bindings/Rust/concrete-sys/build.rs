@@ -6,10 +6,13 @@ const ARTIFACT_NAME: &str = "libConcreteSys.dylib";
 const ARTIFACT_NAME: &str = "libConcreteSys.so";
 
 fn main() {
-    let mut from = PathBuf::from(
-        std::env::var("COMPILER_BUILD_DIRECTORY")
-            .expect("Environment variable COMPILER_BUILD_DIRECTORY must be set"),
-    );
+    let mut from = match std::env::var("COMPILER_BUILD_DIRECTORY") {
+        Ok(v) => PathBuf::from(v),
+        Err(_) => PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
+            .join("../../../../build")
+            .canonicalize()
+            .unwrap(),
+    };
     from.push("lib");
     from.push(ARTIFACT_NAME);
     let from = from.canonicalize().unwrap();
