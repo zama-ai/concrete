@@ -207,6 +207,47 @@ template <typename Op> Result<GLWEExpr> _resolveOutputVariance(Op *op) {
   return variance;
 }
 
+Result<GLWEExpr> undot(llvm::StringRef dots, GenericOP op) {
+  auto [field, rest] = dots.split(".");
+  if (field.starts_with("in")) {
+    llvm::APInt pos;
+    auto suffix = field.substr(2);
+    if (suffix.getAsInteger(10, pos)) {
+      return StringError("unexpected field(")
+             << field.str() << ") for glwe.generic op the suffix("
+             << suffix.str() << ") should be a integer";
+    }
+    auto i = pos.getZExtValue();
+    if (i >= op.getNumOperands()) {
+      return StringError("unexped field(")
+             << field.str() << ") glwe.generic as only " << op.getNumOperands()
+             << " operands";
+    }
+    auto type = op.getOperandTypes()[pos.getZExtValue()];
+    if (auto glwe = type.dyn_cast<GLWEType>()) {
+      return undot(rest, glwe);
+    }
+    if (auto radix = type.dyn_cast<RadixGLWEType>()) {
+      return undot(rest, radix);
+    }
+    if (auto glev = type.dyn_cast<GLevType>()) {
+      return undot(rest, glev);
+    }
+    return StringError("unexpected field(")
+           << field.str() << ") for glwe.generic op type not supported";
+  }
+  return StringError("unexpected field(")
+         << field.str() << ") for glwe.moduls_switch op";
+}
+
+Result<GLWEExpr> GenericOP::resolveOutputVariance() {
+  return _resolveOutputVariance<GenericOP>(this);
+}
+
+GLWEExpr GenericOP::defaultVariance() {
+  return getGlweConstantExpr(0., getContext());
+}
+
 mlir::LogicalResult ModulusSwitch::verify() {
   auto input = this->getInput().getType().dyn_cast<GLWEType>();
   auto inputSK = input.getSecretKey();
