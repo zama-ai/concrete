@@ -207,6 +207,9 @@ template <typename Op> Result<GLWEExpr> _resolveOutputVariance(Op *op) {
   return variance;
 }
 
+/////////////////////////////////////////////////
+// GenericOP ////////////////////////////////////
+
 Result<GLWEExpr> undot(llvm::StringRef dots, GenericOP op) {
   auto [field, rest] = dots.split(".");
   if (field.starts_with("in")) {
@@ -246,6 +249,81 @@ Result<GLWEExpr> GenericOP::resolveOutputVariance() {
 
 GLWEExpr GenericOP::defaultVariance() {
   return getGlweConstantExpr(0., getContext());
+}
+
+/////////////////////////////////////////////////
+// Dot //////////////////////////////////////////
+
+mlir::LogicalResult Dot::verify() {
+  auto inputType = this->getInput()
+                       .getType()
+                       .dyn_cast<TensorType>()
+                       .getElementType()
+                       .dyn_cast<GLWEType>();
+  auto outputType = this->getOutput().getType().dyn_cast<GLWEType>();
+  if (inputType.getSecretKey() != outputType.getSecretKey()) {
+    this->emitOpError(
+        "input and output glwe.glwe must share the same secret_key "
+        "attribute");
+    return mlir::failure();
+  }
+  if (inputType.getEncoding() != outputType.getEncoding()) {
+    this->emitOpError("input and output glwe.glwe must share the same encoding "
+                      "attribute");
+    return mlir::failure();
+  }
+  if ((size_t)this->getInput().getType().dyn_cast<TensorType>().getDimSize(0) !=
+      this->getWeights().size()) {
+    this->emitOpError("The dimension of the input 1D tensor should be equals "
+                      "to the number of weights");
+    return mlir::failure();
+  }
+  return mlir::success();
+}
+
+Result<GLWEExpr> undot(llvm::StringRef dots, Dot op) {
+  auto [field, rest] = dots.split(".");
+  if (field == "input") {
+    return undot(rest, op.getInput()
+                           .getType()
+                           .dyn_cast<TensorType>()
+                           .getElementType()
+                           .dyn_cast<GLWEType>());
+  }
+  return StringError("unexpected field(")
+         << field.str() << ") for glwe.moduls_switch op";
+}
+
+Result<GLWEExpr> Dot::resolveOutputVariance() {
+  return _resolveOutputVariance<Dot>(this);
+}
+
+Result<GLWEExpr> attrToExpr(mlir::Attribute attr) {
+  if (auto expr = attr.dyn_cast<GLWEExprAttr>()) {
+    return expr.getExpr();
+  }
+  if (auto int_ = attr.dyn_cast<IntegerAttr>()) {
+    return getGlweConstantExpr(int_.getValue().getSExtValue(),
+                               attr.getContext());
+  }
+  if (auto int_ = attr.dyn_cast<FloatAttr>()) {
+    return getGlweConstantExpr(int_.getValue().convertToDouble(),
+                               attr.getContext());
+  }
+  return StringError("attribute cannot be converted to glwe.expr");
+}
+
+GLWEExpr Dot::defaultVariance() {
+  auto var = getGlweConstantExpr(0, getContext());
+  for (auto x : llvm::enumerate(this->getWeights())) {
+    auto weightExpr = attrToExpr(x.value());
+    if (weightExpr.has_failure()) {
+      assert(false);
+    }
+    var = var + weightExpr.value();
+  }
+  var = var * getGlweSymbolExpr("self.input.variance", getContext());
+  return var;
 }
 
 mlir::LogicalResult ModulusSwitch::verify() {

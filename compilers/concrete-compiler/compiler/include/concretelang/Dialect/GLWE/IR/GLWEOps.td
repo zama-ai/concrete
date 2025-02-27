@@ -31,6 +31,23 @@ def GLWE_GenericOP: GLWE_Op<"generic", [DeclareOpInterfaceMethods<GLWEOpInterfac
 
 }
 
+def GLWE_Dot: GLWE_Op<"dot", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
+    let summary = "Linear combination of cyphertext with clear coefficient.";
+
+    let arguments = (ins
+        1DTensorOf<[GLWE_GLWE]>:$input,
+        ArrayAttr:$weights,
+        OptionalAttr<GLWE_GLWEExprAttr>: $variance
+    );
+
+    let results = (outs GLWE_GLWE:$output);
+
+    let assemblyFormat = "operands attr-dict `:` type($input) `->` type($output)";
+
+    let hasVerifier = 1;
+
+}
+
 def GLWE_ModulusSwitch: GLWE_Op<"modulus_switch", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
 
     let summary = "Change the modulus of the a GLWE ciphertext.";
