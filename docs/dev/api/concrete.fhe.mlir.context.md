@@ -254,7 +254,7 @@ Cast a value to its original bit width using multiplication and reinterpretation
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L4022"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L4024"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `change_partition`
 
@@ -658,7 +658,7 @@ extract_bits(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2544"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2546"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `flatten`
 
@@ -731,7 +731,7 @@ Fork a type with some properties update.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L4017"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L4019"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_partition_name`
 
@@ -745,7 +745,7 @@ get_partition_name(partition: CryptoParams) → str
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2547"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `greater`
 
@@ -763,7 +763,7 @@ greater(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2550"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2552"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `greater_equal`
 
@@ -793,7 +793,7 @@ Get clear signless integer type (e.g., i3, i5).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2560"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `identity`
 
@@ -811,7 +811,7 @@ identity(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2594"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `index`
 
@@ -853,7 +853,7 @@ Check if conversion types are compatible in terms of bit-width.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2607"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2609"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `less`
 
@@ -867,7 +867,7 @@ less(resulting_type: ConversionType, x: Conversion, y: Conversion) → Conversio
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2610"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2612"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `less_equal`
 
@@ -897,7 +897,7 @@ Create an MLIR location from the node that is being converted.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2618"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2620"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `lsb`
 
@@ -911,7 +911,7 @@ lsb(resulting_type: ConversionType, x: Conversion) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2627"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `matmul`
 
@@ -929,7 +929,7 @@ matmul(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2705"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `maximum`
 
@@ -947,7 +947,7 @@ maximum(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2776"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2778"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `maxpool2d`
 
@@ -967,7 +967,7 @@ maxpool2d(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2825"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2827"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `min_max`
 
@@ -987,7 +987,7 @@ min_max(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2844"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2846"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `minimum`
 
@@ -1044,7 +1044,7 @@ Additional Args:  x_minus_y_dtype (Integer):  minimal dtype that can be used to 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2918"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L2920"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `mul`
 
@@ -1058,7 +1058,7 @@ mul(resulting_type: ConversionType, x: Conversion, y: Conversion) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3003"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3005"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `multi_tlu`
 
@@ -1095,7 +1095,7 @@ Calculate boolean * value using bits.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3094"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3096"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `multivariate_multi_tlu`
 
@@ -1114,7 +1114,7 @@ multivariate_multi_tlu(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3083"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3085"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `multivariate_tlu`
 
@@ -1132,7 +1132,7 @@ multivariate_tlu(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `neg`
 
@@ -1158,7 +1158,7 @@ Get none type.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `not_equal`
 
@@ -1176,7 +1176,7 @@ not_equal(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `ones`
 
@@ -1249,7 +1249,7 @@ Packs inputs of multivariate table lookups.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3929"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3931"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reinterpret`
 
@@ -1267,7 +1267,7 @@ reinterpret(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3146"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `relu`
 
@@ -1281,7 +1281,7 @@ relu(resulting_type: ConversionType, x: Conversion) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3202"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reshape`
 
@@ -1295,7 +1295,7 @@ reshape(x: Conversion, shape: Tuple[int, ]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `round_bit_pattern`
 
@@ -1329,7 +1329,7 @@ safe_reduce_precision(x: Conversion, bit_width: int) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3469"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3471"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `shift`
 
@@ -1363,7 +1363,7 @@ shift_left_at_constant_precision(x: Conversion, rank: int) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3670"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3672"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sub`
 
@@ -1377,7 +1377,7 @@ sub(resulting_type: ConversionType, x: Conversion, y: Conversion) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3705"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sum`
 
@@ -1408,7 +1408,7 @@ Get tensor type (e.g., tensor<5xi3>, tensor<3x2x!FHE.eint<5>>).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3752"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `tensorize`
 
@@ -1422,7 +1422,7 @@ tensorize(x: Conversion) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3763"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3765"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `tlu`
 
@@ -1436,7 +1436,7 @@ tlu(resulting_type: ConversionType, on: Conversion, table: Sequence[int])
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3833"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3835"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `to_signed`
 
@@ -1450,7 +1450,7 @@ to_signed(x: Conversion) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3855"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3857"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `to_signedness`
 
@@ -1464,7 +1464,7 @@ to_signedness(x: Conversion, of: ConversionType) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3858"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3860"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `to_unsigned`
 
@@ -1478,7 +1478,7 @@ to_unsigned(x: Conversion) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3882"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `transpose`
 
@@ -1496,7 +1496,7 @@ transpose(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3891"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3893"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `tree_add`
 
@@ -1510,7 +1510,7 @@ tree_add(resulting_type: ConversionType, xs: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3909"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3911"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `truncate_bit_pattern`
 
@@ -1565,7 +1565,7 @@ Get type corresponding to a value or a node.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3947"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L3949"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `where`
 
@@ -1584,7 +1584,7 @@ where(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L4005"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/context.py#L4007"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `zeros`
 
