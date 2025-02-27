@@ -25,7 +25,7 @@
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <@level>
 >
 
@@ -73,7 +73,7 @@ func.func @test_modulus_switch(%arg0: !glwe_in) ->  !glwe_out {
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <@level>
 >
 
@@ -113,12 +113,12 @@ func.func @test_modulus_switch(%arg0: !glwe_in) ->  !glwe_out {
 >
 
 #decomposition0 = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <5.>
 >
 
 #decomposition1 = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <6.>
 >
 
@@ -158,7 +158,7 @@ func.func @test_modulus_switch(%arg0: !glwe_in) ->  !glwe_out {
 >
 
 #decomposition = #glwe.decomposition<
-  base_log = <@base_log>,
+  base = <@base>,
   level = <@level>
 >
 

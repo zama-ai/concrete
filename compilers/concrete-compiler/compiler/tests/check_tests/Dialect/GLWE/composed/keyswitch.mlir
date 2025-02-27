@@ -3,9 +3,9 @@
 // Test a specification of a keysicth
 
 // Define the decomposition with free variables @b and @l,
-// respectivly for base_log and level parameters of the decomposition 
+// respectivly for base and level parameters of the decomposition 
 #decomposition = #glwe.decomposition<
-  base_log = <@b>,
+  base = <@b>,
   level = <@l>
 >
 

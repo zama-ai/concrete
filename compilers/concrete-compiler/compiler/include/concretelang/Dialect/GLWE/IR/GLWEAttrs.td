@@ -95,12 +95,12 @@ def GLWE_DecompositionParametersAttr: GLWE_Attr<"DecompositionParameters", "deco
 
     let description = [{
       An attribute describing decomposition parameters:
-        - base_log: log2 of the decomposition base
+        - base: the decomposition base
         - level: the number of level of the decomposition
     }];
 
     let parameters = (ins
-        GLWE_GLWEExprAttr: $base_log,
+        GLWE_GLWEExprAttr: $base,
         GLWE_GLWEExprAttr: $level
     );
 }

@@ -97,8 +97,8 @@ Result<GLWEExpr> undot(llvm::StringRef dots, GLWEEncodingAttr sk) {
 
 Result<GLWEExpr> undot(llvm::StringRef dots, DecompositionParametersAttr sk) {
   auto [field, rest] = dots.split(".");
-  if (field == "base_log") {
-    return sk.getBaseLog().getExpr();
+  if (field == "base") {
+    return sk.getBase().getExpr();
   }
   if (field == "level") {
     return sk.getLevel().getExpr();
@@ -486,7 +486,7 @@ GLWEExpr ExactRecompose::defaultVariance() {
   auto glevLevel =
       getGlweSymbolExpr("self.glev.decomposition.level", getContext());
   auto glevBase =
-      getGlweSymbolExpr("self.glev.decomposition.base_log", getContext());
+      getGlweSymbolExpr("self.glev.decomposition.base", getContext());
   auto glevSize = getGlweSymbolExpr("self.glev.shape.last", getContext());
   auto glevAverageMessage =
       getGlweSymbolExpr("self.glev.average_message", getContext());
