@@ -7,6 +7,7 @@
 namespace mlir {
 namespace concretelang {
 namespace GLWE {
+class GLWEExpr;
 
 namespace detail {
 class GLWEExprStorage;
@@ -14,6 +15,9 @@ class GlweUnaryExprStorage;
 class GlweBinaryExprStorage;
 class GlweSymbolExprStorage;
 class GlweConstantExprStorage;
+
+template <WalkOrder walkOrder = WalkOrder::PostOrder>
+WalkResult walk(GLWEExpr expr, function_ref<WalkResult(GLWEExpr)> callback);
 } // namespace detail
 
 enum class GLWEExprKind {
@@ -120,6 +124,38 @@ public:
   GLWEExpr floor() const;
   GLWEExpr ceil() const;
   GLWEExpr log2() const;
+
+  // Walks over the nodes of an AST of GLWE expressions rooted at
+  // `this` similar to `Operation::walk()`. The type of the argument
+  // of the callback function determines for which kind of nodes the
+  // function is invoked. The return type may be `WalkResult`, in
+  // which case the callback function can skip nodes or interrupt the
+  // walk, or `void`, which causes the callback function to be invoked
+  // for all nodes of the specified type.
+  template <
+      WalkOrder walkOrder = WalkOrder::PostOrder, typename FuncTy,
+      typename ArgT = ::mlir::detail::first_argument<FuncTy>,
+      typename RetT = decltype(std::declval<FuncTy>()(std::declval<ArgT>()))>
+  RetT walk(FuncTy &&callback) {
+    auto wrapperFn = [&](GLWEExpr expr) -> WalkResult {
+      if (ArgT v = expr.dyn_cast<ArgT>()) {
+        if constexpr (!std::is_same<RetT, void>::value) {
+          return callback(v);
+        } else {
+          callback(v);
+          return WalkResult::advance();
+        }
+      }
+
+      return WalkResult::advance();
+    };
+
+    if constexpr (!std::is_same<RetT, void>::value) {
+      return detail::walk<walkOrder>(*this, wrapperFn);
+    } else {
+      detail::walk<walkOrder>(*this, wrapperFn);
+    }
+  }
 
 protected:
   ImplType *expr{nullptr};
@@ -229,6 +265,56 @@ mlir::concretelang::GLWE::GLWEExpr max(double lhs,
                                        mlir::concretelang::GLWE::GLWEExpr rhs);
 mlir::concretelang::GLWE::GLWEExpr max(mlir::concretelang::GLWE::GLWEExpr lhs,
                                        double rhs);
+
+namespace detail {
+// Walks over the AST of GLWE expressions rooted at `expr` and invokes
+// `callback̀ for each node encountered during the walk. If the
+// callback function returns `WalkResult::interrupt`, the walk is
+// interrupted immediately and no further invocation of callback takes
+// place. If the callback function returns `WalkResult::skip()`, the
+// walk omits all sub-expressions of `expr` not yet visited.
+//
+// The template parameter `walkOrder` defines whether the callback is
+// invoked for a node before its children (`WalkOrder::PreOrder`) or
+// after its children (`WalkOrder::PostOrder`).
+template <WalkOrder walkOrder>
+WalkResult walk(GLWEExpr expr, function_ref<WalkResult(GLWEExpr)> callback) {
+  if constexpr (walkOrder == WalkOrder::PreOrder) {
+    WalkResult preRes = callback(expr);
+
+    if (preRes == WalkResult::interrupt()) {
+      return WalkResult::interrupt();
+    } else if (preRes == WalkResult::skip()) {
+      return WalkResult::advance();
+    }
+  }
+
+  if (GlweUnaryExpr ue = expr.dyn_cast<GlweUnaryExpr>()) {
+    WalkResult opRes = walk<walkOrder>(ue.getOperand(), callback);
+
+    if (opRes == WalkResult::interrupt()) {
+      return WalkResult::interrupt();
+    }
+  } else if (GlweBinaryExpr be = expr.dyn_cast<GlweBinaryExpr>()) {
+    WalkResult lhsRes = walk<walkOrder>(be.getLHS(), callback);
+
+    if (lhsRes == WalkResult::interrupt())
+      return WalkResult::interrupt();
+
+    WalkResult rhsRes = walk<walkOrder>(be.getRHS(), callback);
+
+    if (rhsRes == WalkResult::interrupt())
+      return WalkResult::interrupt();
+  }
+
+  if constexpr (walkOrder == WalkOrder::PostOrder) {
+    return callback(expr);
+  }
+
+  return WalkResult::advance();
+}
+
+} // namespace detail
 } // namespace GLWE
 } // namespace concretelang
 } // namespace mlir
