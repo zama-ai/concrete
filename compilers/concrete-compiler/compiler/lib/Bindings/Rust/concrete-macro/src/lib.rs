@@ -21,6 +21,7 @@ const DEFAULT_GLOBAL_P_ERROR: Option<f64> = Some(0.00001);
 const DEFAULT_P_ERROR: Option<f64> = None;
 
 mod configuration;
+mod protocol;
 
 struct FastPathHasher {
     path: PathBuf,
