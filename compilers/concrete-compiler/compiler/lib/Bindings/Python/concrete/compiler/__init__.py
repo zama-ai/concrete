@@ -35,6 +35,8 @@ from mlir._mlir_libs._concretelang._compiler import (
     Library,
     ProgramCompilationFeedback,
     CircuitCompilationFeedback,
+    KeysetRestriction,
+    RangeRestriction,
     terminate_df_parallelization as _terminate_df_parallelization,
     init_df_parallelization as _init_df_parallelization,
     check_gpu_runtime_enabled as _check_gpu_runtime_enabled,
@@ -102,20 +104,22 @@ def round_trip(mlir_str: str) -> str:
     return _round_trip(mlir_str)
 
 
-@jsonpickle.handlers.register(mlir._mlir_libs._concretelang._compiler.RangeRestriction)
+@jsonpickle.handlers.register(RangeRestriction)
 class RangeRestrictionHandler(jsonpickle.handlers.BaseHandler):
 
-    def flatten(object, data):
-        data.update(json.loads(object.to_json()))
+    def flatten(self, object, data):
+        data["serialized"] = json.loads(object.to_json())
+        return data
 
-    def restore(data):
-        return mlir._mlir_libs._concretelang._compiler.RangeRestriction.from_json(json.dumps(data))
+    def restore(self, data):
+        return RangeRestriction.from_json(json.dumps(data["serialized"]))
 
-@jsonpickle.handlers.register(mlir._mlir_libs._concretelang._compiler.KeysetRestriction)
+@jsonpickle.handlers.register(KeysetRestriction)
 class KeysetRestrictionHandler(jsonpickle.handlers.BaseHandler):
 
-    def flatten(object, data):
-        data.update(json.loads(object.to_json()))
+    def flatten(self, object, data):
+        data["serialized"] = json.loads(object.to_json())
+        return data
 
-    def restore(data):
-        return mlir._mlir_libs._concretelang._compiler.KeysetRestriction.from_json(json.dumps(data))
+    def restore(self, data):
+        return KeysetRestriction.from_json(json.dumps(data["serialized"]))

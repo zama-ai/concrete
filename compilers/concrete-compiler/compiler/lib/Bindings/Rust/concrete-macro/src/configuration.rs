@@ -1,6 +1,37 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
+struct PythonPickledObject {
+    py_object: String,
+    py_serialized: String,
+}
+
+impl<'de> Deserialize<'de> for PythonPickledObject {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let json = Value::deserialize(deserializer)?;
+        let Value::Object(obj) = json else {
+            return Err(<D::Error as serde::de::Error>::custom("Missing object"));
+        };
+        let Some(Value::String(py_object)) = obj.get("py/object") else {
+            return Err(<D::Error as serde::de::Error>::custom(
+                "Missing field \"py/object\"",
+            ));
+        };
+        let Some(py_serialized) = obj.get("serialized") else {
+            return Err(<D::Error as serde::de::Error>::custom(
+                "Missing field \"serialized\"",
+            ));
+        };
+        Ok(PythonPickledObject {
+            py_object: py_object.clone(),
+            py_serialized: py_serialized.to_string(),
+        })
+    }
+}
+
 struct PythonPickledEnum {
     py_type: String,
     py_tuple: Value,
@@ -24,7 +55,9 @@ impl<'de> Deserialize<'de> for PythonPickledEnum {
             return Err(<D::Error as serde::de::Error>::custom("Missing array"));
         };
         if arr.len() != 2 {
-            return Err(<D::Error as serde::de::Error>::custom("Unexpected py_reduce array length"));
+            return Err(<D::Error as serde::de::Error>::custom(
+                "Unexpected py_reduce array length",
+            ));
         }
         let Some(Value::Object(py_type_obj)) = arr.get(0) else {
             return Err(<D::Error as serde::de::Error>::custom("Missing object"));
@@ -48,7 +81,9 @@ impl<'de> Deserialize<'de> for PythonPickledEnum {
             ));
         };
         if py_tuple_arr.len() != 1 {
-            return Err(<D::Error as serde::de::Error>::custom("Unexpected py_tuple array length"));
+            return Err(<D::Error as serde::de::Error>::custom(
+                "Unexpected py_tuple array length",
+            ));
         }
         let py_tuple = py_tuple_arr.get(0).unwrap();
         Ok(PythonPickledEnum {
@@ -156,23 +191,59 @@ impl<'de> Deserialize<'de> for SecurityLevel {
     }
 }
 
+#[derive(Debug)]
+pub struct RangeRestriction(pub String);
+
+impl<'de> Deserialize<'de> for RangeRestriction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let python_object = PythonPickledObject::deserialize(deserializer)?;
+        if python_object.py_object.split(".").last() != Some("RangeRestriction") {
+            return Err(<D::Error as serde::de::Error>::custom(
+                "Unexpected py/object.",
+            ));
+        }
+        Ok(RangeRestriction(python_object.py_serialized))
+    }
+}
+
+#[derive(Debug)]
+pub struct KeysetRestriction(pub String);
+
+impl<'de> Deserialize<'de> for KeysetRestriction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let python_object = PythonPickledObject::deserialize(deserializer)?;
+        if python_object.py_object.split(".").last() != Some("KeysetRestriction") {
+            return Err(<D::Error as serde::de::Error>::custom(
+                "Unexpected py/object.",
+            ));
+        }
+        Ok(KeysetRestriction(python_object.py_serialized))
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct Configuration {
-    show_optimizer: Option<bool>,
-    loop_parallelize: bool,
-    dataflow_parallelize: bool,
-    auto_parallelize: bool,
-    compress_evaluation_keys: bool,
-    compress_input_ciphertexts: bool,
-    p_error: Option<f64>,
-    global_p_error: Option<f64>,
-    parameter_selection_strategy: ParameterSelectionStrategy,
-    multi_parameter_strategy: MultiParameterStrategy,
-    enable_tlu_fusing: bool,
-    print_tlu_fusing: bool,
-    detect_overflow_in_simulation: bool,
-    composable: bool,
-    // range_restriction: Option<RangeRestriction>,
-    // keyset_restriction: Option<KeysetRestriction>,
-    security_level: SecurityLevel,
+    pub show_optimizer: Option<bool>,
+    pub loop_parallelize: bool,
+    pub dataflow_parallelize: bool,
+    pub auto_parallelize: bool,
+    pub compress_evaluation_keys: bool,
+    pub compress_input_ciphertexts: bool,
+    pub p_error: Option<f64>,
+    pub global_p_error: Option<f64>,
+    pub parameter_selection_strategy: ParameterSelectionStrategy,
+    pub multi_parameter_strategy: MultiParameterStrategy,
+    pub enable_tlu_fusing: bool,
+    pub print_tlu_fusing: bool,
+    pub detect_overflow_in_simulation: bool,
+    pub composable: bool,
+    pub range_restriction: Option<RangeRestriction>,
+    pub keyset_restriction: Option<KeysetRestriction>,
+    pub security_level: SecurityLevel,
 }

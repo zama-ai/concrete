@@ -1,6 +1,7 @@
 add_compile_options(-fexceptions)
 
 add_custom_command(
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs
   OUTPUT concrete-sys/src/lib.rs.h concrete-sys/src/lib.rs.cc
   COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs --header > concrete-sys/src/lib.rs.h
   COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs > concrete-sys/src/lib.rs.cc)
