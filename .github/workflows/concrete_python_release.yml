@@ -35,7 +35,10 @@ jobs:
       - name: Avoid releasing nightly twice
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: |
+          # will fail if last commit has a nightly tag
           git log -1 --format=%D | grep "tag: nightly" && exit 1
+          # will succeed otherwise
+          exit 0
 
   setup-instance:
     needs: check-duplicate-nightly
