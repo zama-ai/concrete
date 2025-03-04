@@ -68,7 +68,8 @@ void ProgramCompilationFeedback::fillFromProgramInfo(
   for (auto skInfo : params.getKeyset().getLweSecretKeys()) {
     assert(skInfo.getParams().getIntegerPrecision() % 8 == 0);
     auto byteSize = skInfo.getParams().getIntegerPrecision() / 8;
-    totalSecretKeysSize += skInfo.getParams().getLweDimension() * byteSize;
+    totalSecretKeysSize +=
+        (uint64_t)skInfo.getParams().getLweDimension() * byteSize;
   }
   // Compute the boostrap keys size
   totalBootstrapKeysSize = 0;
