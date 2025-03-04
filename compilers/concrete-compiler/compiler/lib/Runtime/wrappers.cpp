@@ -768,16 +768,16 @@ void memref_bootstrap_lwe_u64(
     uint32_t glwe_dimension, uint32_t bsk_index,
     mlir::concretelang::RuntimeContext *context) {
 
-  uint64_t glwe_ct_size = polynomial_size * (glwe_dimension + 1);
+  uint64_t glwe_ct_size = (uint64_t)polynomial_size * (glwe_dimension + 1);
   uint64_t *glwe_ct = (uint64_t *)malloc(glwe_ct_size * sizeof(uint64_t));
   auto tlu = tlu_aligned + tlu_offset;
 
   // Glwe trivial encryption
-  for (size_t i = 0; i < polynomial_size * glwe_dimension; i++) {
+  for (size_t i = 0; i < (uint64_t)polynomial_size * glwe_dimension; i++) {
     glwe_ct[i] = 0;
   }
   for (size_t i = 0; i < polynomial_size; i++) {
-    glwe_ct[polynomial_size * glwe_dimension + i] = tlu[i];
+    glwe_ct[(uint64_t)polynomial_size * glwe_dimension + i] = tlu[i];
   }
 
   // Get fourrier bootstrap key
