@@ -3,9 +3,10 @@
 
 include "mlir/IR/EnumAttr.td"
 
-def GLWE_SecretKeyDistribution: I32EnumAttr<"SecretKeyDistribution", "Secret key distribution", [
+def GLWE_SecretKeyDistributionKind: I32EnumAttr<"SecretKeyDistributionKind", "Secret key distribution kind", [
     I32EnumAttrCase<"Binary", 0>,
-    I32EnumAttrCase<"Ternary", 1>
+    I32EnumAttrCase<"Ternary", 1>,
+    I32EnumAttrCase<"Custom", 2>,
 ]> {
     let cppNamespace = "::mlir::concretelang::GLWE";
     let genSpecializedAttr = 0;

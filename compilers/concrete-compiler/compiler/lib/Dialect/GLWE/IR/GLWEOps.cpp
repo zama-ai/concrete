@@ -10,28 +10,6 @@ namespace GLWE {
 using ::concretelang::error::Result;
 using ::concretelang::error::StringError;
 
-Result<GLWEExpr> averageMean(SecretKeyDistribution skDistribution,
-                             mlir::MLIRContext *context) {
-  switch (skDistribution) {
-  case SecretKeyDistribution::Binary:
-    return getGlweConstantExpr(0.5, context);
-  case SecretKeyDistribution::Ternary:
-    return getGlweConstantExpr(0, context);
-  }
-  llvm::llvm_unreachable_internal("Unknow secret key distribution");
-}
-
-Result<GLWEExpr> averageVariance(SecretKeyDistribution skDistribution,
-                                 mlir::MLIRContext *context) {
-  switch (skDistribution) {
-  case SecretKeyDistribution::Binary:
-    return getGlweConstantExpr(0.25, context);
-  case SecretKeyDistribution::Ternary:
-    return getGlweConstantExpr(2. / 3., context);
-  }
-  llvm::llvm_unreachable_internal("Unknow secret key distribution");
-}
-
 Result<GLWEExpr> undot(llvm::StringRef dots, GLWESizeAttr size) {
   auto [field, rest] = dots.split(".");
   if (field == "dimension") {
@@ -47,13 +25,11 @@ Result<GLWEExpr> undot(llvm::StringRef dots, GLWESizeAttr size) {
 Result<GLWEExpr> undot(llvm::StringRef dots,
                        SecretKeyDistributionAttr skDistributionAttr) {
   auto [field, rest] = dots.split(".");
-  auto skDistribution = skDistributionAttr.getValue();
-  auto context = skDistributionAttr.getContext();
   if (field == "average_mean") {
-    return averageMean(skDistribution, context);
+    return skDistributionAttr.getAverageMean().getExpr();
   }
   if (field == "average_variance") {
-    return averageVariance(skDistribution, context);
+    return skDistributionAttr.getAverageVariance().getExpr();
   }
   return StringError("unexpected field(")
          << field.str() << ") for glwe.secret_key_distribution attribute";

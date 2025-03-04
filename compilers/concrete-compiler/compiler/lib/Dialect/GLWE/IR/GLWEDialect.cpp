@@ -69,6 +69,26 @@ GLWEExprAttr getGlweConstantExprAttr(double value,
   return GLWEExprAttr::get(context, expr);
 }
 
+SecretKeyDistributionAttr
+getSecretKeyDistributionAttr(SecretKeyDistributionKind value,
+                             ::mlir::MLIRContext *context) {
+  switch (value) {
+  case SecretKeyDistributionKind::Binary:
+    return SecretKeyDistributionAttr::get(
+        context, getGlweConstantExprAttr(0.5, context),
+        getGlweConstantExprAttr(0.25, context),
+        SecretKeyDistributionKindAttr::get(context, value), {});
+  case SecretKeyDistributionKind::Ternary:
+    return SecretKeyDistributionAttr::get(
+        context, getGlweConstantExprAttr(0, context),
+        getGlweConstantExprAttr(2. / 3., context),
+        SecretKeyDistributionKindAttr::get(context, value), {});
+  case SecretKeyDistributionKind::Custom:
+    assert(false && "Custom secret key distribution not supported");
+  }
+  llvm_unreachable("Unknown secret key distribution kind");
+}
+
 } // namespace GLWE
 } // namespace concretelang
 } // namespace mlir
@@ -335,11 +355,14 @@ void GLWEDialect::initialize() {
       >();
 }
 
-// GLWEExpr ///////////////////////////////////////
+namespace mlir {
+namespace concretelang {
+namespace GLWE {
 
-::mlir::Attribute
-mlir::concretelang::GLWE::GLWEExprAttr::parse(::mlir::AsmParser &parser,
-                                              ::mlir::Type odsType) {
+// GLWEExpr /////////////////////////////////////
+
+::mlir::Attribute GLWEExprAttr::parse(::mlir::AsmParser &parser,
+                                      ::mlir::Type odsType) {
   // parse '<'
   if (parser.parseLess())
     return {};
@@ -352,9 +375,139 @@ mlir::concretelang::GLWE::GLWEExprAttr::parse(::mlir::AsmParser &parser,
   return GLWEExprAttr::get(parser.getContext(), result);
 }
 
-void mlir::concretelang::GLWE::GLWEExprAttr::print(
-    ::mlir::AsmPrinter &printer) const {
+void GLWEExprAttr::print(::mlir::AsmPrinter &printer) const {
   printer << "<";
   this->getExpr().print(printer);
   printer << ">";
 }
+
+// SecretKeyDistribution ////////////////////////
+
+::mlir::Attribute SecretKeyDistributionAttr::parse(::mlir::AsmParser &parser,
+                                                   ::mlir::Type odsType) {
+  // parse '<'
+  if (parser.parseLess())
+    return {};
+
+  // Try to parse secret distribution kind
+  StringRef keyword;
+  std::optional<mlir::Attribute> result;
+  if (parser.parseKeyword(&keyword).succeeded()) {
+    // found a keyword, check if its a distribution kind keyword
+    auto kind = symbolizeSecretKeyDistributionKind(keyword);
+    if (kind.has_value()) {
+      result = getSecretKeyDistributionAttr(kind.value(), parser.getContext());
+    } else {
+      // Parse parameter struct
+      ::mlir::FailureOr<::mlir::concretelang::GLWE::GLWEExprAttr>
+          _result_average_mean;
+      ::mlir::FailureOr<::mlir::concretelang::GLWE::GLWEExprAttr>
+          _result_average_variance;
+      ::mlir::FailureOr<::mlir::StringAttr> _result_kind;
+      bool _seen_average_mean = false;
+      bool _seen_average_variance = false;
+      bool _seen_kind = false;
+
+      const auto _loop_body = [&](::llvm::StringRef _paramKey) -> bool {
+        // Parse literal '='
+        if (parser.parseEqual())
+          return false;
+        if (!_seen_average_mean && _paramKey == "average_mean") {
+          _seen_average_mean = true;
+
+          // Parse variable 'average_mean'
+          _result_average_mean = ::mlir::FieldParser<
+              ::mlir::concretelang::GLWE::GLWEExprAttr>::parse(parser);
+          if (::mlir::failed(_result_average_mean)) {
+            parser.emitError(
+                parser.getCurrentLocation(),
+                "failed to parse GLWE_GLWEExprAttr parameter 'average_mean' "
+                "which is to be a `::mlir::concretelang::GLWE::GLWEExprAttr`");
+            return false;
+          }
+        } else if (!_seen_average_variance && _paramKey == "average_variance") {
+          _seen_average_variance = true;
+
+          // Parse variable 'average_variance'
+          _result_average_variance = ::mlir::FieldParser<
+              ::mlir::concretelang::GLWE::GLWEExprAttr>::parse(parser);
+          if (::mlir::failed(_result_average_variance)) {
+            parser.emitError(parser.getCurrentLocation(),
+                             "failed to parse GLWE_GLWEExprAttr parameter "
+                             "'average_variance' which is to be a "
+                             "`::mlir::concretelang::GLWE::GLWEExprAttr`");
+            return false;
+          }
+        } else if (!_seen_kind && _paramKey == "kind") {
+          _seen_kind = true;
+
+          // Parse variable 'kind'
+          llvm::StringRef kind;
+          llvm::errs() << parser.getCurrentLocation().getPointer() << "\n";
+          if (parser.parseKeyword(&kind).failed()) {
+            parser.emitError(
+                parser.getCurrentLocation(),
+                "failed to parse parameter 'kind' which is to be a keyword");
+            return false;
+          }
+          _result_kind = mlir::StringAttr::get(parser.getContext(), kind);
+        } else {
+          parser.emitError(parser.getCurrentLocation(),
+                           "duplicate or unknown struct parameter name: ")
+              << _paramKey;
+          return false;
+        }
+        return true;
+      };
+      ::llvm::StringRef _paramKey;
+      // parse keyword success but not a distribution kind keyword, so parse
+      // struct
+      // Parse struct
+      _paramKey = keyword;
+      for (unsigned odsStructIndex = 0; odsStructIndex < 3; ++odsStructIndex) {
+        if (odsStructIndex != 0) {
+          if (parser.parseKeyword(&_paramKey)) {
+            parser.emitError(parser.getCurrentLocation(),
+                             "expected a parameter name in struct");
+            return {};
+          }
+        }
+        // Parse loop body
+        if (!_loop_body(_paramKey))
+          return {};
+        if ((odsStructIndex != 3 - 1) && parser.parseComma())
+          return {};
+      }
+      result = SecretKeyDistributionAttr::get(
+          parser.getContext(), *_result_average_mean, *_result_average_variance,
+          SecretKeyDistributionKindAttr::get(parser.getContext(),
+                                             SecretKeyDistributionKind::Custom),
+          *_result_kind);
+    }
+    // parse '>'
+    if (parser.parseGreater())
+      return {};
+    return result.value();
+  }
+  return {};
+}
+
+void SecretKeyDistributionAttr::print(::mlir::AsmPrinter &printer) const {
+  printer << "<";
+  // Just print keyword if its a default distribution
+  if (this->getKind().getValue() == SecretKeyDistributionKind::Binary ||
+      this->getKind().getValue() == SecretKeyDistributionKind::Ternary) {
+    printer << stringifySecretKeyDistributionKind(this->getKind().getValue());
+  } else {
+    printer << "average_mean=";
+    printer.printAttribute(this->getAverageMean());
+    printer << ", average_variance=";
+    printer.printAttribute(this->getAverageVariance());
+    printer << ", kind=";
+    printer.printKeywordOrString(this->getName().getValue());
+  }
+  printer << ">";
+}
+} // namespace GLWE
+} // namespace concretelang
+} // namespace mlir

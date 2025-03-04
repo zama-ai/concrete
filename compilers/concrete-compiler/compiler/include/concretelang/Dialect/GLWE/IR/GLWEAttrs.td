@@ -21,14 +21,28 @@ class GLWE_Attr<string name, string attrMnemonic, list<Trait> traits = []>: Attr
     let assemblyFormat = "`<` struct(params) `>`";
 }
 
-def GLWE_SecretKeyDistributionAttr : EnumAttr<GLWE_Dialect, GLWE_SecretKeyDistribution, "secret_key_distribution"> {
+def GLWE_SecretKeyDistributionKindAttr : EnumAttr<GLWE_Dialect, GLWE_SecretKeyDistributionKind, "secret_key_distribution_kind"> {
   let assemblyFormat = "`<` $value `>`";
+}
+
+def GLWE_SecretDistributionAttr : AttrDef<GLWE_Dialect, "SecretKeyDistribution"> {
+
+  let mnemonic = "secret_key_distribution";
+
+  let parameters = (ins
+    "GLWEExprAttr": $average_mean,
+    "GLWEExprAttr": $average_variance,
+    "SecretKeyDistributionKindAttr": $kind,
+    OptionalParameter<"StringAttr">: $name
+  );
+
+  let hasCustomAssemblyFormat = 1;
+
 }
 
 def GLWE_NoiseDistributionAttr : EnumAttr<GLWE_Dialect, GLWE_NoiseDistribution, "noise_distribution"> {
   let assemblyFormat = "`<` $value `>`";
 }
-
 
 def GLWE_GLWEExprAttr: AttrDef<GLWE_Dialect, "GLWEExpr">{
     let mnemonic = "expr";
@@ -66,7 +80,7 @@ def GLWE_GLWESecretKeyAttr: GLWE_Attr<"GLWESecretKey", "secret_key"> {
     let parameters = (ins
         GLWE_GLWESizeAttr: $size,
         DefaultValuedParameter<"GLWEExprAttr", "mlir::concretelang::GLWE::getGlweConstantExprAttr(1, $_ctxt)">: $nb_keys,
-        DefaultValuedParameter<"SecretKeyDistributionAttr", "SecretKeyDistributionAttr::get($_ctxt, SecretKeyDistribution::Binary)">: $distribution
+        DefaultValuedParameter<"SecretKeyDistributionAttr", "mlir::concretelang::GLWE::getSecretKeyDistributionAttr(SecretKeyDistributionKind::Binary, $_ctxt)">: $distribution
     );
 
 }

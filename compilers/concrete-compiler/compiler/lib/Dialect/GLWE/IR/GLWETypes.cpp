@@ -11,9 +11,9 @@ namespace GLWE {
 // }
 
 ::concretelang::security::KeyFormat
-securityDistributionToNoiseFormat(SecretKeyDistribution skDistribution) {
+securityDistributionToNoiseFormat(SecretKeyDistributionKind skDistribution) {
   switch (skDistribution) {
-  case SecretKeyDistribution::Binary:
+  case SecretKeyDistributionKind::Binary:
     return ::concretelang::security::KeyFormat::BINARY;
   default:
     break;
@@ -59,11 +59,12 @@ unsafeMinimalVarianceLog2(::concretelang::security::SecurityCurve curve,
 }
 
 GLWEExpr _minimalVariance(int securityBits, NoiseDistribution noiseDistribution,
-                          SecretKeyDistribution skDistribution, GLWEExpr size,
-                          GLWEExpr modulus) {
+                          SecretKeyDistributionKindAttr skDistribution,
+                          GLWEExpr size, GLWEExpr modulus) {
   // TODO - Add noise distribution to security curves
   auto curve = ::concretelang::security::getSecurityCurve(
-      securityBits, securityDistributionToNoiseFormat(skDistribution));
+      securityBits,
+      securityDistributionToNoiseFormat(skDistribution.getValue()));
   auto log2Modulus = modulus.log2();
   auto epsilonBits = getEpsilonBits(noiseDistribution);
   auto epsilonStdLog2 = epsilonBits - log2Modulus;
@@ -78,7 +79,7 @@ GLWEExpr _minimalVariance(int securityBits, NoiseDistribution noiseDistribution,
   if (this->getVariance())
     return *this;
 
-  auto skDistribution = this->getSecretKey().getDistribution().getValue();
+  auto skDistribution = this->getSecretKey().getDistribution().getKind();
   auto size = this->getSecretKey().getSize().getPolySize().getExpr() *
               this->getSecretKey().getSize().getDimension().getExpr();
   auto modulus = this->getEncoding().getBodyModulus().getExpr();
@@ -98,7 +99,7 @@ RadixGLWEType::withMinimalVariance(NoiseDistribution noiseDistribution,
   if (this->getVariance())
     return *this;
 
-  auto skDistribution = this->getSecretKey().getDistribution().getValue();
+  auto skDistribution = this->getSecretKey().getDistribution().getKind();
   auto size = this->getSecretKey().getSize().getPolySize().getExpr() *
               this->getSecretKey().getSize().getDimension().getExpr();
   auto modulus = this->getEncoding().getBodyModulus().getExpr();
@@ -119,7 +120,7 @@ RadixGLWEType::withMinimalVariance(NoiseDistribution noiseDistribution,
   if (this->getVariance())
     return *this;
 
-  auto skDistribution = this->getSecretKey().getDistribution().getValue();
+  auto skDistribution = this->getSecretKey().getDistribution().getKind();
   auto size = this->getSecretKey().getSize().getPolySize().getExpr() *
               this->getSecretKey().getSize().getDimension().getExpr();
   auto modulus = this->getEncoding().getBodyModulus().getExpr();

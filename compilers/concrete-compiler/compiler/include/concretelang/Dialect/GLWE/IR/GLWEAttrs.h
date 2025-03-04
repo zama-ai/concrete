@@ -50,8 +50,9 @@ namespace GLWE {
 GLWEExprAttr getGlweConstantExprAttr(double value,
                                      ::mlir::MLIRContext *context);
 
-NoiseDistributionAttr getNoiseDistributionAttr(NoiseDistribution value,
-                                               ::mlir::MLIRContext *context);
+SecretKeyDistributionAttr
+getSecretKeyDistributionAttr(SecretKeyDistributionKind value,
+                             ::mlir::MLIRContext *context);
 
 } // namespace GLWE
 } // namespace concretelang
