@@ -1,0 +1,22 @@
+name: debug release
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  check-duplicate-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Avoid releasing nightly twice
+        run: |
+          set -v
+          git log -5
+          git log -1 --format=%D
+          git log -1 --format=%D | grep "tag: nightly" && exit 1
