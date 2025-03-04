@@ -15,6 +15,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Avoid releasing nightly twice
+        shell: bash
         run: |
           set -v
           git log -5
