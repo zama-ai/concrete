@@ -21,3 +21,4 @@ jobs:
           git log -5
           git log -1 --format=%D
           git log -1 --format=%D | grep "tag: nightly" && exit 1
+          exit 0
