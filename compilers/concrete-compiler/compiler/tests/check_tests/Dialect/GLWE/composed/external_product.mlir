@@ -1,4 +1,4 @@
-// RUN: concretecompiler --action=roundtrip %s  2>&1| FileCheck %s
+// RUN: concretecompiler --action=glwe-optimize %s  2>&1| FileCheck %s
 
 // Test a specification of an external product
 
