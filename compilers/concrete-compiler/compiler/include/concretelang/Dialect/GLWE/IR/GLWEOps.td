@@ -142,4 +142,31 @@ def GLWE_ExactRecompose: GLWE_Op<"exact_recompose", [DeclareOpInterfaceMethods<G
     let hasVerifier = 1;
 }
 
+def GLWE_SampleExtract: GLWE_Op<"sample_extract", [DeclareOpInterfaceMethods<GLWEOpInterface>]> {
+
+    let summary = "Extract a polynomial encrypted coefficient.";
+
+    let description = [{
+        Extract a polynomial encrypted coefficient.
+            - input: The input ciphertext
+
+        Verify that:
+            - The ouput secret key must have poly_size equal to 1 and dimension equal to input secret key dimension * poly_size.
+            - The input and output encoding must have the same parameters.
+
+        The default output variance is equals to the input variance.
+    }];
+
+    let arguments = (ins
+        GLWE_GLWE:$input,
+        OptionalAttr<GLWE_GLWEExprAttr>: $variance
+    );
+
+    let results = (outs GLWE_GLWE:$output);
+
+    let assemblyFormat = "operands attr-dict `:` type($input) `->` type($output)";
+
+    let hasVerifier = 1;
+}
+
 #endif

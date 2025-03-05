@@ -302,6 +302,9 @@ GLWEExpr Dot::defaultVariance() {
   return var;
 }
 
+/////////////////////////////////////////////////
+// ModulusSwitch ////////////////////////////////
+
 mlir::LogicalResult ModulusSwitch::verify() {
   auto input = this->getInput().getType().dyn_cast<GLWEType>();
   auto inputSK = input.getSecretKey();
@@ -415,6 +418,9 @@ Result<GLWEExpr> ModulusSwitch::resolveOutputVariance() {
   return _resolveOutputVariance<ModulusSwitch>(this);
 }
 
+/////////////////////////////////////////////////
+// ExactDecompose ///////////////////////////////
+
 mlir::LogicalResult ExactDecompose::verify() {
   auto input = this->getInput().getType().dyn_cast<GLWEType>();
   auto inputSK = input.getSecretKey();
@@ -469,6 +475,9 @@ Result<GLWEExpr> undot(llvm::StringRef dots, ExactDecompose op) {
 Result<GLWEExpr> ExactDecompose::resolveOutputVariance() {
   return _resolveOutputVariance<ExactDecompose>(this);
 }
+
+/////////////////////////////////////////////////
+// ExactRecompose ///////////////////////////////
 
 mlir::LogicalResult ExactRecompose::verify() {
   auto input = this->getInput().getType().dyn_cast<RadixGLWEType>();
@@ -633,6 +642,60 @@ Result<GLWEExpr> undot(llvm::StringRef dots, ExactRecompose op) {
 Result<GLWEExpr> ExactRecompose::resolveOutputVariance() {
   return _resolveOutputVariance<ExactRecompose>(this);
 }
+
+/////////////////////////////////////////////////
+// SampleExtract ////////////////////////////////
+
+mlir::LogicalResult SampleExtract::verify() {
+  auto input = this->getInput().getType().dyn_cast<GLWEType>();
+  auto inputSK = input.getSecretKey();
+  auto output = this->getOutput().getType().dyn_cast<GLWEType>();
+  auto outputSK = output.getSecretKey();
+  // Check that the ouput secret key is the lwe variant of input secret key
+  if (outputSK.getSize().getPolySize().getExpr() !=
+      getGlweConstantExpr(1, getContext())) {
+    this->emitOpError("failed to verify that the output {poly_size} parameter "
+                      "is equals to 1");
+    return mlir::failure();
+  }
+  if (outputSK.getSize().getDimension().getExpr() !=
+      inputSK.getSize().getDimension().getExpr() *
+          inputSK.getSize().getPolySize().getExpr()) {
+    this->emitOpError("failed to verify that the output {dimension} parameter "
+                      "is equals to the input dimension * input poly_size");
+    return mlir::failure();
+  }
+  // Check that the ouput encoding is equals to the input encoding
+  auto inputEncoding = input.getEncoding();
+  auto outputEncoding = output.getEncoding();
+  if (inputEncoding != outputEncoding) {
+    this->emitOpError("failed to verify that the input and output {encoding} "
+                      "parameters are equals");
+    return mlir::failure();
+  }
+  return mlir::success();
+}
+
+// The sample extract default variance is the same as the input variance
+GLWEExpr SampleExtract::defaultVariance() {
+  return getGlweSymbolExpr("self.input.variance", getContext());
+}
+
+// Undot the sample extract op
+Result<GLWEExpr> undot(llvm::StringRef dots, SampleExtract op) {
+  auto [field, rest] = dots.split(".");
+  if (field == "input") {
+    return undot(rest, op.getInput().getType().dyn_cast<GLWEType>());
+  }
+  return StringError("unexpected field(")
+         << field.str() << ") for glwe.sample_extract op";
+}
+
+// Resolve the output variance of the sample extract op
+Result<GLWEExpr> SampleExtract::resolveOutputVariance() {
+  return _resolveOutputVariance<SampleExtract>(this);
+}
+
 } // namespace GLWE
 } // namespace concretelang
 } // namespace mlir
