@@ -4,7 +4,7 @@ Declaration of `TFHERSIntegerType` class.
 
 from enum import Enum
 from functools import partial
-from typing import Any, Union
+from typing import Any, Dict, Union
 
 import numpy as np
 
@@ -50,6 +50,47 @@ class CryptoParams:
         self.glwe_noise_distribution = glwe_noise_distribution
         self.encryption_key_choice = encryption_key_choice
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the CryptoParams object to a dictionary representation.
+
+        Returns:
+            Dict[str, Any]: dictionary representation
+        """
+
+        return {
+            "lwe_dimension": self.lwe_dimension,
+            "glwe_dimension": self.glwe_dimension,
+            "polynomial_size": self.polynomial_size,
+            "pbs_base_log": self.pbs_base_log,
+            "pbs_level": self.pbs_level,
+            "lwe_noise_distribution": self.lwe_noise_distribution,
+            "glwe_noise_distribution": self.glwe_noise_distribution,
+            "encryption_key_choice": self.encryption_key_choice.value,
+        }
+
+    @staticmethod
+    def from_dict(dict_obj: Dict[str, Any]) -> "CryptoParams":
+        """Create a CryptoParams instance from a dictionary.
+
+        Args:
+            dict_obj (dict): A dictionary containing the parameters.
+
+        Returns:
+            CryptoParams:
+                An instance of CryptoParams initialized with the values from the dictionary.
+        """
+
+        return CryptoParams(
+            dict_obj["lwe_dimension"],
+            dict_obj["glwe_dimension"],
+            dict_obj["polynomial_size"],
+            dict_obj["pbs_base_log"],
+            dict_obj["pbs_level"],
+            dict_obj["lwe_noise_distribution"],
+            dict_obj["glwe_noise_distribution"],
+            EncryptionKeyChoice(dict_obj["encryption_key_choice"]),
+        )
+
     def encryption_variance(self) -> float:
         """Get encryption variance based on parameters.
 
@@ -80,6 +121,9 @@ class CryptoParams:
             and self.polynomial_size == other.polynomial_size
             and self.pbs_base_log == other.pbs_base_log
             and self.pbs_level == other.pbs_level
+            and self.lwe_noise_distribution == other.lwe_noise_distribution
+            and self.glwe_noise_distribution == other.glwe_noise_distribution
+            and self.encryption_key_choice == other.encryption_key_choice
         )
 
     def __hash__(self) -> int:
@@ -115,6 +159,40 @@ class TFHERSIntegerType(Integer):
         self.carry_width = carry_width
         self.msg_width = msg_width
         self.params = params
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the object to a dictionary representation.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the object's attributes
+        """
+
+        return {
+            "is_signed": self.is_signed,
+            "bit_width": self.bit_width,
+            "carry_width": self.carry_width,
+            "msg_width": self.msg_width,
+            "params": self.params.to_dict(),
+        }
+
+    @staticmethod
+    def from_dict(dict_obj) -> "TFHERSIntegerType":
+        """Create a TFHERSIntegerType instance from a dictionary.
+
+        Args:
+            dict_obj (dict): A dictionary representation of the object.
+
+        Returns:
+            TFHERSIntegerType: An instance of TFHERSIntegerType created from the dictionary.
+        """
+
+        return TFHERSIntegerType(
+            dict_obj["is_signed"],
+            dict_obj["bit_width"],
+            dict_obj["carry_width"],
+            dict_obj["msg_width"],
+            CryptoParams.from_dict(dict_obj["params"]),
+        )
 
     def __eq__(self, other: Any) -> bool:  # pragma: no cover
         return (
