@@ -20,6 +20,7 @@ from .dtypes import (
     uint16,
     uint16_2_2,
 )
+from .specs import TFHERSClientSpecs
 from .tracing import from_native, to_native
 from .values import TFHERSInteger
 
@@ -39,7 +40,7 @@ def get_type_from_params(
     """
 
     # Read crypto parameters from TFHE-rs in the json file
-    with open(path_to_params_json) as f:
+    with open(path_to_params_json, "r", encoding="utf-8") as f:
         crypto_param_dict = json.load(f)
 
     return get_type_from_params_dict(crypto_param_dict, is_signed, precision)

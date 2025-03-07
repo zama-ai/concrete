@@ -16,6 +16,7 @@ from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
 from ..representation import Graph
+from ..tfhers.specs import TFHERSClientSpecs
 from .client import Client
 from .composition import CompositionRule
 from .configuration import Configuration
@@ -720,12 +721,15 @@ class FheModule:
         self.mlir_module = mlir
         self.compilation_context = compilation_context
 
+        tfhers_specs = TFHERSClientSpecs.from_graphs(graphs)
+
         def init_simulation():
             simulation_server = Server.create(
                 self.mlir_module,
                 self.configuration.fork(fhe_simulation=True),
                 is_simulated=True,
                 compilation_context=self.compilation_context,
+                tfhers_specs=tfhers_specs,
             )
             simulation_client = Client(simulation_server.client_specs, is_simulated=True)
             return SimulationRt(simulation_client, simulation_server)
@@ -741,6 +745,7 @@ class FheModule:
                 compilation_context=self.compilation_context,
                 composition_rules=composition_rules,
                 is_simulated=False,
+                tfhers_specs=tfhers_specs,
             )
             keyset_cache_directory = None
             if self.configuration.use_insecure_key_cache:

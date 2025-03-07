@@ -3,13 +3,14 @@ Declaration of `ClientSpecs` class.
 """
 
 # pylint: disable=import-error,no-member,no-name-in-module
-
-from typing import Any
+import json
+from typing import Any, Optional
 
 # mypy: disable-error-code=attr-defined
 from concrete.compiler import ProgramInfo
 
 # pylint: enable=import-error,no-member,no-name-in-module
+from concrete import fhe
 
 
 class ClientSpecs:
@@ -18,28 +19,39 @@ class ClientSpecs:
     """
 
     program_info: ProgramInfo
+    tfhers_specs: Optional["fhe.tfhers.TFHERSClientSpecs"]
 
-    def __init__(self, program_info: ProgramInfo):
+    def __init__(
+        self,
+        program_info: ProgramInfo,
+        tfhers_specs: Optional["fhe.tfhers.TFHERSClientSpecs"] = None,
+    ):
         self.program_info = program_info
+        self.tfhers_specs = tfhers_specs
 
     def __eq__(self, other: Any):  # pragma: no cover
-        return self.program_info.serialize() == other.program_info.serialize()
+        return (
+            self.program_info.serialize() == other.program_info.serialize()
+            and self.tfhers_specs == other.tfhers_specs
+        )
 
     def serialize(self) -> bytes:
         """
-        Serialize client specs into a string representation.
+        Serialize client specs into bytes.
 
         Returns:
             bytes:
                 serialized client specs
         """
-
-        return self.program_info.serialize()
+        program_info = json.loads(self.program_info.serialize())
+        if self.tfhers_specs is not None:
+            program_info["tfhers_specs"] = self.tfhers_specs.to_dict()
+        return json.dumps(program_info).encode("utf-8")
 
     @staticmethod
     def deserialize(serialized_client_specs: bytes) -> "ClientSpecs":
         """
-        Create client specs from its string representation.
+        Create client specs from bytes.
 
         Args:
             serialized_client_specs (bytes):
@@ -49,6 +61,14 @@ class ClientSpecs:
             ClientSpecs:
                 deserialized client specs
         """
+        program_info_dict = json.loads(serialized_client_specs)
+        tfhers_specs_dict = program_info_dict.get("tfhers_specs", None)
 
-        program_info = ProgramInfo.deserialize(serialized_client_specs)
-        return ClientSpecs(program_info)
+        if tfhers_specs_dict is not None:
+            del program_info_dict["tfhers_specs"]
+            tfhers_specs = fhe.tfhers.TFHERSClientSpecs.from_dict(tfhers_specs_dict)
+        else:
+            tfhers_specs = None
+
+        program_info = ProgramInfo.deserialize(json.dumps(program_info_dict).encode("utf-8"))
+        return ClientSpecs(program_info, tfhers_specs)
