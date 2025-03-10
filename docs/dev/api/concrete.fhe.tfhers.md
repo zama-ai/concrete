@@ -9,12 +9,13 @@ tfhers module to represent, and compute on tfhers integer values.
 ---------------
 - **dtypes**
 - **bridge**
+- **specs**
 - **values**
 - **tracing**
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/__init__.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/__init__.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_type_from_params`
 
@@ -45,7 +46,7 @@ Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/__init__.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/__init__.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_type_from_params_dict`
 

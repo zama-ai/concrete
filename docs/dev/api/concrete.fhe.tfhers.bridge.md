@@ -8,52 +8,45 @@ Declaration of `tfhers.Bridge` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `new_bridge`
 
 ```python
 new_bridge(
-    circuit_or_module: Union[ForwardRef('Circuit'), ForwardRef('Module')]
+    circuit_or_module_or_client: Union[ForwardRef('Circuit'), ForwardRef('Module'), ForwardRef('Client')]
 ) → Bridge
 ```
 
-Create a TFHErs bridge from a circuit or module. 
+Create a TFHErs bridge from a circuit or module or client. 
 
 
 
 **Args:**
- 
- - <b>`circuit`</b> (Union[Circuit, Module]):  compiled circuit or module 
+  client (Union["fhe.Circuit", "fhe.Module", "fhe.Client"]):  The client|circuit|module instance to be used by the Bridge. 
 
 
 
 **Returns:**
  
- - <b>`Bridge`</b>:  TFHErs bridge 
+ - <b>`Bridge`</b>:  A new Bridge instance attached to the provided client. 
 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L18"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Bridge`
-TFHErs Bridge extend an Module with TFHErs functionalities. 
+TFHErs Bridge extend a Client with TFHErs functionalities. 
 
-input_types_per_func (Dict[str, List[Optional[TFHERSIntegerType]]]):  maps every input to a type for every function in the module. None means a non-tfhers type output_types_per_func (Dict[str, List[Optional[TFHERSIntegerType]]]):  maps every output to a type for every function in the module. None means a non-tfhers type input_shapes_per_func (Dict[str, List[Optional[Tuple[int, ...]]]]):  maps every input to a shape for every function in the module. None means a non-tfhers type output_shapes_per_func (Dict[str, List[Optional[Tuple[int, ...]]]]):  maps every output to a shape for every function in the module. None means a non-tfhers type 
+client (fhe.Client): the client instance to be attached by the Bridge tfhers_specs (fhe.tfhers.TFHERSClientSpecs): the TFHE-rs specs of the client 
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(
-    module: 'Module',
-    input_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-    output_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-    input_shapes_per_func: Dict[str, List[Optional[Tuple[int, ]]]],
-    output_shapes_per_func: Dict[str, List[Optional[Tuple[int, ]]]]
-)
+__init__(client: 'Client')
 ```
 
 
@@ -61,11 +54,35 @@ __init__(
 
 
 
+---
+
+#### <kbd>property</kbd> input_shapes_per_func
+
+Return the input shapes per function map. 
+
+---
+
+#### <kbd>property</kbd> input_types_per_func
+
+Return the input types per function map. 
+
+---
+
+#### <kbd>property</kbd> output_shapes_per_func
+
+Return the output shapes per function map. 
+
+---
+
+#### <kbd>property</kbd> output_types_per_func
+
+Return the output types per function map. 
+
 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L180"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `export_value`
 
@@ -95,7 +112,7 @@ Export a value as a serialized TFHErs integer.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `import_value`
 
@@ -125,7 +142,7 @@ Import a serialized TFHErs integer as a Value.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen_with_initial_keys`
 
@@ -160,7 +177,7 @@ Generate keys using an initial set of secret keys.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize_input_secret_key`
 
