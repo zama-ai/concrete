@@ -2,7 +2,7 @@
 
 use cxx::UniquePtr;
 
-#[cxx::bridge(namespace = "concrete_sys")]
+#[cxx::bridge(namespace = "concrete_rust")]
 mod ffi {
 
     unsafe extern "C++" {
@@ -62,7 +62,7 @@ pub use ffi::*;
 mod test {
     use super::*;
 
-    const TEST_FOLDER: &str = "/tmp/test_concrete_sys";
+    const TEST_FOLDER: &str = "/tmp/test_concrete";
 
     #[test]
     fn test_compile() {

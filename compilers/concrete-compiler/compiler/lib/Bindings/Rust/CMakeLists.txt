@@ -1,19 +1,17 @@
 add_compile_options(-fexceptions)
 
-// See [[NOTES#`ConcreteSys` and `concrete-sys`]]
-
 add_custom_command(
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs
-  OUTPUT concrete-sys/src/lib.rs.h concrete-sys/src/lib.rs.cc
-  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs --header > concrete-sys/src/lib.rs.h
-  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs > concrete-sys/src/lib.rs.cc)
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/lib.rs
+  OUTPUT concrete/src/lib.rs.h concrete/src/lib.rs.cc
+  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/lib.rs --header > concrete/src/lib.rs.h
+  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/lib.rs > concrete/src/lib.rs.cc)
 
-add_library(ConcreteSys SHARED concrete-sys/src/lib.cpp concrete-sys/src/lib.rs.cc)
+add_library(ConcreteRust SHARED concrete/src/lib.cpp concrete/src/lib.rs.cc)
 
-target_include_directories(ConcreteSys PRIVATE concrete-sys/src)
+target_include_directories(ConcreteRust PRIVATE concrete/src)
 
 target_link_libraries(
-  ConcreteSys
+  ConcreteRust
   PRIVATE ConcretelangSupport
           ConcretelangCommon
           ConcretelangRuntimeStatic
@@ -27,5 +25,5 @@ if(APPLE)
   if(NOT SECURITY_FRAMEWORK)
     message(FATAL_ERROR "Security framework not found")
   endif()
-  target_link_libraries(ConcreteSys LINK_PUBLIC ${SECURITY_FRAMEWORK})
+  target_link_libraries(ConcreteRust LINK_PUBLIC ${SECURITY_FRAMEWORK})
 endif()

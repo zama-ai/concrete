@@ -1,7 +1,8 @@
 [package]
-name = "concrete-sys"
+name = "concrete"
 version = "0.1.0"
 edition = "2021"
+links = "concrete"
 
 [dependencies]
 cxx = "1.0"

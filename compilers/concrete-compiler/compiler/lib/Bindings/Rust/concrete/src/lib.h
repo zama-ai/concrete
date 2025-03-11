@@ -14,7 +14,7 @@
 #include <sys/_types/_int64_t.h>
 
 // Contains helpers not available from the original compiler api.
-namespace concrete_sys{
+namespace concrete_rust{
 
 struct CompilationOptions{
     mlir::concretelang::CompilationOptions inner;
@@ -57,6 +57,6 @@ std::unique_ptr<Library> compile(
     rust::Str outputDirPath
 );
 
-} // namespace concrete_sys
+} // namespace concrete_rust
 
 #endif

@@ -1,6 +1,6 @@
 #[allow(unused)]
 use quote::quote;
-use concrete_sys::*;
+use concrete::*;
 use configuration::Configuration;
 use proc_macro::{
     TokenStream, {self},
@@ -10,7 +10,7 @@ use std::{fs::read_to_string, path::PathBuf};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use syn::LitStr;
 
-const CONCRETE_BUILD_DIR: &'static str = env!("CONCRETE_SYS_BUILD_DIR");
+const CONCRETE_BUILD_DIR: &'static str = env!("CONCRETE_BUILD_DIR");
 const PATH_STATIC_LIB: &'static str = "staticlib.a";
 const PATH_PROGRAM_INFO: &'static str = "program_info.concrete.params.json";
 const PATH_CIRCUIT: &'static str = "circuit.mlir";
@@ -46,7 +46,6 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         panic!("Input path must point to an existing export zip (relative to CARGO_MANIFEST_DIR): File {} not found.", zip_path.display());
     };
     let concrete_build_dir = PathBuf::from(CONCRETE_BUILD_DIR);
-    let target_dir = concrete_build_dir.join("..");
 
     let mut s = DefaultHasher::new();
     fast_path_hasher::FastPathHasher::from_pathbuf(&zip_path).hash(&mut s);
@@ -60,8 +59,9 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         .write(true)
         .create(true)
         .open(concrete_build_dir.join(format!("{hash_val}.lock")))
-        .unwrap();
-    lock_file.lock().unwrap();
+        .expect("Failed to open lock file.");
+
+    lock_file.lock().expect("Failed to acquire lock on the lock file");
 
     let concrete_hash_dir = concrete_build_dir.join(format!("{hash_val}"));
     if !concrete_hash_dir.exists() {
@@ -78,28 +78,28 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         if !circuit_path.exists() {
             panic!("Missing `circuit.mlir` file in the export. Did you save your server with the `via_mlir` option ?");
         }
-        let mlir = read_to_string(circuit_path).unwrap();
+        let mlir = read_to_string(circuit_path).expect("Failed to read mlir sources to string");
 
         if !simulated_path.exists() {
             panic!("Missing `is_simulated` file in the export. Did you save your server with the `via_mlir` option ?");
         }
         let is_simulated = read_to_string(simulated_path)
-            .unwrap()
+            .expect("Failed to read is_simulated")
             .parse::<u8>()
-            .unwrap();
+            .expect("is_simulated can not be parsed as an u8 ...");
 
         if !config_path.exists() {
             panic!("Missing `configuration.json` file in the export. Did you save your server with the `via_mlir` option ?");
         }
-        let configuration_string = read_to_string(config_path).unwrap();
-        let conf: Configuration = serde_json::from_str(configuration_string.as_str()).unwrap();
+        let configuration_string = read_to_string(config_path).expect("Failed to read configuration to string");
+        let conf: Configuration = serde_json::from_str(configuration_string.as_str()).expect("Failed to deserialize configuration");
 
         if !composition_rules_path.exists() {
             panic!("Missing `composition_rules.json` file in the export. Did you save your server with the `via_mlir` option ?");
         }
-        let composition_rules_string = read_to_string(composition_rules_path).unwrap();
+        let composition_rules_string = read_to_string(composition_rules_path).expect("Failed to read composition rules to string");
         let composition_rules: Vec<serde_json::Value> =
-            serde_json::from_str(composition_rules_string.as_str()).unwrap();
+            serde_json::from_str(composition_rules_string.as_str()).expect("Failed to deserialize composition rules");
 
         let mut opts = compilation_options_new();
         opts.pin_mut()
@@ -203,12 +203,12 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
             &opts,
             concrete_hash_dir.as_os_str().to_str().unwrap(),
         )
-        .unwrap();
+        .expect("Failed to compile sources");
     }
 
-    let output_deps_path = target_dir.join(format!("deps/libconcrete-artifact-{hash_val}.a"));
-    if !output_deps_path.exists() {
-        std::fs::copy(concrete_hash_dir.join(PATH_STATIC_LIB), output_deps_path)
+    let output_path = concrete_build_dir.join(format!("libconcrete-artifact-{hash_val}.a"));
+    if !output_path.exists() {
+        std::fs::copy(concrete_hash_dir.join(PATH_STATIC_LIB), output_path)
             .unwrap();
     }
 
@@ -228,9 +228,9 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
     let unsafe_binding = generate_unsafe_binding(&program_info);
 
     quote! {
+        #[link(name = "ConcretelangRuntime", kind="dylib")]
         #[link(name = #lib_name, kind="static")]
         #unsafe_binding
-        const PI: &str = #program_info_dbg;
     }
     .into()
 }

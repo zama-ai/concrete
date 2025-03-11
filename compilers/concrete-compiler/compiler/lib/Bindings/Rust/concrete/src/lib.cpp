@@ -13,7 +13,7 @@
 using mlir::concretelang::CompilationContext;
 using mlir::concretelang::CompilerEngine;
 
-namespace concrete_sys {
+namespace concrete_rust {
 
 // CompilationOptions
 std::unique_ptr<CompilationOptions> compilation_options_new() {
@@ -145,4 +145,4 @@ std::unique_ptr<Library> compile(rust::Str sources,
   return std::make_unique<Library>(Library{output});
 }
 
-} // namespace concrete_sys
+} // namespace concrete_rust
