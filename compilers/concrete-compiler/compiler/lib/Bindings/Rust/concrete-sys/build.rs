@@ -16,12 +16,14 @@ fn main() {
     from.push("lib");
     from.push(ARTIFACT_NAME);
     let from = from.canonicalize().unwrap();
-    let mut to = PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    to.push(ARTIFACT_NAME);
+
+    let to = PathBuf::from(std::env::var("OUT_DIR").unwrap())
+        .join("../../..") // See [[NOTES#Non-transitive link-args for `concrete-sys` users.]]
+        .join(ARTIFACT_NAME);
     std::fs::copy(&from, &to).unwrap();
     println!(
         "cargo::rustc-link-search={}",
-        std::env::var("OUT_DIR").unwrap()
+        to.parent().unwrap().display()
     );
     println!("cargo::rustc-link-lib=dylib=ConcreteSys");
     println!("cargo::rustc-link-lib=z");

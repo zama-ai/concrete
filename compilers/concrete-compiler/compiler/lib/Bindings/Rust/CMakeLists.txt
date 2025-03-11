@@ -1,5 +1,7 @@
 add_compile_options(-fexceptions)
 
+// See [[NOTES#`ConcreteSys` and `concrete-sys`]]
+
 add_custom_command(
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs
   OUTPUT concrete-sys/src/lib.rs.h concrete-sys/src/lib.rs.cc

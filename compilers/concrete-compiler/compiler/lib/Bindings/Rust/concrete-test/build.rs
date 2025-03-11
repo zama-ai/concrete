@@ -15,11 +15,8 @@ fn get_cargo_target_dir() -> Result<std::path::PathBuf, Box<dyn std::error::Erro
 }
 
 fn main() {
-    let target_dir = get_cargo_target_dir().unwrap();
     println!(
-        "cargo:rustc-env=CONCRETE_SYS_BUILD_DIR={}",
-        target_dir.join("concrete").display()
+        "cargo:rustc-link-search={}",
+        get_cargo_target_dir().unwrap().join("deps").display()
     );
-    println!("cargo::rustc-link-arg=-rpath"); // See [[NOTES#Non-transitive link-args for `concrete-sys` users.]]
-    println!("cargo::rustc-link-arg={}", target_dir.display());
 }

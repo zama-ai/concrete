@@ -240,7 +240,6 @@ pub struct Configuration {
     pub parameter_selection_strategy: ParameterSelectionStrategy,
     pub multi_parameter_strategy: MultiParameterStrategy,
     pub enable_tlu_fusing: bool,
-    pub print_tlu_fusing: bool,
     pub detect_overflow_in_simulation: bool,
     pub composable: bool,
     pub range_restriction: Option<RangeRestriction>,

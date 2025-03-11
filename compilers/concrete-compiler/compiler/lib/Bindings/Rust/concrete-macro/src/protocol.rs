@@ -1,4 +1,5 @@
-use serde::{Deserialize};
+#![allow(non_camel_case_types, non_snake_case)]
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct ProgramInfo{
@@ -29,6 +30,7 @@ pub struct RawInfo{
 pub struct Shape{
     dimensions: Vec<u32>
 }
+
 
 #[derive(Debug, Deserialize)]
 pub enum TypeInfo{
@@ -96,7 +98,7 @@ pub enum IntegerCiphertextEncodingInfo_Mode{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct IntegerCiphertextEncodingInfo_Mode_NativeMode();
+pub struct IntegerCiphertextEncodingInfo_Mode_NativeMode{}
 
 #[derive(Debug, Deserialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_ChunkedMode{
@@ -110,4 +112,168 @@ pub struct IntegerCiphertextEncodingInfo_Mode_CrtMode{
 }
 
 #[derive(Debug, Deserialize)]
-pub struct BooleanCiphertextEncodingInfo();
+pub struct BooleanCiphertextEncodingInfo{}
+
+#[cfg(test)]
+mod test{
+    use super::ProgramInfo;
+
+    const TEST_JSON: &'static str = "
+    {
+      \"keyset\": {
+        \"lweSecretKeys\": [
+          { \"id\": 0, \"params\": { \"lweDimension\": 6144, \"integerPrecision\": 64, \"keyType\": \"binary\" } },
+          { \"id\": 1, \"params\": { \"lweDimension\": 865, \"integerPrecision\": 64, \"keyType\": \"binary\" } }
+        ],
+        \"lweBootstrapKeys\": [
+          {
+            \"id\": 0,
+            \"inputId\": 1,
+            \"outputId\": 0,
+            \"params\": {
+              \"levelCount\": 1,
+              \"baseLog\": 23,
+              \"glweDimension\": 3,
+              \"polynomialSize\": 2048,
+              \"variance\": 4.70197740328915e-38,
+              \"integerPrecision\": 64,
+              \"modulus\": { \"modulus\": { \"native\": {} } },
+              \"keyType\": \"binary\",
+              \"inputLweDimension\": 865
+            },
+            \"compression\": \"none\"
+          }
+        ],
+        \"lweKeyswitchKeys\": [
+          {
+            \"id\": 0,
+            \"inputId\": 0,
+            \"outputId\": 1,
+            \"params\": {
+              \"levelCount\": 4,
+              \"baseLog\": 4,
+              \"variance\": 1.692989133024556e-12,
+              \"integerPrecision\": 64,
+              \"modulus\": { \"modulus\": { \"native\": {} } },
+              \"keyType\": \"binary\",
+              \"inputLweDimension\": 6144,
+              \"outputLweDimension\": 865
+            },
+            \"compression\": \"none\"
+          }
+        ],
+        \"packingKeyswitchKeys\": []
+      },
+      \"circuits\": [
+        {
+          \"inputs\": [
+            {
+              \"rawInfo\": {
+                \"shape\": { \"dimensions\": [6145] },
+                \"integerPrecision\": 64,
+                \"isSigned\": false
+              },
+              \"typeInfo\": {
+                \"lweCiphertext\": {
+                  \"abstractShape\": { \"dimensions\": [] },
+                  \"concreteShape\": { \"dimensions\": [6145] },
+                  \"integerPrecision\": 64,
+                  \"encryption\": {
+                    \"keyId\": 0,
+                    \"variance\": 4.70197740328915e-38,
+                    \"lweDimension\": 6144,
+                    \"modulus\": { \"modulus\": { \"native\": {} } }
+                  },
+                  \"compression\": \"none\",
+                  \"encoding\": { \"integer\": { \"width\": 5, \"isSigned\": false, \"mode\": { \"native\": {} } } }
+                }
+              }
+            }
+          ],
+          \"outputs\": [
+            {
+              \"rawInfo\": {
+                \"shape\": { \"dimensions\": [6145] },
+                \"integerPrecision\": 64,
+                \"isSigned\": false
+              },
+              \"typeInfo\": {
+                \"lweCiphertext\": {
+                  \"abstractShape\": { \"dimensions\": [] },
+                  \"concreteShape\": { \"dimensions\": [6145] },
+                  \"integerPrecision\": 64,
+                  \"encryption\": {
+                    \"keyId\": 0,
+                    \"variance\": 4.70197740328915e-38,
+                    \"lweDimension\": 6144,
+                    \"modulus\": { \"modulus\": { \"native\": {} } }
+                  },
+                  \"compression\": \"none\",
+                  \"encoding\": { \"integer\": { \"width\": 5, \"isSigned\": false, \"mode\": { \"native\": {} } } }
+                }
+              }
+            }
+          ],
+          \"name\": \"dec\"
+        },
+        {
+          \"inputs\": [
+            {
+              \"rawInfo\": {
+                \"shape\": { \"dimensions\": [6145] },
+                \"integerPrecision\": 64,
+                \"isSigned\": false
+              },
+              \"typeInfo\": {
+                \"lweCiphertext\": {
+                  \"abstractShape\": { \"dimensions\": [] },
+                  \"concreteShape\": { \"dimensions\": [6145] },
+                  \"integerPrecision\": 64,
+                  \"encryption\": {
+                    \"keyId\": 0,
+                    \"variance\": 4.70197740328915e-38,
+                    \"lweDimension\": 6144,
+                    \"modulus\": { \"modulus\": { \"native\": {} } }
+                  },
+                  \"compression\": \"none\",
+                  \"encoding\": { \"integer\": { \"width\": 5, \"isSigned\": false, \"mode\": { \"native\": {} } } }
+                }
+              }
+            }
+          ],
+          \"outputs\": [
+            {
+              \"rawInfo\": {
+                \"shape\": { \"dimensions\": [6145] },
+                \"integerPrecision\": 64,
+                \"isSigned\": false
+              },
+              \"typeInfo\": {
+                \"lweCiphertext\": {
+                  \"abstractShape\": { \"dimensions\": [] },
+                  \"concreteShape\": { \"dimensions\": [6145] },
+                  \"integerPrecision\": 64,
+                  \"encryption\": {
+                    \"keyId\": 0,
+                    \"variance\": 4.70197740328915e-38,
+                    \"lweDimension\": 6144,
+                    \"modulus\": { \"modulus\": { \"native\": {} } }
+                  },
+                  \"compression\": \"none\",
+                  \"encoding\": { \"integer\": { \"width\": 5, \"isSigned\": false, \"mode\": { \"native\": {} } } }
+                }
+              }
+            }
+          ],
+          \"name\": \"inc\"
+        }
+      ]
+    }
+    ";
+
+   #[test]
+   fn test() {
+       let pi: ProgramInfo = serde_json::from_str(TEST_JSON).unwrap();
+       dbg!(pi);
+   }
+}
