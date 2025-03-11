@@ -7,6 +7,6 @@ mod test {
 
     #[test]
     fn test() {
-        let a = unsafe{super::my_c_function(3)};
+        let a = unsafe{super::concrete_dec(8 as *mut u8 as *mut std::ffi::c_void)};
     }
 }

@@ -5,6 +5,7 @@ use configuration::Configuration;
 use proc_macro::{
     TokenStream, {self},
 };
+use unsafe_binding::generate_unsafe_binding;
 use std::{fs::read_to_string, path::PathBuf};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use syn::LitStr;
@@ -23,6 +24,7 @@ mod configuration;
 mod fast_path_hasher;
 mod protocol;
 mod unzip;
+mod unsafe_binding;
 
 #[proc_macro]
 pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
@@ -223,12 +225,11 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
     lock_file.unlock().unwrap();
 
     let lib_name = format!("concrete-artifact-{hash_val}");
+    let unsafe_binding = generate_unsafe_binding(&program_info);
 
     quote! {
         #[link(name = #lib_name, kind="static")]
-        extern "C" {
-            fn my_c_function(x: i32) -> bool;
-        }
+        #unsafe_binding
         const PI: &str = #program_info_dbg;
     }
     .into()

@@ -3,32 +3,32 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct ProgramInfo{
-    circuits: Vec<CircuitInfo>
+    pub circuits: Vec<CircuitInfo>
 }
 
 #[derive(Debug, Deserialize)]
 pub struct CircuitInfo{
-    inputs: Vec<GateInfo>,
-    outputs: Vec<GateInfo>,
-    name: String,
+    pub inputs: Vec<GateInfo>,
+    pub outputs: Vec<GateInfo>,
+    pub name: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GateInfo{
-    rawInfo: RawInfo,
-    typeInfo: TypeInfo
+    pub rawInfo: RawInfo,
+    pub typeInfo: TypeInfo
 }
 
 #[derive(Debug, Deserialize)]
 pub struct RawInfo{
-    shape: Shape,
-    integerPrecision: u32,
-    isSigned: bool,
+    pub shape: Shape,
+    pub integerPrecision: u32,
+    pub isSigned: bool,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Shape{
-    dimensions: Vec<u32>
+    pub dimensions: Vec<u32>
 }
 
 
@@ -41,33 +41,33 @@ pub enum TypeInfo{
 
 #[derive(Debug, Deserialize)]
 pub struct PlaintextTypeInfo{
-    shape: Shape,
-    integerPrecision: u32,
-    isSigned: bool
+    pub shape: Shape,
+    pub integerPrecision: u32,
+    pub isSigned: bool
 }
 
 #[derive(Debug, Deserialize)]
 pub struct IndexTypeInfo{
-    shape: Shape,
-    integerPrecision: u32,
-    isSigned: bool
+    pub shape: Shape,
+    pub integerPrecision: u32,
+    pub isSigned: bool
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LweCiphertextTypeInfo{
-    abstractShape: Shape,
-    concreteShape: Shape,
-    integerPrecision: u32,
-    encryption: LweCiphertextEncryptionInfo,
-    compression: Compression,
-    encoding: LweCiphretextTypeInfo_Encoding
+    pub abstractShape: Shape,
+    pub concreteShape: Shape,
+    pub integerPrecision: u32,
+    pub encryption: LweCiphertextEncryptionInfo,
+    pub compression: Compression,
+    pub encoding: LweCiphretextTypeInfo_Encoding
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LweCiphertextEncryptionInfo{
-    keyId: u32,
-    variance: f64,
-    lweDimension: u32,
+    pub keyId: u32,
+    pub variance: f64,
+    pub lweDimension: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -85,9 +85,9 @@ pub enum LweCiphretextTypeInfo_Encoding{
 
 #[derive(Debug, Deserialize)]
 pub struct IntegerCiphertextEncodingInfo{
-    width: u32,
-    isSigned: bool,
-    mode: IntegerCiphertextEncodingInfo_Mode
+    pub width: u32,
+    pub isSigned: bool,
+    pub mode: IntegerCiphertextEncodingInfo_Mode
 }
 
 #[derive(Debug, Deserialize)]
@@ -102,13 +102,13 @@ pub struct IntegerCiphertextEncodingInfo_Mode_NativeMode{}
 
 #[derive(Debug, Deserialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_ChunkedMode{
-    size: u32,
-    width: u32
+    pub size: u32,
+    pub width: u32
 }
 
 #[derive(Debug, Deserialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_CrtMode{
-    moduli: Vec<u32>
+    pub moduli: Vec<u32>
 }
 
 #[derive(Debug, Deserialize)]
