@@ -34,6 +34,7 @@ from concrete.compiler import Value as Value_
 from concrete.compiler import lookup_runtime_lib, set_compiler_logging, set_llvm_debug_flag
 from mlir.ir import Module as MlirModule
 
+from ..tfhers.specs import TFHERSClientSpecs
 from .composition import CompositionClause, CompositionRule
 from .configuration import (
     DEFAULT_GLOBAL_P_ERROR,
@@ -60,24 +61,27 @@ class Server:
     _mlir: Optional[str]
     _configuration: Optional[Configuration]
     _composition_rules: Optional[List[CompositionRule]]
+    _tfhers_specs: Optional[TFHERSClientSpecs]
 
     def __init__(
         self,
         library: Library,
         is_simulated: bool,
         composition_rules: Optional[List[CompositionRule]],
+        tfhers_specs: Optional[TFHERSClientSpecs] = None,
     ):
         self.is_simulated = is_simulated
         self._library = library
         self._mlir = None
         self._composition_rules = composition_rules
+        self._tfhers_specs = tfhers_specs
 
     @property
     def client_specs(self) -> ClientSpecs:
         """
         Return the associated client specs.
         """
-        return ClientSpecs(self._library.get_program_info())
+        return ClientSpecs(self._library.get_program_info(), tfhers_specs=self._tfhers_specs)
 
     @staticmethod
     def create(
@@ -86,6 +90,7 @@ class Server:
         is_simulated: bool = False,
         compilation_context: Optional[CompilationContext] = None,
         composition_rules: Optional[Iterable[CompositionRule]] = None,
+        tfhers_specs: Optional[TFHERSClientSpecs] = None,
     ) -> "Server":
         """
         Create a server using MLIR and output sign information.
@@ -105,6 +110,9 @@ class Server:
 
             composition_rules (Iterable[Tuple[str, int, str, int]]):
                 composition rules to be applied when compiling
+
+            tfhers_specs (Optional[TFHERSClientSpecs]):
+                TFHE-rs client specs
         """
 
         backend = Backend.GPU if configuration.use_gpu else Backend.CPU
@@ -220,7 +228,10 @@ class Server:
         composition_rules = composition_rules if composition_rules else None
 
         result = Server(
-            library=library, is_simulated=is_simulated, composition_rules=composition_rules
+            library=library,
+            is_simulated=is_simulated,
+            composition_rules=composition_rules,
+            tfhers_specs=tfhers_specs,
         )
 
         # pylint: disable=protected-access
@@ -332,6 +343,11 @@ class Server:
                     else None
                 )
 
+        tfhers_specs = None
+        if (output_dir_path / "client.specs.json").exists():
+            with open(output_dir_path / "client.specs.json", "rb") as f:
+                tfhers_specs = ClientSpecs.deserialize(f.read()).tfhers_specs
+
         if (output_dir_path / "circuit.mlir").exists():
             with open(output_dir_path / "circuit.mlir", "r", encoding="utf-8") as f:
                 mlir = f.read()
@@ -340,7 +356,11 @@ class Server:
                 configuration = Configuration().fork(**jsonpickle.loads(f.read())).fork(**kwargs)
 
             return Server.create(
-                mlir, configuration, is_simulated, composition_rules=composition_rules
+                mlir,
+                configuration,
+                is_simulated,
+                composition_rules=composition_rules,
+                tfhers_specs=tfhers_specs,
             )
 
         library = Library(str(output_dir_path))
@@ -349,6 +369,7 @@ class Server:
             library,
             is_simulated,
             composition_rules,
+            tfhers_specs=tfhers_specs,
         )
 
     def run(

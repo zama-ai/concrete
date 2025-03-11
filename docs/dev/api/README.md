@@ -71,6 +71,7 @@
 - [`concrete.fhe.tfhers`](./concrete.fhe.tfhers.md): tfhers module to represent, and compute on tfhers integer values.
 - [`concrete.fhe.tfhers.bridge`](./concrete.fhe.tfhers.bridge.md): Declaration of `tfhers.Bridge` class.
 - [`concrete.fhe.tfhers.dtypes`](./concrete.fhe.tfhers.dtypes.md): Declaration of `TFHERSIntegerType` class.
+- [`concrete.fhe.tfhers.specs`](./concrete.fhe.tfhers.specs.md): TFHE-rs client specs.
 - [`concrete.fhe.tfhers.tracing`](./concrete.fhe.tfhers.tracing.md): Tracing of tfhers operations.
 - [`concrete.fhe.tfhers.values`](./concrete.fhe.tfhers.values.md): Declaration of `TFHERSInteger` which wraps values as being of tfhers types.
 - [`concrete.fhe.tracing`](./concrete.fhe.tracing.md): Provide `function` to `computation graph` functionality.
@@ -167,10 +168,11 @@
 - [`graph.MultiGraphProcessor`](./concrete.fhe.representation.graph.md): MultiGraphProcessor base class, to define the API for a multiple graph processing pipeline.
 - [`node.Node`](./concrete.fhe.representation.node.md): Node class, to represent computation in a computation graph.
 - [`operation.Operation`](./concrete.fhe.representation.operation.md): Operation enum, to distinguish nodes within a computation graph.
-- [`bridge.Bridge`](./concrete.fhe.tfhers.bridge.md): TFHErs Bridge extend an Module with TFHErs functionalities.
+- [`bridge.Bridge`](./concrete.fhe.tfhers.bridge.md): TFHErs Bridge extend a Client with TFHErs functionalities.
 - [`dtypes.CryptoParams`](./concrete.fhe.tfhers.dtypes.md): Crypto parameters used for a tfhers integer.
 - [`dtypes.EncryptionKeyChoice`](./concrete.fhe.tfhers.dtypes.md): TFHErs key choice: big or small.
 - [`dtypes.TFHERSIntegerType`](./concrete.fhe.tfhers.dtypes.md) to represent tfhers integer types.
+- [`specs.TFHERSClientSpecs`](./concrete.fhe.tfhers.specs.md): TFHE-rs client specs.
 - [`values.TFHERSInteger`](./concrete.fhe.tfhers.values.md) into typed values, using tfhers types.
 - [`tracer.Annotation`](./concrete.fhe.tracing.tracer.md): Base annotation for direct definition.
 - [`tracer.ScalarAnnotation`](./concrete.fhe.tracing.tracer.md): Base scalar annotation for direct definition.
@@ -365,7 +367,7 @@
 - [`utils.format_indexing_element`](./concrete.fhe.representation.utils.md): Format an indexing element.
 - [`tfhers.get_type_from_params`](./concrete.fhe.tfhers.md): Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
 - [`tfhers.get_type_from_params_dict`](./concrete.fhe.tfhers.md): Get a TFHE-rs integer type from TFHE-rs parameters in JSON format.
-- [`bridge.new_bridge`](./concrete.fhe.tfhers.bridge.md): Create a TFHErs bridge from a circuit or module.
+- [`bridge.new_bridge`](./concrete.fhe.tfhers.bridge.md): Create a TFHErs bridge from a circuit or module or client.
 - [`tracing.from_native`](./concrete.fhe.tfhers.tracing.md): Convert a Concrete integer to the tfhers representation.
 - [`tracing.to_native`](./concrete.fhe.tfhers.tracing.md): Convert a tfhers integer to the Concrete representation.
 - [`scalar.clear_scalar_builder`](./concrete.fhe.values.scalar.md): Build a clear scalar value.

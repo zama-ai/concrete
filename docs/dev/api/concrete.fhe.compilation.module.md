@@ -9,12 +9,12 @@ Declaration of `FheModule` classes.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ExecutionRt`
 Runtime object class for execution. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -32,7 +32,7 @@ __init__(client, server, auto_schedule_run)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SimulationRt`
 Runtime object class for simulation. 
@@ -43,12 +43,12 @@ Runtime object class for simulation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FheFunction`
 Fhe function class, allowing to run or simulate one function of an fhe module. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -257,7 +257,7 @@ Get all statistics of the function.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decrypt`
 
@@ -281,7 +281,7 @@ Decrypt result(s) of evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `draw`
 
@@ -315,7 +315,7 @@ That this function requires the python `pygraphviz` package which itself require
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt`
 
@@ -339,7 +339,7 @@ Encrypt argument(s) to for evaluation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L355"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypt_run_decrypt`
 
@@ -361,7 +361,7 @@ Encrypt inputs, run the function, and decrypt the outputs in one go.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -385,7 +385,7 @@ Evaluate the function.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run_async`
 
@@ -409,7 +409,7 @@ Evaluate the function asynchronuously.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run_sync`
 
@@ -431,7 +431,7 @@ Evaluate the function synchronuously.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L176"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `simulate`
 
@@ -454,12 +454,12 @@ Simulate execution of the function.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L697"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FheModule`
 Fhe module class, to combine computation graphs, mlir, runtime objects into a single object. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L710"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -566,7 +566,7 @@ Get all statistics of the module.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L809"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L814"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `cleanup`
 
@@ -578,7 +578,7 @@ Cleanup the temporary library output directory.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L885"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `functions`
 
@@ -590,7 +590,7 @@ Return a dictionnary containing all the functions of the module.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L784"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/module.py#L789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen`
 

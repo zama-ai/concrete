@@ -51,7 +51,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L94"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encryption_variance`
 
@@ -69,15 +69,56 @@ This will return different values depending on the encryption key choice.
  
  - <b>`float`</b>:  encryption variance 
 
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `from_dict`
+
+```python
+from_dict(dict_obj: Dict[str, Any]) → CryptoParams
+```
+
+Create a CryptoParams instance from a dictionary. 
+
+
+
+**Args:**
+ 
+ - <b>`dict_obj`</b> (dict):  A dictionary containing the parameters. 
+
+
+
+**Returns:**
+ CryptoParams:  An instance of CryptoParams initialized with the values from the dictionary. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `to_dict`
+
+```python
+to_dict() → Dict[str, Any]
+```
+
+Convert the CryptoParams object to a dictionary representation. 
+
+
+
+**Returns:**
+ 
+ - <b>`Dict[str, Any]`</b>:  dictionary representation 
+
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TFHERSIntegerType`
 TFHERSIntegerType (Subclass of Integer) to represent tfhers integer types. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -100,7 +141,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L250"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decode`
 
@@ -130,7 +171,7 @@ Decode a tfhers-encoded integer (scalar or tensor).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encode`
 
@@ -157,5 +198,47 @@ Encode a scalar or tensor to tfhers integers.
 **Returns:**
  
  - <b>`np.ndarray`</b>:  encoded scalar or tensor 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `from_dict`
+
+```python
+from_dict(dict_obj) → TFHERSIntegerType
+```
+
+Create a TFHERSIntegerType instance from a dictionary. 
+
+
+
+**Args:**
+ 
+ - <b>`dict_obj`</b> (dict):  A dictionary representation of the object. 
+
+
+
+**Returns:**
+ 
+ - <b>`TFHERSIntegerType`</b>:  An instance of TFHERSIntegerType created from the dictionary. 
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/dtypes.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `to_dict`
+
+```python
+to_dict() → Dict[str, Any]
+```
+
+Convert the object to a dictionary representation. 
+
+
+
+**Returns:**
+ 
+ - <b>`Dict[str, Any]`</b>:  A dictionary containing the object's attributes 
 
 

@@ -9,17 +9,20 @@ Declaration of `ClientSpecs` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L15"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ClientSpecs`
 ClientSpecs class, to create Client objects. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(program_info: ProgramInfo)
+__init__(
+    program_info: ProgramInfo,
+    tfhers_specs: Optional[ForwardRef('TFHERSClientSpecs')] = None
+)
 ```
 
 
@@ -31,7 +34,7 @@ __init__(program_info: ProgramInfo)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
@@ -39,7 +42,7 @@ __init__(program_info: ProgramInfo)
 deserialize(serialized_client_specs: bytes) → ClientSpecs
 ```
 
-Create client specs from its string representation. 
+Create client specs from bytes. 
 
 
 
@@ -53,7 +56,7 @@ Create client specs from its string representation.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 
@@ -61,7 +64,7 @@ Create client specs from its string representation.
 serialize() → bytes
 ```
 
-Serialize client specs into a string representation. 
+Serialize client specs into bytes. 
 
 
 

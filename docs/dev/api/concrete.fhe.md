@@ -12,9 +12,9 @@ Concrete.
 - **values**
 - **representation**
 - **tracing**
-- **tfhers**
 - **mlir**
 - **extensions**
+- **tfhers**
 - **compilation**
 - **DEFAULT_GLOBAL_P_ERROR**
 - **DEFAULT_P_ERROR**

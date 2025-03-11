@@ -2,63 +2,72 @@
 Declaration of `tfhers.Bridge` class.
 """
 
-# pylint: disable=import-error,no-member,no-name-in-module
 from typing import Dict, List, Optional, Tuple, Union
 
+# pylint: disable=import-error,no-member,no-name-in-module
 from concrete.compiler import LweSecretKey, TfhersExporter, TfhersFheIntDescription
 
-import concrete.fhe as fhe
+from concrete import fhe
 from concrete.fhe.compilation.value import Value
 
 from .dtypes import EncryptionKeyChoice, TFHERSIntegerType
 
+# pylint: enable=import-error,no-member,no-name-in-module
+
 
 class Bridge:
-    """TFHErs Bridge extend an Module with TFHErs functionalities.
+    """TFHErs Bridge extend a Client with TFHErs functionalities.
 
-    input_types_per_func (Dict[str, List[Optional[TFHERSIntegerType]]]):
-        maps every input to a type for every function in the module. None means a non-tfhers type
-    output_types_per_func (Dict[str, List[Optional[TFHERSIntegerType]]]):
-        maps every output to a type for every function in the module. None means a non-tfhers type
-    input_shapes_per_func (Dict[str, List[Optional[Tuple[int, ...]]]]):
-        maps every input to a shape for every function in the module. None means a non-tfhers type
-    output_shapes_per_func (Dict[str, List[Optional[Tuple[int, ...]]]]):
-        maps every output to a shape for every function in the module. None means a non-tfhers type
+    client (fhe.Client): the client instance to be attached by the Bridge
+    tfhers_specs (fhe.tfhers.TFHERSClientSpecs): the TFHE-rs specs of the client
     """
 
-    module: "fhe.Module"
-    default_function: Optional[str]
-    input_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]]
-    output_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]]
-    input_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]]
-    output_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]]
+    client: "fhe.Client"
+    tfhers_specs: "fhe.tfhers.TFHERSClientSpecs"
+    _default_function: Optional[str]
 
     def __init__(
         self,
-        module: "fhe.Module",
-        input_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-        output_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-        input_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]],
-        output_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]],
+        client: "fhe.Client",
     ):
-        if module.function_count == 1:
-            self.default_function = next(iter(module.graphs.keys()))
+        assert client.specs.tfhers_specs is not None
+        self.tfhers_specs = client.specs.tfhers_specs
+
+        functions = client.specs.program_info.function_list()
+        if len(functions) == 1:
+            self._default_function = functions[0]
         else:
-            self.default_function = None
-        self.module = module
-        self.input_types_per_func = input_types_per_func
-        self.output_types_per_func = output_types_per_func
-        self.input_shapes_per_func = input_shapes_per_func
-        self.output_shapes_per_func = output_shapes_per_func
+            self._default_function = None
+        self.client = client
+
+    # The following properties are for backward compatibility with the previous implementation
+    @property
+    def input_types_per_func(self) -> Dict[str, List[Optional[TFHERSIntegerType]]]:
+        """Return the input types per function map."""
+        return self.tfhers_specs.input_types_per_func
+
+    @property
+    def input_shapes_per_func(self) -> Dict[str, List[Optional[Tuple[int, ...]]]]:
+        """Return the input shapes per function map."""
+        return self.tfhers_specs.input_shapes_per_func
+
+    @property
+    def output_types_per_func(self) -> Dict[str, List[Optional[TFHERSIntegerType]]]:
+        """Return the output types per function map."""
+        return self.tfhers_specs.output_types_per_func
+
+    @property
+    def output_shapes_per_func(self) -> Dict[str, List[Optional[Tuple[int, ...]]]]:
+        """Return the output shapes per function map."""
+        return self.tfhers_specs.output_shapes_per_func
 
     def _get_default_func_or_raise_error(self, calling_func: str) -> str:
-        if self.default_function is not None:
-            return self.default_function
-        else:
-            raise RuntimeError(
-                "Module contains more than one function, so please provide 'func_name' while "
-                f"calling '{calling_func}'"
-            )
+        if self._default_function is not None:
+            return self._default_function
+        raise RuntimeError(
+            "Module contains more than one function, so please provide 'func_name' while "
+            f"calling '{calling_func}'"
+        )
 
     def _input_type(self, func_name: str, input_idx: int) -> Optional[TFHERSIntegerType]:
         """Return the type of a certain input.
@@ -70,7 +79,7 @@ class Bridge:
         Returns:
             Optional[TFHERSIntegerType]: input type. None means a non-tfhers type
         """
-        return self.input_types_per_func[func_name][input_idx]
+        return self.tfhers_specs.input_types_per_func[func_name][input_idx]
 
     def _output_type(self, func_name: str, output_idx: int) -> Optional[TFHERSIntegerType]:
         """Return the type of a certain output.
@@ -82,7 +91,7 @@ class Bridge:
         Returns:
             Optional[TFHERSIntegerType]: output type. None means a non-tfhers type
         """
-        return self.output_types_per_func[func_name][output_idx]
+        return self.tfhers_specs.output_types_per_func[func_name][output_idx]
 
     def _input_shape(self, func_name: str, input_idx: int) -> Optional[Tuple[int, ...]]:
         """Return the shape of a certain input.
@@ -94,7 +103,7 @@ class Bridge:
         Returns:
             Optional[Tuple[int, ...]]: input shape. None means a non-tfhers type
         """
-        return self.input_shapes_per_func[func_name][input_idx]
+        return self.tfhers_specs.input_shapes_per_func[func_name][input_idx]
 
     def _output_shape(
         self, func_name: str, output_idx: int
@@ -108,10 +117,10 @@ class Bridge:
         Returns:
             Optional[Tuple[int, ...]]: output shape. None means a non-tfhers type
         """
-        return self.output_shapes_per_func[func_name][output_idx]
+        return self.tfhers_specs.output_shapes_per_func[func_name][output_idx]
 
     def _input_keyid(self, func_name: str, input_idx: int) -> int:
-        return self.module.client.specs.program_info.input_keyid_at(input_idx, func_name)
+        return self.client.specs.program_info.input_keyid_at(input_idx, func_name)
 
     def _input_variance(self, func_name: str, input_idx: int) -> float:
         input_type = self._input_type(func_name, input_idx)
@@ -218,7 +227,7 @@ class Bridge:
 
         keyid = self._input_keyid(func_name, input_idx)
         # pylint: disable=protected-access
-        keys = self.module.client.keys
+        keys = self.client.keys
         assert keys is not None
         secret_key = keys._keyset.get_client_keys().get_secret_keys()[keyid]  # type: ignore
         # pylint: enable=protected-access
@@ -256,9 +265,9 @@ class Bridge:
         for idx in input_idx_to_key_buffer:
             if isinstance(idx, tuple):
                 func_name, input_idx = idx
-            elif isinstance(idx, int) and self.default_function is not None:
+            elif isinstance(idx, int) and self._default_function is not None:
                 input_idx = idx
-                func_name = self.default_function
+                func_name = self._default_function
             else:
                 raise RuntimeError(
                     "Module contains more than one function, so please make sure to mention "
@@ -271,7 +280,7 @@ class Bridge:
                 continue
 
             key_buffer = input_idx_to_key_buffer[idx]
-            param = self.module.client.specs.program_info.get_keyset_info().secret_keys()[key_id]
+            param = self.client.specs.program_info.get_keyset_info().secret_keys()[key_id]
             try:
                 initial_keys[key_id] = LweSecretKey.deserialize(key_buffer, param)
             except Exception as e:  # pragma: no cover
@@ -281,65 +290,30 @@ class Bridge:
                 )
                 raise RuntimeError(msg) from e
 
-        self.module.keygen(
-            force=force,
-            seed=seed,
-            encryption_seed=encryption_seed,
-            initial_keys=initial_keys,
+        self.client.keygen(
+            force,
+            seed,
+            encryption_seed,
+            initial_keys,
         )
 
 
-def new_bridge(circuit_or_module: Union["fhe.Circuit", "fhe.Module"]) -> Bridge:
-    """Create a TFHErs bridge from a circuit or module.
+def new_bridge(
+    circuit_or_module_or_client: Union["fhe.Circuit", "fhe.Module", "fhe.Client"]
+) -> Bridge:
+    """Create a TFHErs bridge from a circuit or module or client.
 
     Args:
-        circuit (Union[Circuit, Module]): compiled circuit or module
+        client (Union["fhe.Circuit", "fhe.Module", "fhe.Client"]):
+            The client|circuit|module instance to be used by the Bridge.
 
     Returns:
-        Bridge: TFHErs bridge
+        Bridge: A new Bridge instance attached to the provided client.
     """
-    if isinstance(circuit_or_module, fhe.Module):
-        module = circuit_or_module
+    if isinstance(circuit_or_module_or_client, fhe.Circuit):
+        client = circuit_or_module_or_client.client
+    elif isinstance(circuit_or_module_or_client, fhe.Module):
+        client = circuit_or_module_or_client.client
     else:
-        assert isinstance(circuit_or_module, fhe.Circuit)
-        module = circuit_or_module._module
-
-    input_types_per_func = {}
-    output_types_per_func = {}
-    input_shapes_per_func = {}
-    output_shapes_per_func = {}
-
-    for func_name, graph in module.graphs.items():
-        input_types: List[Optional[TFHERSIntegerType]] = []
-        input_shapes: List[Optional[Tuple[int, ...]]] = []
-        for input_node in graph.ordered_inputs():
-            if isinstance(input_node.output.dtype, TFHERSIntegerType):
-                input_types.append(input_node.output.dtype)
-                input_shapes.append(input_node.output.shape)
-            else:
-                input_types.append(None)
-                input_shapes.append(None)
-
-        input_types_per_func[func_name] = input_types
-        input_shapes_per_func[func_name] = input_shapes
-
-        output_types: List[Optional[TFHERSIntegerType]] = []
-        output_shapes: List[Optional[Tuple[int, ...]]] = []
-        for output_node in graph.ordered_outputs():
-            if isinstance(output_node.output.dtype, TFHERSIntegerType):
-                output_types.append(output_node.output.dtype)
-                output_shapes.append(output_node.output.shape)
-            else:  # pragma: no cover
-                output_types.append(None)
-                output_shapes.append(None)
-
-        output_types_per_func[func_name] = output_types
-        output_shapes_per_func[func_name] = output_shapes
-
-    return Bridge(
-        module,
-        input_types_per_func,
-        output_types_per_func,
-        input_shapes_per_func,
-        output_shapes_per_func,
-    )
+        client = circuit_or_module_or_client
+    return Bridge(client)
