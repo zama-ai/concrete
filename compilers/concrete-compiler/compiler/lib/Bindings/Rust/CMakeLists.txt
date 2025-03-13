@@ -1,12 +1,22 @@
 add_compile_options(-fexceptions)
 
 add_custom_command(
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/lib.rs
-  OUTPUT concrete/src/lib.rs.h concrete/src/lib.rs.cc
-  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/lib.rs --header > concrete/src/lib.rs.h
-  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/lib.rs > concrete/src/lib.rs.cc)
+  DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/ffi.rs
+  ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/ffi.h
+  OUTPUT
+  concrete/src/ffi.rs.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/cxx.h
+  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/ffi.rs > concrete/src/ffi.rs.cc
+  COMMAND cxxbridge --header > ${CMAKE_CURRENT_SOURCE_DIR}/concrete/src/cxx.h
+)
 
-add_library(ConcreteRust SHARED concrete/src/lib.cpp concrete/src/lib.rs.cc)
+add_library(
+    ConcreteRust
+    SHARED
+    concrete/src/ffi.h
+    concrete/src/ffi.rs.cc
+)
 
 target_include_directories(ConcreteRust PRIVATE concrete/src)
 

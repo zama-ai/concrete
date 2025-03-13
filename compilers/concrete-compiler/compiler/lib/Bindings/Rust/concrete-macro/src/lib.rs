@@ -1,6 +1,6 @@
 #[allow(unused)]
 use quote::quote;
-use concrete::*;
+use concrete::{compiler, protocol::ProgramInfo};
 use configuration::Configuration;
 use proc_macro::{
     TokenStream, {self},
@@ -22,7 +22,6 @@ const DEFAULT_P_ERROR: Option<f64> = None;
 
 mod configuration;
 mod fast_path_hasher;
-mod protocol;
 mod unzip;
 mod unsafe_binding;
 
@@ -101,7 +100,7 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         let composition_rules: Vec<serde_json::Value> =
             serde_json::from_str(composition_rules_string.as_str()).expect("Failed to deserialize composition rules");
 
-        let mut opts = compilation_options_new();
+        let mut opts = compiler::compilation_options_new();
         opts.pin_mut()
             .set_display_optimizer_choice(conf.show_optimizer.unwrap_or(false));
         opts.pin_mut().set_loop_parallelize(conf.loop_parallelize);
@@ -198,7 +197,7 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
             );
         }
 
-        compile(
+        compiler::compile(
             mlir.as_str(),
             &opts,
             concrete_hash_dir.as_os_str().to_str().unwrap(),
@@ -216,12 +215,11 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
     if !concrete_program_info_path.exists() {
         panic!("Missing `program_info.concrete.params.json` file after compilation. Something is wrong. Delete target folder and re-compile.");
     }
-    let program_info: protocol::ProgramInfo = serde_json::from_reader(
+    let program_info: ProgramInfo = serde_json::from_reader(
         std::fs::File::open(concrete_program_info_path).unwrap(),
     )
     .unwrap();
 
-    let program_info_dbg = format!("{:?}", program_info);
     lock_file.unlock().unwrap();
 
     let lib_name = format!("concrete-artifact-{hash_val}");

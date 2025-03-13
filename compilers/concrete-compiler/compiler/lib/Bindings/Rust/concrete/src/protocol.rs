@@ -114,6 +114,117 @@ pub struct IntegerCiphertextEncodingInfo_Mode_CrtMode{
 #[derive(Debug, Deserialize)]
 pub struct BooleanCiphertextEncodingInfo{}
 
+#[derive(Debug, Deserialize)]
+pub enum KeyType{
+    binary = 0,
+    ternary = 1,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Modulus{
+    pub modulus: Modulus_enum
+}
+
+#[derive(Debug, Deserialize)]
+pub enum Modulus_enum{
+    native(NativeModulus),
+    powerOfTwo(PowerOfTwoModulus),
+    integer(IntegerModulus),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NativeModulus{}
+
+
+#[derive(Debug, Deserialize)]
+pub struct PowerOfTwoModulus{
+    pub power: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct IntegerModulus{
+    pub modulus: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LweSecretKeyInfo{
+    pub id: u32,
+    pub params: LweSecretKeyParams
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LweSecretKeyParams{
+    pub lweDimension: u32,
+    pub integerPrecision: u32,
+    pub keyType: KeyType
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LweKeyswitchKeyInfo{
+    pub id: u32,
+    pub inputId: u32,
+    pub outputId: u32,
+    pub params: LweKeyswitchKeyParams,
+    pub compression: Compression
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LweKeyswitchKeyParams{
+    pub levelCount: u32,
+    pub baseLog: u32,
+    pub variance: f64,
+    pub integerPrecision: u32,
+    pub inputLweDimension: u32,
+    pub outputLweDimension: u32,
+    pub modulus: Modulus,
+    pub keyType: KeyType
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PackingKeyswitchKeyInfo{
+    pub id: u32,
+    pub inputId: u32,
+    pub outputId: u32,
+    pub params: PackingKeyswitchKeyParams,
+    pub compression: Compression
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PackingKeyswitchKeyParams{
+    pub levelCount: u32,
+    pub baseLog: u32,
+    pub glweDimension: u32,
+    pub polynomialSize: u32,
+    pub inputLweDimension: u32,
+    pub innerLweDimension: u32,
+    pub variance: f64,
+    pub integerPrecision: u32,
+    pub modulus: Modulus,
+    pub keyType: KeyType
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LweBootstrapKeyInfo{
+    pub id: u32,
+    pub inputId: u32,
+    pub outputId: u32,
+    pub params: LweBootstrapKeyParams,
+    pub compression: Compression
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LweBootstrapKeyParams{
+    pub levelCount: u32,
+    pub baseLog: u32,
+    pub glweDimension: u32,
+    pub polynomialSize: u32,
+    pub inputLweDimension: u32,
+    pub variance: f64,
+    pub integerPrecision: u32,
+    pub modulus: Modulus,
+    pub keyType: KeyType
+}
+
 #[cfg(test)]
 mod test{
     use super::ProgramInfo;

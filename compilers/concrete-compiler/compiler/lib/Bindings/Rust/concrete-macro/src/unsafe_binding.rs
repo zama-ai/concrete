@@ -1,8 +1,8 @@
 // (void (*)(void *, ...))
 
+use concrete::protocol::ProgramInfo;
 use quote::{format_ident, quote};
 
-use crate::protocol::ProgramInfo;
 
 pub fn generate_unsafe_binding(pi: &ProgramInfo) -> proc_macro2::TokenStream {
     let func_defs = pi.circuits.iter().map(|circuit| {
