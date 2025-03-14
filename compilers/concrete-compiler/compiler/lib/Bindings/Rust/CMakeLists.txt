@@ -24,6 +24,7 @@ target_link_libraries(
   ConcreteRust
   PRIVATE ConcretelangSupport
           ConcretelangCommon
+          ConcretelangClientLib
           ConcretelangRuntimeStatic
           LLVMSupport
           capnp

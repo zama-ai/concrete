@@ -100,7 +100,7 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         let composition_rules: Vec<serde_json::Value> =
             serde_json::from_str(composition_rules_string.as_str()).expect("Failed to deserialize composition rules");
 
-        let mut opts = compiler::compilation_options_new();
+        let mut opts = compiler::_compilation_options_new();
         opts.pin_mut()
             .set_display_optimizer_choice(conf.show_optimizer.unwrap_or(false));
         opts.pin_mut().set_loop_parallelize(conf.loop_parallelize);

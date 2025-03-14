@@ -1,59 +1,59 @@
 #![allow(non_camel_case_types, non_snake_case, unused)]
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ProgramInfo{
+    pub keyset: KeysetInfo,
     pub circuits: Vec<CircuitInfo>
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CircuitInfo{
     pub inputs: Vec<GateInfo>,
     pub outputs: Vec<GateInfo>,
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct GateInfo{
     pub rawInfo: RawInfo,
     pub typeInfo: TypeInfo
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct RawInfo{
     pub shape: Shape,
     pub integerPrecision: u32,
     pub isSigned: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Shape{
     pub dimensions: Vec<u32>
 }
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum TypeInfo{
     lweCiphertext(LweCiphertextTypeInfo),
     plaintext(PlaintextTypeInfo),
     index(IndexTypeInfo)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PlaintextTypeInfo{
     pub shape: Shape,
     pub integerPrecision: u32,
     pub isSigned: bool
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IndexTypeInfo{
     pub shape: Shape,
     pub integerPrecision: u32,
     pub isSigned: bool
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweCiphertextTypeInfo{
     pub abstractShape: Shape,
     pub concreteShape: Shape,
@@ -63,103 +63,102 @@ pub struct LweCiphertextTypeInfo{
     pub encoding: LweCiphretextTypeInfo_Encoding
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweCiphertextEncryptionInfo{
     pub keyId: u32,
     pub variance: f64,
     pub lweDimension: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum Compression {
     none,
     seed,
     paillier
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum LweCiphretextTypeInfo_Encoding{
     integer(IntegerCiphertextEncodingInfo),
     boolean(BooleanCiphertextEncodingInfo)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo{
     pub width: u32,
     pub isSigned: bool,
     pub mode: IntegerCiphertextEncodingInfo_Mode
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum IntegerCiphertextEncodingInfo_Mode{
     native(IntegerCiphertextEncodingInfo_Mode_NativeMode),
     chunked(IntegerCiphertextEncodingInfo_Mode_ChunkedMode),
     crt(IntegerCiphertextEncodingInfo_Mode_CrtMode),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_NativeMode{}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_ChunkedMode{
     pub size: u32,
     pub width: u32
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_CrtMode{
     pub moduli: Vec<u32>
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BooleanCiphertextEncodingInfo{}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum KeyType{
     binary = 0,
     ternary = 1,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Modulus{
     pub modulus: Modulus_enum
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum Modulus_enum{
     native(NativeModulus),
     powerOfTwo(PowerOfTwoModulus),
     integer(IntegerModulus),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct NativeModulus{}
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PowerOfTwoModulus{
     pub power: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IntegerModulus{
     pub modulus: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweSecretKeyInfo{
     pub id: u32,
     pub params: LweSecretKeyParams
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweSecretKeyParams{
     pub lweDimension: u32,
     pub integerPrecision: u32,
     pub keyType: KeyType
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweKeyswitchKeyInfo{
     pub id: u32,
     pub inputId: u32,
@@ -168,7 +167,7 @@ pub struct LweKeyswitchKeyInfo{
     pub compression: Compression
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweKeyswitchKeyParams{
     pub levelCount: u32,
     pub baseLog: u32,
@@ -180,7 +179,7 @@ pub struct LweKeyswitchKeyParams{
     pub keyType: KeyType
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PackingKeyswitchKeyInfo{
     pub id: u32,
     pub inputId: u32,
@@ -189,7 +188,7 @@ pub struct PackingKeyswitchKeyInfo{
     pub compression: Compression
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PackingKeyswitchKeyParams{
     pub levelCount: u32,
     pub baseLog: u32,
@@ -203,7 +202,7 @@ pub struct PackingKeyswitchKeyParams{
     pub keyType: KeyType
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweBootstrapKeyInfo{
     pub id: u32,
     pub inputId: u32,
@@ -212,7 +211,7 @@ pub struct LweBootstrapKeyInfo{
     pub compression: Compression
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LweBootstrapKeyParams{
     pub levelCount: u32,
     pub baseLog: u32,
@@ -223,6 +222,14 @@ pub struct LweBootstrapKeyParams{
     pub integerPrecision: u32,
     pub modulus: Modulus,
     pub keyType: KeyType
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct KeysetInfo{
+    pub lweSecretKeys: Vec<LweSecretKeyInfo>,
+    pub lweBootstrapKeys: Vec<LweBootstrapKeyInfo>,
+    pub lweKeyswitchKeys: Vec<LweKeyswitchKeyInfo>,
+    pub packingKeyswitchKeys: Vec<PackingKeyswitchKeyInfo>
 }
 
 #[cfg(test)]
