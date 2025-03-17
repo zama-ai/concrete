@@ -13,12 +13,12 @@ Declaration of `Server` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Server`
 Server class, which can be used to perform homomorphic computation. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -26,7 +26,8 @@ Server class, which can be used to perform homomorphic computation.
 __init__(
     library: Library,
     is_simulated: bool,
-    composition_rules: Optional[List[CompositionRule]]
+    composition_rules: Optional[List[CompositionRule]],
+    tfhers_specs: Optional[TFHERSClientSpecs] = None
 )
 ```
 
@@ -87,7 +88,7 @@ Get size of the secret keys of the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L448"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L469"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `cleanup`
 
@@ -99,7 +100,7 @@ Cleanup the temporary library output directory.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L669"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L690"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count`
 
@@ -111,7 +112,7 @@ Get the number of clear additions in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L678"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L699"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count_per_parameter`
 
@@ -125,7 +126,7 @@ Get the number of clear additions per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L689"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L710"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count_per_tag`
 
@@ -137,7 +138,7 @@ Get the number of clear additions per tag in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L719"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count_per_tag_per_parameter`
 
@@ -151,7 +152,7 @@ Get the number of clear additions per tag per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L757"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L778"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count`
 
@@ -163,7 +164,7 @@ Get the number of clear multiplications in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L766"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L787"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count_per_parameter`
 
@@ -177,7 +178,7 @@ Get the number of clear multiplications per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L777"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L798"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count_per_tag`
 
@@ -189,7 +190,7 @@ Get the number of clear multiplications per tag in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L807"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count_per_tag_per_parameter`
 
@@ -203,7 +204,7 @@ Get the number of clear multiplications per tag per parameter in the compiled pr
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `create`
 
@@ -213,7 +214,8 @@ create(
     configuration: Configuration,
     is_simulated: bool = False,
     compilation_context: Optional[CompilationContext] = None,
-    composition_rules: Optional[Iterable[CompositionRule]] = None
+    composition_rules: Optional[Iterable[CompositionRule]] = None,
+    tfhers_specs: Optional[TFHERSClientSpecs] = None
 ) → Server
 ```
 
@@ -232,9 +234,11 @@ Create a server using MLIR and output sign information.
 
  composition_rules (Iterable[Tuple[str, int, str, int]]):  composition rules to be applied when compiling 
 
+ tfhers_specs (Optional[TFHERSClientSpecs]):  TFHE-rs client specs 
+
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L713"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L734"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count`
 
@@ -246,7 +250,7 @@ Get the number of encrypted additions in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L743"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count_per_parameter`
 
@@ -260,7 +264,7 @@ Get the number of encrypted additions per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L733"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count_per_tag`
 
@@ -272,7 +276,7 @@ Get the number of encrypted additions per tag in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L742"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L763"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count_per_tag_per_parameter`
 
@@ -286,7 +290,7 @@ Get the number of encrypted additions per tag per parameter in the compiled prog
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L801"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L822"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count`
 
@@ -298,7 +302,7 @@ Get the number of encrypted negations in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L810"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L831"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count_per_parameter`
 
@@ -312,7 +316,7 @@ Get the number of encrypted negations per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L821"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L842"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count_per_tag`
 
@@ -324,7 +328,7 @@ Get the number of encrypted negations per tag in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L830"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L851"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count_per_tag_per_parameter`
 
@@ -338,7 +342,7 @@ Get the number of encrypted negations per tag per parameter in the compiled prog
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L602"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count`
 
@@ -350,7 +354,7 @@ Get the number of key switches in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L590"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L611"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count_per_parameter`
 
@@ -364,7 +368,7 @@ Get the number of key switches per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L622"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count_per_tag`
 
@@ -376,7 +380,7 @@ Get the number of key switches per tag in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L610"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L631"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count_per_tag_per_parameter`
 
@@ -390,7 +394,7 @@ Get the number of key switches per tag per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L291"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L302"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -414,7 +418,7 @@ Load the server from the given path in zip format.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L505"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L526"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `memory_usage_per_location`
 
@@ -426,7 +430,7 @@ Get the memory usage of operations per location.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L646"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count`
 
@@ -438,7 +442,7 @@ Get the number of packing key switches in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L634"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L655"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count_per_parameter`
 
@@ -452,7 +456,7 @@ Get the number of packing key switches per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L645"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L666"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count_per_tag`
 
@@ -464,7 +468,7 @@ Get the number of packing key switches per tag in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L654"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L675"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count_per_tag_per_parameter`
 
@@ -478,7 +482,7 @@ Get the number of packing key switches per tag per parameter in the compiled pro
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L537"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count`
 
@@ -490,7 +494,7 @@ Get the number of programmable bootstraps in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L546"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L567"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count_per_parameter`
 
@@ -504,7 +508,7 @@ Get the number of programmable bootstraps per parameter in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L557"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L578"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count_per_tag`
 
@@ -516,7 +520,7 @@ Get the number of programmable bootstraps per tag in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L566"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L587"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count_per_tag_per_parameter`
 
@@ -530,7 +534,7 @@ Get the number of programmable bootstraps per tag per parameter in the compiled 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -560,7 +564,7 @@ Evaluate.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
@@ -579,7 +583,7 @@ Save the server into the given path in zip format.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L536"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `size_of_inputs`
 
@@ -591,7 +595,7 @@ Get size of the inputs of the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L525"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L546"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `size_of_outputs`
 

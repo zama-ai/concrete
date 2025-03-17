@@ -57,7 +57,7 @@ def is_input_and_output_tfhers(
     tfhers_outs: List[int],
 ) -> bool:
     """Check if inputs and outputs description match tfhers parameters"""
-    params = json.loads(circuit.client.specs.serialize())
+    params = json.loads(circuit.client.specs.program_info.serialize())
     main_circuit = params["circuits"][0]
     # check all encrypted input/output have the correct lwe_dim
     ins = main_circuit["inputs"]
@@ -387,6 +387,129 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
         encryption_key_choice=tfhers.EncryptionKeyChoice.BIG,
     ),
 )
+
+
+@pytest.mark.parametrize(
+    "function, parameters, dtype",
+    [
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted"},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="x + y",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [-(2**6), -2], "status": "encrypted"},
+                "y": {"range": [0, 2**6 - 1], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(x) + signed(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2,)},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2,)},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="tensor(x) + tensor(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (3, 2)},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (3, 2)},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="tensor_2d(x) + tensor_2d(y)",
+        ),
+        pytest.param(
+            lambda x, y: x + y,
+            {
+                "x": {"range": [-(2**6), -2], "status": "encrypted", "shape": (3,)},
+                "y": {"range": [0, 2**6 - 1], "status": "encrypted", "shape": (3,)},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="tensor_signed(x) + tensor_signed(y)",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [0, 2**3 - 1], "status": "encrypted"},
+                "y": {"range": [0, 2**3 - 1], "status": "encrypted"},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="x * y",
+        ),
+        pytest.param(
+            lambda x, y: x * y,
+            {
+                "x": {"range": [-(2**3), 2**2], "status": "encrypted"},
+                "y": {"range": [-(2**2), 2**3], "status": "encrypted"},
+            },
+            TFHERS_INT_8_3_2_4096,
+            id="signed(x) * signed(y)",
+        ),
+        pytest.param(
+            lut_add_lut,
+            {
+                "x": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2, 2)},
+                "y": {"range": [0, 2**7 - 1], "status": "encrypted", "shape": (2, 2)},
+            },
+            TFHERS_UINT_8_3_2_4096,
+            id="tensor_lut_add_lut",
+        ),
+    ],
+)
+def test_tfhers_client_specs(function, parameters, dtype: tfhers.TFHERSIntegerType, helpers):
+    """
+    Test different operations wrapped by tfhers conversion (2 tfhers inputs).
+
+    Encryption/decryption are done in Rust using TFHErs, while Keygen is done in Concrete.
+    """
+
+    parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
+
+    # Only valid when running in multi
+    if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
+        return
+
+    compiler = fhe.Compiler(
+        lambda x, y: binary_tfhers(x, y, function, dtype),
+        parameter_encryption_statuses,
+    )
+
+    inputset = [
+        tuple(tfhers.TFHERSInteger(dtype, arg) for arg in inpt)
+        for inpt in helpers.generate_inputset(parameters)
+    ]
+    circuit = compiler.compile(inputset, helpers.configuration())
+
+    assert is_input_and_output_tfhers(
+        circuit,
+        dtype.params.polynomial_size,
+        [0, 1],
+        [
+            0,
+        ],
+    )
+
+    client = circuit.client
+    tfhers_bridge = tfhers.new_bridge(client)
+    assert tfhers_bridge.tfhers_specs == client.specs.tfhers_specs
+    assert (
+        tfhers.TFHERSClientSpecs.from_dict(client.specs.tfhers_specs.to_dict())
+        == client.specs.tfhers_specs
+    )
+    assert tfhers_bridge.input_types_per_func == client.specs.tfhers_specs.input_types_per_func
+    assert tfhers_bridge.output_types_per_func == client.specs.tfhers_specs.output_types_per_func
+    assert tfhers_bridge.input_shapes_per_func == client.specs.tfhers_specs.input_shapes_per_func
+    assert tfhers_bridge.output_shapes_per_func == client.specs.tfhers_specs.output_shapes_per_func
 
 
 @pytest.mark.parametrize(
