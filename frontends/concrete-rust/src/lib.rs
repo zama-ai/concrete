@@ -22,6 +22,7 @@
 //!
 //! # Macros
 //! - `build_key`: A macro for building a Cap'n Proto message for a key with the specified key information and builder type.
+use std::collections::HashSet;
 use std::u128;
 
 use tfhe::core_crypto::commons::math::random::CompressionSeed;
@@ -447,13 +448,15 @@ fn build_pksk(
 /// Generates a Cap'n Proto message containing the keyset based on the provided keyset information and seeds.
 ///
 /// The function generates secret keys, bootstrap keys, keyswitch keys, and packing keyswitch keys based on the keyset information.
-/// It uses initial secret keys instead of generating them if they are provided.
+/// It uses initial secret keys instead of generating them if they are provided. Bootstrap keys can be ignored in bulk or individually.
 ///
 /// # Arguments
 ///
 /// * `info`: The keyset information.
 /// * `secret_seed`: The seed for the secret random generator.
 /// * `enc_seed`: The seed for the encryption random generator.
+/// * `no_bsk`: A flag indicating to not generate bootstrap keys.
+/// * `ignore_bsk`: A list of bootstrap key IDs to ignore.
 /// * `init_lwe_secret_keys`: A map of initial secret keys to use instead of generating them.
 ///
 /// # Returns
@@ -462,6 +465,8 @@ fn generate_keyset_message(
     info: keyset_info::Reader,
     secret_seed: u128,
     enc_seed: u128,
+    no_bsk: bool,
+    ignore_bsk: Vec<u32>,
     init_lwe_secret_keys: &mut std::collections::HashMap<u32, lwe_secret_key::Reader>,
 ) -> capnp::message::Builder<HeapAllocator> {
     let mut builder = capnp::message::Builder::new_default();
@@ -509,26 +514,42 @@ fn generate_keyset_message(
     }
 
     let mut server_keyset = keyset_builder.init_server();
-    server_keyset
-        .reborrow()
-        .init_lwe_bootstrap_keys(info.get_lwe_bootstrap_keys().unwrap().len());
+    // Generate bootstrap keys
+    if !no_bsk {
+        let ignore_bsk_set: HashSet<&u32> = HashSet::from_iter(ignore_bsk.iter());
+        let ignore_count: u32 = if ignore_bsk_set.is_empty() {
+            0
+        } else {
+            // we need to count the keys that are gonna be ignored as the list might have invalid IDs
+            let mut ignore_count = 0u32;
+            for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
+                if ignore_bsk_set.contains(&bsk_info.get_id()) {
+                    ignore_count += 1;
+                }
+            }
+            ignore_count
+        };
+        server_keyset
+            .reborrow()
+            .init_lwe_bootstrap_keys(info.get_lwe_bootstrap_keys().unwrap().len() - ignore_count);
+        for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
+            if ignore_bsk_set.contains(&bsk_info.get_id()) {
+                continue;
+            }
+            let bsk_builder =
+                build_bsk(bsk_info, &generated_secret_keys, &mut enc_random_generator);
+            server_keyset
+                .reborrow()
+                .get_lwe_bootstrap_keys()
+                .unwrap()
+                .set_with_caveats(bsk_info.get_id(), bsk_builder.get_root_as_reader().unwrap())
+                .unwrap();
+        }
+    }
+    // Generate keyswitch keys
     server_keyset
         .reborrow()
         .init_lwe_keyswitch_keys(info.get_lwe_keyswitch_keys().unwrap().len());
-    server_keyset
-        .reborrow()
-        .init_packing_keyswitch_keys(info.get_packing_keyswitch_keys().unwrap().len());
-    // Generate bootstrap keys
-    for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
-        let bsk_builder = build_bsk(bsk_info, &generated_secret_keys, &mut enc_random_generator);
-        server_keyset
-            .reborrow()
-            .get_lwe_bootstrap_keys()
-            .unwrap()
-            .set_with_caveats(bsk_info.get_id(), bsk_builder.get_root_as_reader().unwrap())
-            .unwrap();
-    }
-    // Generate keyswitch keys
     for ksk_info in info.get_lwe_keyswitch_keys().unwrap().iter() {
         let ksk_builder = build_ksk(ksk_info, &generated_secret_keys, &mut enc_random_generator);
         server_keyset
@@ -539,6 +560,9 @@ fn generate_keyset_message(
             .unwrap();
     }
     // Generate packing keyswitch keys
+    server_keyset
+        .reborrow()
+        .init_packing_keyswitch_keys(info.get_packing_keyswitch_keys().unwrap().len());
     for pksk_info in info.get_packing_keyswitch_keys().unwrap().iter() {
         let pksk_builder = build_pksk(pksk_info, &generated_secret_keys, &mut enc_random_generator);
         server_keyset
@@ -558,13 +582,15 @@ fn generate_keyset_message(
 /// Generate a Concrete keyset based on the provided keyset information and seeds.
 ///
 /// The function generates secret keys, bootstrap keys, keyswitch keys, and packing keyswitch keys based on the keyset information.
-/// It uses initial secret keys instead of generating them if they are provided.
+/// It uses initial secret keys instead of generating them if they are provided. Bootstrap keys can be ignored in bulk or individually.
 ///
 /// # Arguments
 ///
 /// * `keyset_info_buffer`: The serialized keyset information.
 /// * `secret_seed`: The seed for the secret random generator.
 /// * `enc_seed`: The seed for the encryption random generator.
+/// * `no_bsk`: A flag indicating to not generate bootstrap keys.
+/// * `ignore_bsk`: A list of bootstrap key IDs to ignore.
 /// * `init_secret_keys`: A map of initial secret keys to use instead of generating them.
 /// # Returns
 /// A serialized keyset.
@@ -572,6 +598,8 @@ pub fn generate_keyset(
     mut keyset_info_buffer: &[u8],
     secret_seed: u128,
     enc_seed: u128,
+    no_bsk: bool,
+    ignore_bsk: Vec<u32>,
     init_secret_keys: &std::collections::HashMap<u32, capnp::message::Reader<OwnedSegments>>,
 ) -> Vec<u8> {
     let reader =
@@ -587,6 +615,8 @@ pub fn generate_keyset(
         key_set_info,
         secret_seed as u128,
         enc_seed as u128,
+        no_bsk,
+        ignore_bsk,
         &mut init_lwe_secret_keys,
     );
     serialize::write_message_to_words(&builder)
@@ -599,6 +629,8 @@ pub fn generate_keyset(
 /// # Arguments
 ///
 /// * `keyset_info_buffer`: The serialized keyset information.
+/// * `no_bsk`: A flag indicating to not generate bootstrap keys.
+/// * `ignore_bsk`: A list of bootstrap key IDs to ignore.
 /// * `secret_seed_lsb`: The seed for the secret random generator (lsb part).
 /// * `secret_seed_msb`: The seed for the secret random generator (msb part).
 /// * `enc_seed_lsb`: The seed for the encryption random generator (lsb part).
@@ -609,6 +641,8 @@ pub fn generate_keyset(
 #[wasm_bindgen]
 pub fn generate_keyset_wasm(
     keyset_info_buffer: &[u8],
+    no_bsk: bool,
+    ignore_bsk: Vec<u32>,
     secret_seed_lsb: u64,
     secret_seed_msb: u64,
     enc_seed_lsb: u64,
@@ -620,6 +654,8 @@ pub fn generate_keyset_wasm(
         keyset_info_buffer,
         secret_seed,
         enc_seed,
+        no_bsk,
+        ignore_bsk,
         // TODO: support init secret keys
         &mut std::collections::HashMap::new(),
     )
