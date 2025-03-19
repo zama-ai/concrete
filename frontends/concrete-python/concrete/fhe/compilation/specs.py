@@ -12,6 +12,8 @@ from concrete.compiler import ProgramInfo
 # pylint: enable=import-error,no-member,no-name-in-module
 from concrete import fhe
 
+TFHERS_SPECS_KEY = "tfhers_specs"
+
 
 class ClientSpecs:
     """
@@ -45,7 +47,7 @@ class ClientSpecs:
         """
         program_info = json.loads(self.program_info.serialize())
         if self.tfhers_specs is not None:
-            program_info["tfhers_specs"] = self.tfhers_specs.to_dict()
+            program_info[TFHERS_SPECS_KEY] = self.tfhers_specs.to_dict()
         return json.dumps(program_info).encode("utf-8")
 
     @staticmethod
@@ -62,11 +64,11 @@ class ClientSpecs:
                 deserialized client specs
         """
         program_info_dict = json.loads(serialized_client_specs)
-        tfhers_specs_dict = program_info_dict.get("tfhers_specs", None)
+        tfhers_specs_dict = program_info_dict.get(TFHERS_SPECS_KEY, None)
 
         if tfhers_specs_dict is not None:
-            del program_info_dict["tfhers_specs"]
             tfhers_specs = fhe.tfhers.TFHERSClientSpecs.from_dict(tfhers_specs_dict)
+            del program_info_dict[TFHERS_SPECS_KEY]
         else:
             tfhers_specs = None
 

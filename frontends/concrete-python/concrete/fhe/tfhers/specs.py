@@ -133,9 +133,17 @@ class TFHERSClientSpecs:
             func: [TFHERSIntegerType.from_dict(t) if t is not None else None for t in types]
             for func, types in dict_obj["output_types_per_func"].items()
         }
+        input_shapes_per_func = {
+            func: [tuple(shape) if shape is not None else None for shape in shapes]
+            for func, shapes in dict_obj["input_shapes_per_func"].items()
+        }
+        output_shapes_per_func = {
+            func: [tuple(shape) if shape is not None else None for shape in shapes]
+            for func, shapes in dict_obj["output_shapes_per_func"].items()
+        }
         return TFHERSClientSpecs(
             input_types_per_func,
             output_types_per_func,
-            dict_obj["input_shapes_per_func"],
-            dict_obj["output_shapes_per_func"],
+            input_shapes_per_func,
+            output_shapes_per_func,
         )

@@ -468,9 +468,7 @@ TFHERS_INT_8_3_2_4096 = tfhers.TFHERSIntegerType(
 )
 def test_tfhers_client_specs(function, parameters, dtype: tfhers.TFHERSIntegerType, helpers):
     """
-    Test different operations wrapped by tfhers conversion (2 tfhers inputs).
-
-    Encryption/decryption are done in Rust using TFHErs, while Keygen is done in Concrete.
+    Test the embedding of TFHE-rs spec into the Client.
     """
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
@@ -479,13 +477,23 @@ def test_tfhers_client_specs(function, parameters, dtype: tfhers.TFHERSIntegerTy
     if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
         return
 
+    binary_tfhers_inputs = np.random.choice([True, False])
+    wrapper_func = binary_tfhers if binary_tfhers_inputs else one_tfhers_one_native
+
     compiler = fhe.Compiler(
-        lambda x, y: binary_tfhers(x, y, function, dtype),
+        lambda x, y: wrapper_func(x, y, function, dtype),
         parameter_encryption_statuses,
     )
 
     inputset = [
-        tuple(tfhers.TFHERSInteger(dtype, arg) for arg in inpt)
+        (
+            tuple(tfhers.TFHERSInteger(dtype, arg) for arg in inpt)
+            if binary_tfhers_inputs
+            else (
+                tfhers.TFHERSInteger(dtype, inpt[0]),
+                inpt[1],
+            )
+        )
         for inpt in helpers.generate_inputset(parameters)
     ]
     circuit = compiler.compile(inputset, helpers.configuration())
@@ -493,15 +501,30 @@ def test_tfhers_client_specs(function, parameters, dtype: tfhers.TFHERSIntegerTy
     assert is_input_and_output_tfhers(
         circuit,
         dtype.params.polynomial_size,
-        [0, 1],
+        [0, 1] if binary_tfhers_inputs else [0],
         [
             0,
         ],
     )
 
-    client = circuit.client
+    # save and load server
+    via_mlir = np.random.choice([True, False])
+    _, server_path = tempfile.mkstemp(suffix=".zip")
+    circuit.server.save(server_path, via_mlir=via_mlir)
+    server = fhe.Server.load(server_path)
+    os.remove(server_path)
+    assert isinstance(server.client_specs.tfhers_specs, tfhers.TFHERSClientSpecs)
+
+    # save and load client
+    _, client_path = tempfile.mkstemp(suffix=".zip")
+    circuit.client.save(client_path)
+    client = fhe.Client.load(client_path)
+    os.remove(client_path)
+    assert isinstance(client.specs.tfhers_specs, tfhers.TFHERSClientSpecs)
+
     tfhers_bridge = tfhers.new_bridge(client)
     assert tfhers_bridge.tfhers_specs == client.specs.tfhers_specs
+    assert tfhers_bridge.tfhers_specs == circuit.client.specs.tfhers_specs
     assert (
         tfhers.TFHERSClientSpecs.from_dict(client.specs.tfhers_specs.to_dict())
         == client.specs.tfhers_specs
