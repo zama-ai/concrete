@@ -9,7 +9,6 @@
 #include "concrete-protocol.capnp.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Protocol.h"
-#include <_types/_uint8_t.h>
 #include <cstddef>
 #include <cstdint>
 #include <stdlib.h>

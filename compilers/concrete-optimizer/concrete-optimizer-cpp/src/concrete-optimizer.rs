@@ -977,30 +977,33 @@ impl Into<Encoding> for ffi::Encoding {
 
 impl ffi::RangeRestriction {
     fn range_restriction_to_json(&self) -> String {
-        unsafe{
-        serde_json::to_string(
-            std::mem::transmute::<&Self, &RangeRestriction>(self)).unwrap()
+        unsafe {
+            serde_json::to_string(std::mem::transmute::<&Self, &RangeRestriction>(self)).unwrap()
         }
     }
 }
 
 fn range_restriction_from_json(input: &str) -> ffi::RangeRestriction {
-    unsafe{
-    std::mem::transmute::<RangeRestriction, ffi::RangeRestriction>(serde_json::from_str(input).unwrap())
+    unsafe {
+        std::mem::transmute::<RangeRestriction, ffi::RangeRestriction>(
+            serde_json::from_str(input).unwrap(),
+        )
     }
 }
 
 impl ffi::KeysetRestriction {
     fn keyset_restriction_to_json(&self) -> String {
-        unsafe{
-        serde_json::to_string(std::mem::transmute::<&Self, &KeysetRestriction>(self)).unwrap()
+        unsafe {
+            serde_json::to_string(std::mem::transmute::<&Self, &KeysetRestriction>(self)).unwrap()
         }
     }
 }
 
 fn keyset_restriction_from_json(input: &str) -> ffi::KeysetRestriction {
-    unsafe{
-    std::mem::transmute::<KeysetRestriction, ffi::KeysetRestriction>(serde_json::from_str(input).unwrap())
+    unsafe {
+        std::mem::transmute::<KeysetRestriction, ffi::KeysetRestriction>(
+            serde_json::from_str(input).unwrap(),
+        )
     }
 }
 

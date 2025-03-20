@@ -107,7 +107,6 @@ public:
   /// Returns a reference to the named client circuit if it exists.
   Result<ClientCircuit> getClientCircuit(std::string circuitName) const;
 
-
 private:
   ClientProgram() = default;
 

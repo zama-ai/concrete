@@ -18,12 +18,9 @@
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/V0Parameters.h"
 #include "cxx.h"
-#include <_types/_uint64_t.h>
-#include <_types/_uint8_t.h>
 #include <cstddef>
 #include <memory>
 #include <ostream>
-#include <sys/_types/_int64_t.h>
 #include <vector>
 
 using mlir::concretelang::CompilationContext;

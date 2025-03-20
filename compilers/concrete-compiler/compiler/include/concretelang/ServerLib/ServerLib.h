@@ -46,14 +46,14 @@ class ServerCircuit {
   friend class ServerProgram;
 
 public:
-   static Result<ServerCircuit>
-   fromFnPtr(const Message<concreteprotocol::CircuitInfo> &circuitInfo,
-             void (*func)(void *...),
-             bool useSimulation);
+  static Result<ServerCircuit>
+  fromFnPtr(const Message<concreteprotocol::CircuitInfo> &circuitInfo,
+            void (*func)(void *...), bool useSimulation);
 
   /// Call the circuit with public arguments.
-  Result<std::vector<TransportValue>> call(const ServerKeyset &serverKeyset,
-                                           const std::vector<TransportValue> &args);
+  Result<std::vector<TransportValue>>
+  call(const ServerKeyset &serverKeyset,
+       const std::vector<TransportValue> &args);
 
   /// Simulate the circuit with public arguments.
   Result<std::vector<TransportValue>>
@@ -69,8 +69,6 @@ private:
   fromDynamicModule(const Message<concreteprotocol::CircuitInfo> &circuitInfo,
                     std::shared_ptr<DynamicModule> dynamicModule,
                     bool useSimulation);
-
-
 
   void invoke(const ServerKeyset &serverKeyset);
 

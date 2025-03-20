@@ -323,7 +323,8 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
           "Create a RangeRestriction from a json string.")
       .def(
           "to_json",
-          [](concrete_optimizer::restriction::RangeRestriction &restriction) -> std::string{
+          [](concrete_optimizer::restriction::RangeRestriction &restriction)
+              -> std::string {
             return std::string(restriction.range_restriction_to_json());
           },
           "Serialize a RangeRestriction to a json string.")
@@ -335,20 +336,21 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
   // ------------------------------------------------------------------------------//
   pybind11::class_<concrete_optimizer::restriction::KeysetRestriction>(
       m, "KeysetRestriction")
-        .def(
-            "from_json",
-            [](std::string input)
-                -> concrete_optimizer::restriction::KeysetRestriction {
-              return concrete_optimizer::restriction::keyset_restriction_from_json(
-                  input);
-            },
-            "Create a KeysetRestriction from a json string.")
-        .def(
-            "to_json",
-            [](concrete_optimizer::restriction::KeysetRestriction &restriction) -> std::string{
-              return std::string(restriction.keyset_restriction_to_json());
-            },
-            "Serialize a KeysetRestriction to a json string.")
+      .def(
+          "from_json",
+          [](std::string input)
+              -> concrete_optimizer::restriction::KeysetRestriction {
+            return concrete_optimizer::restriction::
+                keyset_restriction_from_json(input);
+          },
+          "Create a KeysetRestriction from a json string.")
+      .def(
+          "to_json",
+          [](concrete_optimizer::restriction::KeysetRestriction &restriction)
+              -> std::string {
+            return std::string(restriction.keyset_restriction_to_json());
+          },
+          "Serialize a KeysetRestriction to a json string.")
 
       .doc() = "Allow to restrict the optimizer search space to be compatible "
                "with a keyset.";
