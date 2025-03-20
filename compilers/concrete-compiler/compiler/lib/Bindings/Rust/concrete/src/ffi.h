@@ -27,6 +27,8 @@
 using mlir::concretelang::CompilationContext;
 using mlir::concretelang::CompilerEngine;
 
+inline constexpr capnp::ReaderOptions DESER_OPTIONS = {7000000000, 64};
+
 class VecOStream : public std::streambuf {
 public:
     VecOStream(rust::Vec<uint8_t>& vec) : vec_(vec) {}
@@ -246,7 +248,7 @@ std::unique_ptr<ServerKeyset> _deserialize_server_keyset(rust::Slice<const uint8
     auto proto = Message<concreteprotocol::ServerKeyset>();
     auto slice_istream = SliceIStream(slice);
     auto istream = std::istream(&slice_istream);
-    proto.readBinaryFromIstream(istream).value();
+    proto.readBinaryFromIstream(istream, DESER_OPTIONS).value();
     auto output = std::make_unique<concretelang::keysets::ServerKeyset>(ServerKeyset::fromProto(proto));
     return std::unique_ptr<ServerKeyset>(reinterpret_cast<ServerKeyset *>(output.release()));
 }
@@ -275,7 +277,7 @@ std::unique_ptr<ClientKeyset> _deserialize_client_keyset(rust::Slice<const uint8
     auto proto = Message<concreteprotocol::ClientKeyset>();
     auto slice_istream = SliceIStream(slice);
     auto istream = std::istream(&slice_istream);
-    proto.readBinaryFromIstream(istream).value();
+    proto.readBinaryFromIstream(istream, DESER_OPTIONS).value();
     auto output = std::make_unique<concretelang::keysets::ClientKeyset>(ClientKeyset::fromProto(proto));
     return std::unique_ptr<ClientKeyset>(reinterpret_cast<ClientKeyset *>(output.release()));
 }

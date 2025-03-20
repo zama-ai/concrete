@@ -399,6 +399,20 @@ mod ffi {
 
 pub use ffi::*;
 
+impl ServerKeyset{
+    /// Deserialize a server keyset from bytes.
+    pub fn deserialize(bytes: &[u8]) -> UniquePtr<ServerKeyset> {
+        _deserialize_server_keyset(bytes)
+    }
+}
+
+impl ClientKeyset{
+    /// Deserialize a client keyset from bytes.
+    pub fn deserialize(bytes: &[u8]) -> UniquePtr<ClientKeyset> {
+        _deserialize_client_keyset(bytes)
+    }
+}
+
 impl TransportValue{
     /// Deserialize a `TransportValue` from bytes.
     pub fn deserialize(bytes: &[u8]) -> UniquePtr<TransportValue> {
