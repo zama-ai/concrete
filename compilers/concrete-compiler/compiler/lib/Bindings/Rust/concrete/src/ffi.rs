@@ -174,6 +174,11 @@ mod ffi {
         fn _packing_keyswitch_keys_len(self: &ServerKeyset) -> usize;
         #[doc(hidden)]
         fn _packing_keyswitch_keys_nth(self: &ServerKeyset, nth: usize) -> &PackingKeyswitchKey;
+        /// Serialize a server keyset to bytes.
+        fn serialize(self: &ServerKeyset) -> Vec<u8>;
+        #[doc(hidden)]
+        fn _deserialize_server_keyset(bytes: &[u8]) -> UniquePtr<ServerKeyset>;
+
 
         /// A client keyset holding the keys necessary to __encrypt__ input data (and decrypt outputs).
         ///
@@ -185,6 +190,10 @@ mod ffi {
         fn _lwe_secret_keys_len(self: &ClientKeyset) -> usize;
         #[doc(hidden)]
         fn _lwe_secret_keys_nth(self: &ClientKeyset, nth: usize) -> &LweSecretKey;
+        /// Serialize a client keyset to bytes.
+        fn serialize(self: &ClientKeyset) -> Vec<u8>;
+        #[doc(hidden)]
+        fn _deserialize_client_keyset(bytes: &[u8]) -> UniquePtr<ClientKeyset>;
 
         #[doc(hidden)]
         type TensorU8;

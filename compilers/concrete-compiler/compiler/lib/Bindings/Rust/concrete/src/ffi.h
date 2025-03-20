@@ -21,10 +21,44 @@
 #include <cstddef>
 #include <memory>
 #include <ostream>
+#include <sys/types.h>
 #include <vector>
 
 using mlir::concretelang::CompilationContext;
 using mlir::concretelang::CompilerEngine;
+
+class VecOStream : public std::streambuf {
+public:
+    VecOStream(rust::Vec<uint8_t>& vec) : vec_(vec) {}
+protected:
+    int overflow(int c) override {
+        if (c != EOF) {
+            vec_.push_back(static_cast<uint8_t>(c));
+        }
+        return c;
+    }
+private:
+    rust::Vec<uint8_t>& vec_;
+};
+
+class SliceIStream : public std::streambuf {
+public:
+    SliceIStream(const rust::Slice<const uint8_t>& slice) : slice_(slice), pos_(0) {
+        setg(reinterpret_cast<char*>(const_cast<uint8_t*>(slice_.data())),
+             reinterpret_cast<char*>(const_cast<uint8_t*>(slice_.data())),
+             reinterpret_cast<char*>(const_cast<uint8_t*>(slice_.data() + slice_.size())));
+    }
+protected:
+    int underflow() override {
+        if (pos_ >= slice_.size()) {
+            return EOF;
+        }
+        return slice_[pos_++];
+    }
+private:
+    const rust::Slice<const uint8_t>& slice_;
+    size_t pos_;
+};
 
 namespace concrete_rust {
 
@@ -168,6 +202,7 @@ std::unique_ptr<EncryptionCsprng> _encryption_csprng_new(uint64_t high,
   return std::make_unique<EncryptionCsprng>(
       (static_cast<__uint128_t>(high) << 64) | low);
 }
+
 struct ServerKeyset : concretelang::keysets::ServerKeyset {
   size_t _lwe_bootstrap_keys_len() const {
     return this->lweBootstrapKeys.size();
@@ -193,7 +228,28 @@ struct ServerKeyset : concretelang::keysets::ServerKeyset {
     return static_cast<const PackingKeyswitchKey &>(
         this->packingKeyswitchKeys.at(nth));
   }
+
+  rust::Vec<uint8_t> serialize() const {
+      auto proto = toProto();
+      auto output = rust::Vec<uint8_t>();
+      auto vec_ostream = VecOStream(output);
+      auto ostream = std::ostream(&vec_ostream);
+      proto.writeBinaryToOstream(
+          ostream
+      ).value();
+      ostream.flush();
+      return output;
+  }
 };
+
+std::unique_ptr<ServerKeyset> _deserialize_server_keyset(rust::Slice<const uint8_t> slice) {
+    auto proto = Message<concreteprotocol::ServerKeyset>();
+    auto slice_istream = SliceIStream(slice);
+    auto istream = std::istream(&slice_istream);
+    proto.readBinaryFromIstream(istream).value();
+    auto output = std::make_unique<concretelang::keysets::ServerKeyset>(ServerKeyset::fromProto(proto));
+    return std::unique_ptr<ServerKeyset>(reinterpret_cast<ServerKeyset *>(output.release()));
+}
 
 struct ClientKeyset : concretelang::keysets::ClientKeyset {
   size_t _lwe_secret_keys_len() const { return this->lweSecretKeys.size(); }
@@ -201,7 +257,28 @@ struct ClientKeyset : concretelang::keysets::ClientKeyset {
   const LweSecretKey &_lwe_secret_keys_nth(size_t nth) const {
     return static_cast<const LweSecretKey &>(this->lweSecretKeys.at(nth));
   }
+
+  rust::Vec<uint8_t> serialize() const {
+      auto proto = toProto();
+      auto output = rust::Vec<uint8_t>();
+      auto vec_ostream = VecOStream(output);
+      auto ostream = std::ostream(&vec_ostream);
+      proto.writeBinaryToOstream(
+          ostream
+      ).value();
+      ostream.flush();
+      return output;
+  }
 };
+
+std::unique_ptr<ClientKeyset> _deserialize_client_keyset(rust::Slice<const uint8_t> slice) {
+    auto proto = Message<concreteprotocol::ClientKeyset>();
+    auto slice_istream = SliceIStream(slice);
+    auto istream = std::istream(&slice_istream);
+    proto.readBinaryFromIstream(istream).value();
+    auto output = std::make_unique<concretelang::keysets::ClientKeyset>(ClientKeyset::fromProto(proto));
+    return std::unique_ptr<ClientKeyset>(reinterpret_cast<ClientKeyset *>(output.release()));
+}
 
 struct Keyset : concretelang::keysets::Keyset {
 
@@ -350,19 +427,6 @@ struct TransportValue : concretelang::values::TransportValue {
   }
 
   rust::Vec<uint8_t> serialize() const {
-      class VecOStream : public std::streambuf {
-      public:
-          VecOStream(rust::Vec<uint8_t>& vec) : vec_(vec) {}
-      protected:
-          int overflow(int c) override {
-              if (c != EOF) {
-                  vec_.push_back(static_cast<uint8_t>(c));
-              }
-              return c;
-          }
-      private:
-          rust::Vec<uint8_t>& vec_;
-      };
       auto output = rust::Vec<uint8_t>();
       auto vec_ostream = VecOStream(output);
       auto ostream = std::ostream(&vec_ostream);
@@ -375,33 +439,12 @@ struct TransportValue : concretelang::values::TransportValue {
 };
 
 std::unique_ptr<TransportValue> _deserialize_transport_value(rust::Slice<const uint8_t> slice) {
-    class SliceIStream : public std::streambuf {
-    public:
-        SliceIStream(const rust::Slice<const uint8_t>& slice) : slice_(slice), pos_(0) {
-            setg(reinterpret_cast<char*>(const_cast<uint8_t*>(slice_.data())),
-                 reinterpret_cast<char*>(const_cast<uint8_t*>(slice_.data())),
-                 reinterpret_cast<char*>(const_cast<uint8_t*>(slice_.data() + slice_.size())));
-        }
-    protected:
-        int underflow() override {
-            if (pos_ >= slice_.size()) {
-                return EOF;
-            }
-            return slice_[pos_++];
-        }
-    private:
-        const rust::Slice<const uint8_t>& slice_;
-        size_t pos_;
-    };
-
     auto output = TransportValue();
     auto slice_istream = SliceIStream(slice);
     auto istream = std::istream(&slice_istream);
     output.readBinaryFromIstream(istream).value();
     return std::make_unique<TransportValue>(output);
 }
-
-
 
 struct ClientFunction : concretelang::clientlib::ClientCircuit {
   std::unique_ptr<TransportValue> prepare_input(std::unique_ptr<Value> arg,
