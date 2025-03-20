@@ -32,20 +32,10 @@ use wasm_bindgen::prelude::*;
 use crate::concrete_protocol_capnp::*;
 use capnp::message::{HeapAllocator, ReaderOptions};
 use capnp::serialize::{self, OwnedSegments};
-use concrete_csprng::generators::SoftwareRandomGenerator;
-use tfhe::core_crypto::prelude::{
-    generate_lwe_keyswitch_key, generate_seeded_lwe_keyswitch_key,
-    par_generate_circuit_bootstrap_lwe_pfpksk_list, par_generate_lwe_bootstrap_key,
-    par_generate_seeded_lwe_bootstrap_key, CiphertextModulus, EncryptionRandomGenerator,
-    FunctionalPackingKeyswitchKeyCount, Gaussian, GlweSecretKey, LweBootstrapKey, LweKeyswitchKey,
-    LwePrivateFunctionalPackingKeyswitchKeyList, LweSecretKey, SecretRandomGenerator,
-    SeededLweBootstrapKey, SeededLweKeyswitchKey, Variance,
-};
+use tfhe::core_crypto::prelude::*;
 use tfhe::core_crypto::seeders::new_seeder;
-use tfhe::shortint::prelude::{
-    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
-};
-use tfhe::Seed;
+use tfhe_csprng::generators::SoftwareRandomGenerator;
+use tfhe_csprng::seeders::Seed;
 
 mod concrete_protocol_capnp {
     include!(concat!(
@@ -83,7 +73,9 @@ fn u8_slice_to_u64_vector(data: &[u8]) -> Vec<u64> {
 }
 
 /// Converts a Cap'n Proto reader to an `LweSecretKey`.
-fn reader_to_lwe_secret_key(reader: &lwe_secret_key::Reader) -> LweSecretKey<Vec<u64>> {
+fn reader_to_lwe_secret_key(
+    reader: &concrete_protocol_capnp::lwe_secret_key::Reader,
+) -> LweSecretKey<Vec<u64>> {
     let payload = reader.get_payload().unwrap();
     let mut sk_data = Vec::new();
     let data_list = payload.get_data().unwrap();
@@ -319,7 +311,7 @@ macro_rules! build_key {
 
 /// Build a Cap'n Proto message containing appropriate bootstrapping key.
 fn build_bsk(
-    bsk_info: lwe_bootstrap_key_info::Reader,
+    bsk_info: concrete_protocol_capnp::lwe_bootstrap_key_info::Reader,
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
@@ -348,7 +340,11 @@ fn build_bsk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(bsk, bsk_info, lwe_bootstrap_key::Builder)
+            build_key!(
+                bsk,
+                bsk_info,
+                concrete_protocol_capnp::lwe_bootstrap_key::Builder
+            )
         }
         Compression::Seed => {
             let bsk = generate_seeded_bsk(
@@ -361,7 +357,11 @@ fn build_bsk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(bsk, bsk_info, lwe_bootstrap_key::Builder)
+            build_key!(
+                bsk,
+                bsk_info,
+                concrete_protocol_capnp::lwe_bootstrap_key::Builder
+            )
         }
         Compression::Paillier => panic!("Paillier compression is not supported"),
     }
@@ -369,7 +369,7 @@ fn build_bsk(
 
 /// Build a Cap'n Proto message containing appropriate keyswitching key.
 fn build_ksk(
-    ksk_info: lwe_keyswitch_key_info::Reader,
+    ksk_info: concrete_protocol_capnp::lwe_keyswitch_key_info::Reader,
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
@@ -396,7 +396,11 @@ fn build_ksk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(ksk, ksk_info, lwe_keyswitch_key::Builder)
+            build_key!(
+                ksk,
+                ksk_info,
+                concrete_protocol_capnp::lwe_keyswitch_key::Builder
+            )
         }
         Compression::Seed => {
             let ksk = generate_seeded_ksk(
@@ -408,7 +412,11 @@ fn build_ksk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(ksk, ksk_info, lwe_keyswitch_key::Builder)
+            build_key!(
+                ksk,
+                ksk_info,
+                concrete_protocol_capnp::lwe_keyswitch_key::Builder
+            )
         }
         Compression::Paillier => panic!("Paillier compression is not supported"),
     }
@@ -416,7 +424,7 @@ fn build_ksk(
 
 /// Build a Cap'n Proto message containing appropriate packing keyswitch key.
 fn build_pksk(
-    pksk_info: packing_keyswitch_key_info::Reader,
+    pksk_info: concrete_protocol_capnp::packing_keyswitch_key_info::Reader,
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
@@ -442,7 +450,11 @@ fn build_pksk(
         decomp_base_log,
         variance,
     );
-    build_key!(pksk, pksk_info, packing_keyswitch_key::Builder)
+    build_key!(
+        pksk,
+        pksk_info,
+        concrete_protocol_capnp::packing_keyswitch_key::Builder
+    )
 }
 
 /// Generates a Cap'n Proto message containing the keyset based on the provided keyset information and seeds.
@@ -462,15 +474,18 @@ fn build_pksk(
 /// # Returns
 /// A Cap'n Proto message containing the generated keyset.
 fn generate_keyset_message(
-    info: keyset_info::Reader,
+    info: concrete_protocol_capnp::keyset_info::Reader,
     secret_seed: u128,
     enc_seed: u128,
     no_bsk: bool,
     ignore_bsk: Vec<u32>,
-    init_lwe_secret_keys: &mut std::collections::HashMap<u32, lwe_secret_key::Reader>,
+    init_lwe_secret_keys: &mut std::collections::HashMap<
+        u32,
+        concrete_protocol_capnp::lwe_secret_key::Reader,
+    >,
 ) -> capnp::message::Builder<HeapAllocator> {
     let mut builder = capnp::message::Builder::new_default();
-    let mut keyset_builder = builder.init_root::<keyset::Builder>();
+    let mut keyset_builder = builder.init_root::<concrete_protocol_capnp::keyset::Builder>();
 
     // Random generators
     let mut secret_random_generator: SecretRandomGenerator<SoftwareRandomGenerator> =
@@ -503,7 +518,11 @@ fn generate_keyset_message(
             let lwe_dim = sk_info.get_params().unwrap().get_lwe_dimension() as usize;
             let sk = generate_sk(lwe_dim, &mut secret_random_generator);
             generated_secret_keys.insert(sk_info.get_id(), sk.clone());
-            let sk_builder = build_key!(sk, sk_info, lwe_secret_key::Builder);
+            let sk_builder = build_key!(
+                sk,
+                sk_info,
+                concrete_protocol_capnp::lwe_secret_key::Builder
+            );
             client_keyset
                 .reborrow()
                 .get_lwe_secret_keys()
@@ -605,12 +624,22 @@ pub fn generate_keyset(
     let reader =
         serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
             .unwrap();
-    let key_set_info = reader.get_root::<keyset_info::Reader>().unwrap();
+    let key_set_info = reader
+        .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
+        .unwrap();
     // keygen
     let mut init_lwe_secret_keys = init_secret_keys
         .iter()
-        .map(|(k, v)| (*k, v.get_root::<lwe_secret_key::Reader>().unwrap().clone()))
-        .collect::<std::collections::HashMap<u32, lwe_secret_key::Reader>>();
+        .map(|(k, v)| {
+            (
+                *k,
+                v.get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+                    .unwrap()
+                    .clone(),
+            )
+        })
+        .collect::<std::collections::HashMap<u32, concrete_protocol_capnp::lwe_secret_key::Reader>>(
+        );
     let builder = generate_keyset_message(
         key_set_info,
         secret_seed as u128,
@@ -674,7 +703,9 @@ pub fn read_secret_key_from_file(path: &str) -> (u32, capnp::message::Reader<Own
     let file = std::fs::File::open(path).expect("Failed to open secret key file");
     let reader =
         serialize::read_message(std::io::BufReader::new(file), ReaderOptions::new()).unwrap();
-    let key = reader.get_root::<lwe_secret_key::Reader>().unwrap();
+    let key = reader
+        .get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+        .unwrap();
     let id = key.get_info().unwrap().get_id();
     (id, reader)
 }

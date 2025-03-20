@@ -23,24 +23,11 @@ capnpc = "0.20.1"
 capnp = "0.20.3"
 clap = { version = "4.5.16", features = ["derive"] }
 
-wasm-bindgen = { version = ">=0.2.86,<0.2.94", features = ["serde-serialize"], optional = true}
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"], optional = true }
 
-tfhe = { version = "0.10.0", features = ["integer"]}
-concrete-csprng = { version = "0.4.1", optional = true, features = ["generator_fallback"] }
-
-[target.x86_64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.10.0", features = ["integer", "x86_64-unix"] }
-
-[target.aarch64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.10.0", features = ["integer", "aarch64-unix"] }
-
-[target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { version = "0.10.0", features = ["integer", "x86_64"] }
+tfhe = { version = "1.0" }
+tfhe-csprng = { version = "0.5" }
 
 [features]
 
-default = ["csprng"]
-csprng = ["concrete-csprng"]
-# TODO: shortint and HL API are only required because that's how we can build tfhe-rs with wasm
-# newer version should have fixed this and we can remove them
-wasm = ["dep:wasm-bindgen", "tfhe/shortint-client-js-wasm-api", "tfhe/high-level-client-js-wasm-api"]
+wasm = ["dep:wasm-bindgen", "tfhe/__wasm_api"]
