@@ -5,16 +5,19 @@
 # <kbd>module</kbd> `concrete.fhe.compilation.specs`
 Declaration of `ClientSpecs` class. 
 
+**Global Variables**
+---------------
+- **TFHERS_SPECS_KEY**
 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L18"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ClientSpecs`
 ClientSpecs class, to create Client objects. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -34,7 +37,7 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize`
 
@@ -56,7 +59,7 @@ Create client specs from bytes.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/specs.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize`
 

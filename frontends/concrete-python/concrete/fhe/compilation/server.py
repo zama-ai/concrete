@@ -276,6 +276,9 @@ class Server:
                 with open(Path(tmp) / "composition_rules.json", "w", encoding="utf-8") as f:
                     f.write(json.dumps(self._composition_rules))
 
+                with open(Path(tmp) / "client.specs.json", "wb") as f:
+                    f.write(self.client_specs.serialize())
+
                 shutil.make_archive(path, "zip", tmp)
 
             return
