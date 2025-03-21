@@ -22,6 +22,7 @@
 //!
 //! # Macros
 //! - `build_key`: A macro for building a Cap'n Proto message for a key with the specified key information and builder type.
+use std::collections::HashSet;
 use std::u128;
 
 use tfhe::core_crypto::commons::math::random::CompressionSeed;
@@ -31,20 +32,10 @@ use wasm_bindgen::prelude::*;
 use crate::concrete_protocol_capnp::*;
 use capnp::message::{HeapAllocator, ReaderOptions};
 use capnp::serialize::{self, OwnedSegments};
-use concrete_csprng::generators::SoftwareRandomGenerator;
-use tfhe::core_crypto::prelude::{
-    generate_lwe_keyswitch_key, generate_seeded_lwe_keyswitch_key,
-    par_generate_circuit_bootstrap_lwe_pfpksk_list, par_generate_lwe_bootstrap_key,
-    par_generate_seeded_lwe_bootstrap_key, CiphertextModulus, EncryptionRandomGenerator,
-    FunctionalPackingKeyswitchKeyCount, Gaussian, GlweSecretKey, LweBootstrapKey, LweKeyswitchKey,
-    LwePrivateFunctionalPackingKeyswitchKeyList, LweSecretKey, SecretRandomGenerator,
-    SeededLweBootstrapKey, SeededLweKeyswitchKey, Variance,
-};
+use tfhe::core_crypto::prelude::*;
 use tfhe::core_crypto::seeders::new_seeder;
-use tfhe::shortint::prelude::{
-    DecompositionBaseLog, DecompositionLevelCount, GlweDimension, LweDimension, PolynomialSize,
-};
-use tfhe::Seed;
+use tfhe_csprng::generators::SoftwareRandomGenerator;
+use tfhe_csprng::seeders::Seed;
 
 mod concrete_protocol_capnp {
     include!(concat!(
@@ -82,7 +73,9 @@ fn u8_slice_to_u64_vector(data: &[u8]) -> Vec<u64> {
 }
 
 /// Converts a Cap'n Proto reader to an `LweSecretKey`.
-fn reader_to_lwe_secret_key(reader: &lwe_secret_key::Reader) -> LweSecretKey<Vec<u64>> {
+fn reader_to_lwe_secret_key(
+    reader: &concrete_protocol_capnp::lwe_secret_key::Reader,
+) -> LweSecretKey<Vec<u64>> {
     let payload = reader.get_payload().unwrap();
     let mut sk_data = Vec::new();
     let data_list = payload.get_data().unwrap();
@@ -318,7 +311,7 @@ macro_rules! build_key {
 
 /// Build a Cap'n Proto message containing appropriate bootstrapping key.
 fn build_bsk(
-    bsk_info: lwe_bootstrap_key_info::Reader,
+    bsk_info: concrete_protocol_capnp::lwe_bootstrap_key_info::Reader,
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
@@ -347,7 +340,11 @@ fn build_bsk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(bsk, bsk_info, lwe_bootstrap_key::Builder)
+            build_key!(
+                bsk,
+                bsk_info,
+                concrete_protocol_capnp::lwe_bootstrap_key::Builder
+            )
         }
         Compression::Seed => {
             let bsk = generate_seeded_bsk(
@@ -360,7 +357,11 @@ fn build_bsk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(bsk, bsk_info, lwe_bootstrap_key::Builder)
+            build_key!(
+                bsk,
+                bsk_info,
+                concrete_protocol_capnp::lwe_bootstrap_key::Builder
+            )
         }
         Compression::Paillier => panic!("Paillier compression is not supported"),
     }
@@ -368,7 +369,7 @@ fn build_bsk(
 
 /// Build a Cap'n Proto message containing appropriate keyswitching key.
 fn build_ksk(
-    ksk_info: lwe_keyswitch_key_info::Reader,
+    ksk_info: concrete_protocol_capnp::lwe_keyswitch_key_info::Reader,
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
@@ -395,7 +396,11 @@ fn build_ksk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(ksk, ksk_info, lwe_keyswitch_key::Builder)
+            build_key!(
+                ksk,
+                ksk_info,
+                concrete_protocol_capnp::lwe_keyswitch_key::Builder
+            )
         }
         Compression::Seed => {
             let ksk = generate_seeded_ksk(
@@ -407,7 +412,11 @@ fn build_ksk(
                 decomp_base_log,
                 variance,
             );
-            build_key!(ksk, ksk_info, lwe_keyswitch_key::Builder)
+            build_key!(
+                ksk,
+                ksk_info,
+                concrete_protocol_capnp::lwe_keyswitch_key::Builder
+            )
         }
         Compression::Paillier => panic!("Paillier compression is not supported"),
     }
@@ -415,7 +424,7 @@ fn build_ksk(
 
 /// Build a Cap'n Proto message containing appropriate packing keyswitch key.
 fn build_pksk(
-    pksk_info: packing_keyswitch_key_info::Reader,
+    pksk_info: concrete_protocol_capnp::packing_keyswitch_key_info::Reader,
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
@@ -441,31 +450,242 @@ fn build_pksk(
         decomp_base_log,
         variance,
     );
-    build_key!(pksk, pksk_info, packing_keyswitch_key::Builder)
+    build_key!(
+        pksk,
+        pksk_info,
+        concrete_protocol_capnp::packing_keyswitch_key::Builder
+    )
+}
+
+/// Retrieves an LWE secret key from a keyset based on the provided key ID.
+///
+/// This function searches for the LWE secret key with the specified ID in the given keyset and
+/// returns a Cap'n Proto message builder containing the secret key.
+///
+/// # Arguments
+///
+/// * `keyset` - A reference to the Cap'n Proto keyset reader.
+/// * `id` - The ID of the LWE secret key to retrieve.
+///
+/// # Returns
+///
+/// A Cap'n Proto message builder containing the LWE secret key.
+///
+/// # Panics
+///
+/// This function will panic if the client keyset is not found, if the LWE secret keys cannot be
+/// retrieved, or if the secret key with the specified ID is not found in the keyset.
+fn get_lwe_secret_key_from_keyset(
+    keyset: &concrete_protocol_capnp::keyset::Reader,
+    id: u32,
+) -> capnp::message::Builder<HeapAllocator> {
+    let sk = keyset
+        .get_client()
+        .expect("Client keyset not found")
+        .get_lwe_secret_keys()
+        .expect("Failed to get LWE secret keys")
+        .iter()
+        .find(|sk| {
+            sk.get_info()
+                .expect("Failed to get secret key info")
+                .get_id()
+                == id
+        })
+        .expect(format!("Secret key (id:{}) not found in keyset", id).as_str());
+    let mut builder = capnp::message::Builder::new_default();
+    let mut sk_builder = builder.init_root::<concrete_protocol_capnp::lwe_secret_key::Builder>();
+    sk_builder
+        .set_info(sk.get_info().expect("Failed to get secret key info"))
+        .expect("Failed to set secret key info");
+    sk_builder
+        .set_payload(sk.get_payload().expect("Failed to get secret key payload"))
+        .expect("Failed to set secret key payload");
+    builder
+}
+
+/// Retrieves an LWE secret key from a keyset based on the provided key ID.
+///
+/// This function is intended to be used in a WebAssembly (WASM) environment.
+/// It reads the keyset from a byte buffer (Capnp), finds the LWE secret key with the specified ID,
+/// and returns the serialized key as a byte vector (Capnp).
+///
+/// # Arguments
+///
+/// * `keyset_buffer` - A byte slice containing the serialized keyset (Capnp).
+/// * `id` - The ID of the LWE secret key to retrieve.
+///
+/// # Returns
+///
+/// A `Vec<u8>` containing the serialized LWE secret key (Capnp).
+///
+/// # Panics
+///
+/// This function will throw an exception if it fails to read the keyset buffer, get the root keyset
+/// reader, or retrieve the secret key.
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub fn get_lwe_secret_key_from_keyset_wasm(mut keyset_buffer: &[u8], id: u32) -> Vec<u8> {
+    let reader = serialize::read_message_from_flat_slice(&mut keyset_buffer, ReaderOptions::new())
+        .expect_throw("Failed to read keyset buffer");
+    let keyset = reader
+        .get_root::<concrete_protocol_capnp::keyset::Reader>()
+        .expect_throw("Failed to get root keyset reader");
+    let sk_builder = get_lwe_secret_key_from_keyset(&keyset, id);
+    serialize::write_message_to_words(&sk_builder)
+}
+
+/// Generates an LWE bootstrap key in chunks.
+///
+/// This function reads the keyset information, input secret key, and output secret key from byte buffers,
+/// generates the LWE bootstrap key in chunks, and sends each chunk to a specified `MessagePort`.
+///
+/// # Arguments
+///
+/// * `keyset_info_buffer` - A byte slice containing the serialized keyset information (Capnp).
+/// * `input_secret_key_buffer` - A byte slice containing the serialized input secret key (Capnp).
+/// * `output_secret_key_buffer` - A byte slice containing the serialized output secret key (Capnp).
+/// * `bsk_id` - The ID of the bootstrap key to generate.
+/// * `enc_seed` - The seed for the encryption random generator.
+/// * `chunk_size` - The size of each chunk to generate.
+/// * `port` - The `MessagePort` to send the generated chunks to.
+///
+/// # Returns
+///
+/// The total length of the generated bootstrap key in bytes.
+///
+/// # Panics
+///
+/// This function will throw an exception if it fails to read the keyset info buffer, input secret key buffer,
+/// or output secret key buffer, or if it fails to post a message to the specified `MessagePort`.
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub async fn chunked_bsk_keygen(
+    mut keyset_info_buffer: &[u8],
+    mut input_secret_key_buffer: &[u8],
+    mut output_secret_key_buffer: &[u8],
+    bsk_id: u32,
+    enc_seed: u128,
+    chunk_size: usize,
+    port: web_sys::MessagePort,
+) -> usize {
+    // deserialize inputs
+    let reader =
+        serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
+            .expect_throw("Failed to read keyset info buffer");
+    let key_set_info = reader
+        .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
+        .expect_throw("Failed to get root keyset info reader");
+    let reader =
+        serialize::read_message_from_flat_slice(&mut input_secret_key_buffer, ReaderOptions::new())
+            .expect_throw("Failed to read input secret key buffer");
+    let input_sk_reader = reader
+        .get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+        .expect_throw("Failed to get root input secret key reader");
+    let reader = serialize::read_message_from_flat_slice(
+        &mut output_secret_key_buffer,
+        ReaderOptions::new(),
+    )
+    .expect_throw("Failed to read output secret key buffer");
+    let output_sk_reader = reader
+        .get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+        .expect_throw("Failed to get root output secret key reader");
+
+    // Parameters
+    let bsk_info = key_set_info
+        .get_lwe_bootstrap_keys()
+        .expect_throw("Failed to get LWE bootstrap keys")
+        .get(bsk_id);
+    let params = bsk_info
+        .get_params()
+        .expect_throw("Failed to get bootstrap key parameters");
+    // TODO add support for compression
+    let _compression = bsk_info
+        .get_compression()
+        .expect_throw("Failed to get compression");
+
+    let input_lwe_dimension = LweDimension(params.get_input_lwe_dimension() as usize);
+    let decomp_base_log = DecompositionBaseLog(params.get_base_log() as usize);
+    let decomp_level_count = DecompositionLevelCount(params.get_level_count() as usize);
+    let glwe_dimension = GlweDimension(params.get_glwe_dimension() as usize);
+    let polynomial_size = PolynomialSize(params.get_polynomial_size() as usize);
+    let glwe_noise_distribution = Gaussian::from_dispersion_parameter(
+        Variance::from_variance(params.get_variance()).get_standard_dev(),
+        0.0,
+    );
+    let ciphertext_modulus: CiphertextModulus<u64> = CiphertextModulus::new_native();
+
+    // Input and output secret keys
+    let input_lwe_secret_key = reader_to_lwe_secret_key(&input_sk_reader);
+    let output_lwe_secret_key = reader_to_lwe_secret_key(&output_sk_reader);
+    let output_glwe_secret_key =
+        GlweSecretKey::from_container(output_lwe_secret_key.into_container(), polynomial_size);
+
+    let mut seeder = new_seeder();
+    let seeder = seeder.as_mut();
+    let encryption_generator =
+        EncryptionRandomGenerator::<DefaultRandomGenerator>::new(Seed(enc_seed), seeder);
+    let chunk_generator = LweBootstrapKeyChunkGenerator::new(
+        encryption_generator,
+        ChunkSize(chunk_size),
+        input_lwe_dimension,
+        glwe_dimension.to_glwe_size(),
+        polynomial_size,
+        decomp_base_log,
+        decomp_level_count,
+        ciphertext_modulus,
+        input_lwe_secret_key,
+        output_glwe_secret_key,
+        glwe_noise_distribution,
+        false,
+    );
+    let mut total_len = 0;
+    for chunk in chunk_generator {
+        let chunk_data = chunk.into_container();
+        // TODO: this is to assemble them in JS. If we want to send all the chunks and assemble them later in Rust,
+        // we can use safe serialization instead.
+        let data = u64_slice_to_u8_vector(&chunk_data);
+        total_len += data.len();
+        let js_array = web_sys::js_sys::Uint8Array::from(data.as_slice());
+        port.post_message(&js_array)
+            .expect_throw("Failed to post message to port");
+    }
+    port.close();
+    total_len
 }
 
 /// Generates a Cap'n Proto message containing the keyset based on the provided keyset information and seeds.
 ///
 /// The function generates secret keys, bootstrap keys, keyswitch keys, and packing keyswitch keys based on the keyset information.
-/// It uses initial secret keys instead of generating them if they are provided.
+/// It uses initial secret keys instead of generating them if they are provided. Bootstrap keys can be ignored in bulk or individually.
 ///
 /// # Arguments
 ///
 /// * `info`: The keyset information.
 /// * `secret_seed`: The seed for the secret random generator.
 /// * `enc_seed`: The seed for the encryption random generator.
+/// * `no_bsk`: A flag indicating to not generate bootstrap keys.
+/// * `ignore_bsk`: A list of bootstrap key IDs to ignore.
+/// * `no_ksk`: A flag indicating to not generate keyswitch keys.
+/// * `ignore_ksk`: A list of keyswitch key IDs to ignore.
 /// * `init_lwe_secret_keys`: A map of initial secret keys to use instead of generating them.
 ///
 /// # Returns
 /// A Cap'n Proto message containing the generated keyset.
 fn generate_keyset_message(
-    info: keyset_info::Reader,
+    info: concrete_protocol_capnp::keyset_info::Reader,
     secret_seed: u128,
     enc_seed: u128,
-    init_lwe_secret_keys: &mut std::collections::HashMap<u32, lwe_secret_key::Reader>,
+    no_bsk: bool,
+    ignore_bsk: Vec<u32>,
+    no_ksk: bool,
+    ignore_ksk: Vec<u32>,
+    init_lwe_secret_keys: &mut std::collections::HashMap<
+        u32,
+        concrete_protocol_capnp::lwe_secret_key::Reader,
+    >,
 ) -> capnp::message::Builder<HeapAllocator> {
     let mut builder = capnp::message::Builder::new_default();
-    let mut keyset_builder = builder.init_root::<keyset::Builder>();
+    let mut keyset_builder = builder.init_root::<concrete_protocol_capnp::keyset::Builder>();
 
     // Random generators
     let mut secret_random_generator: SecretRandomGenerator<SoftwareRandomGenerator> =
@@ -498,7 +718,11 @@ fn generate_keyset_message(
             let lwe_dim = sk_info.get_params().unwrap().get_lwe_dimension() as usize;
             let sk = generate_sk(lwe_dim, &mut secret_random_generator);
             generated_secret_keys.insert(sk_info.get_id(), sk.clone());
-            let sk_builder = build_key!(sk, sk_info, lwe_secret_key::Builder);
+            let sk_builder = build_key!(
+                sk,
+                sk_info,
+                concrete_protocol_capnp::lwe_secret_key::Builder
+            );
             client_keyset
                 .reborrow()
                 .get_lwe_secret_keys()
@@ -509,36 +733,74 @@ fn generate_keyset_message(
     }
 
     let mut server_keyset = keyset_builder.init_server();
-    server_keyset
-        .reborrow()
-        .init_lwe_bootstrap_keys(info.get_lwe_bootstrap_keys().unwrap().len());
-    server_keyset
-        .reborrow()
-        .init_lwe_keyswitch_keys(info.get_lwe_keyswitch_keys().unwrap().len());
+    // Generate bootstrap keys
+    if !no_bsk {
+        let ignore_bsk_set: HashSet<&u32> = HashSet::from_iter(ignore_bsk.iter());
+        let ignore_count: u32 = if ignore_bsk_set.is_empty() {
+            0
+        } else {
+            // we need to count the keys that are gonna be ignored as the list might have invalid IDs
+            let mut ignore_count = 0u32;
+            for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
+                if ignore_bsk_set.contains(&bsk_info.get_id()) {
+                    ignore_count += 1;
+                }
+            }
+            ignore_count
+        };
+        server_keyset
+            .reborrow()
+            .init_lwe_bootstrap_keys(info.get_lwe_bootstrap_keys().unwrap().len() - ignore_count);
+        for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
+            if ignore_bsk_set.contains(&bsk_info.get_id()) {
+                continue;
+            }
+            let bsk_builder =
+                build_bsk(bsk_info, &generated_secret_keys, &mut enc_random_generator);
+            server_keyset
+                .reborrow()
+                .get_lwe_bootstrap_keys()
+                .unwrap()
+                .set_with_caveats(bsk_info.get_id(), bsk_builder.get_root_as_reader().unwrap())
+                .unwrap();
+        }
+    }
+    // Generate keyswitch keys
+    if !no_ksk {
+        let ignore_ksk_set: HashSet<&u32> = HashSet::from_iter(ignore_ksk.iter());
+        let ignore_count: u32 = if ignore_ksk_set.is_empty() {
+            0
+        } else {
+            // we need to count the keys that are gonna be ignored as the list might have invalid IDs
+            let mut ignore_count = 0u32;
+            for ksk_info in info.get_lwe_keyswitch_keys().unwrap().iter() {
+                if ignore_ksk_set.contains(&ksk_info.get_id()) {
+                    ignore_count += 1;
+                }
+            }
+            ignore_count
+        };
+        server_keyset
+            .reborrow()
+            .init_lwe_keyswitch_keys(info.get_lwe_keyswitch_keys().unwrap().len() - ignore_count);
+        for ksk_info in info.get_lwe_keyswitch_keys().unwrap().iter() {
+            if ignore_ksk_set.contains(&ksk_info.get_id()) {
+                continue;
+            }
+            let ksk_builder =
+                build_ksk(ksk_info, &generated_secret_keys, &mut enc_random_generator);
+            server_keyset
+                .reborrow()
+                .get_lwe_keyswitch_keys()
+                .unwrap()
+                .set_with_caveats(ksk_info.get_id(), ksk_builder.get_root_as_reader().unwrap())
+                .unwrap();
+        }
+    }
+    // Generate packing keyswitch keys
     server_keyset
         .reborrow()
         .init_packing_keyswitch_keys(info.get_packing_keyswitch_keys().unwrap().len());
-    // Generate bootstrap keys
-    for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
-        let bsk_builder = build_bsk(bsk_info, &generated_secret_keys, &mut enc_random_generator);
-        server_keyset
-            .reborrow()
-            .get_lwe_bootstrap_keys()
-            .unwrap()
-            .set_with_caveats(bsk_info.get_id(), bsk_builder.get_root_as_reader().unwrap())
-            .unwrap();
-    }
-    // Generate keyswitch keys
-    for ksk_info in info.get_lwe_keyswitch_keys().unwrap().iter() {
-        let ksk_builder = build_ksk(ksk_info, &generated_secret_keys, &mut enc_random_generator);
-        server_keyset
-            .reborrow()
-            .get_lwe_keyswitch_keys()
-            .unwrap()
-            .set_with_caveats(ksk_info.get_id(), ksk_builder.get_root_as_reader().unwrap())
-            .unwrap();
-    }
-    // Generate packing keyswitch keys
     for pksk_info in info.get_packing_keyswitch_keys().unwrap().iter() {
         let pksk_builder = build_pksk(pksk_info, &generated_secret_keys, &mut enc_random_generator);
         server_keyset
@@ -558,13 +820,17 @@ fn generate_keyset_message(
 /// Generate a Concrete keyset based on the provided keyset information and seeds.
 ///
 /// The function generates secret keys, bootstrap keys, keyswitch keys, and packing keyswitch keys based on the keyset information.
-/// It uses initial secret keys instead of generating them if they are provided.
+/// It uses initial secret keys instead of generating them if they are provided. Bootstrap keys can be ignored in bulk or individually.
 ///
 /// # Arguments
 ///
 /// * `keyset_info_buffer`: The serialized keyset information.
 /// * `secret_seed`: The seed for the secret random generator.
 /// * `enc_seed`: The seed for the encryption random generator.
+/// * `no_bsk`: A flag indicating to not generate bootstrap keys.
+/// * `ignore_bsk`: A list of bootstrap key IDs to ignore.
+/// * `no_ksk`: A flag indicating to not generate keyswitch keys.
+/// * `ignore_ksk`: A list of keyswitch key IDs to ignore.
 /// * `init_secret_keys`: A map of initial secret keys to use instead of generating them.
 /// # Returns
 /// A serialized keyset.
@@ -572,21 +838,39 @@ pub fn generate_keyset(
     mut keyset_info_buffer: &[u8],
     secret_seed: u128,
     enc_seed: u128,
+    no_bsk: bool,
+    ignore_bsk: Vec<u32>,
+    no_ksk: bool,
+    ignore_ksk: Vec<u32>,
     init_secret_keys: &std::collections::HashMap<u32, capnp::message::Reader<OwnedSegments>>,
 ) -> Vec<u8> {
     let reader =
         serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
             .unwrap();
-    let key_set_info = reader.get_root::<keyset_info::Reader>().unwrap();
+    let key_set_info = reader
+        .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
+        .unwrap();
     // keygen
     let mut init_lwe_secret_keys = init_secret_keys
         .iter()
-        .map(|(k, v)| (*k, v.get_root::<lwe_secret_key::Reader>().unwrap().clone()))
-        .collect::<std::collections::HashMap<u32, lwe_secret_key::Reader>>();
+        .map(|(k, v)| {
+            (
+                *k,
+                v.get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+                    .unwrap()
+                    .clone(),
+            )
+        })
+        .collect::<std::collections::HashMap<u32, concrete_protocol_capnp::lwe_secret_key::Reader>>(
+        );
     let builder = generate_keyset_message(
         key_set_info,
         secret_seed as u128,
         enc_seed as u128,
+        no_bsk,
+        ignore_bsk,
+        no_ksk,
+        ignore_ksk,
         &mut init_lwe_secret_keys,
     );
     serialize::write_message_to_words(&builder)
@@ -599,27 +883,33 @@ pub fn generate_keyset(
 /// # Arguments
 ///
 /// * `keyset_info_buffer`: The serialized keyset information.
-/// * `secret_seed_lsb`: The seed for the secret random generator (lsb part).
-/// * `secret_seed_msb`: The seed for the secret random generator (msb part).
-/// * `enc_seed_lsb`: The seed for the encryption random generator (lsb part).
-/// * `enc_seed_lsb`: The seed for the encryption random generator (msb part).
+/// * `no_bsk`: A flag indicating to not generate bootstrap keys.
+/// * `ignore_bsk`: A list of bootstrap key IDs to ignore.
+/// * `no_ksk`: A flag indicating to not generate keyswitch keys.
+/// * `ignore_ksk`: A list of keyswitch key IDs to ignore.
+/// * `secret_seed`: The seed for the secret random generator.
+/// * `enc_seed`: The seed for the encryption random generator.
 /// # Returns
 /// A serialized keyset.
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn generate_keyset_wasm(
     keyset_info_buffer: &[u8],
-    secret_seed_lsb: u64,
-    secret_seed_msb: u64,
-    enc_seed_lsb: u64,
-    enc_seed_msb: u64,
+    no_bsk: bool,
+    ignore_bsk: Vec<u32>,
+    no_ksk: bool,
+    ignore_ksk: Vec<u32>,
+    secret_seed: u128,
+    enc_seed: u128,
 ) -> Vec<u8> {
-    let secret_seed = (secret_seed_msb as u128) << 64 | secret_seed_lsb as u128;
-    let enc_seed = (enc_seed_msb as u128) << 64 | enc_seed_lsb as u128;
     generate_keyset(
         keyset_info_buffer,
         secret_seed,
         enc_seed,
+        no_bsk,
+        ignore_bsk,
+        no_ksk,
+        ignore_ksk,
         // TODO: support init secret keys
         &mut std::collections::HashMap::new(),
     )
@@ -638,7 +928,9 @@ pub fn read_secret_key_from_file(path: &str) -> (u32, capnp::message::Reader<Own
     let file = std::fs::File::open(path).expect("Failed to open secret key file");
     let reader =
         serialize::read_message(std::io::BufReader::new(file), ReaderOptions::new()).unwrap();
-    let key = reader.get_root::<lwe_secret_key::Reader>().unwrap();
+    let key = reader
+        .get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+        .unwrap();
     let id = key.get_info().unwrap().get_id();
     (id, reader)
 }
