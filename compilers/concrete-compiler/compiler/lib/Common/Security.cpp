@@ -20,6 +20,9 @@ double SecurityCurve::getVariance(int glweDimension, int polynomialSize,
   }
   auto a = std::pow(2, (slope * size + bias) * 2);
   auto b = std::pow(2, -2 * (logQ - 2));
+  if (bits == 132) {
+    return a + b;
+  }
   return a > b ? a : b;
 }
 
