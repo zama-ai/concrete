@@ -24,10 +24,15 @@ capnp = "0.20.3"
 clap = { version = "4.5.16", features = ["derive"] }
 
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"], optional = true }
+wasm-bindgen-futures = { version = "0.4.50", optional = true }
+web-sys = { version = "0.3.77", features = ["std", "MessagePort"], optional = true }
 
-tfhe = { version = "1.0" }
-tfhe-csprng = { version = "0.5" }
+# tfhe = { version = "1.0" }
+# tfhe-csprng = { version = "0.5" }
+tfhe = { path = "../../../tfhe-rs/tfhe" }
+tfhe-csprng = { path = "../../../tfhe-rs/tfhe-csprng" }
 
 [features]
 
-wasm = ["dep:wasm-bindgen", "tfhe/__wasm_api"]
+default = []
+wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:web-sys", "tfhe/__wasm_api"]
