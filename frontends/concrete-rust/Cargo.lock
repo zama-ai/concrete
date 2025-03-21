@@ -186,9 +186,12 @@ dependencies = [
  "capnp",
  "capnpc",
  "clap",
+ "serde_json",
  "tfhe",
  "tfhe-csprng",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -422,18 +425,6 @@ dependencies = [
 
 [[package]]
 name = "pulp"
-version = "0.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9e3f19bdeda2e49d16c8ae90f9615adc2298ee16974bb250d0afb705e33043f"
-dependencies = [
- "bytemuck",
- "libm",
- "num-complex",
- "reborrow",
-]
-
-[[package]]
-name = "pulp"
 version = "0.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95fb7a99b37aaef4c7dd2fd15a819eb8010bfc7a2c2155230d51f497316cad6d"
@@ -564,9 +555,7 @@ dependencies = [
 
 [[package]]
 name = "tfhe"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6e9c8cc15c3ba99f02a3027135ff1c0db33cd561324fc4e6a93006f7c8de5a1"
+version = "1.0.0"
 dependencies = [
  "aligned-vec",
  "bincode",
@@ -577,7 +566,7 @@ dependencies = [
  "itertools",
  "js-sys",
  "paste",
- "pulp 0.21.4",
+ "pulp",
  "rand_core",
  "rayon",
  "serde",
@@ -592,8 +581,6 @@ dependencies = [
 [[package]]
 name = "tfhe-csprng"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b1a0b71a91c9e36e9e1e8e6a528a056086b01e193e173472ae59cfaac56fdad"
 dependencies = [
  "aes",
  "libc",
@@ -603,34 +590,28 @@ dependencies = [
 [[package]]
 name = "tfhe-fft"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fd167dab126860cfcdce2cdcf9a17826d0789b95f3b6984e6b171c7713085e6"
 dependencies = [
  "aligned-vec",
  "bytemuck",
  "dyn-stack",
  "js-sys",
  "num-complex",
- "pulp 0.20.1",
+ "pulp",
  "serde",
 ]
 
 [[package]]
 name = "tfhe-ntt"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cd83664188b7640456ed938f7414f0d414e96bdc07b95aaba05c2ba13e3c478"
 dependencies = [
  "aligned-vec",
  "bytemuck",
- "pulp 0.20.1",
+ "pulp",
 ]
 
 [[package]]
 name = "tfhe-versionable"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af3a2785eb45d8bbb1cf26eb19277a7398b2fc818ad5136b57f5ee280bf0c430"
 dependencies = [
  "aligned-vec",
  "num-complex",
@@ -641,8 +622,6 @@ dependencies = [
 [[package]]
 name = "tfhe-versionable-derive"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f221336486fd08a09dcfd035845f18ae4b742bbf6b6c21dc2121f6b3322705f7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -708,6 +687,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-bindgen-futures"
+version = "0.4.50"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "555d470ec0bc3bb57890405e5d4322cc9ea83cebb085523ced7be4144dac1e61"
+dependencies = [
+ "cfg-if",
+ "js-sys",
+ "once_cell",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "wasm-bindgen-macro"
 version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -737,6 +729,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "web-sys"
+version = "0.3.77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33b6dd2ef9186f1f2072e409e99cd22a975331a6b3591b12c764e0e55c60d5d2"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
 ]
 
 [[package]]
