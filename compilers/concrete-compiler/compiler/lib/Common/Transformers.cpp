@@ -281,12 +281,39 @@ Result<TransportValueVerifier> getTransportValueVerifier(
       return StringError(
           "Tried to transform a transport value without type infos.");
     }
+    // REMOVE ME: Hacking variance comparison with an epsilon as it can mismatch
+    // between the RO and PO
+    auto cmpVal = transportVal;
+    if (gateInfo.asReader().getTypeInfo().hasLweCiphertext() &&
+        transportVal.asReader().getTypeInfo().hasLweCiphertext()) {
+      auto gateVariance = gateInfo.asReader()
+                              .getTypeInfo()
+                              .getLweCiphertext()
+                              .getEncryption()
+                              .getVariance();
+      auto transportVariance = transportVal.asReader()
+                                   .getTypeInfo()
+                                   .getLweCiphertext()
+                                   .getEncryption()
+                                   .getVariance();
+      if (std::abs(gateVariance - transportVariance) > 1e-40) {
+        return StringError("Tried to transform a transport value with "
+                           "incompatible variance.\n Expected: " +
+                           std::to_string(gateVariance) +
+                           "\nActual: " + std::to_string(transportVariance));
+      }
+      cmpVal.asBuilder()
+          .getTypeInfo()
+          .getLweCiphertext()
+          .getEncryption()
+          .setVariance(gateVariance);
+    }
     if ((capnp::AnyStruct::Reader)gateInfo.asReader().getTypeInfo() !=
-        (capnp::AnyStruct::Reader)transportVal.asReader().getTypeInfo()) {
+        (capnp::AnyStruct::Reader)cmpVal.asReader().getTypeInfo()) {
       std::string expected =
           gateInfo.asReader().getTypeInfo().toString().flatten().cStr();
       std::string actual =
-          transportVal.asReader().getTypeInfo().toString().flatten().cStr();
+          cmpVal.asReader().getTypeInfo().toString().flatten().cStr();
       return StringError("Tried to transform transport value with incompatible "
                          "type info.\nExpected: " +
                          expected + "\nActual: " + actual);
