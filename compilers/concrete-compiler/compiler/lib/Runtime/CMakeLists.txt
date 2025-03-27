@@ -53,8 +53,6 @@ target_include_directories(
 
 target_link_libraries(
   ConcretelangRuntime
-  PUBLIC
-    ConcretelangCommon
   PRIVATE rust_deps_bundle
           concrete-protocol
           pthread
@@ -62,7 +60,9 @@ target_link_libraries(
           dl
           $<TARGET_OBJECTS:mlir_c_runner_utils>
           $<TARGET_OBJECTS:mlir_float16_utils>
-          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>)
+          $<TARGET_OBJECTS:MLIRSparseTensorRuntime>
+          $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangCommon>
+)
 
 if(CONCRETELANG_CUDA_SUPPORT)
   install(TARGETS ConcretelangRuntime omp tfhe_cuda_backend EXPORT ConcretelangRuntime)
