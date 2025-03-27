@@ -14,6 +14,7 @@ add_mlir_library(
   wrappers.cpp
   LINK_LIBS
   PUBLIC
+  rust_deps_bundle
   concrete-protocol
   capnp
   kj)

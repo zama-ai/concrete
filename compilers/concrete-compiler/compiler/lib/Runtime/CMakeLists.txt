@@ -53,9 +53,7 @@ target_include_directories(
 
 target_link_libraries(
   ConcretelangRuntime
-  PRIVATE rust_deps_bundle
-          concrete-protocol
-          pthread
+  PRIVATE pthread
           m
           dl
           $<TARGET_OBJECTS:mlir_c_runner_utils>
