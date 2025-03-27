@@ -34,6 +34,36 @@ pub fn main() {
                 .long("enc-seed"),
         )
         .arg(
+            Arg::new("no-bootstrapping-keys")
+                .help("Do not generate bootstrapping keys")
+                .required(false)
+                .long("no-bsk")
+                .action(clap::ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("ignore-bsk")
+                .help("Ignore a specific bootstrapping key by id")
+                .required(false)
+                .long("ignore-bsk")
+                .num_args(1)
+                .action(clap::ArgAction::Append),
+        )
+        .arg(
+            Arg::new("no-keyswitch-keys")
+                .help("Do not generate keyswitching keys")
+                .required(false)
+                .long("no-ksk")
+                .action(clap::ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("ignore-ksk")
+                .help("Ignore a specific keyswitching key by id")
+                .required(false)
+                .long("ignore-ksk")
+                .num_args(1)
+                .action(clap::ArgAction::Append),
+        )
+        .arg(
             Arg::new("initial-secret-key")
                 .help("Initial secret key for key generation")
                 .required(false)
@@ -55,6 +85,18 @@ pub fn main() {
         .unwrap()
         .parse::<u128>()
         .expect("Invalid encryption seed");
+    let no_bootstrapping_keys = matches.get_one::<bool>("no-bootstrapping-keys").unwrap();
+    let ignore_bootstrapping_keys = matches
+        .get_many::<u32>("ignore-bsk")
+        .unwrap_or_default()
+        .cloned()
+        .collect();
+    let no_keyswitching_keys = matches.get_one::<bool>("no-keyswitching-keys").unwrap();
+    let ignore_keyswitching_keys = matches
+        .get_many::<u32>("ignore-ksk")
+        .unwrap_or_default()
+        .cloned()
+        .collect();
     let initial_secret_keys_paths: Vec<String> = matches
         .get_many::<String>("initial-secret-key")
         .unwrap_or_default()
@@ -84,6 +126,10 @@ pub fn main() {
         keyset_info_buffer.as_slice(),
         sec_seed,
         enc_seed,
+        *no_bootstrapping_keys,
+        ignore_bootstrapping_keys,
+        *no_keyswitching_keys,
+        ignore_keyswitching_keys,
         &initial_secret_keys,
     );
     let mut keyset_file = std::fs::File::create(keyset_path).expect("Failed to create keyset file");
