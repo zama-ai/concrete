@@ -10,10 +10,15 @@ add_mlir_library(
   Transformers.cpp
   Security.cpp
   Values.cpp
+  simulation.cpp
+  wrappers.cpp
   LINK_LIBS
   PUBLIC
+  rust_deps_bundle
   concrete-protocol
   capnp
   kj)
 
-target_include_directories(ConcretelangCommon PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
+target_include_directories(ConcretelangCommon
+    PUBLIC ${CONCRETE_CPU_INCLUDE_DIR}
+    PUBLIC ${CONCRETE_CPU_NOISE_MODEL_INCLUDE_DIR})

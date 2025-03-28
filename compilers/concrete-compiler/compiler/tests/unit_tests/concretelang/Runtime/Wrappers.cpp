@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "concretelang/Runtime/wrappers.h"
+#include "concretelang/Common/wrappers.h"
 
 namespace {
 
