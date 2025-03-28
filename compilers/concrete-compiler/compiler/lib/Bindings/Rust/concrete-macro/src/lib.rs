@@ -1,3 +1,4 @@
+#![feature(file_lock)]
 #[allow(unused)]
 use quote::quote;
 use concrete::{compiler, protocol::ProgramInfo};

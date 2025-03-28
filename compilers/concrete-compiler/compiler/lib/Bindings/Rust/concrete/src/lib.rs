@@ -1,5 +1,3 @@
-#![feature(file_lock)]
-
 pub use cxx::{UniquePtr, SharedPtr};
 pub use ffi::c_void;
 
