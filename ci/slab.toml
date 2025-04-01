@@ -1,6 +1,6 @@
 [backend.aws.cpu-test]
-region = "eu-west-1"
-image_id = "ami-002bdcd64b8472cf9" # Based on Ubuntu 22.4
+region = "eu-west-3"
+image_id = "ami-0d87d688748d653f7" # Based on Ubuntu 24.04
 instance_type = "m7i.16xlarge"
 security_group = ["sg-0e55cc31dfda0d8a7", ]
 
@@ -25,6 +25,6 @@ security_group= ["sg-02dd8470fa845f31b", ]
 runner_name = "distributed-ci"
 
 [backend.aws.release]
-region = "eu-west-1"
-image_id = "ami-002bdcd64b8472cf9"
+region = "eu-west-3"
+image_id = "ami-0d87d688748d653f7"
 instance_type = "hpc7a.96xlarge"
