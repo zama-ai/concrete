@@ -3,3 +3,4 @@ pylint==3.3.3
 mypy==1.11.2
 numpy>=1.23,<2.0
 jsonpickle>=3.0.3
+pybind11-stubgen>=2.5
