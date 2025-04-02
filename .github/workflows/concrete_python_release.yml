@@ -239,7 +239,6 @@ jobs:
           # add new version
           cat frontends/concrete-python/version.txt >> frontends/concrete-python/concrete/fhe/version.py
       - name: Build wheel
-        shell: zsh
         run: |
           CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
           CONCRETE_COMPILER=$(pwd)/compilers/concrete-compiler/compiler
