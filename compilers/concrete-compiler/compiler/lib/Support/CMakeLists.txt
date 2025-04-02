@@ -39,6 +39,7 @@ add_mlir_library(
   MLIRExecutionEngine
   ${LLVM_PTHREAD_LIB}
   TFHEDialectAnalysis
-  ConcreteDialectAnalysis)
+  ConcreteDialectAnalysis
+  ConcretelangRuntime)
 
 target_include_directories(ConcretelangSupport PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
