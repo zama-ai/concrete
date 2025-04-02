@@ -240,6 +240,9 @@ jobs:
           cat frontends/concrete-python/version.txt >> frontends/concrete-python/concrete/fhe/version.py
       - name: Build wheel
         run: |
+          # Hack for mac2 host...
+          export PATH=$PATH:/Users/ec2-user/.cargo/bin:/Users/ec2-user/.pyenv/versions/3.8.20/bin
+
           CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
           CONCRETE_COMPILER=$(pwd)/compilers/concrete-compiler/compiler
           export COMPILER_BUILD_DIRECTORY=$CONCRETE_COMPILER/build
