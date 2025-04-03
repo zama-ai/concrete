@@ -26,7 +26,7 @@ jobs:
           ls -la ./wheels/
       - name: Push wheels to public PyPI (public)
         run: |
-          pip install twine==5.1.1
+          pip install twine
           twine upload wheels/concrete_python-${{ inputs.version }}*.whl \
             -u "${{ secrets.PUBLIC_PYPI_USER }}" \
             -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" \
