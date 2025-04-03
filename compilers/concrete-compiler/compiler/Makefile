@@ -236,7 +236,7 @@ run-python-tests: python-bindings concretecompiler runtime
 
 run-rust-tests: concrete-rust
 	$(eval _abs_build_dir = $(realpath $(BUILD_DIR)))
-	cd lib/Bindings/Rust && COMPILER_BUILD_DIRECTORY=$(_abs_build_dir) cargo test
+	cd lib/Bindings/Rust && COMPILER_BUILD_DIRECTORY=$(_abs_build_dir) cargo +nightly test
 
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output
