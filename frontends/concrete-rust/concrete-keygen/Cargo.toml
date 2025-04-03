@@ -33,5 +33,5 @@ tfhe-csprng = { version = "0.5" }
 
 [features]
 
-default = ["wasm"]
+default = []
 wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:web-sys", "dep:serde-json", "tfhe/__wasm_api"]
