@@ -169,11 +169,11 @@ fn out_variance(
                 })
         }
         Operator::Dot {
-            kind: DotKind::CompatibleTensor { .. },
+            kind: DotKind::CompatibleTensor,
             ..
         } => todo!("TODO"),
         Operator::Dot {
-            kind: DotKind::Unsupported { .. },
+            kind: DotKind::Unsupported,
             ..
         } => panic!("Unsupported"),
         Operator::Dot {
