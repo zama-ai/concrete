@@ -30,6 +30,8 @@
 //! - `get_client_keyset`: Extracts the client keyset from a keyset and returns it as a serialized message.
 //! - `get_client_keyset_wasm`: Extracts the client keyset from a keyset in a WebAssembly environment.
 //! - `explain_keyset_info`: Explains a keyset info buffer in JSON representation.
+//! - `add_bsk_keys_to_keyset`: Adds a list of bootstrap keys to an existing keyset.
+//! - `add_bsk_keys_to_keyset_with_buffer`: Adds a list of bootstrap keys to an existing keyset buffer.
 //!
 //! # Macros
 //! - `build_key`: A macro for building a Cap'n Proto message for a key with the specified key information and builder type.
@@ -47,6 +49,7 @@ use capnp::serialize::{self, OwnedSegments};
 use tfhe::core_crypto::commons::math::random::CompressionSeed;
 use tfhe::core_crypto::prelude::*;
 use tfhe::core_crypto::seeders::new_seeder;
+use tfhe::safe_serialization::{safe_serialize, safe_serialized_size};
 use tfhe_csprng::generators::SoftwareRandomGenerator;
 use tfhe_csprng::seeders::Seed;
 
@@ -655,17 +658,139 @@ pub async fn chunked_bsk_keygen(
     );
     let mut total_len = 0;
     for chunk in chunk_generator {
-        let chunk_data = chunk.into_container();
-        // TODO: this is to assemble them in JS. If we want to send all the chunks and assemble them later in Rust,
-        // we can use safe serialization instead.
-        let data = u64_slice_to_u8_vector(&chunk_data);
-        total_len += data.len();
-        let js_array = web_sys::js_sys::Uint8Array::from(data.as_slice());
+        let mut serialized_data = Vec::new();
+        let serialized_size =
+            safe_serialized_size(&chunk).expect_throw("couldn't guess size of serialized chunk");
+        safe_serialize(&chunk, &mut serialized_data, serialized_size)
+            .expect_throw("couldn't serialize chunk");
+        total_len += serialized_data.len();
+        let js_array = web_sys::js_sys::Uint8Array::from(serialized_data.as_slice());
         port.post_message(&js_array)
             .expect_throw("Failed to post message to port");
     }
     port.close();
     total_len
+}
+
+/// Adds a list of bootstrap keys to an existing keyset.
+///
+/// This function takes an existing keyset, a list of bootstrap keys, and constructs a new keyset
+/// by adding the bootstrap keys to the existing keyset.
+///
+/// # Arguments
+///
+/// * `keyset`: The existing keyset to which the bootstrap keys will be added.
+/// * `bsks`: A vector of bootstrap keys to be added.
+///
+/// # Returns
+///
+/// A new keyset with the additional bootstrap keys.
+pub fn add_bsk_keys_to_keyset(
+    keyset: concrete_protocol_capnp::keyset::Reader,
+    bsks: Vec<concrete_protocol_capnp::lwe_bootstrap_key::Reader>,
+) -> capnp::message::Builder<HeapAllocator> {
+    let mut builder = capnp::message::Builder::new_default();
+    let mut new_keyset = builder.init_root::<concrete_protocol_capnp::keyset::Builder>();
+
+    // Copy existing client and server keysets
+    new_keyset
+        .reborrow()
+        .set_client(keyset.get_client().unwrap())
+        .unwrap();
+    let mut server_keyset = new_keyset.init_server();
+    server_keyset
+        .reborrow()
+        .set_lwe_keyswitch_keys(
+            keyset
+                .get_server()
+                .unwrap()
+                .get_lwe_keyswitch_keys()
+                .unwrap(),
+        )
+        .unwrap();
+    server_keyset
+        .reborrow()
+        .set_packing_keyswitch_keys(
+            keyset
+                .get_server()
+                .unwrap()
+                .get_packing_keyswitch_keys()
+                .unwrap(),
+        )
+        .unwrap();
+
+    // Initialize bootstrap keys with existing ones
+    let existing_bsk_keys = keyset
+        .get_server()
+        .unwrap()
+        .get_lwe_bootstrap_keys()
+        .unwrap();
+    let mut new_bsk_keys =
+        server_keyset.init_lwe_bootstrap_keys(existing_bsk_keys.len() + bsks.len() as u32);
+    for bsk in existing_bsk_keys.iter() {
+        new_bsk_keys
+            .set_with_caveats(bsk.get_info().unwrap().get_id(), bsk)
+            .unwrap();
+    }
+    // Add new bootstrap keys
+    for bsk in bsks.iter() {
+        new_bsk_keys
+            .set_with_caveats(bsk.get_info().unwrap().get_id(), *bsk)
+            .unwrap();
+    }
+
+    builder
+}
+
+/// Adds a list of bootstrap keys to an existing keyset using buffers.
+///
+/// This function takes an existing keyset buffer, a list of bootstrap key buffers, and constructs a new keyset
+/// by adding the bootstrap keys to the existing keyset.
+///
+/// # Arguments
+///
+/// * `keyset_buffer`: A byte slice containing the serialized existing keyset (Capnp).
+/// * `bsk_buffers`: A vector of byte slices, each containing a serialized bootstrap key (Capnp).
+///
+/// # Returns
+///
+/// A `Vec<u8>` containing the serialized new keyset.
+pub fn add_bsk_keys_to_keyset_with_buffers(
+    mut keyset_buffer: &[u8],
+    mut bsk_buffers: Vec<&[u8]>,
+) -> Vec<u8> {
+    // Deserialize the keyset buffer
+    let keyset_reader =
+        serialize::read_message_from_flat_slice(&mut keyset_buffer, ReaderOptions::new())
+            .expect("Failed to read keyset buffer");
+    let keyset = keyset_reader
+        .get_root::<concrete_protocol_capnp::keyset::Reader>()
+        .expect("Failed to get root keyset reader");
+
+    // Deserialize each bootstrap key buffer
+    let bsks_readers = bsk_buffers
+        .iter_mut()
+        .map(|mut bsk_buffer| {
+            let bsk_reader =
+                serialize::read_message_from_flat_slice(&mut bsk_buffer, ReaderOptions::new())
+                    .expect("Failed to read bootstrap key buffer");
+            bsk_reader
+        })
+        .collect::<Vec<_>>();
+    let bsks = bsks_readers
+        .iter()
+        .map(|bsk_reader| {
+            bsk_reader
+                .get_root::<concrete_protocol_capnp::lwe_bootstrap_key::Reader>()
+                .expect("Failed to get root bootstrap key reader")
+        })
+        .collect::<Vec<_>>();
+
+    // Call the original function
+    let builder = add_bsk_keys_to_keyset_message(keyset, bsks);
+
+    // Serialize the result to a buffer
+    serialize::write_message_to_words(&builder)
 }
 
 /// Generates a Cap'n Proto message containing the keyset based on the provided keyset information and seeds.
