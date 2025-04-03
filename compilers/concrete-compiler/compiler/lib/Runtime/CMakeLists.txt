@@ -3,7 +3,6 @@ add_compile_options(-fsized-deallocation)
 if(CONCRETELANG_CUDA_SUPPORT)
   add_library(
     ConcretelangRuntime SHARED
-    utils.cpp
     context.cpp
     DFRuntime.cpp
     key_manager.cpp
@@ -12,7 +11,6 @@ if(CONCRETELANG_CUDA_SUPPORT)
 else()
   add_library(
     ConcretelangRuntime SHARED
-    utils.cpp
     context.cpp
     DFRuntime.cpp
     key_manager.cpp
