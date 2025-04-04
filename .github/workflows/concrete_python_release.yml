@@ -195,7 +195,7 @@ jobs:
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: ${{ format('{0}-binaries-linux-x86', matrix.hw) }}
-          path: concrete/compilers/concrete-compiler/compiler/build/lib/libConcrete.*.so
+          path: concrete/compilers/concrete-compiler/compiler/build/lib/libConcrete*.so
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
@@ -322,27 +322,17 @@ jobs:
       - name: Build concrete rust
         # Note: That arbitrary if to not build in every python version
         if: ${{ matrix.python-version == '3.10' }}
-        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          options: >-
-            -v ${{ github.workspace }}:/concrete
-            -v ${{ github.workspace }}/build:/build
-          shell: bash
-          run: |
-            cargo install cxxbridge-cmd
-            cd compilers/concrete-compiler/compiler
-            make concrete-rust
+        run: |
+          cargo install cxxbridge-cmd
+          cd compilers/concrete-compiler/compiler
+          make concrete-rust
       - name: Upload binary libraries
         # Note: That arbitrary if to not build in every python version
         if: ${{ matrix.python-version == '3.10' }}
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: ${{ format('cpu-binaries-{0}', matrix.python-version) }}
-          path: concrete/compilers/concrete-compiler/compiler/build/lib/libConcrete.*.so
+          path: concrete/compilers/concrete-compiler/compiler/build/lib/libConcrete*.so
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
