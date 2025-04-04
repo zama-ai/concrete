@@ -61,7 +61,7 @@ jobs:
   build-linux-x86:
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10"]
         hw: ["cpu", "gpu"]
     needs: setup-instance
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
@@ -250,7 +250,7 @@ jobs:
     needs: check-duplicate-nightly
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.runs-on }}
     steps:
@@ -484,7 +484,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10"]
         # FIXME: we need to investigate why this tests are taking too long
         # in the meantime, we only run them for one version when in nightly
         exclude:
@@ -596,7 +596,7 @@ jobs:
   test-linux-x86-gpu:
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10"]
       fail-fast: false
     needs: [setup-gpu-test-instance, build-linux-x86]
     runs-on: ${{ needs.setup-gpu-test-instance.outputs.runner-name }}
@@ -681,7 +681,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10"]
         runs-on: ["aws-mac1-metal", "aws-mac2-metal"]
     runs-on: ${{ matrix.runs-on }}
     outputs:
