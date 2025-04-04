@@ -641,6 +641,43 @@ pub fn get_lwe_secret_key_from_client_keyset_from_buffers(
     serialize::write_message_to_words(&sk_builder)
 }
 
+/// Builds a Cap'n Proto message containing a bootstrap key.
+///
+/// # Arguments
+///
+/// * `keyset_info`: The keyset information. This is used to get info about the bootstrap key.
+/// * `bsk_id`: The ID of the bootstrap key.
+/// * `bsk`: The bootstrap key to be included in the message.
+///
+/// # Returns
+///
+/// A Cap'n Proto message builder containing the bootstrap key.
+pub fn build_bsk_proto(
+    keyset_info: concrete_protocol_capnp::keyset_info::Reader,
+    bsk_id: u32,
+    bsk: &LweBootstrapKey<Vec<u64>>,
+) -> capnp::message::Builder<HeapAllocator> {
+    let mut builder = capnp::message::Builder::new_default();
+    let mut bsk_builder =
+        builder.init_root::<concrete_protocol_capnp::lwe_bootstrap_key::Builder>();
+    bsk_builder
+        .set_info(
+            keyset_info
+                .get_lwe_bootstrap_keys()
+                .expect_or_throw("Failed to get LWE bootstrap key info")
+                .get(bsk_id),
+        )
+        .expect_or_throw("Failed to set bootstrap key info");
+    bsk_builder
+        .set_payload(
+            vector_to_payload(bsk.as_view().into_container())
+                .get_root_as_reader()
+                .expect_or_throw("Failed to get payload"),
+        )
+        .expect_or_throw("Failed to set bootstrap key payload");
+    builder
+}
+
 /// Adds a list of bootstrap keys to an existing keyset.
 ///
 /// This function takes an existing keyset, a list of bootstrap keys, and constructs a new keyset
