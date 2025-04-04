@@ -334,15 +334,8 @@ jobs:
           shell: bash
           run: |
             cargo install cxxbridge-cmd
-            cd /concrete/compilers/concrete-compiler/compiler
-            make BUILD_DIR=/build \
-              CCACHE=ON \
-              DATAFLOW_EXECUTION_ENABLED=${{ env.DATAFLOW_EXECUTION_ENABLED }} \
-              Python3_EXECUTABLE=$(which python) \
-              CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} \
-              TIMING_ENABLED=${{ env.TIMING_ENABLED }} \
-              CUDA_PATH=${{ env.CUDA_PATH }} \
-              concrete-rust
+            cd compilers/concrete-compiler/compiler
+            make concrete-rust
       - name: Upload binary libraries
         # Note: That arbitrary if to not build in every python version
         if: ${{ matrix.python-version == '3.10' }}
