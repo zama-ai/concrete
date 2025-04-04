@@ -7,6 +7,8 @@ if(CONCRETELANG_CUDA_SUPPORT)
     DFRuntime.cpp
     key_manager.cpp
     GPUDFG.cpp
+    simulation.cpp
+    wrappers.cpp
     time_util.cpp)
 else()
   add_library(
@@ -15,6 +17,8 @@ else()
     DFRuntime.cpp
     key_manager.cpp
     GPUDFG.cpp
+    simulation.cpp
+    wrappers.cpp
     time_util.cpp)
 endif()
 
@@ -77,6 +81,8 @@ add_library(
   DFRuntime.cpp
   key_manager.cpp
   GPUDFG.cpp
+  simulation.cpp
+  wrappers.cpp
   time_util.cpp)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

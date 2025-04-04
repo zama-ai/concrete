@@ -23,7 +23,7 @@
 #include <concretelang/Runtime/GPUDFG.hpp>
 #include <concretelang/Runtime/stream_emulator_api.h>
 #include <concretelang/Runtime/time_util.h>
-#include <concretelang/Common/wrappers.h>
+#include <concretelang/Runtime/wrappers.h>
 
 using RuntimeContext = mlir::concretelang::RuntimeContext;
 

@@ -3,12 +3,12 @@
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang/Common/simulation.h"
+#include "concretelang/Runtime/simulation.h"
 #include "concrete-cpu-noise-model.h"
 #include "concrete-cpu.h"
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Security.h"
-#include "concretelang/Common/wrappers.h"
+#include "concretelang/Runtime/wrappers.h"
 #include "concretelang/Support/V0Parameters.h"
 #include <assert.h>
 #include <cmath>
@@ -36,13 +36,6 @@ uint64_t gaussian_noise(double variance, Csprng *csprng = default_csprng.ptr) {
   concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, std_dev,
                                          csprng);
   return random_gaussian_buff[0];
-}
-
-uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim,
-                             Csprng *csprng) {
-  double variance = security_curve()->getVariance(1, lwe_dim, 64);
-  uint64_t encryption_noise = gaussian_noise(variance, (Csprng *)csprng);
-  return message + encryption_noise;
 }
 
 uint64_t sim_keyswitch_lwe_u64(uint64_t plaintext, uint32_t level,
