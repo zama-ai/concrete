@@ -36,19 +36,112 @@ use std::collections::HashSet;
 use std::u128;
 
 use crate::concrete_protocol_capnp::*;
-use capnp::message::{HeapAllocator, ReaderOptions};
-use capnp::serialize::{self, OwnedSegments};
+use capnp::message::HeapAllocator;
+use capnp::serialize;
 use tfhe::core_crypto::commons::math::random::CompressionSeed;
 use tfhe::core_crypto::prelude::*;
 use tfhe::core_crypto::seeders::new_seeder;
 use tfhe_csprng::generators::SoftwareRandomGenerator;
 use tfhe_csprng::seeders::Seed;
 
+#[cfg(feature = "wasm")]
+use wasm_bindgen::UnwrapThrowExt;
+
+// We want to have meaningful error messages when using wasm. This can be done by using expect_throw,
+// which is only available during wasm build.
+#[allow(dead_code)]
+trait UnwrapOrThrowExt<T>: Sized {
+    fn expect_or_throw(self, message: &str) -> T;
+}
+
+impl<T, E> UnwrapOrThrowExt<T> for Result<T, E>
+where
+    E: core::fmt::Debug,
+{
+    #[cfg(feature = "wasm")]
+    fn expect_or_throw(self, message: &str) -> T {
+        self.expect_throw(message)
+    }
+
+    #[cfg(not(feature = "wasm"))]
+    fn expect_or_throw(self, message: &str) -> T {
+        self.expect(message)
+    }
+}
+
+impl<T> UnwrapOrThrowExt<T> for Option<T> {
+    #[cfg(feature = "wasm")]
+    fn expect_or_throw(self, message: &str) -> T {
+        self.expect_throw(message)
+    }
+
+    #[cfg(not(feature = "wasm"))]
+    fn expect_or_throw(self, message: &str) -> T {
+        self.expect(message)
+    }
+}
+
 pub mod concrete_protocol_capnp {
+    use capnp::serialize;
+    use capnp::traits::FromPointerReader;
+
     include!(concat!(
         env!("OUT_DIR"),
         "/capnp/concrete_protocol_capnp.rs"
     ));
+
+    /// Reads a secret key from a buffer and returns the key ID and Cap'n Proto message.
+    ///
+    /// # Arguments
+    ///
+    /// * `buffer`: The buffer containing the secret key.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing the key ID and Cap'n Proto reader for the secret key.
+    pub fn read_secret_key_from_buffer(
+        buffer: &[u8],
+    ) -> capnp::Result<(u32, capnp::message::Reader<serialize::OwnedSegments>)> {
+        let message = read_capnp_from_buffer(buffer)?;
+        let key = get_reader_from_message::<lwe_secret_key::Reader>(&message)?;
+        let id = key.get_info()?.get_id();
+        Ok((id, message))
+    }
+
+    pub fn get_reader_from_message<'a, T>(
+        message: &'a capnp::message::Reader<serialize::OwnedSegments>,
+    ) -> capnp::Result<T>
+    where
+        T: FromPointerReader<'a>,
+    {
+        message.get_root::<'a, T>()
+    }
+
+    pub fn get_reader_from_builder<'a, T>(
+        message: &'a mut capnp::message::Builder<capnp::message::HeapAllocator>,
+    ) -> capnp::Result<T>
+    where
+        T: FromPointerReader<'a>,
+    {
+        message.get_root_as_reader::<'a, T>()
+    }
+
+    /// Reads a Cap'n Proto from a buffer and returns a message reader.
+    ///
+    /// # Arguments
+    ///
+    /// * `buffer`: The buffer containing the Cap'n Proto.
+    ///
+    /// # Returns
+    ///
+    /// A Cap'n Proto message reader.
+    pub fn read_capnp_from_buffer(
+        mut buffer: &[u8],
+    ) -> capnp::Result<capnp::message::Reader<serialize::OwnedSegments>> {
+        let mut reader_options = capnp::message::ReaderOptions::new();
+        reader_options.traversal_limit_in_words(Some(buffer.len()));
+        serialize::read_message(&mut buffer, reader_options)
+    }
 }
 
 // FIXME: this is the value of capnp::MAX_TEXT_SIZE in Cpp in my setup, but I can't seem to find a similar API in Rust
@@ -74,7 +167,9 @@ fn u64_slice_to_u8_vector(data: &[u64]) -> Vec<u8> {
 fn u8_slice_to_u64_vector(data: &[u8]) -> Vec<u64> {
     let mut output = Vec::new();
     for i in data.chunks(std::mem::size_of::<u64>()) {
-        output.push(u64::from_le_bytes(i.try_into().unwrap()));
+        output.push(u64::from_le_bytes(
+            i.try_into().expect_or_throw("Failed to convert to u64"),
+        ));
     }
     output
 }
@@ -83,11 +178,15 @@ fn u8_slice_to_u64_vector(data: &[u8]) -> Vec<u64> {
 fn reader_to_lwe_secret_key(
     reader: &concrete_protocol_capnp::lwe_secret_key::Reader,
 ) -> LweSecretKey<Vec<u64>> {
-    let payload = reader.get_payload().unwrap();
+    let payload = reader
+        .get_payload()
+        .expect_or_throw("Failed to get payload");
     let mut sk_data = Vec::new();
-    let data_list = payload.get_data().unwrap();
+    let data_list = payload.get_data().expect_or_throw("Failed to get data");
     for data in data_list.iter() {
-        sk_data.extend_from_slice(&u8_slice_to_u64_vector(data.unwrap()));
+        sk_data.extend_from_slice(&u8_slice_to_u64_vector(
+            data.expect_or_throw("Failed to get data"),
+        ));
     }
     LweSecretKey::from_container(sk_data)
 }
@@ -304,14 +403,16 @@ macro_rules! build_key {
         let mut key_builder = capnp::message::Builder::new_default();
         let mut key_root_builder = key_builder.init_root::<$builder_type>();
         let key_data = $key.into_container();
-        key_root_builder.set_info($key_info).unwrap();
+        key_root_builder
+            .set_info($key_info)
+            .expect_or_throw("Failed to set key info");
         key_root_builder
             .set_payload(
                 vector_to_payload(key_data.as_slice())
                     .get_root_as_reader()
-                    .unwrap(),
+                    .expect_or_throw("Failed to get payload"),
             )
-            .unwrap();
+            .expect_or_throw("Failed to set payload");
         key_builder
     }};
 }
@@ -322,18 +423,24 @@ fn build_bsk(
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
-    let params = bsk_info.get_params().unwrap();
+    let params = bsk_info
+        .get_params()
+        .expect_or_throw("Failed to get params");
     let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
     let output_glwe_dimension = params.get_glwe_dimension() as usize;
     let output_polynomial_size = params.get_polynomial_size() as usize;
     let decomp_level_count = params.get_level_count() as usize;
     let decomp_base_log = params.get_base_log() as usize;
     let variance = params.get_variance();
-    let compression = bsk_info.get_compression().unwrap();
-    let input_sk = generated_secret_keys.get(&bsk_info.get_input_id()).unwrap();
+    let compression = bsk_info
+        .get_compression()
+        .expect_or_throw("Failed to get compression for bootstrap key");
+    let input_sk = generated_secret_keys
+        .get(&bsk_info.get_input_id())
+        .expect_or_throw("Failed to find input secret key for bootstrap key");
     let output_sk = generated_secret_keys
-        .get(&&bsk_info.get_output_id())
-        .unwrap();
+        .get(&bsk_info.get_output_id())
+        .expect_or_throw("Failed to find output secret key for bootstrap key");
     match compression {
         Compression::None => {
             let bsk = generate_bsk(
@@ -380,17 +487,23 @@ fn build_ksk(
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
-    let params = ksk_info.get_params().unwrap();
+    let params = ksk_info
+        .get_params()
+        .expect_or_throw("Failed to get keyswitch key parameters");
     let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
     let output_lwe_dimension = params.get_output_lwe_dimension() as usize;
     let decomp_level_count = params.get_level_count() as usize;
     let decomp_base_log = params.get_base_log() as usize;
     let variance = params.get_variance();
-    let compression = ksk_info.get_compression().unwrap();
-    let input_sk = generated_secret_keys.get(&ksk_info.get_input_id()).unwrap();
+    let compression = ksk_info
+        .get_compression()
+        .expect_or_throw("Failed to get compression for keyswitch key");
+    let input_sk = generated_secret_keys
+        .get(&ksk_info.get_input_id())
+        .expect_or_throw("Failed to find input secret key for keyswitch key");
     let output_sk = generated_secret_keys
-        .get(&&ksk_info.get_output_id())
-        .unwrap();
+        .get(&ksk_info.get_output_id())
+        .expect_or_throw("Failed to find output secret key for keyswitch key");
     match compression {
         Compression::None => {
             let ksk = generate_ksk(
@@ -435,7 +548,9 @@ fn build_pksk(
     generated_secret_keys: &std::collections::HashMap<u32, LweSecretKey<Vec<u64>>>,
     mut enc_random_generator: &mut EncryptionRandomGenerator<SoftwareRandomGenerator>,
 ) -> capnp::message::Builder<HeapAllocator> {
-    let params = pksk_info.get_params().unwrap();
+    let params = pksk_info
+        .get_params()
+        .expect_or_throw("Failed to get packing keyswitch key parameters");
     let input_lwe_dimension = params.get_input_lwe_dimension() as usize;
     let glwe_dimension = params.get_glwe_dimension() as usize;
     let decomp_level_count = params.get_level_count() as usize;
@@ -446,10 +561,10 @@ fn build_pksk(
         &mut enc_random_generator,
         generated_secret_keys
             .get(&pksk_info.get_input_id())
-            .unwrap(),
+            .expect_or_throw("Failed to find input secret key for packing keyswitch key"),
         generated_secret_keys
-            .get(&&pksk_info.get_output_id())
-            .unwrap(),
+            .get(&pksk_info.get_output_id())
+            .expect_or_throw("Failed to find output secret key for packing keyswitch key"),
         input_lwe_dimension,
         glwe_dimension,
         poly_size,
@@ -488,36 +603,40 @@ fn get_lwe_secret_key_from_client_keyset(
 ) -> capnp::message::Builder<HeapAllocator> {
     let sk = client_keyset
         .get_lwe_secret_keys()
-        .expect("Failed to get LWE secret keys")
+        .expect_or_throw("Failed to get LWE secret keys")
         .iter()
         .find(|sk| {
             sk.get_info()
-                .expect("Failed to get secret key info")
+                .expect_or_throw("Failed to get secret key info")
                 .get_id()
                 == id
         })
-        .expect(format!("Secret key (id:{}) not found in keyset", id).as_str());
+        .expect_or_throw(format!("Secret key (id:{}) not found in keyset", id).as_str());
     let mut builder = capnp::message::Builder::new_default();
     let mut sk_builder = builder.init_root::<concrete_protocol_capnp::lwe_secret_key::Builder>();
     sk_builder
-        .set_info(sk.get_info().expect("Failed to get secret key info"))
-        .expect("Failed to set secret key info");
+        .set_info(
+            sk.get_info()
+                .expect_or_throw("Failed to get secret key info"),
+        )
+        .expect_or_throw("Failed to set secret key info");
     sk_builder
-        .set_payload(sk.get_payload().expect("Failed to get secret key payload"))
-        .expect("Failed to set secret key payload");
+        .set_payload(
+            sk.get_payload()
+                .expect_or_throw("Failed to get secret key payload"),
+        )
+        .expect_or_throw("Failed to set secret key payload");
     builder
 }
 
 pub fn get_lwe_secret_key_from_client_keyset_from_buffers(
-    mut client_keyset_buffer: &[u8],
+    client_keyset_buffer: &[u8],
     id: u32,
 ) -> Vec<u8> {
-    let reader =
-        serialize::read_message_from_flat_slice(&mut client_keyset_buffer, ReaderOptions::new())
-            .expect("Failed to read client keyset buffer");
-    let client_keyset = reader
-        .get_root::<concrete_protocol_capnp::client_keyset::Reader>()
-        .expect("Failed to get root client keyset reader");
+    let reader = read_capnp_from_buffer(client_keyset_buffer)
+        .expect_or_throw("Failed to read client keyset");
+    let client_keyset =
+        get_reader_from_message(&reader).expect_or_throw("Failed to get client keyset");
     let sk_builder = get_lwe_secret_key_from_client_keyset(&client_keyset, id);
     serialize::write_message_to_words(&sk_builder)
 }
@@ -545,48 +664,62 @@ pub fn add_bsk_keys_to_keyset(
     // Copy existing client and server keysets
     new_keyset
         .reborrow()
-        .set_client(keyset.get_client().unwrap())
-        .unwrap();
+        .set_client(
+            keyset
+                .get_client()
+                .expect_or_throw("Failed to get client keyset"),
+        )
+        .expect_or_throw("Failed to set client keyset");
     let mut server_keyset = new_keyset.init_server();
     server_keyset
         .reborrow()
         .set_lwe_keyswitch_keys(
             keyset
                 .get_server()
-                .unwrap()
+                .expect_or_throw("Failed to get server keyset")
                 .get_lwe_keyswitch_keys()
-                .unwrap(),
+                .expect_or_throw("Failed to get LWE keyswitch keys"),
         )
-        .unwrap();
+        .expect_or_throw("Failed to set LWE keyswitch keys");
     server_keyset
         .reborrow()
         .set_packing_keyswitch_keys(
             keyset
                 .get_server()
-                .unwrap()
+                .expect_or_throw("Failed to get server keyset")
                 .get_packing_keyswitch_keys()
-                .unwrap(),
+                .expect_or_throw("Failed to get packing keyswitch keys"),
         )
-        .unwrap();
+        .expect_or_throw("Failed to set packing keyswitch keys");
 
     // Initialize bootstrap keys with existing ones
     let existing_bsk_keys = keyset
         .get_server()
-        .unwrap()
+        .expect_or_throw("Failed to get server keyset")
         .get_lwe_bootstrap_keys()
-        .unwrap();
+        .expect_or_throw("Failed to get LWE bootstrap keys");
     let mut new_bsk_keys =
         server_keyset.init_lwe_bootstrap_keys(existing_bsk_keys.len() + bsks.len() as u32);
     for bsk in existing_bsk_keys.iter() {
         new_bsk_keys
-            .set_with_caveats(bsk.get_info().unwrap().get_id(), bsk)
-            .unwrap();
+            .set_with_caveats(
+                bsk.get_info()
+                    .expect_or_throw("Failed to get bootstrap key info")
+                    .get_id(),
+                bsk,
+            )
+            .expect_or_throw("Failed to set existing bootstrap key");
     }
     // Add new bootstrap keys
     for bsk in bsks.iter() {
         new_bsk_keys
-            .set_with_caveats(bsk.get_info().unwrap().get_id(), *bsk)
-            .unwrap();
+            .set_with_caveats(
+                bsk.get_info()
+                    .expect_or_throw("Failed to get bootstrap key info")
+                    .get_id(),
+                *bsk,
+            )
+            .expect_or_throw("Failed to set new bootstrap key");
     }
 
     builder
@@ -606,38 +739,32 @@ pub fn add_bsk_keys_to_keyset(
 ///
 /// A `Vec<u8>` containing the serialized new keyset.
 pub fn add_bsk_keys_to_keyset_from_buffers(
-    mut keyset_buffer: &[u8],
-    mut bsk_buffers: Vec<&[u8]>,
+    keyset_buffer: &[u8],
+    bsk_buffers: Vec<&[u8]>,
 ) -> Vec<u8> {
     // Deserialize the keyset buffer
+    let keyset_message =
+        read_capnp_from_buffer(keyset_buffer).expect_or_throw("Failed to read keyset buffer");
     let keyset_reader =
-        serialize::read_message_from_flat_slice(&mut keyset_buffer, ReaderOptions::new())
-            .expect("Failed to read keyset buffer");
-    let keyset = keyset_reader
-        .get_root::<concrete_protocol_capnp::keyset::Reader>()
-        .expect("Failed to get root keyset reader");
+        get_reader_from_message(&keyset_message).expect_or_throw("Failed to read keyset reader");
 
     // Deserialize each bootstrap key buffer
     let bsks_readers = bsk_buffers
-        .iter_mut()
-        .map(|mut bsk_buffer| {
-            let bsk_reader =
-                serialize::read_message_from_flat_slice(&mut bsk_buffer, ReaderOptions::new())
-                    .expect("Failed to read bootstrap key buffer");
-            bsk_reader
+        .iter()
+        .map(|bsk_buffer| {
+            read_capnp_from_buffer(bsk_buffer).expect_or_throw("Failed to read bootstrap key")
         })
         .collect::<Vec<_>>();
     let bsks = bsks_readers
         .iter()
         .map(|bsk_reader| {
-            bsk_reader
-                .get_root::<concrete_protocol_capnp::lwe_bootstrap_key::Reader>()
-                .expect("Failed to get root bootstrap key reader")
+            get_reader_from_message(bsk_reader)
+                .expect_or_throw("Failed to get bootstrap key reader")
         })
         .collect::<Vec<_>>();
 
     // Call the original function
-    let builder = add_bsk_keys_to_keyset(keyset, bsks);
+    let builder = add_bsk_keys_to_keyset(keyset_reader, bsks);
 
     // Serialize the result to a buffer
     serialize::write_message_to_words(&builder)
@@ -686,26 +813,37 @@ fn generate_keyset(
         EncryptionRandomGenerator::new(Seed(enc_seed), seeder);
 
     let mut client_keyset = keyset_builder.reborrow().init_client();
-    client_keyset
-        .reborrow()
-        .init_lwe_secret_keys(info.get_lwe_secret_keys().unwrap().len());
+    client_keyset.reborrow().init_lwe_secret_keys(
+        info.get_lwe_secret_keys()
+            .expect_or_throw("Failed to get LWE secret keys")
+            .len(),
+    );
     // Generate secret keys
     let mut generated_secret_keys: std::collections::HashMap<u32, LweSecretKey<Vec<u64>>> =
         std::collections::HashMap::new();
-    for sk_info in info.get_lwe_secret_keys().unwrap().iter() {
+    for sk_info in info
+        .get_lwe_secret_keys()
+        .expect_or_throw("Failed to get LWE secret keys")
+        .iter()
+    {
         if init_lwe_secret_keys.contains_key(&sk_info.get_id()) {
             // we initialize the secret key with the provided secret key
-            let sk_reader = init_lwe_secret_keys.remove(&sk_info.get_id()).unwrap();
+            let sk_reader = init_lwe_secret_keys
+                .remove(&sk_info.get_id())
+                .expect_or_throw("Failed to get initial secret key");
             generated_secret_keys.insert(sk_info.get_id(), reader_to_lwe_secret_key(&sk_reader));
             client_keyset
                 .reborrow()
                 .get_lwe_secret_keys()
-                .unwrap()
+                .expect_or_throw("Failed to get LWE secret keys")
                 .set_with_caveats(sk_info.get_id(), sk_reader)
-                .unwrap();
+                .expect_or_throw("Failed to set LWE secret key");
         } else {
             // we generate a new secret key
-            let lwe_dim = sk_info.get_params().unwrap().get_lwe_dimension() as usize;
+            let lwe_dim = sk_info
+                .get_params()
+                .expect_or_throw("Failed to get secret key parameters")
+                .get_lwe_dimension() as usize;
             let sk = generate_sk(lwe_dim, &mut secret_random_generator);
             generated_secret_keys.insert(sk_info.get_id(), sk.clone());
             let sk_builder = build_key!(
@@ -716,9 +854,14 @@ fn generate_keyset(
             client_keyset
                 .reborrow()
                 .get_lwe_secret_keys()
-                .unwrap()
-                .set_with_caveats(sk_info.get_id(), sk_builder.get_root_as_reader().unwrap())
-                .unwrap();
+                .expect_or_throw("Failed to get LWE secret keys")
+                .set_with_caveats(
+                    sk_info.get_id(),
+                    sk_builder
+                        .get_root_as_reader()
+                        .expect_or_throw("Failed to get root as reader"),
+                )
+                .expect_or_throw("Failed to set LWE secret key");
         }
     }
 
@@ -731,17 +874,28 @@ fn generate_keyset(
         } else {
             // we need to count the keys that are gonna be ignored as the list might have invalid IDs
             let mut ignore_count = 0u32;
-            for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
+            for bsk_info in info
+                .get_lwe_bootstrap_keys()
+                .expect_or_throw("Failed to get LWE bootstrap keys")
+                .iter()
+            {
                 if ignore_bsk_set.contains(&bsk_info.get_id()) {
                     ignore_count += 1;
                 }
             }
             ignore_count
         };
-        server_keyset
-            .reborrow()
-            .init_lwe_bootstrap_keys(info.get_lwe_bootstrap_keys().unwrap().len() - ignore_count);
-        for bsk_info in info.get_lwe_bootstrap_keys().unwrap().iter() {
+        server_keyset.reborrow().init_lwe_bootstrap_keys(
+            info.get_lwe_bootstrap_keys()
+                .expect_or_throw("Failed to get LWE bootstrap keys")
+                .len()
+                - ignore_count,
+        );
+        for bsk_info in info
+            .get_lwe_bootstrap_keys()
+            .expect_or_throw("Failed to get LWE bootstrap keys")
+            .iter()
+        {
             if ignore_bsk_set.contains(&bsk_info.get_id()) {
                 continue;
             }
@@ -750,9 +904,14 @@ fn generate_keyset(
             server_keyset
                 .reborrow()
                 .get_lwe_bootstrap_keys()
-                .unwrap()
-                .set_with_caveats(bsk_info.get_id(), bsk_builder.get_root_as_reader().unwrap())
-                .unwrap();
+                .expect_or_throw("Failed to get LWE bootstrap keys")
+                .set_with_caveats(
+                    bsk_info.get_id(),
+                    bsk_builder
+                        .get_root_as_reader()
+                        .expect_or_throw("Failed to get root as reader"),
+                )
+                .expect_or_throw("Failed to set LWE bootstrap key");
         }
     }
     // Generate keyswitch keys
@@ -763,17 +922,28 @@ fn generate_keyset(
         } else {
             // we need to count the keys that are gonna be ignored as the list might have invalid IDs
             let mut ignore_count = 0u32;
-            for ksk_info in info.get_lwe_keyswitch_keys().unwrap().iter() {
+            for ksk_info in info
+                .get_lwe_keyswitch_keys()
+                .expect_or_throw("Failed to get LWE keyswitch keys")
+                .iter()
+            {
                 if ignore_ksk_set.contains(&ksk_info.get_id()) {
                     ignore_count += 1;
                 }
             }
             ignore_count
         };
-        server_keyset
-            .reborrow()
-            .init_lwe_keyswitch_keys(info.get_lwe_keyswitch_keys().unwrap().len() - ignore_count);
-        for ksk_info in info.get_lwe_keyswitch_keys().unwrap().iter() {
+        server_keyset.reborrow().init_lwe_keyswitch_keys(
+            info.get_lwe_keyswitch_keys()
+                .expect_or_throw("Failed to get LWE keyswitch keys")
+                .len()
+                - ignore_count,
+        );
+        for ksk_info in info
+            .get_lwe_keyswitch_keys()
+            .expect_or_throw("Failed to get LWE keyswitch keys")
+            .iter()
+        {
             if ignore_ksk_set.contains(&ksk_info.get_id()) {
                 continue;
             }
@@ -782,26 +952,39 @@ fn generate_keyset(
             server_keyset
                 .reborrow()
                 .get_lwe_keyswitch_keys()
-                .unwrap()
-                .set_with_caveats(ksk_info.get_id(), ksk_builder.get_root_as_reader().unwrap())
-                .unwrap();
+                .expect_or_throw("Failed to get LWE keyswitch keys")
+                .set_with_caveats(
+                    ksk_info.get_id(),
+                    ksk_builder
+                        .get_root_as_reader()
+                        .expect_or_throw("Failed to get root as reader"),
+                )
+                .expect_or_throw("Failed to set LWE keyswitch key");
         }
     }
     // Generate packing keyswitch keys
-    server_keyset
-        .reborrow()
-        .init_packing_keyswitch_keys(info.get_packing_keyswitch_keys().unwrap().len());
-    for pksk_info in info.get_packing_keyswitch_keys().unwrap().iter() {
+    server_keyset.reborrow().init_packing_keyswitch_keys(
+        info.get_packing_keyswitch_keys()
+            .expect_or_throw("Failed to get packing keyswitch keys")
+            .len(),
+    );
+    for pksk_info in info
+        .get_packing_keyswitch_keys()
+        .expect_or_throw("Failed to get packing keyswitch keys")
+        .iter()
+    {
         let pksk_builder = build_pksk(pksk_info, &generated_secret_keys, &mut enc_random_generator);
         server_keyset
             .reborrow()
             .get_packing_keyswitch_keys()
-            .unwrap()
+            .expect_or_throw("Failed to get packing keyswitch keys")
             .set_with_caveats(
                 pksk_info.get_id(),
-                pksk_builder.get_root_as_reader().unwrap(),
+                pksk_builder
+                    .get_root_as_reader()
+                    .expect_or_throw("Failed to get root as reader"),
             )
-            .unwrap();
+            .expect_or_throw("Failed to set packing keyswitch key");
     }
 
     builder
@@ -825,7 +1008,7 @@ fn generate_keyset(
 /// # Returns
 /// A serialized keyset.
 pub fn generate_keyset_from_buffers(
-    mut keyset_info_buffer: &[u8],
+    keyset_info_buffer: &[u8],
     secret_seed: u128,
     enc_seed: u128,
     no_bsk: bool,
@@ -834,36 +1017,36 @@ pub fn generate_keyset_from_buffers(
     ignore_ksk: Vec<u32>,
     initial_secret_key_buffers: &Vec<&[u8]>,
 ) -> Vec<u8> {
-    let reader =
-        serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
-            .unwrap();
-    let key_set_info = reader
-        .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
-        .unwrap();
+    let keyset_info_message =
+        read_capnp_from_buffer(keyset_info_buffer).expect_or_throw("Failed to read keyset info");
+    let keyset_info_reader =
+        get_reader_from_message(&keyset_info_message).expect_or_throw("Failed to get keyset info");
     let initial_secret_keys_owned: std::collections::HashMap<
         u32,
         capnp::message::Reader<capnp::serialize::OwnedSegments>,
     > = initial_secret_key_buffers
         .iter()
         .map(|buffer| {
-            let (id, reader) = read_secret_key_from_buffer(buffer);
+            let (id, reader) =
+                read_secret_key_from_buffer(buffer).expect_or_throw("Failed to read secret key");
             (id, reader)
         })
         .collect();
-    let mut init_lwe_secret_keys = initial_secret_keys_owned
+    let mut init_lwe_secret_keys: std::collections::HashMap<
+        u32,
+        concrete_protocol_capnp::lwe_secret_key::Reader,
+    > = initial_secret_keys_owned
         .iter()
         .map(|(k, v)| {
             (
                 *k,
-                v.get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
-                    .unwrap(),
+                get_reader_from_message(&v).expect_or_throw("Failed to get secret key reader"),
             )
         })
-        .collect::<std::collections::HashMap<u32, concrete_protocol_capnp::lwe_secret_key::Reader>>(
-        );
+        .collect();
     // keygen
     let builder = generate_keyset(
-        key_set_info,
+        keyset_info_reader,
         secret_seed as u128,
         enc_seed as u128,
         no_bsk,
@@ -895,25 +1078,30 @@ fn get_client_keyset(
     client_keyset.reborrow().init_lwe_secret_keys(
         keyset
             .get_client()
-            .unwrap()
+            .expect_or_throw("Failed to get client keyset")
             .get_lwe_secret_keys()
-            .unwrap()
+            .expect_or_throw("Failed to get LWE secret keys from client keyset")
             .len(),
     );
     // Copy secret keys
     for sk in keyset
         .get_client()
-        .unwrap()
+        .expect_or_throw("Failed to get client keyset")
         .get_lwe_secret_keys()
-        .unwrap()
+        .expect_or_throw("Failed to get LWE secret keys from client keyset")
         .iter()
     {
         client_keyset
             .reborrow()
             .get_lwe_secret_keys()
-            .unwrap()
-            .set_with_caveats(sk.get_info().unwrap().get_id(), sk)
-            .unwrap();
+            .expect_or_throw("Failed to get LWE secret keys builder")
+            .set_with_caveats(
+                sk.get_info()
+                    .expect_or_throw("Failed to get secret key info")
+                    .get_id(),
+                sk,
+            )
+            .expect_or_throw("Failed to set LWE secret key");
     }
     builder
 }
@@ -925,34 +1113,13 @@ fn get_client_keyset(
 ///
 /// # Returns
 /// A serialized client keyset.
-pub fn get_client_keyset_from_buffers(mut keyset_buffer: &[u8]) -> Vec<u8> {
-    let reader =
-        serialize::read_message_from_flat_slice(&mut keyset_buffer, ReaderOptions::new()).unwrap();
-    let keyset = reader
-        .get_root::<concrete_protocol_capnp::keyset::Reader>()
-        .unwrap();
-    let builder = get_client_keyset(keyset);
+pub fn get_client_keyset_from_buffers(keyset_buffer: &[u8]) -> Vec<u8> {
+    let keyset_message =
+        read_capnp_from_buffer(keyset_buffer).expect_or_throw("Failed to read keyset");
+    let keyset_reader =
+        get_reader_from_message(&keyset_message).expect_or_throw("Failed to get keyset reader");
+    let builder = get_client_keyset(keyset_reader);
     serialize::write_message_to_words(&builder)
-}
-
-/// Reads a secret key from a buffer and returns the key ID and Cap'n Proto reader.
-///
-/// # Arguments
-///
-/// * `buffer`: The buffer containing the secret key.
-///
-/// # Returns
-///
-/// A tuple containing the key ID and Cap'n Proto reader for the secret key.
-pub fn read_secret_key_from_buffer(
-    mut buffer: &[u8],
-) -> (u32, capnp::message::Reader<OwnedSegments>) {
-    let reader = serialize::read_message(&mut buffer, ReaderOptions::new()).unwrap();
-    let key = reader
-        .get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
-        .unwrap();
-    let id = key.get_info().unwrap().get_id();
-    (id, reader)
 }
 
 #[cfg(feature = "wasm")]
@@ -1006,36 +1173,27 @@ pub mod wasm {
     /// or output secret key buffer, or if it fails to post a message to the specified `MessagePort`.
     #[wasm_bindgen]
     pub async fn chunked_bsk_keygen(
-        mut keyset_info_buffer: &[u8],
-        mut input_secret_key_buffer: &[u8],
-        mut output_secret_key_buffer: &[u8],
+        keyset_info_buffer: &[u8],
+        input_secret_key_buffer: &[u8],
+        output_secret_key_buffer: &[u8],
         bsk_id: u32,
         enc_seed: u128,
         chunk_size: usize,
         port: web_sys::MessagePort,
     ) -> usize {
         // deserialize inputs
-        let reader =
-            serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
-                .expect_throw("Failed to read keyset info buffer");
-        let key_set_info = reader
-            .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
-            .expect_throw("Failed to get root keyset info reader");
-        let reader = serialize::read_message_from_flat_slice(
-            &mut input_secret_key_buffer,
-            ReaderOptions::new(),
-        )
-        .expect_throw("Failed to read input secret key buffer");
-        let input_sk_reader = reader
-            .get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+        let message = read_capnp_from_buffer(keyset_info_buffer)
+            .expect_throw("Failed to read keyset info buffer");
+        let key_set_info =
+            get_reader_from_message::<concrete_protocol_capnp::keyset_info::Reader>(&message)
+                .expect_throw("Failed to get root keyset info reader");
+        let message = read_capnp_from_buffer(input_secret_key_buffer)
+            .expect_throw("Failed to read input secret key buffer");
+        let input_sk_reader = get_reader_from_message(&message)
             .expect_throw("Failed to get root input secret key reader");
-        let reader = serialize::read_message_from_flat_slice(
-            &mut output_secret_key_buffer,
-            ReaderOptions::new(),
-        )
-        .expect_throw("Failed to read output secret key buffer");
-        let output_sk_reader = reader
-            .get_root::<concrete_protocol_capnp::lwe_secret_key::Reader>()
+        let message = read_capnp_from_buffer(output_secret_key_buffer)
+            .expect_throw("Failed to read output secret key buffer");
+        let output_sk_reader = get_reader_from_message(&message)
             .expect_throw("Failed to get root output secret key reader");
 
         // Parameters
@@ -1147,46 +1305,42 @@ pub mod wasm {
     /// A serialized keyset.
     #[wasm_bindgen]
     pub fn generate_keyset(
-        mut keyset_info_buffer: &[u8],
+        keyset_info_buffer: &[u8],
         no_bsk: bool,
         ignore_bsk: Vec<u32>,
         no_ksk: bool,
         ignore_ksk: Vec<u32>,
         secret_seed: u128,
         enc_seed: u128,
-        mut client_keyset_buffer: &[u8],
+        client_keyset_buffer: &[u8],
     ) -> Vec<u8> {
         let mut init_secret_keys = std::collections::HashMap::new();
-        let client_keyset_reader: capnp::message::Reader<serialize::BufferSegments<&[u8]>>;
+        let client_keyset_message;
         if !client_keyset_buffer.is_empty() {
-            client_keyset_reader = serialize::read_message_from_flat_slice(
-                &mut client_keyset_buffer,
-                ReaderOptions::new(),
-            )
-            .expect("Failed to read client keyset buffer");
-            let client_keyset = client_keyset_reader
-                .get_root::<concrete_protocol_capnp::client_keyset::Reader>()
-                .expect("Failed to get root client keyset reader");
+            client_keyset_message = read_capnp_from_buffer(client_keyset_buffer)
+                .expect_throw("Failed to read client keyset buffer");
+            let client_keyset = get_reader_from_message::<
+                concrete_protocol_capnp::client_keyset::Reader,
+            >(&client_keyset_message)
+            .expect_throw("Failed to get root client keyset reader");
 
             for sk in client_keyset
                 .get_lwe_secret_keys()
-                .expect("Failed to get LWE secret keys")
+                .expect_throw("Failed to get LWE secret keys")
                 .iter()
             {
                 let id = sk
                     .get_info()
-                    .expect("Failed to get secret key info")
+                    .expect_throw("Failed to get secret key info")
                     .get_id();
                 init_secret_keys.insert(id, sk);
             }
         }
 
-        let keyset_info_reader =
-            serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
-                .unwrap();
-        let key_set_info = keyset_info_reader
-            .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
-            .unwrap();
+        let keyset_info_message = read_capnp_from_buffer(keyset_info_buffer)
+            .expect_throw("Failed to read keyset info buffer");
+        let key_set_info =
+            get_reader_from_message(&keyset_info_message).expect_throw("Failed to get keyset info");
 
         let builder = crate::generate_keyset(
             key_set_info,
@@ -1213,13 +1367,12 @@ pub mod wasm {
     /// # Returns
     /// A serialized client keyset.
     #[wasm_bindgen]
-    pub fn generate_client_keyset(mut keyset_info_buffer: &[u8], secret_seed: u128) -> Vec<u8> {
-        let reader =
-            serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
-                .unwrap();
-        let key_set_info = reader
-            .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
-            .unwrap();
+    pub fn generate_client_keyset(keyset_info_buffer: &[u8], secret_seed: u128) -> Vec<u8> {
+        let message = read_capnp_from_buffer(keyset_info_buffer)
+            .expect_throw("Failed to read keyset info buffer");
+        let key_set_info =
+            get_reader_from_message::<concrete_protocol_capnp::keyset_info::Reader>(&message)
+                .expect_throw("Failed to get root keyset info reader");
 
         let mut builder = capnp::message::Builder::new_default();
         let mut client_keyset =
@@ -1228,12 +1381,22 @@ pub mod wasm {
         let mut secret_random_generator: SecretRandomGenerator<SoftwareRandomGenerator> =
             SecretRandomGenerator::new(Seed(secret_seed));
 
-        client_keyset
-            .reborrow()
-            .init_lwe_secret_keys(key_set_info.get_lwe_secret_keys().unwrap().len());
+        client_keyset.reborrow().init_lwe_secret_keys(
+            key_set_info
+                .get_lwe_secret_keys()
+                .expect_throw("Failed to get LWE secret keys")
+                .len(),
+        );
 
-        for sk_info in key_set_info.get_lwe_secret_keys().unwrap().iter() {
-            let lwe_dim = sk_info.get_params().unwrap().get_lwe_dimension() as usize;
+        for sk_info in key_set_info
+            .get_lwe_secret_keys()
+            .expect_throw("Failed to get LWE secret keys")
+            .iter()
+        {
+            let lwe_dim = sk_info
+                .get_params()
+                .expect_throw("Failed to get secret key parameters")
+                .get_lwe_dimension() as usize;
             let sk = generate_sk(lwe_dim, &mut secret_random_generator);
             let sk_builder = build_key!(
                 sk,
@@ -1243,9 +1406,14 @@ pub mod wasm {
             client_keyset
                 .reborrow()
                 .get_lwe_secret_keys()
-                .unwrap()
-                .set_with_caveats(sk_info.get_id(), sk_builder.get_root_as_reader().unwrap())
-                .unwrap();
+                .expect_throw("Failed to get LWE secret keys builder")
+                .set_with_caveats(
+                    sk_info.get_id(),
+                    sk_builder
+                        .get_root_as_reader()
+                        .expect_throw("Failed to get root as reader"),
+                )
+                .expect_throw("Failed to set LWE secret key");
         }
 
         serialize::write_message_to_words(&builder)
@@ -1276,13 +1444,12 @@ pub mod wasm {
     ///
     /// A `JsValue` containing the JSON representation of the keyset info.
     #[wasm_bindgen]
-    pub fn explain_keyset_info(mut keyset_info_buffer: &[u8]) -> JsValue {
-        let reader =
-            serialize::read_message_from_flat_slice(&mut keyset_info_buffer, ReaderOptions::new())
-                .expect_throw("Failed to read keyset info buffer");
-        let keyset_info = reader
-            .get_root::<concrete_protocol_capnp::keyset_info::Reader>()
-            .expect_throw("Failed to get root keyset info reader");
+    pub fn explain_keyset_info(keyset_info_buffer: &[u8]) -> JsValue {
+        let message = read_capnp_from_buffer(keyset_info_buffer)
+            .expect_throw("Failed to read keyset info buffer");
+        let keyset_info =
+            get_reader_from_message::<concrete_protocol_capnp::keyset_info::Reader>(&message)
+                .expect_throw("Failed to get root keyset info reader");
 
         // Convert the keyset info to JSON
         let mut json = serde_json::Map::new();
