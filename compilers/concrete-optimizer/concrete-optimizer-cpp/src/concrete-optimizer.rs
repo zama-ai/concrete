@@ -975,6 +975,38 @@ impl Into<Encoding> for ffi::Encoding {
     }
 }
 
+impl ffi::RangeRestriction {
+    fn range_restriction_to_json(&self) -> String {
+        unsafe {
+            serde_json::to_string(std::mem::transmute::<&Self, &RangeRestriction>(self)).unwrap()
+        }
+    }
+}
+
+fn range_restriction_from_json(input: &str) -> ffi::RangeRestriction {
+    unsafe {
+        std::mem::transmute::<RangeRestriction, ffi::RangeRestriction>(
+            serde_json::from_str(input).unwrap(),
+        )
+    }
+}
+
+impl ffi::KeysetRestriction {
+    fn keyset_restriction_to_json(&self) -> String {
+        unsafe {
+            serde_json::to_string(std::mem::transmute::<&Self, &KeysetRestriction>(self)).unwrap()
+        }
+    }
+}
+
+fn keyset_restriction_from_json(input: &str) -> ffi::KeysetRestriction {
+    unsafe {
+        std::mem::transmute::<KeysetRestriction, ffi::KeysetRestriction>(
+            serde_json::from_str(input).unwrap(),
+        )
+    }
+}
+
 #[allow(
     unused_must_use,
     clippy::needless_lifetimes,
@@ -1156,6 +1188,18 @@ mod ffi {
         fn get_output_indices(self: &Dag) -> Vec<OperatorIndex>;
 
         fn NO_KEY_ID() -> u64;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn range_restriction_to_json(self: &RangeRestriction) -> String;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn range_restriction_from_json(input: &str) -> RangeRestriction;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn keyset_restriction_to_json(self: &KeysetRestriction) -> String;
+
+        #[namespace = "concrete_optimizer::restriction"]
+        fn keyset_restriction_from_json(input: &str) -> KeysetRestriction;
     }
 
     #[derive(Debug, Clone, Copy)]

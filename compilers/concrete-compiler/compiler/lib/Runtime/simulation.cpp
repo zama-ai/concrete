@@ -38,13 +38,6 @@ uint64_t gaussian_noise(double variance, Csprng *csprng = default_csprng.ptr) {
   return random_gaussian_buff[0];
 }
 
-uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim,
-                             Csprng *csprng) {
-  double variance = security_curve()->getVariance(1, lwe_dim, 64);
-  uint64_t encryption_noise = gaussian_noise(variance, (Csprng *)csprng);
-  return message + encryption_noise;
-}
-
 uint64_t sim_keyswitch_lwe_u64(uint64_t plaintext, uint32_t level,
                                uint32_t base_log, uint32_t input_lwe_dim,
                                uint32_t output_lwe_dim) {

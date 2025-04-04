@@ -6,7 +6,11 @@
 #ifndef CONCRETELANG_RUNTIME_WRAPPERS_H
 #define CONCRETELANG_RUNTIME_WRAPPERS_H
 
-#include "concretelang/Runtime/context.h"
+#include "concrete-cpu.h"
+#include <complex.h>
+#include <concretelang/Runtime/context.h>
+#include <stddef.h>
+#include <stdint.h>
 
 extern "C" {
 
