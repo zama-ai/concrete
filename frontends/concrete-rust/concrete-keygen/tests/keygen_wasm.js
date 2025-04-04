@@ -42,13 +42,13 @@ let keyset_info_json = cr.explain_keyset_info(keyset_info_buffer);
 console.log("keyset_info explained:");
 console.dir(keyset_info_json, { depth: null });
 
-let client_keyset_buffer = cr.generate_client_keyset_wasm(keyset_info_buffer, BigInt(128));
-let keyset_buffer_no_bsk = cr.generate_keyset_wasm(keyset_info_buffer, true, {}, false, {}, BigInt(128), BigInt(128), client_keyset_buffer);
+let client_keyset_buffer = cr.generate_client_keyset(keyset_info_buffer, BigInt(128));
+let keyset_buffer_no_bsk = cr.generate_keyset(keyset_info_buffer, true, {}, false, {}, BigInt(128), BigInt(128), client_keyset_buffer);
 
 for (let bsk of keyset_info_json.lwe_bootstrap_keys) {
     let msgChannel = createChunkMessageChannel(`bsk_${bsk.id}_chunk`);
-    let sk_in = cr.get_lwe_secret_key_from_client_keyset_wasm(client_keyset_buffer, bsk.params.input_id);
-    let sk_out = cr.get_lwe_secret_key_from_client_keyset_wasm(client_keyset_buffer, bsk.params.output_id);
+    let sk_in = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, bsk.params.input_id);
+    let sk_out = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, bsk.params.output_id);
     try {
         let returned_value = await cr.chunked_bsk_keygen(
             keyset_info_buffer,
