@@ -179,6 +179,7 @@ jobs:
             -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
+            cargo install cxxbridge-cmd
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build \
               CCACHE=ON \
@@ -332,6 +333,7 @@ jobs:
             -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
+            cargo install cxxbridge-cmd
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build \
               CCACHE=ON \
