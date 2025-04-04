@@ -10,8 +10,6 @@ add_mlir_library(
   Transformers.cpp
   Security.cpp
   Values.cpp
-  simulation.cpp
-  wrappers.cpp
   LINK_LIBS
   PUBLIC
   rust_deps_bundle

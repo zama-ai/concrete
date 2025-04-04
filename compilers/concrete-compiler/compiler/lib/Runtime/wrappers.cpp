@@ -3,7 +3,7 @@
 // https://github.com/zama-ai/concrete/blob/main/LICENSE.txt
 // for license information.
 
-#include "concretelang/Common/wrappers.h"
+#include "concretelang/Runtime/wrappers.h"
 #include "concrete-cpu.h"
 #include "concretelang/Common/Error.h"
 #include <assert.h>

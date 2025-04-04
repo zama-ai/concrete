@@ -6,29 +6,11 @@
 #ifndef CONCRETELANG_RUNTIME_WRAPPERS_H
 #define CONCRETELANG_RUNTIME_WRAPPERS_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <complex.h>
 #include "concrete-cpu.h"
-
-namespace mlir {
-namespace concretelang {
-    struct RuntimeContext {
-      const uint64_t *keyswitch_key_buffer(size_t keyId);
-      const std::complex<double> *fourier_bootstrap_key_buffer(size_t keyId);
-      const uint64_t *fp_keyswitch_key_buffer(size_t keyId);
-      const struct Fft *fft(size_t keyId);
-      #ifdef CONCRETELANG_CUDA_SUPPORT
-        void *get_bsk_gpu(uint32_t input_lwe_dim, uint32_t poly_size, uint32_t level,
-                          uint32_t glwe_dim, uint32_t gpu_idx, void *stream,
-                          uint32_t bsk_idx);
-        void *get_ksk_gpu(uint32_t level, uint32_t input_lwe_dim,
-                          uint32_t output_lwe_dim, uint32_t gpu_idx, void *stream,
-                          uint32_t ksk_idx);
-      #endif
-    };
-}
-}
+#include <complex.h>
+#include <concretelang/Runtime/context.h>
+#include <stddef.h>
+#include <stdint.h>
 
 extern "C" {
 
