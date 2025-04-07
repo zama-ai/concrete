@@ -195,7 +195,7 @@ jobs:
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: ${{ format('{0}-binaries-linux-x86', matrix.hw) }}
-          path: concrete/compilers/concrete-compiler/compiler/build/lib/libConcrete*.so
+          path: compilers/concrete-compiler/compiler/build/lib/libConcrete*.so
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
@@ -331,8 +331,8 @@ jobs:
         if: ${{ matrix.python-version == '3.10' }}
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: ${{ format('cpu-binaries-{0}', matrix.python-version) }}
-          path: concrete/compilers/concrete-compiler/compiler/build/lib/libConcrete*.so
+          name: ${{ format('cpu-binaries-{0}', matrix.runs-on) }}
+          path: compilers/concrete-compiler/compiler/build/lib/libConcrete*.dylib
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
