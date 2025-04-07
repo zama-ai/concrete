@@ -432,8 +432,9 @@ jobs:
           ls -R
           echo "ZIP binaries"
           for i in ./*binaries*; do
-            echo zip "${i}.zip" "${i}/*"
-            zip "${i}.zip" "${i}/*"
+            ls "${i}"/*
+            echo zip "${i}.zip" "${i}"/*
+            zip "${i}.zip" "${i}"/*
           done
           echo "DEBUG After zip"
           ls -R
