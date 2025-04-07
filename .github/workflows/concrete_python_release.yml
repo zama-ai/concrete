@@ -415,7 +415,6 @@ jobs:
           merge-multiple: true
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
-          path: binaries
           pattern: '${{ matrix.hw }}-binaries-*'
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
@@ -431,7 +430,9 @@ jobs:
           # Create zip of binaries folders
           echo "DEBUG Before zip"
           ls -R
+          echo "ZIP binaries"
           for i in $(ls ./*binaries*); do
+            echo zip "${i}.zip" "${i}/*"
             zip "${i}.zip" "${i}/*"
           done
           echo "DEBUG After zip"
