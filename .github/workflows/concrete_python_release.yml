@@ -431,7 +431,7 @@ jobs:
           echo "DEBUG Before zip"
           ls -R
           echo "ZIP binaries"
-          for i in $(ls ./*binaries*); do
+          for i in ./*binaries*; do
             echo zip "${i}.zip" "${i}/*"
             zip "${i}.zip" "${i}/*"
           done
