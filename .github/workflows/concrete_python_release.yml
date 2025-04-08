@@ -195,7 +195,9 @@ jobs:
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: ${{ format('{0}-binaries-linux-x86_64', matrix.hw) }}
-          path: ${{ github.workspace }}/build/lib/libConcrete*.so
+          path: |
+            ${{ github.workspace }}/build/lib/libConcrete*.so
+            ${{ github.workspace }}/build/lib/libhpx*.so
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
