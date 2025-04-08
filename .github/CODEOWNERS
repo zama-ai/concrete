@@ -1,0 +1,4 @@
+# Zama codeowners rules
+
+# All pull requests should be reviewed by at least one of the members of concrete-devs
+*    @zama-ai/concrete-devs
