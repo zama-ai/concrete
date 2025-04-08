@@ -1,5 +1,5 @@
 build:
-	cargo build --release
+	cargo build --release --features="cli"
 
 # install wasm-pack first: cargo install wasm-pack
 wasm-build-node:

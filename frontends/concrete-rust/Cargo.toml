@@ -10,6 +10,11 @@ build = "build.rs"
 name = "concrete-rust-keygen"
 path = "src/keygen.rs"
 
+[[bin]]
+
+name = "concrete-rust-keyasm"
+path = "src/keyasm.rs"
+
 [lib]
 name = "concrete_rust"
 path = "src/lib.rs"
@@ -21,7 +26,9 @@ capnpc = "0.20.1"
 [dependencies]
 
 capnp = "0.20.3"
-clap = { version = "4.5.16", features = ["derive"] }
+
+clap = { version = "4.5.16", features = ["derive"], optional = true }
+zip = { version = "2.6.1", optional = true }
 
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"], optional = true }
 wasm-bindgen-futures = { version = "0.4.50", optional = true }
@@ -34,4 +41,5 @@ tfhe-csprng = { version = "0.5" }
 [features]
 
 default = []
+cli = ["dep:zip", "dep:clap"]
 wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:web-sys", "dep:serde-json", "tfhe/__wasm_api"]
