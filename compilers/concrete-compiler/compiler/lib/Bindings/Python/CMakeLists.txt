@@ -134,8 +134,7 @@ add_mlir_python_modules(
   # We need the circt extensions co-located with the MLIR extensions. When the namespace is unified, this moves to the
   # below.
   ConcretelangBindingsPythonExtension
-  COMMON_CAPI_LINK_LIBS
-  ConcretelangBindingsPythonCAPI)
+  COMMON_CAPI_LINK_LIBS)
 
 # Bundle the CONCRETELANG python sources into our package.
 add_mlir_python_modules(
