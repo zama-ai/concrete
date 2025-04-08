@@ -24,4 +24,16 @@ function(fetch_hpx_library)
     remove_definitions("-Werror ")
     remove_definitions("-Wfatal-errors")
     FetchContent_MakeAvailable(HPX)
+    add_custom_target(
+        HPXLibs
+        ALL
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${hpx_BINARY_DIR}/lib/*
+                ${CMAKE_BINARY_DIR}/lib
+    )
+    add_dependencies(HPXLibs
+        HPX::hpx
+        HPX::iostreams_component
+        HPX::component
+    )
 endfunction()

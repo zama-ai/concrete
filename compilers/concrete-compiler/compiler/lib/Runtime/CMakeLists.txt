@@ -28,6 +28,7 @@ if(CONCRETELANG_DATAFLOW_EXECUTION_ENABLED)
   target_link_libraries(ConcretelangRuntime PUBLIC HPX::hpx HPX::iostreams_component HPX::component)
   target_link_libraries(ConcretelangRuntime PRIVATE hwloc)
   set_source_files_properties(DFRuntime.cpp PROPERTIES COMPILE_FLAGS "-fopenmp")
+  add_dependencies(ConcretelangRuntime HPXLibs)
 endif()
 
 if(CONCRETELANG_CUDA_SUPPORT)
