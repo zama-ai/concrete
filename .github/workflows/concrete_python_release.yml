@@ -195,7 +195,10 @@ jobs:
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: ${{ format('{0}-binaries-linux-x86_64', matrix.hw) }}
-          path: ${{ github.workspace }}/build/lib/libConcrete*.so
+          path: |
+            ${{ github.workspace }}/build/lib/libConcrete*.so
+            ${{ github.workspace }}/build/lib/libhpx*.so
+            ${{ github.workspace }}/build/lib/libomp.so
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
@@ -335,14 +338,18 @@ jobs:
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: cpu-binaries-macosx_arm64
-          path: compilers/concrete-compiler/compiler/build/lib/libConcrete*.dylib
+          path: |
+            compilers/concrete-compiler/compiler/build/lib/libConcrete*.dylib
+            compilers/concrete-compiler/compiler/build/lib/libomp*.dylib
           retention-days: 3
       - name: Upload binary libraries mac1
         if: ${{ matrix.python-version == '3.10' && matrix.runs-on == 'aws-mac1-metal' }}
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: cpu-binaries-macosx_x86_64
-          path: compilers/concrete-compiler/compiler/build/lib/libConcrete*.dylib
+          path: |
+            compilers/concrete-compiler/compiler/build/lib/libConcrete*.dylib
+            compilers/concrete-compiler/compiler/build/lib/libomp*.dylib
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
