@@ -342,11 +342,11 @@ impl VariancedDag {
                 Operator::Input { .. } | Operator::ZeroNoise { .. } => unreachable!(),
 
                 Operator::Dot {
-                    kind: DotKind::CompatibleTensor ,
+                    kind: DotKind::CompatibleTensor,
                     ..
                 } => todo!("TODO"),
                 Operator::Dot {
-                    kind: DotKind::Unsupported ,
+                    kind: DotKind::Unsupported,
                     ..
                 } => panic!("Unsupported"),
                 Operator::Round { .. } => {

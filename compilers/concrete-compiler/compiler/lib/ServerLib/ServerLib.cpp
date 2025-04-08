@@ -433,8 +433,8 @@ Result<std::vector<TransportValue>>
 ServerCircuit::call(const ServerKeyset &serverKeyset,
                     const std::vector<TransportValue> &args) {
   std::vector<TransportValue> returns(returnsBuffer.size());
-  if (dynamicModule){
-      mlir::concretelang::dfr::_dfr_register_lib(dynamicModule->libraryHandle);
+  if (dynamicModule) {
+    mlir::concretelang::dfr::_dfr_register_lib(dynamicModule->libraryHandle);
   }
   if (!mlir::concretelang::dfr::_dfr_is_root_node()) {
     mlir::concretelang::dfr::_dfr_run_remote_scheduler();
