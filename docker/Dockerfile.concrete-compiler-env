@@ -3,7 +3,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
 # epel-release is for install ccache
 RUN dnf clean all && dnf install -y epel-release && dnf clean all
 # hadolint ignore=DL3041
-RUN dnf update -y && dnf install -y ninja-build hwloc-devel ccache ncurses-devel openssh-clients graphviz graphviz-devel && dnf clean all
+RUN dnf update -y && dnf install -y ninja-build ccache ncurses-devel openssh-clients graphviz graphviz-devel && dnf clean all
 RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
 # Setup gcc-11 (required for cuda11.8)
 RUN dnf install -y gcc-toolset-11 && dnf clean all
@@ -36,14 +36,6 @@ RUN groupadd -g 10001 grp02 && \
     mkdir -p /home/usr01 && chown -R usr01:grp02 /home/usr01 /boost_1_71_0 /workdir /build
 # Switch to the non-root user
 USER usr01:grp02
-# Install boost
-ADD https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.tar.gz /boost_1_71_0.tar.gz
-RUN tar -xzvf /boost_1_71_0.tar.gz
-WORKDIR /boost_1_71_0
-RUN ./bootstrap.sh && ./b2 --with-filesystem install
-# Setup HPX
-COPY --from=ghcr.io/zama-ai/hpx:latest /hpx /hpx
-ENV HPX_INSTALL_DIR=/hpx/build
 # Setup CUDA
 COPY --from=ghcr.io/zama-ai/cuda:11-8 /usr/local/cuda-11.8/ /usr/local/cuda-11.8/
 ENV PATH "$PATH:/usr/local/cuda-11.8/bin"
