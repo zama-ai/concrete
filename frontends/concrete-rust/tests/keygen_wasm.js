@@ -47,8 +47,8 @@ let keyset_buffer_no_bsk = cr.generate_keyset(keyset_info_buffer, true, {}, fals
 
 for (let bsk of keyset_info_json.lwe_bootstrap_keys) {
     let msgChannel = createChunkMessageChannel(`bsk_${bsk.id}_chunk`);
-    let sk_in = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, bsk.params.input_id);
-    let sk_out = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, bsk.params.output_id);
+    let sk_in = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, bsk.input_id);
+    let sk_out = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, bsk.output_id);
     try {
         let returned_value = await cr.chunked_bsk_keygen(
             keyset_info_buffer,
