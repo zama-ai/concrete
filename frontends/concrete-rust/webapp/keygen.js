@@ -50,9 +50,9 @@ async function handleKeygen(event) {
         console.log("Keyset generation (without BSKs) completed.")
 
         // Create a zip file
-        const zip = new JSZip();
-        zip.file('keyset_no_bsk.capnp', keysetBufferNoBsk);
-        zip.file('keyset_info.capnp', keysetInfoBuffer);
+        const zipFile = new zip.ZipWriter(new zip.BlobWriter("application/zip"), { bufferedWrite: true });
+        zipFile.add('keyset_no_bsk.capnp', new zip.Uint8ArrayReader(keysetBufferNoBsk));
+        zipFile.add('keyset_info.capnp', new zip.Uint8ArrayReader(keysetInfoBuffer));
 
         // Generate bootstrap keys in chunks
         for (const bsk of keysetInfoJson.lwe_bootstrap_keys) {
@@ -60,7 +60,7 @@ async function handleKeygen(event) {
             var chunk_count = 0;
             const port = {
                 postMessage: (data) => {
-                    zip.file(`bsk_${bsk.id}_chunk_${chunk_count++}`, data);
+                    zipFile.add(`bsk_${bsk.id}_chunk_${chunk_count++}`, new zip.Uint8ArrayReader(data));
                 },
                 close: () => console.log(`Bootstrap key ${bsk.id} generation completed.`)
             };
@@ -78,10 +78,7 @@ async function handleKeygen(event) {
 
         console.log("BSK chunks generation completed.")
 
-        const zipBlob = await zip.generateAsync({
-            type: 'blob',
-        });
-        const url = URL.createObjectURL(zipBlob);
+        const url = URL.createObjectURL(await zipFile.close());
 
         downloadLink.href = url;
         downloadLink.download = 'chunked_keyset.zip';
