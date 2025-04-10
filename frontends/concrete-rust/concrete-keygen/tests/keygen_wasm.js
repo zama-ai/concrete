@@ -56,6 +56,7 @@ for (let bsk of keyset_info_json.lwe_bootstrap_keys) {
             sk_out,
             bsk.id,
             BigInt(0),
+            BigInt(0),
             8,
             msgChannel.port2
         );

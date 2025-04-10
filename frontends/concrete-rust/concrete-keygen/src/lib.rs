@@ -1196,7 +1196,8 @@ pub mod wasm {
     /// * `input_secret_key_buffer` - A byte slice containing the serialized input secret key (Capnp).
     /// * `output_secret_key_buffer` - A byte slice containing the serialized output secret key (Capnp).
     /// * `bsk_id` - The ID of the bootstrap key to generate.
-    /// * `enc_seed` - The seed for the encryption random generator.
+    /// * `enc_seed` - The seed for the encryption random generator (used if no compression).
+    /// * `compression_seed` - The seed for the compression random generator (used if seeded key).
     /// * `chunk_size` - The size of each chunk to generate.
     /// * `port` - The `MessagePort` to send the generated chunks to.
     ///
@@ -1215,6 +1216,7 @@ pub mod wasm {
         output_secret_key_buffer: &[u8],
         bsk_id: u32,
         enc_seed: u128,
+        compression_seed: u128,
         chunk_size: usize,
         port: web_sys::MessagePort,
     ) -> usize {
@@ -1241,8 +1243,7 @@ pub mod wasm {
         let params = bsk_info
             .get_params()
             .expect_throw("Failed to get bootstrap key parameters");
-        // TODO add support for compression
-        let _compression = bsk_info
+        let compression = bsk_info
             .get_compression()
             .expect_throw("Failed to get compression");
 
@@ -1263,35 +1264,73 @@ pub mod wasm {
         let output_glwe_secret_key =
             GlweSecretKey::from_container(output_lwe_secret_key.into_container(), polynomial_size);
 
+        let mut total_len = 0;
         let mut seeder = new_seeder();
         let seeder = seeder.as_mut();
-        let mut encryption_generator =
-            EncryptionRandomGenerator::<DefaultRandomGenerator>::new(Seed(enc_seed), seeder);
-        let chunk_generator = LweBootstrapKeyChunkGenerator::new(
-            &mut encryption_generator,
-            ChunkSize(chunk_size),
-            input_lwe_dimension,
-            glwe_dimension.to_glwe_size(),
-            polynomial_size,
-            decomp_base_log,
-            decomp_level_count,
-            ciphertext_modulus,
-            &input_lwe_secret_key,
-            &output_glwe_secret_key,
-            glwe_noise_distribution,
-            false,
-        );
-        let mut total_len = 0;
-        for chunk in chunk_generator {
-            let mut serialized_data = Vec::new();
-            let serialized_size = safe_serialized_size(&chunk)
-                .expect_throw("couldn't guess size of serialized chunk");
-            safe_serialize(&chunk, &mut serialized_data, serialized_size)
-                .expect_throw("couldn't serialize chunk");
-            total_len += serialized_data.len();
-            let js_array = web_sys::js_sys::Uint8Array::from(serialized_data.as_slice());
-            port.post_message(&js_array)
-                .expect_throw("Failed to post message to port");
+        match compression {
+            Compression::None => {
+                let mut encryption_generator =
+                    EncryptionRandomGenerator::<DefaultRandomGenerator>::new(
+                        Seed(enc_seed),
+                        seeder,
+                    );
+                let chunk_generator = LweBootstrapKeyChunkGenerator::new(
+                    &mut encryption_generator,
+                    ChunkSize(chunk_size),
+                    input_lwe_dimension,
+                    glwe_dimension.to_glwe_size(),
+                    polynomial_size,
+                    decomp_base_log,
+                    decomp_level_count,
+                    ciphertext_modulus,
+                    &input_lwe_secret_key,
+                    &output_glwe_secret_key,
+                    glwe_noise_distribution,
+                    false,
+                );
+                for chunk in chunk_generator {
+                    let mut serialized_data = Vec::new();
+                    let serialized_size = safe_serialized_size(&chunk)
+                        .expect_throw("couldn't guess size of serialized chunk");
+                    safe_serialize(&chunk, &mut serialized_data, serialized_size)
+                        .expect_throw("couldn't serialize chunk");
+                    total_len += serialized_data.len();
+                    let js_array = web_sys::js_sys::Uint8Array::from(serialized_data.as_slice());
+                    port.post_message(&js_array)
+                        .expect_throw("Failed to post message to port");
+                }
+            }
+            Compression::Seed => {
+                let chunk_generator = SeededLweBootstrapKeyChunkGenerator::new(
+                    ChunkSize(chunk_size),
+                    input_lwe_dimension,
+                    glwe_dimension.to_glwe_size(),
+                    polynomial_size,
+                    decomp_base_log,
+                    decomp_level_count,
+                    ciphertext_modulus,
+                    &input_lwe_secret_key,
+                    &output_glwe_secret_key,
+                    glwe_noise_distribution,
+                    CompressionSeed {
+                        seed: Seed(compression_seed),
+                    },
+                    seeder,
+                    false,
+                );
+                for chunk in chunk_generator {
+                    let mut serialized_data = Vec::new();
+                    let serialized_size = safe_serialized_size(&chunk)
+                        .expect_throw("couldn't guess size of serialized chunk");
+                    safe_serialize(&chunk, &mut serialized_data, serialized_size)
+                        .expect_throw("couldn't serialize chunk");
+                    total_len += serialized_data.len();
+                    let js_array = web_sys::js_sys::Uint8Array::from(serialized_data.as_slice());
+                    port.post_message(&js_array)
+                        .expect_throw("Failed to post message to port");
+                }
+            }
+            Compression::Paillier => todo!("Paillier compression not implemented"),
         }
         port.close();
         total_len
