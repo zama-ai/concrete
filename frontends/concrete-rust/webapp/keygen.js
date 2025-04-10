@@ -70,6 +70,7 @@ async function handleKeygen(event) {
                 cr.get_lwe_secret_key_from_client_keyset(clientKeysetBuffer, bsk.output_id),
                 bsk.id,
                 BigInt(0),
+                BigInt(0),
                 chunk_size,
                 port
             );
