@@ -1,22 +1,22 @@
 [package]
 
-name = "concrete-rust"
+name = "concrete-keygen"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [[bin]]
 
-name = "concrete-rust-keygen"
+name = "keygen"
 path = "src/keygen.rs"
 
 [[bin]]
 
-name = "concrete-rust-keyasm"
+name = "keyasm"
 path = "src/keyasm.rs"
 
 [lib]
-name = "concrete_rust"
+name = "concrete_keygen"
 path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 

@@ -1,7 +1,7 @@
 // tested with nodejs v22.14.0
 
 const fs = await import('fs');
-const cr = await import("../pkg/concrete_rust.js");
+const cr = await import("../pkg/concrete_keygen.js");
 const { exit } = await import('process');
 
 let keyset_info_path = "./ks_info.capnp";

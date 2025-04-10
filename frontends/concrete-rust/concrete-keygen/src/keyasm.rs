@@ -1,7 +1,6 @@
 use std::io::Read;
 
-use concrete_rust;
-use concrete_rust::concrete_protocol_capnp;
+use concrete_keygen::concrete_protocol_capnp;
 use tfhe::core_crypto::prelude::{
     allocate_and_assemble_lwe_bootstrap_key_from_chunks, LweBootstrapKeyChunk,
 };
@@ -65,7 +64,7 @@ fn assemble_keyset_from_zip(
         }
 
         let bsk = allocate_and_assemble_lwe_bootstrap_key_from_chunks(&chunks);
-        let bsk_proto = concrete_rust::build_bsk_proto(keyset_info_proto, bsk_id, &bsk);
+        let bsk_proto = concrete_keygen::build_bsk_proto(keyset_info_proto, bsk_id, &bsk);
         bsk_protos.push(bsk_proto);
     }
 
@@ -88,7 +87,7 @@ fn assemble_keyset_from_zip(
     let keyset = concrete_protocol_capnp::get_reader_from_message(&keyset_message).unwrap();
 
     // Add BSks to keyset
-    let keyset_with_bsks = concrete_rust::add_bsk_keys_to_keyset(keyset, bsk_readers);
+    let keyset_with_bsks = concrete_keygen::add_bsk_keys_to_keyset(keyset, bsk_readers);
 
     // Write the final keyset to the output file
     let mut output_file = std::fs::File::create(output_keyset_path).unwrap();
