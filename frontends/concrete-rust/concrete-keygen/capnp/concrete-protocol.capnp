@@ -1,0 +1,1 @@
+../../../../tools/concrete-protocol/src/concrete-protocol.capnp

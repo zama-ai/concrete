@@ -1,4 +1,4 @@
-import("./pkg/concrete_rust.js").then((cr) => {
+import("./pkg/concrete_keygen.js").then((cr) => {
     window.cr = cr;
     cr.default();
 });

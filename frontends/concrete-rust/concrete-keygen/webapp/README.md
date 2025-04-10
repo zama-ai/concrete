@@ -27,12 +27,12 @@ In the WebApp, upload your file, and choose a Chunk Size. The bigger it is the m
 
 ### Use the Chunked Keyset
 
-You will need to assemble the Chunked Keyset into a valid Concrete Keyset. You can do that with the `concrete-rust-keyasm` binary.
+You will need to assemble the Chunked Keyset into a valid Concrete Keyset. You can do that with the `keyasm` binary.
 
 ```bash
 $ # in the parent folder
 $ make build
-$ ./target/release/concrete-rust-keyasm <chunked_keyset_zip> <output_keyset>
+$ ./target/release/keyasm <chunked_keyset_zip> <output_keyset>
 ```
 
 You can then load this Keyset in `concrete-python`

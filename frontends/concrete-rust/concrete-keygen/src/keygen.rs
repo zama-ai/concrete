@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 
 use clap::{Arg, Command};
-use concrete_rust::generate_keyset_from_buffers;
+use concrete_keygen::generate_keyset_from_buffers;
 
 pub fn main() {
     let matches = Command::new("concrete-keygen")
