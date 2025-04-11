@@ -33,7 +33,6 @@ add_mlir_library(
   ConcretelangConcreteTransforms
   ConcretelangSDFGTransforms
   ConcretelangSDFGInterfaces
-  ConcretelangRuntime
   LinalgExtras
   TFHEDialectTransforms
   rust_deps_bundle
