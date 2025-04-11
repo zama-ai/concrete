@@ -62,6 +62,7 @@
 #include "concretelang/Support/LLVMEmitFile.h"
 #include "concretelang/Support/Pipeline.h"
 #include "concretelang/Support/Utils.h"
+#include <concretelang/Runtime/DFRuntime.hpp>
 #include <concretelang/Runtime/GPUDFG.hpp>
 
 namespace {
@@ -334,6 +335,9 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       options.autoParallelize || options.dataflowParallelize;
   auto loopParallelize = options.autoParallelize || options.loopParallelize;
 
+  if (loopParallelize)
+    mlir::concretelang::dfr::_dfr_set_use_omp(true);
+
   // Sanity checks for enabling GPU usage: the compiler must have been
   // compiled with Cuda support (especially important when building
   // python wheels), and at least one device must be available to
@@ -384,6 +388,11 @@ CompilerEngine::compile(mlir::ModuleOp moduleOp, Target target,
       dataflowParallelize = false;
     }
   }
+
+  // If dataflow parallelization will proceed, mark it for
+  // initialising the runtime
+  if (dataflowParallelize)
+    mlir::concretelang::dfr::_dfr_set_required(true);
 
   mlir::OwningOpRef<mlir::ModuleOp> mlirModuleRef(moduleOp);
   res.mlirModuleRef = std::move(mlirModuleRef);
