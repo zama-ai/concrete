@@ -351,9 +351,11 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
 /*  Start/stop functions to be called from within user code (or during
     JIT invocation).  These serve to pause/resume the runtime
     scheduler and to clean up used resources.  */
-void _dfr_start(int64_t use_dfr_p, void *ctx) {
+void _dfr_start(int64_t use_dfr_p, bool use_omp, void *ctx) {
   CONCRETELANG_ENABLE_TIMING();
   BEGIN_TIME(&whole_timer);
+  hpx::cout << "Use omp " << use_omp << "\n" << std::flush;
+  _dfr_set_use_omp(use_omp);
   if (use_dfr_p) {
     // The first invocation will initialise the runtime. As each call to
     // _dfr_start is matched with _dfr_stop, if this is not the first,
@@ -405,7 +407,7 @@ namespace mlir {
 namespace concretelang {
 namespace dfr {
 void _dfr_run_remote_scheduler() {
-  _dfr_start(1, nullptr);
+  _dfr_start(1, true, nullptr);
   _dfr_stop(1);
 }
 } // namespace dfr
@@ -503,7 +505,7 @@ void _dfr_register_lib(void *dlh) {}
 
 using namespace mlir::concretelang::dfr;
 
-void _dfr_start(int64_t use_dfr_p, void *ctx) {}
+void _dfr_start(int64_t use_dfr_p, bool use_omp, void *ctx) {}
 void _dfr_stop(int64_t use_dfr_p) {}
 
 void _dfr_terminate() {}

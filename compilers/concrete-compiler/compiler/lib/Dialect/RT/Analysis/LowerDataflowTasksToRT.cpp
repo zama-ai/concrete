@@ -397,6 +397,8 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
       builder.setInsertionPointToStart(&entryPoint.getBody().front());
       Value useDFRVal = builder.create<arith::ConstantOp>(
           entryPoint.getLoc(), builder.getI64IntegerAttr(1));
+      Value useOMPVal = builder.create<arith::ConstantOp>(
+          entryPoint.getLoc(), builder.getBoolAttr(true));
 
       // Check if this entry point uses a context
       Value ctx = nullptr;
@@ -414,12 +416,13 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
       }
 
       auto startFunTy = mlir::FunctionType::get(
-          entryPoint->getContext(), {useDFRVal.getType(), ctx.getType()}, {});
+          entryPoint->getContext(),
+          {useDFRVal.getType(), useOMPVal.getType(), ctx.getType()}, {});
       (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start",
                                      startFunTy);
-      builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_start",
-                                         mlir::TypeRange(),
-                                         mlir::ValueRange({useDFRVal, ctx}));
+      builder.create<mlir::func::CallOp>(
+          entryPoint.getLoc(), "_dfr_start", mlir::TypeRange(),
+          mlir::ValueRange({useDFRVal, useOMPVal, ctx}));
       builder.setInsertionPoint(entryPoint.getBody().back().getTerminator());
       auto stopFunTy = mlir::FunctionType::get(entryPoint->getContext(),
                                                {useDFRVal.getType()}, {});

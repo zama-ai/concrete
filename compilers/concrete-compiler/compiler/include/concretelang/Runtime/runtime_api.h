@@ -25,7 +25,7 @@ void *_dfr_await_future(void *);
 void _dfr_deallocate_future(void *);
 
 /*  Initialisation & termination.  */
-void _dfr_start(int64_t, void *);
+void _dfr_start(int64_t, bool, void *);
 void _dfr_stop(int64_t);
 
 void _dfr_terminate();
