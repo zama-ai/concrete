@@ -146,16 +146,11 @@ struct BufferizeDataflowTaskOpsPass
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
       signalPassFailure();
   }
-
-  BufferizeDataflowTaskOpsPass(bool debug) : debug(debug){};
-
-protected:
-  bool debug;
 };
 } // end anonymous namespace
 
-std::unique_ptr<mlir::Pass> createBufferizeDataflowTaskOpsPass(bool debug) {
-  return std::make_unique<BufferizeDataflowTaskOpsPass>(debug);
+std::unique_ptr<mlir::Pass> createBufferizeDataflowTaskOpsPass() {
+  return std::make_unique<BufferizeDataflowTaskOpsPass>();
 }
 } // namespace concretelang
 } // namespace mlir

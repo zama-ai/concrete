@@ -76,7 +76,7 @@ def FinalizeTaskCreation : Pass<"FinalizeTaskCreation", "mlir::ModuleOp"> {
   }];
 }
 
-def StartStop : Pass<"StartStop", "mlir::ModuleOp"> {
+def StartStop : Pass<"dfr-add-start-stop", "mlir::ModuleOp"> {
   let summary =
       "Issue calls to start/stop the runtime system.";
 

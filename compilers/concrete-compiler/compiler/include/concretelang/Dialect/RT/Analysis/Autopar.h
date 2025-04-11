@@ -17,15 +17,12 @@ class BufferizeTypeConverter;
 class RewritePatternSet;
 
 namespace concretelang {
-std::unique_ptr<mlir::Pass>
-createBuildDataflowTaskGraphPass(bool debug = false);
-std::unique_ptr<mlir::Pass> createLowerDataflowTasksPass(bool debug = false);
-std::unique_ptr<mlir::Pass>
-createBufferizeDataflowTaskOpsPass(bool debug = false);
-std::unique_ptr<mlir::Pass> createFinalizeTaskCreationPass(bool debug = false);
-std::unique_ptr<mlir::Pass> createStartStopPass(bool debug = false);
-std::unique_ptr<mlir::Pass>
-createFixupBufferDeallocationPass(bool debug = false);
+std::unique_ptr<mlir::Pass> createBuildDataflowTaskGraphPass();
+std::unique_ptr<mlir::Pass> createLowerDataflowTasksPass();
+std::unique_ptr<mlir::Pass> createBufferizeDataflowTaskOpsPass();
+std::unique_ptr<mlir::Pass> createFinalizeTaskCreationPass();
+std::unique_ptr<mlir::Pass> createStartStopPass(bool useOMP);
+std::unique_ptr<mlir::Pass> createFixupBufferDeallocationPass();
 void populateRTToLLVMConversionPatterns(mlir::LLVMTypeConverter &converter,
                                         mlir::RewritePatternSet &patterns);
 void populateRTBufferizePatterns(mlir::BufferizeTypeConverter &typeConverter,

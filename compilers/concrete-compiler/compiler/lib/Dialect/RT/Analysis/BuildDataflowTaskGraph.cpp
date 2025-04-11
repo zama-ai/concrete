@@ -157,7 +157,6 @@ struct BuildDataflowTaskGraphPass
       (void)mlir::simplifyRegions(rewriter, func->getRegions());
     });
   }
-  BuildDataflowTaskGraphPass(bool debug) : debug(debug){};
 
 protected:
   mlir::WalkResult processOperation(mlir::Operation *op) {
@@ -196,13 +195,11 @@ protected:
     }
     return mlir::WalkResult::advance();
   }
-
-  bool debug;
 };
 } // end anonymous namespace
 
-std::unique_ptr<mlir::Pass> createBuildDataflowTaskGraphPass(bool debug) {
-  return std::make_unique<BuildDataflowTaskGraphPass>(debug);
+std::unique_ptr<mlir::Pass> createBuildDataflowTaskGraphPass() {
+  return std::make_unique<BuildDataflowTaskGraphPass>();
 }
 
 } // end namespace concretelang

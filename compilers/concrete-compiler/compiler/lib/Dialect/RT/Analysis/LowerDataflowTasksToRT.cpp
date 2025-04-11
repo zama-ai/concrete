@@ -349,15 +349,11 @@ struct LowerDataflowTasksPass
         lowerDataflowTaskOp(mapping.first, mapping.second);
     });
   }
-  LowerDataflowTasksPass(bool debug) : debug(debug){};
-
-protected:
-  bool debug;
 };
 } // end anonymous namespace
 
-std::unique_ptr<mlir::Pass> createLowerDataflowTasksPass(bool debug) {
-  return std::make_unique<LowerDataflowTasksPass>(debug);
+std::unique_ptr<mlir::Pass> createLowerDataflowTasksPass() {
+  return std::make_unique<LowerDataflowTasksPass>();
 }
 
 namespace {
@@ -397,6 +393,8 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
       builder.setInsertionPointToStart(&entryPoint.getBody().front());
       Value useDFRVal = builder.create<arith::ConstantOp>(
           entryPoint.getLoc(), builder.getI64IntegerAttr(1));
+      Value useOMPVal = builder.create<arith::ConstantOp>(
+          entryPoint.getLoc(), builder.getBoolAttr(useOMP));
 
       // Check if this entry point uses a context
       Value ctx = nullptr;
@@ -414,12 +412,13 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
       }
 
       auto startFunTy = mlir::FunctionType::get(
-          entryPoint->getContext(), {useDFRVal.getType(), ctx.getType()}, {});
+          entryPoint->getContext(),
+          {useDFRVal.getType(), useOMPVal.getType(), ctx.getType()}, {});
       (void)insertForwardDeclaration(entryPoint, builder, "_dfr_start",
                                      startFunTy);
-      builder.create<mlir::func::CallOp>(entryPoint.getLoc(), "_dfr_start",
-                                         mlir::TypeRange(),
-                                         mlir::ValueRange({useDFRVal, ctx}));
+      builder.create<mlir::func::CallOp>(
+          entryPoint.getLoc(), "_dfr_start", mlir::TypeRange(),
+          mlir::ValueRange({useDFRVal, useOMPVal, ctx}));
       builder.setInsertionPoint(entryPoint.getBody().back().getTerminator());
       auto stopFunTy = mlir::FunctionType::get(entryPoint->getContext(),
                                                {useDFRVal.getType()}, {});
@@ -429,15 +428,15 @@ struct StartStopPass : public StartStopBase<StartStopPass> {
                                          mlir::TypeRange(), useDFRVal);
     }
   }
-  StartStopPass(bool debug) : debug(debug){};
+  StartStopPass(bool useOMP) : useOMP(useOMP){};
 
 protected:
-  bool debug;
+  bool useOMP;
 };
 } // namespace
 
-std::unique_ptr<mlir::Pass> createStartStopPass(bool debug) {
-  return std::make_unique<StartStopPass>(debug);
+std::unique_ptr<mlir::Pass> createStartStopPass(bool useOMP) {
+  return std::make_unique<StartStopPass>(useOMP);
 }
 
 namespace {
@@ -551,15 +550,11 @@ struct FinalizeTaskCreationPass
       }
     });
   }
-  FinalizeTaskCreationPass(bool debug) : debug(debug){};
-
-protected:
-  bool debug;
 };
 } // namespace
 
-std::unique_ptr<mlir::Pass> createFinalizeTaskCreationPass(bool debug) {
-  return std::make_unique<FinalizeTaskCreationPass>(debug);
+std::unique_ptr<mlir::Pass> createFinalizeTaskCreationPass() {
+  return std::make_unique<FinalizeTaskCreationPass>();
 }
 
 namespace {
@@ -613,15 +608,11 @@ struct FixupBufferDeallocationPass
       }
     });
   }
-  FixupBufferDeallocationPass(bool debug) : debug(debug){};
-
-protected:
-  bool debug;
 };
 } // end anonymous namespace
 
-std::unique_ptr<mlir::Pass> createFixupBufferDeallocationPass(bool debug) {
-  return std::make_unique<FixupBufferDeallocationPass>(debug);
+std::unique_ptr<mlir::Pass> createFixupBufferDeallocationPass() {
+  return std::make_unique<FixupBufferDeallocationPass>();
 }
 
 } // end namespace concretelang
