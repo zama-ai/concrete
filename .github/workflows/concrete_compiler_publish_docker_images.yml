@@ -183,6 +183,7 @@ jobs:
           format: 'sarif'
           scanners: vuln,secret
           output: trivy-out-docker.sarif
+          timeout: '60m'
       - name: Upload Trivy scan results to GitHub Security tab
         if: steps.login.conclusion != 'skipped'
         uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe # v3.27.6
