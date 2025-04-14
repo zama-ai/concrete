@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc as build
+FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc AS build
 
 RUN dnf install -y kernel-devel kernel-headers && dnf clean all
 RUN curl https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-rhel8-11-8-local-11.8.0_520.61.05-1.x86_64.rpm -o cuda.rpm
@@ -10,12 +10,6 @@ RUN dnf update -y \
     && dnf -y module install nvidia-driver:latest-dkms \
     && dnf -y install cuda \
     && dnf clean all
-# Add a non-root user and group
-RUN groupadd -g 10001 grp02 && \
-    useradd -u 10000 -g grp02 usr01 && \
-    chown -R usr01:grp02 /usr/local/cuda-11.8
-# Switch to the non-root user
-USER usr01:grp02
 
 FROM scratch
 COPY --from=build /usr/local/cuda-11.8/ /usr/local/cuda-11.8/
