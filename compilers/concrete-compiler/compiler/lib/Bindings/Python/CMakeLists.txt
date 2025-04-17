@@ -112,7 +112,6 @@ target_include_directories(ConcretelangBindingsPythonCAPI PUBLIC ${CONCRETE_CPU_
 
 target_link_libraries(
   ConcretelangBindingsPythonCAPI
-  PUBLIC ConcretelangRuntime
   PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangSupport> $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangClientLib>
           $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangServerLib>)
 

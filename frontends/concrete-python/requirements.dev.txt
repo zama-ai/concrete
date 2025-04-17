@@ -13,7 +13,7 @@ pydocstyle==6.3.0
 pylint==2.17.1
 ruff==0.6.3
 
-auditwheel==5.3.0; sys_platform == 'linux'
+auditwheel==6.3.0; sys_platform == 'linux'
 delocate==0.10.4; sys_platform == 'darwin'
 wheel==0.40.0
 
