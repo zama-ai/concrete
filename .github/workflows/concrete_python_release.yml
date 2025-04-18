@@ -17,7 +17,6 @@ env:
   SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
   RELEASE_TYPE: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && 'public' || 'nightly' }}
-  PYTEST_MAXPROCESSES: "100"
 
 concurrency:
   group: concrete_python_release_${{ github.ref }}
@@ -401,13 +400,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-        # FIXME: we need to investigate why this tests are taking too long
-        # in the meantime, we only run them for one version when in nightly
-        exclude:
-          - python-version: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && '' || '3.9' }}
-          - python-version: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && '' || '3.10'}}
-          - python-version: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && '' || '3.11'}}
-          - python-version: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/tags/')) && '' || '3.12'}}
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     steps:
       # HOME is needed by actions-rs/toolchain
@@ -460,7 +452,7 @@ jobs:
 
           # Running tests
           make tfhers-utils
-          pytest tests -svv -n auto --maxprocesses="${PYTEST_MAXPROCESSES}"
+          pytest tests -svv -n auto
       - name: Slack Notification
         if: ${{ failure() }}
         continue-on-error: true
@@ -646,7 +638,7 @@ jobs:
           # Running tests
           make tfhers-utils
           mkdir ./KeySetCache
-          pytest tests -svv -n auto --maxprocesses="${PYTEST_MAXPROCESSES}" --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
+          pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
       - name: Cleanup host
         if: success() || failure()
         run: |
