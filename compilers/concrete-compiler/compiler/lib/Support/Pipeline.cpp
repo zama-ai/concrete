@@ -581,8 +581,9 @@ mlir::LogicalResult lowerToStd(mlir::MLIRContext &context,
       pm, mlir::concretelang::createFinalizeTaskCreationPass(), enablePass);
   addPotentiallyNestedPass(
       pm, mlir::bufferization::createBufferDeallocationPass(), enablePass);
-  addPotentiallyNestedPass(pm, mlir::concretelang::createStartStopPass(),
-                           enablePass);
+  addPotentiallyNestedPass(
+      pm, mlir::concretelang::createStartStopPass(parallelizeLoops),
+      enablePass);
   addPotentiallyNestedPass(pm, mlir::createCanonicalizerPass(), enablePass);
   addPotentiallyNestedPass(pm, mlir::createBufferizationToMemRefPass(),
                            enablePass);
