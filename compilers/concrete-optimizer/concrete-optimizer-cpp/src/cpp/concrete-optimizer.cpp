@@ -1171,6 +1171,7 @@ struct RangeRestriction final {
   ::rust::Vec<::std::uint64_t> ks_level_count;
   ::rust::Vec<::std::uint64_t> ks_base_log;
 
+  ::rust::String range_restriction_to_json() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$RangeRestriction
@@ -1396,6 +1397,7 @@ struct KeysetInfo final {
 struct KeysetRestriction final {
   ::concrete_optimizer::restriction::KeysetInfo info;
 
+  ::rust::String keyset_restriction_to_json() const noexcept;
   using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_concrete_optimizer$restriction$KeysetRestriction
@@ -1526,6 +1528,18 @@ void concrete_optimizer$cxxbridge1$Dag$get_output_indices(::concrete_optimizer::
 
 ::std::uint64_t concrete_optimizer$cxxbridge1$NO_KEY_ID() noexcept;
 } // extern "C"
+
+namespace restriction {
+extern "C" {
+void concrete_optimizer$restriction$cxxbridge1$RangeRestriction$range_restriction_to_json(::concrete_optimizer::restriction::RangeRestriction const &self, ::rust::String *return$) noexcept;
+
+void concrete_optimizer$restriction$cxxbridge1$range_restriction_from_json(::rust::Str input, ::concrete_optimizer::restriction::RangeRestriction *return$) noexcept;
+
+void concrete_optimizer$restriction$cxxbridge1$KeysetRestriction$keyset_restriction_to_json(::concrete_optimizer::restriction::KeysetRestriction const &self, ::rust::String *return$) noexcept;
+
+void concrete_optimizer$restriction$cxxbridge1$keyset_restriction_from_json(::rust::Str input, ::concrete_optimizer::restriction::KeysetRestriction *return$) noexcept;
+} // extern "C"
+} // namespace restriction
 
 namespace v0 {
 ::concrete_optimizer::v0::Solution optimize_bootstrap(::std::uint64_t precision, double noise_factor, ::concrete_optimizer::Options const &options) noexcept {
@@ -1741,6 +1755,32 @@ namespace weights {
 ::std::uint64_t NO_KEY_ID() noexcept {
   return concrete_optimizer$cxxbridge1$NO_KEY_ID();
 }
+
+namespace restriction {
+::rust::String RangeRestriction::range_restriction_to_json() const noexcept {
+  ::rust::MaybeUninit<::rust::String> return$;
+  concrete_optimizer$restriction$cxxbridge1$RangeRestriction$range_restriction_to_json(*this, &return$.value);
+  return ::std::move(return$.value);
+}
+
+::concrete_optimizer::restriction::RangeRestriction range_restriction_from_json(::rust::Str input) noexcept {
+  ::rust::MaybeUninit<::concrete_optimizer::restriction::RangeRestriction> return$;
+  concrete_optimizer$restriction$cxxbridge1$range_restriction_from_json(input, &return$.value);
+  return ::std::move(return$.value);
+}
+
+::rust::String KeysetRestriction::keyset_restriction_to_json() const noexcept {
+  ::rust::MaybeUninit<::rust::String> return$;
+  concrete_optimizer$restriction$cxxbridge1$KeysetRestriction$keyset_restriction_to_json(*this, &return$.value);
+  return ::std::move(return$.value);
+}
+
+::concrete_optimizer::restriction::KeysetRestriction keyset_restriction_from_json(::rust::Str input) noexcept {
+  ::rust::MaybeUninit<::concrete_optimizer::restriction::KeysetRestriction> return$;
+  concrete_optimizer$restriction$cxxbridge1$keyset_restriction_from_json(input, &return$.value);
+  return ::std::move(return$.value);
+}
+} // namespace restriction
 } // namespace concrete_optimizer
 
 extern "C" {

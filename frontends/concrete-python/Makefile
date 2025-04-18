@@ -235,7 +235,16 @@ build-whl:
 patch-whl-linux:
 	GLIBC_VER=$(shell ldd --version | head -n 1 | grep -o '[^ ]*$$'|head|tr '.' '_'); \
 	for PLATFORM in manylinux_$${GLIBC_VER}_x86_64 linux_x86_64; do \
-		if $(PYTHON) -m auditwheel repair -w dist --plat $$PLATFORM dist/*.whl; then \
+        if $(PYTHON) -m auditwheel repair \
+                -w dist \
+                        --exclude "libstdc++.so.*" \
+                        --exclude "libm.so.*" \
+                        --exclude "libc.so.*" \
+                        --exclude "libgcc_s.so.*" \
+                        --exclude "libcap.so*" \
+                        --exclude "libudev.so*" \
+                        --plat $$PLATFORM dist/*.whl;\
+        then \
 			echo Success for $$PLATFORM; \
 			break; \
 		else \

@@ -113,7 +113,7 @@ ifeq ($(BUILD_TYPE),Debug)
 	LIBOMP_LINK_TO_LIBSTDCXX_OPT=-DLIBOMP_USE_STDCPPLIB=ON
 endif
 
-all: concretecompiler runtime python-bindings build-tests build-benchmarks doc concrete-sys
+all: concretecompiler runtime python-bindings build-tests build-benchmarks doc concrete-rust
 
 # COMPILER #####################################################
 
@@ -130,7 +130,7 @@ $(BUILD_DIR)/configured.stamp:
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 	-DLLVM_ENABLE_ASSERTIONS=ON \
 	-DLLVM_ENABLE_RTTI=ON \
-	-DLLVM_LINK_LLVM_DYLIB=ON \
+	-DLLVM_LINK_LLVM_DYLIB=OFF \
 	-DMLIR_ENABLE_BINDINGS_PYTHON=$(BINDINGS_PYTHON_ENABLED) \
 	-DCONCRETELANG_BINDINGS_PYTHON_ENABLED=$(BINDINGS_PYTHON_ENABLED) \
 	-DCONCRETELANG_DATAFLOW_EXECUTION_ENABLED=$(DATAFLOW_EXECUTION_ENABLED) \
@@ -173,8 +173,8 @@ clientlib: build-initialized
 serverlib: build-initialized
 	cmake --build $(BUILD_DIR) --target ConcretelangServerLib
 
-concrete-sys: build-initialized
-	cmake --build $(BUILD_DIR) --target ConcreteSys
+concrete-rust: build-initialized
+	cmake --build $(BUILD_DIR) --target ConcreteRust
 
 GITHUB_URL=https://api.github.com/repos/zama-ai/concrete-compiler-internal
 GITHUB_URL_LIST_ARTIFACTS="${GITHUB_URL}/actions/artifacts?name=${KEYSETCACHENAME}&per_page=1"
@@ -212,7 +212,7 @@ endif
 
 build-tests: build-unit-tests build-end-to-end-tests
 
-run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-random-end-to-end-tests-for-each-options run-python-tests run-rust-tests
+run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-random-end-to-end-tests-for-each-options run-python-tests
 
 ## check-tests
 
@@ -231,12 +231,6 @@ run-unit-tests: build-unit-tests
 
 run-python-tests: python-bindings concretecompiler runtime
 	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
-
-## rust-tests
-
-run-rust-tests: concrete-sys
-	$(eval _abs_build_dir = $(realpath $(BUILD_DIR)))
-	cd lib/Bindings/Rust && COMPILER_BUILD_DIRECTORY=$(_abs_build_dir) cargo test
 
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output

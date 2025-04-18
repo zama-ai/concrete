@@ -1,28 +1,24 @@
 add_compile_options(-fexceptions)
 
 add_custom_command(
-  OUTPUT concrete-sys/src/lib.rs.h concrete-sys/src/lib.rs.cc
-  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs --header > concrete-sys/src/lib.rs.h
-  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/concrete-sys/src/lib.rs > concrete-sys/src/lib.rs.cc)
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ffi.rs ${CMAKE_CURRENT_SOURCE_DIR}/ffi.h
+  OUTPUT ffi.rs.cc ${CMAKE_CURRENT_SOURCE_DIR}/cxx.h
+  COMMAND cxxbridge ${CMAKE_CURRENT_SOURCE_DIR}/ffi.rs > ffi.rs.cc
+  COMMAND cxxbridge --header > ${CMAKE_CURRENT_SOURCE_DIR}/cxx.h)
 
-add_library(ConcreteSys SHARED concrete-sys/src/lib.cpp concrete-sys/src/lib.rs.cc)
+add_library(ConcreteRust SHARED ffi.rs.cc)
 
-target_include_directories(ConcreteSys PRIVATE concrete-sys/src)
+if(LINUX)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic")
+endif()
 
-target_link_libraries(
-  ConcreteSys
-  PRIVATE ConcretelangSupport
-          ConcretelangCommon
-          ConcretelangRuntimeStatic
-          LLVMSupport
-          capnp
-          capnp-json
-          kj)
+target_link_libraries(ConcreteRust PRIVATE ConcretelangSupport ConcretelangClientLib ConcretelangServerLib
+                                           ConcretelangRuntimeStatic)
 
 if(APPLE)
   find_library(SECURITY_FRAMEWORK Security)
   if(NOT SECURITY_FRAMEWORK)
     message(FATAL_ERROR "Security framework not found")
   endif()
-  target_link_libraries(ConcreteSys LINK_PUBLIC ${SECURITY_FRAMEWORK})
+  target_link_libraries(ConcreteRust LINK_PUBLIC ${SECURITY_FRAMEWORK})
 endif()

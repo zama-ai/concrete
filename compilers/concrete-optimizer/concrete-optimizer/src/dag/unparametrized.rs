@@ -481,7 +481,7 @@ impl DagBuilder<'_> {
                 ..
             } => shape.clone(),
             Operator::Dot {
-                kind: DotKind::Unsupported { .. },
+                kind: DotKind::Unsupported,
                 weights,
                 inputs,
             } => {

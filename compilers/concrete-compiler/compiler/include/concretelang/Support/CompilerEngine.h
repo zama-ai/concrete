@@ -183,6 +183,8 @@ class Library {
   std::string runtimeLibraryPath;
   bool cleanUp;
   mlir::concretelang::ProgramCompilationFeedback compilationFeedback;
+
+public:
   std::optional<Message<concreteprotocol::ProgramInfo>> programInfo;
 
 public:
