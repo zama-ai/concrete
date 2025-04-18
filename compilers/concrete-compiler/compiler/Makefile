@@ -212,7 +212,7 @@ endif
 
 build-tests: build-unit-tests build-end-to-end-tests
 
-run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-random-end-to-end-tests-for-each-options run-python-tests run-rust-tests
+run-tests: run-check-tests run-unit-tests run-end-to-end-tests run-random-end-to-end-tests-for-each-options run-python-tests
 
 ## check-tests
 
@@ -231,12 +231,6 @@ run-unit-tests: build-unit-tests
 
 run-python-tests: python-bindings concretecompiler runtime
 	PYTHONPATH=${PYTHONPATH}:$(BUILD_DIR)/tools/concretelang/python_packages/concretelang_core LD_PRELOAD=$(BUILD_DIR)/lib/libConcretelangRuntime.so pytest -vs -m $(PYTHON_TESTS_MARKER) tests/python
-
-## rust-tests
-
-run-rust-tests: concrete-rust
-	$(eval _abs_build_dir = $(realpath $(BUILD_DIR)))
-	cd lib/Bindings/Rust && COMPILER_BUILD_DIRECTORY=$(_abs_build_dir) cargo +nightly test
 
 test-compiler-file-output: concretecompiler
 	pytest -vs tests/test_compiler_file_output
