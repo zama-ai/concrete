@@ -119,6 +119,8 @@ jobs:
             rm -rf /build/*
             ccache -z
             ccache -p
+            cargo install cxxbridge-cmd
+            dnf -y install libatomic openssl openssl-devel
             make DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all
       - name: Ccache stats
         if: always()
