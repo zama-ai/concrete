@@ -12,15 +12,6 @@
 
 extern "C" {
 
-/// \brief simulate the encryption of a value by adding noise
-///
-/// \param message encoded message to encrypt
-/// \param lwe_dim
-/// \param csprng used to generate noise during encryption
-/// \return noisy plaintext
-uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim,
-                             Csprng *encrypt_csprng);
-
 /// \brief simulate the negation of a noisy plaintext
 ///
 /// \param plaintext noisy plaintext

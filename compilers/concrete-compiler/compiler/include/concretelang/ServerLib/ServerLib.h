@@ -46,13 +46,18 @@ class ServerCircuit {
   friend class ServerProgram;
 
 public:
+  static Result<ServerCircuit>
+  fromFnPtr(const Message<concreteprotocol::CircuitInfo> &circuitInfo,
+            void (*func)(void *...), bool useSimulation);
+
   /// Call the circuit with public arguments.
-  Result<std::vector<TransportValue>> call(const ServerKeyset &serverKeyset,
-                                           std::vector<TransportValue> &args);
+  Result<std::vector<TransportValue>>
+  call(const ServerKeyset &serverKeyset,
+       const std::vector<TransportValue> &args);
 
   /// Simulate the circuit with public arguments.
   Result<std::vector<TransportValue>>
-  simulate(std::vector<TransportValue> &args);
+  simulate(const std::vector<TransportValue> &args);
 
   /// Returns the name of this circuit.
   std::string getName();

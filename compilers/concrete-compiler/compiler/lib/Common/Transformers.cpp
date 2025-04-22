@@ -11,8 +11,9 @@
 #include "concretelang/Common/Csprng.h"
 #include "concretelang/Common/Error.h"
 #include "concretelang/Common/Keysets.h"
+#include "concretelang/Common/Security.h"
 #include "concretelang/Common/Values.h"
-#include "concretelang/Runtime/simulation.h"
+
 #include <memory>
 #include <stdlib.h>
 #include <string>
@@ -23,6 +24,31 @@ using concretelang::values::getCorrespondingPrecision;
 using concretelang::values::Tensor;
 using concretelang::values::TransportValue;
 using concretelang::values::Value;
+
+namespace {
+thread_local auto default_csprng = concretelang::csprng::SoftCSPRNG(0);
+
+inline concretelang::security::SecurityCurve *security_curve() {
+  return concretelang::security::getSecurityCurve(
+      128, concretelang::security::BINARY);
+}
+
+uint64_t gaussian_noise(double variance, Csprng *csprng = default_csprng.ptr) {
+  uint64_t random_gaussian_buff[2];
+
+  double std_dev = std::sqrt(variance);
+  concrete_cpu_fill_with_random_gaussian(random_gaussian_buff, 2, std_dev,
+                                         csprng);
+  return random_gaussian_buff[0];
+}
+} // namespace
+
+uint64_t sim_encrypt_lwe_u64(uint64_t message, uint32_t lwe_dim,
+                             Csprng *csprng) {
+  double variance = security_curve()->getVariance(1, lwe_dim, 64);
+  uint64_t encryption_noise = gaussian_noise(variance, (Csprng *)csprng);
+  return message + encryption_noise;
+}
 
 namespace concretelang {
 namespace transformers {

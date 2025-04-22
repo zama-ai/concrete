@@ -120,7 +120,7 @@ jobs:
             ccache -z
             ccache -p
             cargo install cxxbridge-cmd
-            dnf -y install libatomic
+            dnf -y install libatomic openssl openssl-devel
             make DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all
       - name: Ccache stats
         if: always()
@@ -176,7 +176,8 @@ jobs:
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
             mkdir -p /tmp/concrete_compiler/gpu_tests/
-            pip install pytest
+            pip install pytest jsonpickle
+            dnf -y install libatomic openssl openssl-devel
             sed "s/pytest/python -m pytest/g" -i Makefile
             make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build run-tests
       - name: Slack Notification

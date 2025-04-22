@@ -19,12 +19,6 @@ declare_mlir_python_extension(
   ConcretelangModule.cpp
   FHEModule.cpp
   CompilerAPIModule.cpp
-  PRIVATE_LINK_LIBS
-  ConcretelangSupport
-  ConcretelangCommon
-  ConcretelangRuntime
-  ConcretelangClientLib
-  ConcretelangServerLib
   EMBED_CAPI_LINK_LIBS
   MLIRCAPIRegisterEverything)
 
@@ -115,6 +109,11 @@ add_mlir_python_common_capi_library(
   ConcretelangBindingsPythonExtension)
 
 target_include_directories(ConcretelangBindingsPythonCAPI PUBLIC ${CONCRETE_CPU_INCLUDE_DIR})
+
+target_link_libraries(
+  ConcretelangBindingsPythonCAPI
+  PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangSupport> $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangClientLib>
+          $<LINK_LIBRARY:WHOLE_ARCHIVE,ConcretelangServerLib>)
 
 # Bundle the MLIR python sources into our package. The MLIR API is position independent, so we explicitly output it to
 # the mlir/ folder as a temporary measure. It will eventually migrate under the concretelang/ folder and be accessible

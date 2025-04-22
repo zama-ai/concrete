@@ -135,12 +135,22 @@ jobs:
             make PYTHON=$PYTHON venv
             source .venv/bin/activate
 
+            ccache -z
+
             cd /concrete/compilers/concrete-compiler/compiler
-            make BUILD_DIR=/build CCACHE=ON DATAFLOW_EXECUTION_ENABLED=${{ env.DATAFLOW_EXECUTION_ENABLED }} Python3_EXECUTABLE=$(which python) \
-              CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} TIMING_ENABLED=${{ env.TIMING_ENABLED }} CUDA_PATH=${{ env.CUDA_PATH }} python-bindings
+            make BUILD_DIR=/build \
+              CCACHE=ON \
+              DATAFLOW_EXECUTION_ENABLED=${{ env.DATAFLOW_EXECUTION_ENABLED }} \
+              Python3_EXECUTABLE=$(which python) \
+              CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} \
+              TIMING_ENABLED=${{ env.TIMING_ENABLED }} \
+              CUDA_PATH=${{ env.CUDA_PATH }} \
+              python-bindings
 
             echo "Debug: ccache statistics (after the build):"
             ccache -s
+
+
 
             cd /concrete/frontends/concrete-python
 
@@ -153,6 +163,38 @@ jobs:
         with:
           name: ${{ format('{0}-wheel-{1}-linux-x86', matrix.hw, matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
+          retention-days: 3
+      - name: Build concrete rust
+        # Note: That arbitrary if to not build in every python version
+        if: ${{ matrix.python-version == '3.10' }}
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        with:
+          registry: ghcr.io
+          image: ${{ env.DOCKER_IMAGE_TEST }}
+          username: ${{ secrets.GHCR_LOGIN }}
+          password: ${{ secrets.GHCR_PASSWORD }}
+          options: >-
+            -v ${{ github.workspace }}:/concrete
+            -v ${{ github.workspace }}/build:/build
+          shell: bash
+          run: |
+            cargo install cxxbridge-cmd
+            cd /concrete/compilers/concrete-compiler/compiler
+            make BUILD_DIR=/build \
+              CCACHE=ON \
+              DATAFLOW_EXECUTION_ENABLED=${{ env.DATAFLOW_EXECUTION_ENABLED }} \
+              Python3_EXECUTABLE=$(which python) \
+              CUDA_SUPPORT=${{ env.CUDA_SUPPORT }} \
+              TIMING_ENABLED=${{ env.TIMING_ENABLED }} \
+              CUDA_PATH=${{ env.CUDA_PATH }} \
+              concrete-rust
+      - name: Upload binary libraries
+        # Note: That arbitrary if to not build in every python version
+        if: ${{ matrix.python-version == '3.10' }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: ${{ format('{0}-binaries-linux-x86_64', matrix.hw) }}
+          path: ${{ github.workspace }}/build/lib/libConcrete*.so
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
@@ -239,6 +281,9 @@ jobs:
           cat frontends/concrete-python/version.txt >> frontends/concrete-python/concrete/fhe/version.py
       - name: Build wheel
         run: |
+          # Hack for mac2 host...
+          export PATH=$PATH:/Users/ec2-user/.cargo/bin:/Users/ec2-user/.pyenv/versions/3.8.20/bin
+
           CONCRETE_PYTHON=$(pwd)/frontends/concrete-python
           CONCRETE_COMPILER=$(pwd)/compilers/concrete-compiler/compiler
           export COMPILER_BUILD_DIRECTORY=$CONCRETE_COMPILER/build
@@ -275,6 +320,28 @@ jobs:
         with:
           name: ${{ format('cpu-wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
           path: frontends/concrete-python/dist/*macos*.whl
+          retention-days: 3
+      - name: Build concrete rust
+        # Note: That arbitrary if to not build in every python version
+        if: ${{ matrix.python-version == '3.10' }}
+        run: |
+          cargo install cxxbridge-cmd
+          cd compilers/concrete-compiler/compiler
+          make concrete-rust
+      - name: Upload binary libraries mac2
+        # Note: That arbitrary if to not build in every python version
+        if: ${{ matrix.python-version == '3.10' && matrix.runs-on == 'aws-mac2-metal' }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: cpu-binaries-macosx_arm64
+          path: compilers/concrete-compiler/compiler/build/lib/libConcrete*.dylib
+          retention-days: 3
+      - name: Upload binary libraries mac1
+        if: ${{ matrix.python-version == '3.10' && matrix.runs-on == 'aws-mac1-metal' }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: cpu-binaries-macosx_x86_64
+          path: compilers/concrete-compiler/compiler/build/lib/libConcrete*.dylib
           retention-days: 3
       - name: Slack Notification
         if: ${{ failure() }}
@@ -357,6 +424,9 @@ jobs:
           merge-multiple: true
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
+          pattern: '${{ matrix.hw }}-binaries-*'
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
           pattern: '${{ matrix.hw }}*.intoto.jsonl'
       # When building a new public tag, create a new draft release.
       - name: create draft release
@@ -366,10 +436,14 @@ jobs:
           HW=${{ matrix.hw }}
           export TAG
           echo "${TAG}"
+          # Create zip of binaries folders
+          for i in ./*binaries*; do
+            zip "${i}.zip" "${i}"/*
+          done
           gh release create --draft --repo ${{ github.repository }} \
           --verify-tag "${TAG}" \
           --title "${TAG} - ${HW^^}" \
-          wheels/* ./*.intoto.jsonl/*
+          wheels/* ./*.intoto.jsonl/* ./*binaries*.zip
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload wheels to S3

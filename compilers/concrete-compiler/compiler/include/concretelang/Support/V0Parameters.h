@@ -93,10 +93,10 @@ enum Strategy {
   V0 = 0,
   /// DAG_MONO is a strategy that used the optimizer dag but resolve with a
   /// unique set of keyswitch and boostrap key
-  DAG_MONO,
+  DAG_MONO = 1,
   /// DAG_MULTI is a strategy that used the optimizer dag but resolve with a
   /// multiple set of keyswitch and boostrap key
-  DAG_MULTI
+  DAG_MULTI = 2
 };
 
 std::string const StrategyLabel[] = {"V0", "dag-mono", "dag-multi"};

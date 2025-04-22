@@ -189,7 +189,8 @@ Result<ClientProgram> ClientProgram::createSimulated(
   return output;
 }
 
-Result<ClientCircuit> ClientProgram::getClientCircuit(std::string circuitName) {
+Result<ClientCircuit>
+ClientProgram::getClientCircuit(std::string circuitName) const {
   for (auto circuit : circuits) {
     if (circuit.getName() == circuitName) {
       return circuit;
