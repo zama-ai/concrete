@@ -444,7 +444,7 @@ jobs:
           gh release create --draft --repo ${{ github.repository }} \
           --verify-tag "${TAG}" \
           --title "${TAG} - ${HW^^}" \
-          wheels/* ./*.intoto.jsonl/* *binaries*.zip
+          wheels/* ./*.intoto.jsonl/* ./*binaries*.zip
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Upload wheels to S3
