@@ -111,28 +111,15 @@ jobs:
             -e CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
-            -v ${{ github.workspace }}/wheels:/wheels
           shell: bash
           run: |
             set -e
             cd /concrete/compilers/concrete-compiler/compiler
-            rm -rf /build/*
             ccache -z
             ccache -p
             cargo install cxxbridge-cmd
             dnf -y install libatomic openssl openssl-devel
             make DATAFLOW_EXECUTION_ENABLED=ON Python3_EXECUTABLE=$PYTHON_EXEC BUILD_DIR=/build all
-      - name: Ccache stats
-        if: always()
-        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        id: ccache-report
-        with:
-          registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
-          username: ${{ secrets.GHCR_LOGIN }}
-          password: ${{ secrets.GHCR_PASSWORD }}
-          shell: bash
-          run: |
             echo "Debug: ccache statistics (after the build):"
             ccache -s
       - name: Check compiler dialects docs is up to date
@@ -147,7 +134,6 @@ jobs:
             -e CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
             -v ${{ github.workspace }}:/concrete
             -v ${{ github.workspace }}/build:/build
-            -v ${{ github.workspace }}/wheels:/wheels
           shell: bash
           run: |
             set -e

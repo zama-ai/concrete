@@ -120,6 +120,9 @@ jobs:
           run: |
             set -e
 
+            ccache -z
+            ccache -p
+
             rustup toolchain install nightly-2024-09-30
             dnf -y install graphviz graphviz-devel
 

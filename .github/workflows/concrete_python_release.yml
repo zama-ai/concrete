@@ -11,6 +11,7 @@ on:
 
 env:
   DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  DOCKER_IMAGE_TEST_GPU: ghcr.io/zama-ai/concrete-compiler-gpu
   CUDA_PATH: /usr/local/cuda-11.8
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
@@ -114,7 +115,7 @@ jobs:
         id: build-compiler-bindings
         with:
           registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
+          image: ${{ matrix.hw == 'gpu' && env.DOCKER_IMAGE_TEST_GPU || env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-
@@ -124,7 +125,8 @@ jobs:
           run: |
             set -e
 
-            rm -rf /build/*
+            ccache -z
+            ccache -p
 
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
             echo "Using $PYTHON"
@@ -170,7 +172,7 @@ jobs:
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           registry: ghcr.io
-          image: ${{ env.DOCKER_IMAGE_TEST }}
+          image: ${{ matrix.hw == 'gpu' && env.DOCKER_IMAGE_TEST_GPU || env.DOCKER_IMAGE_TEST }}
           username: ${{ secrets.GHCR_LOGIN }}
           password: ${{ secrets.GHCR_PASSWORD }}
           options: >-

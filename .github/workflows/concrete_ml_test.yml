@@ -72,7 +72,9 @@ jobs:
           shell: bash
           run: |
             set -e
-            rm -rf /build/*
+
+            ccache -z
+            ccache -p
             
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
             echo "Using $PYTHON"
