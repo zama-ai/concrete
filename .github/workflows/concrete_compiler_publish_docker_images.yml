@@ -42,15 +42,18 @@ jobs:
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     env:
       image: ghcr.io/zama-ai/concrete/cuda
+      dockerfile: docker/Dockerfile.cuda-env
     strategy:
       matrix:
         include:
           - name: cuda-12-3
             tag: 12-3
-            dockerfile: docker/Dockerfile.cuda-123-env
+            version: '12.3'
+            package-url: 'https://developer.download.nvidia.com/compute/cuda/12.3.2/local_installers/cuda-repo-rhel8-12-3-local-12.3.2_545.23.08-1.x86_64.rpm'
           - name: cuda-11-8
             tag: 11-8
-            dockerfile: docker/Dockerfile.cuda-118-env
+            version: '11.8'
+            package-url: 'https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-rhel8-11-8-local-11.8.0_520.61.05-1.x86_64.rpm'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -63,15 +66,12 @@ jobs:
         uses: tj-actions/changed-files@bab30c2299617f6615ec02a68b9a40d10bd21366 # v44.5.24
       - name: Login
         id: login
-        # from the docs: The jobs.<job_id>.if condition is evaluated before jobs.<job_id>.strategy.matrix is applied. So we can't just use matrix.dockerfile
-        # so we have to build both images if one of the two files change, or we will have to split this into two
-        # https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idif
-        if: contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.cuda-118-env') || contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.cuda-123-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
+        if: contains(steps.changed-files.outputs.modified_files, 'docker/Dockerfile.cuda-env') || contains(steps.changed-files.outputs.modified_files, env.THIS_FILE)
         run: echo "${{ secrets.GHCR_PASSWORD }}" | docker login -u ${{ secrets.GHCR_LOGIN }} --password-stdin ghcr.io
       - name: Build Tag and Publish
         if: ${{ steps.login.conclusion != 'skipped' }}
         run: |
-          docker build -t "${{ env.image }}" -f ${{ matrix.dockerfile }} .
+          docker build --build-arg PACKAGEURL=${{ matrix.package-url }} --build-arg CUDAVERSION=${{ matrix.version }} -t "${{ env.image }}" -f ${{ env.dockerfile }} .
           docker image tag "${{ env.image }}" "${{ env.image }}:${{ matrix.tag }}"
           docker push "${{ env.image }}:${{ matrix.tag }}"
       - name: Run Trivy vulnerability scanner
