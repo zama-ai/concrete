@@ -14,7 +14,7 @@ on:
       - 'release/*'
 
 env:
-  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler-gpu
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete/compiler-ci-gpu
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
   SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}

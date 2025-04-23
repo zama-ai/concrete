@@ -41,7 +41,7 @@ jobs:
     needs: [setup-instance]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     env:
-      image: ghcr.io/zama-ai/cuda
+      image: ghcr.io/zama-ai/concrete/cuda
     strategy:
       matrix:
         include:
@@ -103,7 +103,7 @@ jobs:
     needs: [setup-instance, cuda-image]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     env:
-      image: ghcr.io/zama-ai/concrete-compiler
+      image: ghcr.io/zama-ai/concrete/compiler-ci
       dockerfile: docker/Dockerfile.concrete-compiler-env
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -169,7 +169,7 @@ jobs:
     needs: [setup-instance, compiler-image]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
     env:
-      image: ghcr.io/zama-ai/concrete-compiler-gpu
+      image: ghcr.io/zama-ai/concrete/compiler-ci-gpu
       dockerfile: docker/Dockerfile.concrete-compiler-env-gpu
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

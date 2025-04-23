@@ -12,7 +12,7 @@ on:
       - 'main'
       - 'release/*'
 env:
-  DOCKER_IMAGE: ghcr.io/zama-ai/concrete-compiler
+  DOCKER_IMAGE: ghcr.io/zama-ai/concrete/compiler-ci
 
 concurrency:
   group: concrete_python_benchmark_${{ github.ref }}
