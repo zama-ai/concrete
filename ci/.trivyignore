@@ -1,0 +1,21 @@
+vulnerabilities:
+
+misconfigurations:
+  - id: AVD-DS-0026
+    statement: Accept the risk (LOW - Add a HEALTHCHECK)
+    paths:
+      - docker/Dockerfile.cuda-env
+      - docker/Dockerfile.concrete-python
+      - docker/Dockerfile.concrete-compiler-env
+      - docker/Dockerfile.concrete-compiler-env-gpu
+  - id: AVD-DS-0002
+    statement: The images are used as a CI environment
+    paths:
+      - docker/Dockerfile.cuda-env
+      - docker/Dockerfile.concrete-compiler-env
+      - docker/Dockerfile.concrete-compiler-env-gpu
+
+secrets:
+
+licenses:
+
