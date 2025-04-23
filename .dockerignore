@@ -1,0 +1,8 @@
+**/build
+**/.git
+**/target
+**/.mypy_cache
+**/.venv
+**/venv
+**/site-packages
+**/.pytest_cache

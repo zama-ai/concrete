@@ -3,25 +3,28 @@ FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc
 # epel-release is for install ccache
 RUN dnf clean all && dnf install -y epel-release && dnf clean all
 # hadolint ignore=DL3041
-RUN dnf update -y && dnf install -y ninja-build hwloc-devel ccache ncurses-devel openssh-clients graphviz graphviz-devel && dnf clean all
+RUN dnf update -y && dnf install --nodocs -y ninja-build hwloc-devel ccache ncurses-devel openssh-clients graphviz graphviz-devel && dnf clean all
 RUN mkdir -p ~/.ssh/ && ssh-keyscan -t ecdsa github.com >> ~/.ssh/known_hosts
-# Setup gcc-11 (required for cuda11.8)
-RUN dnf install -y gcc-toolset-11 && dnf clean all
 # Setup ssl
+# hadolint ignore=DL3041
 RUN dnf install -y libatomic openssl openssl-devel && dnf clean all
+# Setup gcc-11 (required for cuda11.8)
+RUN dnf install --nodocs -y gcc-toolset-11 && dnf clean all
 ENV CC_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/gcc
 ENV CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++
 ENV PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"
 ENV LD_LIBRARY_PATH="/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst:$LD_LIBRARY_PATH"
 # setup ccache with an unlimited amount of files and storage
 RUN ccache -M 0 && ccache -F 0
+# config ccache
+ENV CCACHE_DEBUG=1
+ENV CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
 # Install Rust
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile=minimal -y
 ENV PATH=/root/.cargo/bin:$PATH
-RUN rustup install nightly-2024-09-30
-RUN rustup install nightly
-RUN cargo install cxxbridge-cmd
+RUN rustup install --profile=minimal nightly-2024-09-30 nightly &&\ 
+    cargo install cxxbridge-cmd
 # Install Cap'n Proto
 ENV CAPNP_VERSION=1.1.0
 # hadolint ignore=DL3003
@@ -43,13 +46,7 @@ RUN mkdir /boost/ && \
     cd /boost/boost_1_71_0 && \
     ./bootstrap.sh && ./b2 --with-filesystem install && \
     rm -rf /boost
-# Setup HPX
-COPY --from=ghcr.io/zama-ai/hpx:latest /hpx /hpx
-ENV HPX_INSTALL_DIR=/hpx/build
-# Setup CUDA
-COPY --from=ghcr.io/zama-ai/cuda:11-8 /usr/local/cuda-11.8/ /usr/local/cuda-11.8/
-ENV PATH="$PATH:/usr/local/cuda-11.8/bin"
-# Set the python path. Options: [cp37-cp37m, cp38-cp38, cp39-cp39, cp310-cp310]
+# Set the python path. Options: [cp37-cp37m, cp38-cp38, cp39-cp39, cp310-cp310, ...]
 # Links and env would be available to use the appropriate python version
 ARG python_tag=cp38-cp38
 RUN ln -s /opt/python/${python_tag}/bin/pip /bin/pip && ln -s /opt/python/${python_tag}/bin/python /bin/python
@@ -58,14 +55,15 @@ ENV PYTHON_EXEC=/opt/python/${python_tag}/bin/python
 # hadolint ignore=DL3013
 RUN pip install --no-cache-dir numpy pybind11==2.8 PyYAML pytest wheel auditwheel mypy
 # Setup and build compiler
-COPY / /workdir
-WORKDIR /build
-WORKDIR /workdir/compilers/concrete-compiler/compiler
-ENV CCACHE_DEBUG=1
-ENV CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,time_macros"
-RUN make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
+COPY / /concrete
+WORKDIR /concrete/compilers/concrete-compiler/compiler
+# We build the compiler to have the cache but we try to delete any other build artifact
+RUN mkdir /build && \
+    make DATAFLOW_EXECUTION_ENABLED=ON BUILD_DIR=/build CCACHE=ON \
     Python3_EXECUTABLE=${PYTHON_EXEC} \
-    concretecompiler python-bindings
+    concretecompiler python-bindings && \
+    rm -rf /build /root/.cargo/registry /concrete/tools/rust_deps_bundle/target/
 ENV PYTHONPATH="/build/tools/concretelang/python_packages/concretelang_core"
 ENV PATH="$PATH:/build/bin"
+# clear stats so that we have clear stats in the next build
 RUN ccache -z
