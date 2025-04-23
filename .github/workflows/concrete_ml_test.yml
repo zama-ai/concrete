@@ -3,9 +3,7 @@ name: concrete-ml test
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - .github/workflows/concrete_ml_test.yml
-      - frontends/concrete-python/**
+
   push:
     branches:
       - 'main'

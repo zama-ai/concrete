@@ -3,9 +3,6 @@ name: concrete-python tests linux-cpu
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - .github/workflows/concrete_python_tests_linux.yml
-      - frontends/concrete-python/**
   push:
     branches:
       - 'main'

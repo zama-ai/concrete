@@ -3,11 +3,6 @@ name: concrete-compiler test linux-gpu
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - .github/workflows/concrete_compiler_test_gpu.yml
-      - compilers/**
-      - backends/concrete-cuda/**
-      - tools/**
   push:
     branches:
       - 'main'

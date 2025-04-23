@@ -5,8 +5,7 @@ on:
   schedule:
     - cron: "0 1 * * SAT"
   pull_request:
-    paths:
-      - .github/workflows/concrete_pyhon_benchmark.yml
+
   push:
     branches:
       - 'main'
