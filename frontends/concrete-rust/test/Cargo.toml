@@ -4,5 +4,5 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-concrete-macro = { version = "2.10.1-rc1", path = "../concrete-macro" }
-concrete = {  version = "2.10.1-rc1", path = "../concrete"  }
+concrete-macro = { path = "../concrete-macro" }
+concrete = { path = "../concrete"  }
