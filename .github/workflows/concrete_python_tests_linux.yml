@@ -84,9 +84,6 @@ jobs:
           run: |
             set -e
 
-            rustup toolchain install nightly-2024-09-30
-            dnf -y install graphviz graphviz-devel
-
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate
@@ -122,9 +119,6 @@ jobs:
 
             ccache -z
             ccache -p
-
-            rustup toolchain install nightly-2024-09-30
-            dnf -y install graphviz graphviz-devel
 
             cd /concrete/frontends/concrete-python
             make PYTHON=/opt/python/cp310-cp310/bin/python venv

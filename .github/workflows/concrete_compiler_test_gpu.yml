@@ -73,7 +73,6 @@ jobs:
             cd /concrete/compilers/concrete-compiler/compiler
             ccache -z
             ccache -p
-            cargo install cxxbridge-cmd
             mkdir -p /tmp/concrete_compiler/gpu_tests/
             make BINDINGS_PYTHON_ENABLED=OFF Python3_EXECUTABLE=$PYTHON_EXEC CUDA_SUPPORT=ON CUDA_PATH=${{ env.CUDA_PATH }} run-end-to-end-tests-gpu
             echo "Debug: ccache statistics (after the build):"

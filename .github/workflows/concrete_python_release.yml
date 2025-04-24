@@ -131,8 +131,6 @@ jobs:
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
             echo "Using $PYTHON"
 
-            dnf -y install graphviz graphviz-devel
-
             cd /concrete/frontends/concrete-python
             make PYTHON=$PYTHON venv
             source .venv/bin/activate
@@ -180,7 +178,6 @@ jobs:
             -v ${{ github.workspace }}/build:/build
           shell: bash
           run: |
-            cargo install cxxbridge-cmd
             cd /concrete/compilers/concrete-compiler/compiler
             make BUILD_DIR=/build \
               CCACHE=ON \
