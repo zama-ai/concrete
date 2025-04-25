@@ -69,7 +69,7 @@ setuptools.setup(
     long_description=read("../../README.md"),
     long_description_content_type="text/markdown",
 
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     setup_requires=["wheel"],
     install_requires=read_requirements("requirements.txt"),
     extras_require={
