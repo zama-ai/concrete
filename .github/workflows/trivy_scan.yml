@@ -39,6 +39,7 @@ jobs:
           scan-ref: ./
           format: json
           output: ${{ env.TRIVY_REPORT_PREFIX }}-${{ env.DATE_FULL }}.json
+          trivyignores: 'ci/.trivyignore'
 
       - name: Scan repo (sarif)
         uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # 0.29.0
@@ -48,6 +49,7 @@ jobs:
           scan-ref: ./
           format: sarif
           output: ${{ env.TRIVY_REPORT_PREFIX }}-${{ env.DATE_FULL }}.sarif
+          trivyignores: 'ci/.trivyignore'
 
       - name: Download Trivy HTML template
         run: |
@@ -62,6 +64,7 @@ jobs:
           format: template
           template: '@trivy_contrib/html.tpl'
           output: ${{ env.TRIVY_REPORT_PREFIX }}-${{ env.DATE_FULL }}.html
+          trivyignores: 'ci/.trivyignore'
 
       - name: Upload scan results as artifacts
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3

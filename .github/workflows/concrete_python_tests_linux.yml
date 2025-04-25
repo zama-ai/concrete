@@ -12,7 +12,7 @@ on:
       - 'release/*'
 
 env:
-  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete-compiler
+  DOCKER_IMAGE_TEST: ghcr.io/zama-ai/concrete/compiler-ci
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
   SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
@@ -84,9 +84,6 @@ jobs:
           run: |
             set -e
 
-            rustup toolchain install nightly-2024-09-30
-            dnf -y install graphviz graphviz-devel
-
             cd /concrete/frontends/concrete-python
             make venv
             source .venv/bin/activate
@@ -120,8 +117,8 @@ jobs:
           run: |
             set -e
 
-            rustup toolchain install nightly-2024-09-30
-            dnf -y install graphviz graphviz-devel
+            ccache -z
+            ccache -p
 
             cd /concrete/frontends/concrete-python
             make PYTHON=/opt/python/cp310-cp310/bin/python venv

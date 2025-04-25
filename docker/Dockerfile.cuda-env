@@ -1,0 +1,21 @@
+FROM quay.io/pypa/manylinux_2_28_x86_64:2024-02-08-a1b4ddc AS build
+
+ARG PACKAGEURL=https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-rhel8-11-8-local-11.8.0_520.61.05-1.x86_64.rpm
+
+RUN dnf install -y kernel-devel kernel-headers && dnf clean all
+RUN curl ${PACKAGEURL} -o cuda.rpm
+RUN rpm -i cuda.rpm \
+    && dnf install -y epel-release \
+    && dnf clean all
+# hadolint ignore=DL3041
+RUN dnf update -y \
+    && dnf -y module install nvidia-driver:latest-dkms \
+    && dnf -y install cuda \
+    && dnf clean all
+
+FROM scratch
+
+ARG CUDAVERSION=11.8
+
+COPY --from=build /usr/local/cuda-${CUDAVERSION}/ /usr/local/cuda-${CUDAVERSION}/
+COPY --from=build /usr/lib64/libcuda.so* /usr/lib64/

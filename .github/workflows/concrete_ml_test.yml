@@ -12,7 +12,7 @@ on:
       - 'release/*'
 
 env:
-  DOCKER_IMAGE: ghcr.io/zama-ai/concrete-compiler
+  DOCKER_IMAGE: ghcr.io/zama-ai/concrete/compiler-ci
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
   SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
@@ -72,7 +72,9 @@ jobs:
           shell: bash
           run: |
             set -e
-            rm -rf /build/*
+
+            ccache -z
+            ccache -p
             
             export PYTHON=${{ format('python{0}', matrix.python-version) }}
             echo "Using $PYTHON"
