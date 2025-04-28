@@ -159,7 +159,7 @@ struct Value {
 
   /// Turns a server value to a client value, without interpreting the kind of
   /// value.
-  static Value fromRawTransportValue(TransportValue transportVal);
+  static Value fromRawTransportValue(const TransportValue &transportVal);
 
   /// Turns a client value to a raw (without kind info attached) server value.
   TransportValue intoRawTransportValue() const;

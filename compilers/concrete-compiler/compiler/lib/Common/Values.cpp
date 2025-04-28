@@ -25,7 +25,7 @@ using concretelang::protocol::vectorToProtoPayload;
 namespace concretelang {
 namespace values {
 
-Value Value::fromRawTransportValue(TransportValue transportVal) {
+Value Value::fromRawTransportValue(const TransportValue &transportVal) {
   Value output;
   auto integerPrecision =
       transportVal.asReader().getRawInfo().getIntegerPrecision();

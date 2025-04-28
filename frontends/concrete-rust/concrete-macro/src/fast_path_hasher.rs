@@ -1,4 +1,6 @@
-use std::{hash::{Hash, Hasher}, os::unix::fs::MetadataExt, path::PathBuf};
+use std::hash::{Hash, Hasher};
+use std::os::unix::fs::MetadataExt;
+use std::path::PathBuf;
 
 pub struct FastPathHasher {
     path: PathBuf,

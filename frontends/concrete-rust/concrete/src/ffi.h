@@ -19,6 +19,7 @@
 #include "concretelang/Support/V0Parameters.h"
 #include "cxx.h"
 #include <cstddef>
+#include <iostream>
 #include <memory>
 #include <ostream>
 #include <sys/types.h>
@@ -176,6 +177,16 @@ std::unique_ptr<Library> compile(rust::Str sources,
 }
 
 template <typename T> struct Key : T {
+
+  static std::unique_ptr<Key<T>> _from_buffer_and_info(rust::Slice<const uint64_t> buffer_slice, rust::Str info_json) {
+      auto info = typename T::InfoType();
+      auto info_string = std::string(info_json);
+      assert(info.readJsonFromString(info_string).has_value());
+      auto buffer = std::make_shared<std::vector<uint64_t>>(buffer_slice.begin(), buffer_slice.end());
+      auto output =std::make_unique<T>(buffer, info);
+      return std::unique_ptr<Key<T>>(reinterpret_cast<Key<T> *>(output.release()));
+  }
+
   rust::Slice<const uint64_t> get_buffer() {
     auto buffer = this->getBuffer();
     return {buffer.data(), buffer.size()};
@@ -186,6 +197,12 @@ template <typename T> struct Key : T {
 };
 
 typedef Key<concretelang::keys::LweSecretKey> LweSecretKey;
+
+inline std::unique_ptr<LweSecretKey>
+_lwe_secret_key_from_buffer_and_info(rust::Slice<const uint64_t> buffer_slice, rust::Str info_json) {
+    return LweSecretKey::_from_buffer_and_info(buffer_slice, info_json);
+}
+
 typedef Key<concretelang::keys::LweBootstrapKey> LweBootstrapKey;
 typedef Key<concretelang::keys::LweKeyswitchKey> LweKeyswitchKey;
 typedef Key<concretelang::keys::PackingKeyswitchKey> PackingKeyswitchKey;
@@ -301,11 +318,17 @@ struct Keyset : concretelang::keysets::Keyset {
 
 std::unique_ptr<Keyset> _keyset_new(rust::Str keyset_info,
                                     SecretCsprng &secret_csprng,
-                                    EncryptionCsprng &encryption_csprng) {
+                                    EncryptionCsprng &encryption_csprng,
+                                    rust::Slice<std::unique_ptr<LweSecretKey>> initial_keys) {
   auto info = Message<concreteprotocol::KeysetInfo>();
   info.readJsonFromString(std::string(keyset_info)).value();
+  auto map = std::map<uint32_t, concretelang::keys::LweSecretKey>();
+  for (auto &key : initial_keys) {
+      auto info = key->getInfo();
+      map.insert(std::make_pair(info.asReader().getId(), std::move(*key.release())));
+  }
   auto output = std::make_unique<concretelang::keysets::Keyset>(
-      info, secret_csprng, encryption_csprng);
+      info, secret_csprng, encryption_csprng, map);
   return std::unique_ptr<Keyset>(reinterpret_cast<Keyset *>(output.release()));
 }
 
@@ -344,6 +367,24 @@ const auto _tensor_u32_new = _tensor_new<uint32_t, TensorU32>;
 const auto _tensor_i32_new = _tensor_new<int32_t, TensorI32>;
 const auto _tensor_u64_new = _tensor_new<uint64_t, TensorU64>;
 const auto _tensor_i64_new = _tensor_new<int64_t, TensorI64>;
+
+struct TransportValue : concretelang::values::TransportValue {
+  std::unique_ptr<TransportValue> to_owned() const {
+    return std::make_unique<TransportValue>(*this);
+  }
+
+  rust::Vec<uint8_t> serialize() const {
+      auto output = rust::Vec<uint8_t>();
+      auto vec_ostream = VecOStream(output);
+      auto ostream = std::ostream(&vec_ostream);
+      this->writeBinaryToOstream(
+          ostream
+      ).value();
+      ostream.flush();
+      return output;
+  }
+
+};
 
 struct Value : concretelang::values::Value {
   bool _has_element_type_u8() const { return hasElementType<uint8_t>(); }
@@ -403,8 +444,18 @@ struct Value : concretelang::values::Value {
   }
 
   rust::Slice<const size_t> get_dimensions() const {
-    auto vecref = getDimensions();
+    const auto& vecref = getDimensions();
     return {vecref.data(), vecref.size()};
+  }
+
+  std::unique_ptr<TransportValue> into_transport_value(rust::Str type_info_json) const {
+      auto first = intoRawTransportValue();
+      auto info = Message<concreteprotocol::TypeInfo>();
+      info.readJsonFromString(std::string(type_info_json)).value();
+      first.asBuilder().setTypeInfo(info.asReader());
+      auto output =
+          std::make_unique<::concretelang::values::TransportValue>(first);
+      return std::unique_ptr<TransportValue>(reinterpret_cast<TransportValue *>(output.release()));
   }
 };
 
@@ -423,29 +474,18 @@ const auto _value_from_tensor_i32 = _value_from_tensor<TensorI32>;
 const auto _value_from_tensor_u64 = _value_from_tensor<TensorU64>;
 const auto _value_from_tensor_i64 = _value_from_tensor<TensorI64>;
 
-struct TransportValue : concretelang::values::TransportValue {
-  std::unique_ptr<TransportValue> to_owned() const {
-    return std::make_unique<TransportValue>(*this);
-  }
-
-  rust::Vec<uint8_t> serialize() const {
-      auto output = rust::Vec<uint8_t>();
-      auto vec_ostream = VecOStream(output);
-      auto ostream = std::ostream(&vec_ostream);
-      this->writeBinaryToOstream(
-          ostream
-      ).value();
-      ostream.flush();
-      return output;
-  }
-};
-
 std::unique_ptr<TransportValue> _deserialize_transport_value(rust::Slice<const uint8_t> slice) {
     auto output = TransportValue();
     auto slice_istream = SliceIStream(slice);
     auto istream = std::istream(&slice_istream);
     output.readBinaryFromIstream(istream).value();
     return std::make_unique<TransportValue>(output);
+}
+
+std::unique_ptr<Value> _transport_value_to_value(TransportValue const &tv) {
+    auto output =
+        std::make_unique<::concretelang::values::Value>(::concretelang::values::Value::fromRawTransportValue(tv));
+    return std::unique_ptr<Value>(reinterpret_cast<Value *>(output.release()));
 }
 
 struct ClientFunction : concretelang::clientlib::ClientCircuit {
@@ -543,7 +583,14 @@ struct ServerFunction : concretelang::serverlib::ServerCircuit {
     for (size_t i = 0; i < args.length(); i++) {
       oargs.push_back(*args[i].release());
     }
-    auto res = std::make_unique<std::vector<::concretelang::values::TransportValue>>(call(keys, oargs).value());
+    auto maybe_res = call(keys, oargs);
+    if (maybe_res.has_error()){
+        std::cout << "Failed to perform call:\n";
+        std::cout << maybe_res.error().mesg;
+        std::cout.flush();
+        assert(false);
+    }
+    auto res = std::make_unique<std::vector<::concretelang::values::TransportValue>>(maybe_res.value());
     return std::unique_ptr<std::vector<TransportValue>>(
         reinterpret_cast<std::vector<TransportValue> *>(res.release()));
   }
