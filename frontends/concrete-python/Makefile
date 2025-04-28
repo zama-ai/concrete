@@ -30,9 +30,9 @@ CONCRETE_VERSION?="" # empty mean latest
 venv:
 	$(PYTHON) -m venv .venv
 	. .venv/bin/activate
-	$(PIP) install -r requirements.dev.txt
-	$(PIP) install -r requirements.extra-full.txt
-	$(PIP) install -r requirements.txt
+	python -m pip install -r requirements.dev.txt
+	python -m pip install -r requirements.extra-full.txt
+	python -m pip install -r requirements.txt
 
 	@echo
 	@echo "The new environment is automatically activated with locals cp & bindings for makefile targets."
