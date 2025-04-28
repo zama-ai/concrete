@@ -9,7 +9,7 @@ const ARTIFACTS: &[&str] = if cfg!(target_os = "macos") {
     &[
         "libConcreteRust.dylib",
         "libConcretelangRuntime.dylib",
-        "libomp.dylib"
+        "libomp.dylib",
     ]
 } else if cfg!(target_os = "linux") {
     &[
@@ -76,14 +76,14 @@ fn copy_local_artifacts(out_dir: &Path, mut lib_dir: PathBuf) {
     lib_dir.push("lib");
     lib_dir = lib_dir.canonicalize().unwrap();
     do_with_lock(&out_dir.join(INSTALL_LOCK), || {
-        for art  in ARTIFACTS {
+        for art in ARTIFACTS {
+            println!("cargo::rerun-if-changed={}", &lib_dir.join(art).display());
             std::fs::copy(&lib_dir.join(art), &out_dir.join(art)).unwrap();
         }
     });
 }
 
 fn fetch_artifacts(out_dir: &Path) {
-
     struct Archive(Vec<u8>);
     impl Handler for Archive {
         fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
