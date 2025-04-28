@@ -20,7 +20,7 @@ Compiler submodule.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `init_dfr`
 
@@ -35,7 +35,7 @@ It is not always required to initialize the dataflow runtime as it can be implic
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_gpu_enabled`
 
@@ -50,7 +50,7 @@ GPU offloading is not always available, in particular in non-GPU wheels.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_gpu_available`
 
@@ -63,7 +63,7 @@ Check whether a CUDA device is available and online.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `round_trip`
 
@@ -92,5 +92,83 @@ Useful to check the validity of an MLIR representation
 **Returns:**
  
  - <b>`str`</b>:  textual representation of the MLIR code after parsing 
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `RangeRestrictionHandler`
+Handler to serialize and deserialize range restrictions 
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `flatten`
+
+```python
+flatten(obj, data)
+```
+
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `restore`
+
+```python
+restore(obj)
+```
+
+
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `KeysetRestrictionHandler`
+Handler to serialize and deserialize keyset restrictions 
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `flatten`
+
+```python
+flatten(obj, data)
+```
+
+
+
+
+
+---
+
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/__init__.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `restore`
+
+```python
+restore(obj)
+```
+
+
+
+
 
 
