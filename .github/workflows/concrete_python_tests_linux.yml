@@ -120,6 +120,10 @@ jobs:
           retention-days: 3
           path: |
             ./build/lib/libConcretelangRuntime.so
+            ./build/lib/libomp.so
+            ./build/lib/libhpx.so
+            ./build/lib/libhpx_core.so
+            ./build/lib/libhpx_iostreams.so
             ./build/tools/concretelang/python_packages/
       - name: Upload wheel
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
@@ -208,6 +212,7 @@ jobs:
           run: |
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts
+            export LD_LIBRARY_PATH=/compiler-artifacts/lib/:$LD_LIBRARY_PATH
             cd /concrete/frontends/concrete-python
             make PYTHON=${{ env.python-executable }} venv
             source .venv/bin/activate
@@ -253,6 +258,7 @@ jobs:
           run: |
             set -e
             export COMPILER_BUILD_DIRECTORY=/compiler-artifacts
+            export LD_LIBRARY_PATH=/compiler-artifacts/lib/:$LD_LIBRARY_PATH
             cd /concrete/frontends/concrete-python
             make PYTHON=${{ env.python-executable }} venv
             source .venv/bin/activate
