@@ -403,7 +403,7 @@ struct Value : concretelang::values::Value {
   }
 
   rust::Slice<const size_t> get_dimensions() const {
-    auto vecref = getDimensions();
+    const auto& vecref = getDimensions();
     return {vecref.data(), vecref.size()};
   }
 };
