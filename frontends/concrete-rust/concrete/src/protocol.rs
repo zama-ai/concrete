@@ -1,14 +1,50 @@
 #![allow(non_camel_case_types, non_snake_case, unused)]
+use crate::tfhe::ModuleSpec;
 use serde::{Deserialize, Serialize};
 
 /// A complete program can be described by the ensemble of circuit signatures, and the description
 /// of the keyset that go with it. This structure regroup those informations.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ProgramInfo {
     /// The informations on the keyset of the program.
     pub keyset: KeysetInfo,
     /// The informations for the different circuits of the program.
     pub circuits: Vec<CircuitInfo>,
+    /// The tfhers spec.
+    pub tfhers_specs: Option<ModuleSpec>,
+}
+
+impl ProgramInfo {
+    // Generates a `tfhers_specs` field from the circuits informations.
+    //
+    // If the `tfhers_specs` field is not available, it means that no tfhers interoperrability is needed.
+    // We can generate a dummy `tfhers_specs` field to make further use of the program info object simpler.
+    pub fn eventually_patch_tfhers_specs(&mut self) {
+        if self.tfhers_specs.is_none() {
+            self.tfhers_specs = Some(ModuleSpec {
+                input_types_per_func: self
+                    .circuits
+                    .iter()
+                    .map(|c| (c.name.clone(), vec![None; c.inputs.len()]))
+                    .collect(),
+                output_types_per_func: self
+                    .circuits
+                    .iter()
+                    .map(|c| (c.name.clone(), vec![None; c.outputs.len()]))
+                    .collect(),
+                input_shapes_per_func: self
+                    .circuits
+                    .iter()
+                    .map(|c| (c.name.clone(), vec![None; c.inputs.len()]))
+                    .collect(),
+                output_shapes_per_func: self
+                    .circuits
+                    .iter()
+                    .map(|c| (c.name.clone(), vec![None; c.outputs.len()]))
+                    .collect(),
+            });
+        }
+    }
 }
 
 /// A circuit signature can be described completely by the type informations for its input and
@@ -17,7 +53,7 @@ pub struct ProgramInfo {
 /// Note:
 ///   The order of the input and output lists matters. The order of values should be the same when
 ///   executing the circuit. Also, the name is expected to be unique in the program.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct CircuitInfo {
     /// The ordered list of input types.
     pub inputs: Vec<GateInfo>,
@@ -29,7 +65,7 @@ pub struct CircuitInfo {
 
 /// A value flowing in or out of a circuit is expected to be of a given type, according to the
 /// signature of this circuit. This structure represents such a type in a circuit signature.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GateInfo {
     /// The raw information that raw data must be possible to parse with.
     pub rawInfo: RawInfo,
@@ -42,7 +78,7 @@ pub struct GateInfo {
 /// tensor of proper shape, signedness and precision before being pre-processed and passed to the
 /// computation. This structure represents the informations needed to parse this payload into the
 /// expected tensor.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct RawInfo {
     /// The shape of the tensor.
     pub shape: Shape,
@@ -57,14 +93,14 @@ pub struct RawInfo {
 ///
 /// Note:
 ///   If the dimensions vector is empty, the message is interpreted as a scalar.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Shape {
     /// The dimensions of the value.
     pub dimensions: Vec<u32>,
 }
 
 /// The different possible type of values.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum TypeInfo {
     lweCiphertext(LweCiphertextTypeInfo),
     plaintext(PlaintextTypeInfo),
@@ -73,7 +109,7 @@ pub enum TypeInfo {
 
 /// A plaintext value can flow in and out of a circuit. This structure represents the informations
 /// needed to verify and pre-or-post process this value.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct PlaintextTypeInfo {
     /// The shape of the value.
     pub shape: Shape,
@@ -85,7 +121,7 @@ pub struct PlaintextTypeInfo {
 
 /// A plaintext value can flow in and out of a circuit. This structure represents the informations
 /// needed to verify and pre-or-post process this value.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct IndexTypeInfo {
     /// The shape of the value.
     pub shape: Shape,
@@ -103,7 +139,7 @@ pub struct IndexTypeInfo {
 ///   would have if the values were cleartext. That is, it does not take into account the encryption
 ///   process. The concrete shape is the final shape of the object accounting for the encryption,
 ///   that usually add one or more dimension to the object.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweCiphertextTypeInfo {
     /// The abstract shape of the value.
     pub abstractShape: Shape,
@@ -121,7 +157,7 @@ pub struct LweCiphertextTypeInfo {
 
 /// The encryption of a cleartext value requires some parameters to operate. This structure
 /// represents those parameters.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweCiphertextEncryptionInfo {
     /// The identifier of the secret key used to perform the encryption.
     pub keyId: u32,
@@ -136,7 +172,7 @@ pub struct LweCiphertextEncryptionInfo {
 ///
 /// Note:
 ///   Not all compressions are available for every types of evaluation keys or ciphertexts.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum Compression {
     none,
     seed,
@@ -144,7 +180,7 @@ pub enum Compression {
 }
 
 /// The encoding of the value stored inside the ciphertext.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum LweCiphretextTypeInfo_Encoding {
     integer(IntegerCiphertextEncodingInfo),
     boolean(BooleanCiphertextEncodingInfo),
@@ -152,7 +188,7 @@ pub enum LweCiphretextTypeInfo_Encoding {
 
 /// A ciphertext can be used to represent an integer value. This structure represents the
 /// informations needed to encode such an integer.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo {
     /// The bitwidth of the encoded integer.
     pub width: u32,
@@ -163,7 +199,7 @@ pub struct IntegerCiphertextEncodingInfo {
 }
 
 /// The mode used to encode the integer.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum IntegerCiphertextEncodingInfo_Mode {
     native(IntegerCiphertextEncodingInfo_Mode_NativeMode),
     chunked(IntegerCiphertextEncodingInfo_Mode_ChunkedMode),
@@ -173,12 +209,12 @@ pub enum IntegerCiphertextEncodingInfo_Mode {
 /// An integer of width from 1 to 8 bits can be encoded in a single ciphertext natively, by
 /// being shifted in the most significant bits. This structure represents this integer encoding
 /// mode.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_NativeMode {}
 
 /// An integer of width from 1 to n can be encoded in a set of ciphertexts by chunking the bits
 /// of the original integer. This structure represents this integer encoding mode.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_ChunkedMode {
     /// The number of chunks to be used.
     pub size: u32,
@@ -188,7 +224,7 @@ pub struct IntegerCiphertextEncodingInfo_Mode_ChunkedMode {
 
 /// An integer of width 1 to 16 can be encoded in a set of ciphertexts, by decomposing a value
 /// using a set of pairwise coprimes. This structure represents this integer encoding mode.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct IntegerCiphertextEncodingInfo_Mode_CrtMode {
     /// The coprimes used to decompose the original value.
     pub moduli: Vec<u32>,
@@ -196,12 +232,12 @@ pub struct IntegerCiphertextEncodingInfo_Mode_CrtMode {
 
 /// A ciphertext can be used to represent a boolean value. This structure represents such an
 /// encoding.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct BooleanCiphertextEncodingInfo {}
 
 /// Secret Keys can be drawn from different ranges of values, using different distributions. This
 /// enumeration encodes the different supported ways.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum KeyType {
     binary = 0,
     ternary = 1,
@@ -209,14 +245,14 @@ pub enum KeyType {
 
 /// Ciphertext operations are performed using modular arithmetic. Depending on the use, different
 /// modulus can be used for the operations. This structure encodes the different supported ways.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Modulus {
     /// The modulus expected to be used.
     pub modulus: Modulus_enum,
 }
 
 /// The modulus expected to be used.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum Modulus_enum {
     native(NativeModulus),
     powerOfTwo(PowerOfTwoModulus),
@@ -231,14 +267,14 @@ pub enum Modulus_enum {
 ///
 /// Example:
 ///   2^64 when the ciphertext is stored using 64 bits integers.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct NativeModulus {}
 
 /// Operations are performed using a modulus that is a power of two.
 ///
 /// Example:
 ///   2^n for any n between 0 and the bitwidth of the integer used to store the ciphertext.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct PowerOfTwoModulus {
     /// The power used to raise 2.
     pub power: u32,
@@ -249,7 +285,7 @@ pub struct PowerOfTwoModulus {
 /// Example:
 ///   n for any n between 0 and 2^N where N is the bitwidth of the integer used to store the
 ///   ciphertext.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct IntegerModulus {
     /// The value used as modulus.
     pub modulus: u32,
@@ -261,7 +297,7 @@ pub struct IntegerModulus {
 /// Note:
 ///   Secret keys with same parameters are allowed to co-exist in a program, as long as they
 ///   have different ids.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweSecretKeyInfo {
     /// The identifier of the key.
     pub id: u32,
@@ -271,7 +307,7 @@ pub struct LweSecretKeyInfo {
 
 /// A secret key is parameterized by a few quantities of cryptographic importance. This structure
 /// represents those parameters.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweSecretKeyParams {
     /// The LWE dimension, e.g. the length of the key.
     pub lweDimension: u32,
@@ -287,7 +323,7 @@ pub struct LweSecretKeyParams {
 /// Note:
 ///   Keyswitch keys with same parameters, compression, input and output id, are allowed to co-exist
 ///   in a program as long as they have different ids.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweKeyswitchKeyInfo {
     /// The identifier of the keyswitch key.
     pub id: u32,
@@ -306,7 +342,7 @@ pub struct LweKeyswitchKeyInfo {
 ///
 /// Note:
 ///   For now, only keys with the same input and output key types can be represented.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweKeyswitchKeyParams {
     /// The number of levels of the ciphertexts.
     pub levelCount: u32,
@@ -333,7 +369,7 @@ pub struct LweKeyswitchKeyParams {
 /// Note:
 ///   Packing keyswitch keys with same parameters, compression, input and output id, are allowed to
 ///   co-exist in a program as long as they have different ids.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct PackingKeyswitchKeyInfo {
     /// The identifier of the packing keyswitch key.
     pub id: u32,
@@ -352,7 +388,7 @@ pub struct PackingKeyswitchKeyInfo {
 ///
 /// Note:
 ///   For now, only keys with the same input and output key types can be represented.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct PackingKeyswitchKeyParams {
     /// The number of levels of the ciphertexts.
     pub levelCount: u32,
@@ -382,7 +418,7 @@ pub struct PackingKeyswitchKeyParams {
 /// Note:
 ///   Bootstrap keys with same parameters, compression, input and output id, are allowed to co-exist
 ///   in a program as long as they have different ids.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweBootstrapKeyInfo {
     /// The identifier of the bootstrap key.
     pub id: u32,
@@ -401,7 +437,7 @@ pub struct LweBootstrapKeyInfo {
 ///
 /// Note:
 ///   For now, only keys with the same input and output key types can be represented.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LweBootstrapKeyParams {
     /// The number of levels of the ciphertexts.
     pub levelCount: u32,
@@ -425,7 +461,7 @@ pub struct LweBootstrapKeyParams {
 
 /// The keyset needed for an application can be described by an ensemble of descriptions of the
 /// different keys used in the program. This structure represents such a description.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct KeysetInfo {
     /// The secret key descriptions.
     pub lweSecretKeys: Vec<LweSecretKeyInfo>,
@@ -455,10 +491,15 @@ mod to_tokens {
                 .iter()
                 .map(|circuit| quote! { #circuit })
                 .collect::<Vec<_>>();
+            let tfhers_specs = match &self.tfhers_specs {
+                Some(s) => quote! {Some(#s)},
+                None => quote! {None},
+            };
             tokens.extend(quote! {
                 ::concrete::protocol::ProgramInfo {
                     keyset: #keyset,
                     circuits: vec![#(#circuits),*],
+                    tfhers_specs: #tfhers_specs
                 }
             });
         }
@@ -973,5 +1014,18 @@ mod to_tokens {
                 }
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deserialize_program_info() {
+        let string = r#"
+            {"keyset": {"lweSecretKeys": [{"id": 0, "params": {"lweDimension": 2048, "integerPrecision": 64, "keyType": "binary"}}, {"id": 1, "params": {"lweDimension": 4096, "integerPrecision": 64, "keyType": "binary"}}, {"id": 2, "params": {"lweDimension": 776, "integerPrecision": 64, "keyType": "binary"}}, {"id": 3, "params": {"lweDimension": 626, "integerPrecision": 64, "keyType": "binary"}}, {"id": 4, "params": {"lweDimension": 2048, "integerPrecision": 64, "keyType": "binary"}}], "lweBootstrapKeys": [{"id": 0, "inputId": 2, "outputId": 0, "params": {"levelCount": 2, "baseLog": 15, "glweDimension": 2, "polynomialSize": 1024, "variance": 8.442253112932959e-31, "integerPrecision": 64, "modulus": {"modulus": {"native": {}}}, "keyType": "binary", "inputLweDimension": 776}, "compression": "none"}, {"id": 1, "inputId": 3, "outputId": 4, "params": {"levelCount": 11, "baseLog": 4, "glweDimension": 4, "polynomialSize": 512, "variance": 8.442253112932959e-31, "integerPrecision": 64, "modulus": {"modulus": {"native": {}}}, "keyType": "binary", "inputLweDimension": 626}, "compression": "none"}], "lweKeyswitchKeys": [{"id": 0, "inputId": 1, "outputId": 2, "params": {"levelCount": 5, "baseLog": 3, "variance": 4.0324907628621766e-11, "integerPrecision": 64, "modulus": {"modulus": {"native": {}}}, "keyType": "binary", "inputLweDimension": 4096, "outputLweDimension": 776}, "compression": "none"}, {"id": 1, "inputId": 0, "outputId": 1, "params": {"levelCount": 1, "baseLog": 31, "variance": 4.70197740328915e-38, "integerPrecision": 64, "modulus": {"modulus": {"native": {}}}, "keyType": "binary", "inputLweDimension": 2048, "outputLweDimension": 4096}, "compression": "none"}, {"id": 2, "inputId": 1, "outputId": 3, "params": {"levelCount": 5, "baseLog": 2, "variance": 8.437693323536307e-09, "integerPrecision": 64, "modulus": {"modulus": {"native": {}}}, "keyType": "binary", "inputLweDimension": 4096, "outputLweDimension": 626}, "compression": "none"}, {"id": 3, "inputId": 4, "outputId": 1, "params": {"levelCount": 2, "baseLog": 21, "variance": 4.70197740328915e-38, "integerPrecision": 64, "modulus": {"modulus": {"native": {}}}, "keyType": "binary", "inputLweDimension": 2048, "outputLweDimension": 4096}, "compression": "none"}], "packingKeyswitchKeys": []}, "circuits": [{"inputs": [{"rawInfo": {"shape": {"dimensions": [8, 4097]}, "integerPrecision": 64, "isSigned": false}, "typeInfo": {"lweCiphertext": {"abstractShape": {"dimensions": [8]}, "concreteShape": {"dimensions": [8, 4097]}, "integerPrecision": 64, "encryption": {"keyId": 1, "variance": 4.70197740328915e-38, "lweDimension": 4096, "modulus": {"modulus": {"native": {}}}}, "compression": "none", "encoding": {"integer": {"width": 4, "isSigned": false, "mode": {"native": {}}}}}}}, {"rawInfo": {"shape": {"dimensions": [8, 4097]}, "integerPrecision": 64, "isSigned": false}, "typeInfo": {"lweCiphertext": {"abstractShape": {"dimensions": [8]}, "concreteShape": {"dimensions": [8, 4097]}, "integerPrecision": 64, "encryption": {"keyId": 1, "variance": 4.70197740328915e-38, "lweDimension": 4096, "modulus": {"modulus": {"native": {}}}}, "compression": "none", "encoding": {"integer": {"width": 4, "isSigned": false, "mode": {"native": {}}}}}}}], "outputs": [{"rawInfo": {"shape": {"dimensions": [8, 4097]}, "integerPrecision": 64, "isSigned": false}, "typeInfo": {"lweCiphertext": {"abstractShape": {"dimensions": [8]}, "concreteShape": {"dimensions": [8, 4097]}, "integerPrecision": 64, "encryption": {"keyId": 1, "variance": 4.70197740328915e-38, "lweDimension": 4096, "modulus": {"modulus": {"native": {}}}}, "compression": "none", "encoding": {"integer": {"width": 4, "isSigned": false, "mode": {"native": {}}}}}}}], "name": "my_func"}], "tfhers_specs": {"input_types_per_func": {"my_func": [{"is_signed": false, "bit_width": 16, "carry_width": 2, "msg_width": 2, "params": {"lwe_dimension": 909, "glwe_dimension": 1, "polynomial_size": 4096, "pbs_base_log": 15, "pbs_level": 2, "lwe_noise_distribution": 0, "glwe_noise_distribution": 2.168404344971009e-19, "encryption_key_choice": 0}}, {"is_signed": false, "bit_width": 16, "carry_width": 2, "msg_width": 2, "params": {"lwe_dimension": 909, "glwe_dimension": 1, "polynomial_size": 4096, "pbs_base_log": 15, "pbs_level": 2, "lwe_noise_distribution": 0, "glwe_noise_distribution": 2.168404344971009e-19, "encryption_key_choice": 0}}]}, "output_types_per_func": {"my_func": [{"is_signed": false, "bit_width": 16, "carry_width": 2, "msg_width": 2, "params": {"lwe_dimension": 909, "glwe_dimension": 1, "polynomial_size": 4096, "pbs_base_log": 15, "pbs_level": 2, "lwe_noise_distribution": 0, "glwe_noise_distribution": 2.168404344971009e-19, "encryption_key_choice": 0}}]}, "input_shapes_per_func": {"my_func": [[], []]}, "output_shapes_per_func": {"my_func": [[]]}}}
+        "#;
+        let val: ProgramInfo = serde_json::from_str(string).unwrap();
     }
 }
