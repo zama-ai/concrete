@@ -77,6 +77,7 @@ fn copy_local_artifacts(out_dir: &Path, mut lib_dir: PathBuf) {
     lib_dir = lib_dir.canonicalize().unwrap();
     do_with_lock(&out_dir.join(INSTALL_LOCK), || {
         for art  in ARTIFACTS {
+            println!("cargo::rerun-if-changed={}", &lib_dir.join(art).display());
             std::fs::copy(&lib_dir.join(art), &out_dir.join(art)).unwrap();
         }
     });

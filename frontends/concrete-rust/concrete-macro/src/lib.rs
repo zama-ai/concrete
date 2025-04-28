@@ -3,7 +3,6 @@
 #[allow(unused)]
 use quote::quote;
 use concrete::{compiler, protocol::ProgramInfo};
-use configuration::Configuration;
 use proc_macro::{
     TokenStream, {self},
 };
@@ -17,11 +16,11 @@ const PATH_PROGRAM_INFO: &'static str = "program_info.concrete.params.json";
 const PATH_CIRCUIT: &'static str = "circuit.mlir";
 const PATH_COMPOSITION_RULES: &'static str = "composition_rules.json";
 const PATH_SIMULATED: &'static str = "is_simulated";
+const CLIENT_SPECS: &'static str = "client.specs.json";
 const PATH_CONFIGURATION: &'static str = "configuration.json";
 const DEFAULT_GLOBAL_P_ERROR: Option<f64> = Some(0.00001);
 const DEFAULT_P_ERROR: Option<f64> = None;
 
-mod configuration;
 mod fast_path_hasher;
 mod unzip;
 mod generation;
@@ -92,7 +91,12 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
             panic!("Missing `configuration.json` file in the export. Did you save your server with the `via_mlir` option ?");
         }
         let configuration_string = read_to_string(config_path).expect("Failed to read configuration to string");
-        let conf: Configuration = serde_json::from_str(configuration_string.as_str()).expect("Failed to deserialize configuration");
+        let conf: concrete::utils::configuration::Configuration = serde_json::from_str(configuration_string.as_str()).expect("Failed to deserialize configuration");
+
+        let client_specs_path = concrete_hash_dir.join(CLIENT_SPECS);
+        if !client_specs_path.exists() {
+            panic!("Missing `client.specs.json` file in the export. Did you save your server with the `via_mlir` option ?");
+        }
 
         if !composition_rules_path.exists() {
             panic!("Missing `composition_rules.json` file in the export. Did you save your server with the `via_mlir` option ?");
@@ -133,22 +137,22 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         }
 
         match conf.parameter_selection_strategy {
-            configuration::ParameterSelectionStrategy::V0 => {
+            concrete::utils::configuration::ParameterSelectionStrategy::V0 => {
                 opts.pin_mut().set_optimizer_strategy(0)
             }
-            configuration::ParameterSelectionStrategy::Mono => {
+            concrete::utils::configuration::ParameterSelectionStrategy::Mono => {
                 opts.pin_mut().set_optimizer_strategy(1)
             }
-            configuration::ParameterSelectionStrategy::Multi => {
+            concrete::utils::configuration::ParameterSelectionStrategy::Multi => {
                 opts.pin_mut().set_optimizer_strategy(2)
             }
         }
 
         match conf.multi_parameter_strategy {
-            configuration::MultiParameterStrategy::Precision => {
+            concrete::utils::configuration::MultiParameterStrategy::Precision => {
                 opts.pin_mut().set_optimizer_multi_parameter_strategy(0)
             }
-            configuration::MultiParameterStrategy::PrecisionAndNorm2 => {
+            concrete::utils::configuration::MultiParameterStrategy::PrecisionAndNorm2 => {
                 opts.pin_mut().set_optimizer_multi_parameter_strategy(1)
             }
         }
@@ -163,8 +167,8 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         opts.pin_mut()
             .set_keyset_restriction(&conf.keyset_restriction.map(|a| a.0).unwrap_or("".into()));
         match conf.security_level {
-            configuration::SecurityLevel::Security128Bits => opts.pin_mut().set_security_level(128),
-            configuration::SecurityLevel::Security132Bits => opts.pin_mut().set_security_level(132),
+            concrete::utils::configuration::SecurityLevel::Security128Bits => opts.pin_mut().set_security_level(128),
+            concrete::utils::configuration::SecurityLevel::Security132Bits => opts.pin_mut().set_security_level(132),
         }
 
         for rule in composition_rules {
@@ -212,36 +216,31 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
             .unwrap();
     }
 
+    let client_specs_path = concrete_hash_dir.join(CLIENT_SPECS);
+    if !client_specs_path.exists() {
+        panic!("Missing `client.specs.json` file in the export. Did you save your server with the `via_mlir` option ?");
+    }
+    let mut client_specs: ProgramInfo = serde_json::from_reader(
+        std::fs::File::open(client_specs_path).unwrap(),
+    )
+    .unwrap();
+    client_specs.eventually_patch_tfhers_specs();
+
+
     let concrete_program_info_path = concrete_hash_dir.join(PATH_PROGRAM_INFO);
     if !concrete_program_info_path.exists() {
         panic!("Missing `program_info.concrete.params.json` file after compilation. Something is wrong. Delete target folder and re-compile.");
     }
-    let program_info: ProgramInfo = serde_json::from_reader(
+    let mut program_info: ProgramInfo = serde_json::from_reader(
         std::fs::File::open(concrete_program_info_path).unwrap(),
     )
     .unwrap();
 
+    program_info.tfhers_specs = client_specs.tfhers_specs.clone();
+
+    // assert_eq!(client_specs, program_info, "Export client specs, and compiled program info do not match. Something is wrong. Get in touch with developers.");
+
     lock_file.unlock().unwrap();
 
-    let lib_name = format!("concrete-artifact-{hash_val}");
-    let unsafe_binding = generation::generate_unsafe_binding(&program_info);
-    let infos = generation::generate_infos(&program_info);
-    let keyset = generation::generate_keyset();
-    let client = generation::generate_client(&program_info);
-    let server = generation::generate_server(&program_info);
-
-    quote! {
-        #infos
-        #keyset
-        #client
-        #server
-
-        #[doc(hidden)]
-        pub mod _binding {
-            #[link(name = "ConcretelangRuntime", kind="dylib")]
-            #[link(name = #lib_name, kind="static")]
-            #unsafe_binding
-        }
-    }
-    .into()
+    generation::generate(&program_info, hash_val).into()
 }

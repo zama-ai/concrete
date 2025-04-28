@@ -4,10 +4,10 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
-use crate::protocol::{
+use crate::{protocol::{
     CircuitInfo, KeysetInfo, LweBootstrapKeyInfo, LweKeyswitchKeyInfo, LweSecretKeyInfo,
     PackingKeyswitchKeyInfo, ProgramInfo,
-};
+}, utils::into_value::IntoValue};
 use cxx::{CxxVector, SharedPtr, UniquePtr};
 
 #[cxx::bridge(namespace = "concrete_rust")]
@@ -144,6 +144,8 @@ mod ffi {
         fn get_buffer(self: Pin<&mut LweSecretKey>) -> &[u64];
         #[doc(hidden)]
         fn _get_info_json(self: &LweSecretKey) -> String;
+        #[doc(hidden)]
+        fn _lwe_secret_key_from_buffer_and_info(buffer: &[u64], info: &str) -> UniquePtr<LweSecretKey>;
 
         /// A Keyset object holding both the [`ClientKeyset`]  and the [`ServerKeyset`].
         type Keyset;
@@ -152,6 +154,7 @@ mod ffi {
             keyset_info_json: &str,
             secret_csprng: Pin<&mut SecretCsprng>,
             encryption_csprng: Pin<&mut EncryptionCsprng>,
+            initial_keys: &mut [UniquePtr<LweSecretKey>]
         ) -> UniquePtr<Keyset>;
         /// Return the associated server keyset.
         fn get_server(self: &Keyset) -> UniquePtr<ServerKeyset>;
@@ -319,6 +322,8 @@ mod ffi {
         #[doc(hidden)]
         fn _get_tensor_i64(self: &Value) -> UniquePtr<TensorI64>;
         fn get_dimensions(self: &Value) -> &[usize];
+        fn into_transport_value(self: &Value, type_info_json: &str) -> UniquePtr<TransportValue>;
+
 
         /// A serialized value which can be transported between the server and the client.
         type TransportValue;
@@ -328,6 +333,8 @@ mod ffi {
         fn serialize(self: &TransportValue) -> Vec<u8>;
         #[doc(hidden)]
         fn _deserialize_transport_value(bytes: &[u8]) -> UniquePtr<TransportValue>;
+        #[doc(hidden)]
+        fn _transport_value_to_value(tv: &TransportValue) -> UniquePtr<Value>;
 
         // ------------------------------------------------------------------------------------------- Client
 
@@ -429,6 +436,7 @@ mod ffi {
 }
 
 pub use ffi::*;
+use serde_json::map::IntoValues;
 
 impl ServerKeyset {
     /// Deserialize a server keyset from bytes.
@@ -448,6 +456,10 @@ impl TransportValue {
     /// Deserialize a `TransportValue` from bytes.
     pub fn deserialize(bytes: &[u8]) -> UniquePtr<TransportValue> {
         _deserialize_transport_value(bytes)
+    }
+
+    pub fn to_value(&self) -> UniquePtr<Value>{
+        _transport_value_to_value(self)
     }
 }
 
@@ -1062,11 +1074,13 @@ impl Keyset {
         keyset_info: &KeysetInfo,
         secret_csprng: Pin<&mut SecretCsprng>,
         encryption_csprng: Pin<&mut EncryptionCsprng>,
+        mut initial_keys: Vec<UniquePtr<LweSecretKey>>
     ) -> UniquePtr<Keyset> {
         _keyset_new(
             &serde_json::to_string(keyset_info).unwrap(),
             secret_csprng,
             encryption_csprng,
+            initial_keys.as_mut_slice()
         )
     }
 }
