@@ -61,12 +61,12 @@ licenses:
 tfhers-utils:
 	cd ${TFHERS_UTILS_DIRECTORY} && $(MAKE) build
 
-concrete-rust:
-	cd ../concrete-rust && $(MAKE) build
+concrete-rust-keygen:
+	cd ../concrete-rust/concrete-keygen && $(MAKE) build
 
 pytest: pytest-default
 
-pytest-default: tfhers-utils concrete-rust
+pytest-default: tfhers-utils concrete-rust-keygen
 	eval $(shell make silent_cp_activate)
 	pytest tests -svv -n auto \
 		--cov=concrete.fhe \
@@ -80,7 +80,7 @@ pytest-macos:
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m minimal
 
-pytest-single: tfhers-utils concrete-rust
+pytest-single: tfhers-utils concrete-rust-keygen
 	eval $(shell make silent_cp_activate)
 	# test single precision, mono params
 	pytest tests -svv -n auto \
@@ -89,7 +89,7 @@ pytest-single: tfhers-utils concrete-rust
 		--key-cache "${KEY_CACHE_DIRECTORY}" \
 		-m "${PYTEST_MARKERS}"
 
-pytest-multi: tfhers-utils concrete-rust
+pytest-multi: tfhers-utils concrete-rust-keygen
 	eval $(shell make silent_cp_activate)
 	# test multi precision, multi params
 	pytest tests -svv -n auto \
