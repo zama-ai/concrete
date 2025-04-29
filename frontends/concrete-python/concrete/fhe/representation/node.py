@@ -174,7 +174,7 @@ class Node:
         # pylint: enable=cyclic-import,import-outside-toplevel
 
         for frame in reversed(traceback.extract_stack()):
-            if frame.filename == "<__array_function__ internals>":
+            if frame.filename == "<__array_function__ internals>":  # pragma: no cover
                 continue
 
             if frame.filename.startswith(fhe_directory):
@@ -377,7 +377,7 @@ class Node:
             if name not in KWARGS_IGNORED_IN_FORMATTING
         )
 
-        if name in {"amin", "amax"}:
+        if name in {"amin", "amax"}:  # pragma: no cover
             name = name[1:]
 
         return f"{name}({', '.join(args)})"

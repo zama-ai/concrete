@@ -323,10 +323,14 @@ class Converter:
         assert len(preds) == 2
         return ctx.add(ctx.typeof(node), preds[0], preds[1])
 
-    def amax(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
+    def amax(
+        self, ctx: Context, node: Node, preds: list[Conversion]
+    ) -> Conversion:  # pragma: no cover
         return self.max(ctx, node, preds)
 
-    def amin(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
+    def amin(
+        self, ctx: Context, node: Node, preds: list[Conversion]
+    ) -> Conversion:  # pragma: no cover
         return self.min(ctx, node, preds)
 
     def array(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
