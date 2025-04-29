@@ -32,7 +32,7 @@ def test_rust_keygen():
     # run keygen in Rust
     bin_path = (
         f"{os.path.dirname(os.path.abspath(__file__))}"
-        "/../../../concrete-rust/target/release/concrete-rust-keygen"
+        "/../../../concrete-rust/concrete-keygen/target/release/concrete-rust-keygen"
     )
     assert os.system(f"{bin_path} {keyinfo_path} {keyset_path}") == 0
 

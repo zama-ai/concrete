@@ -90,6 +90,8 @@
 
 ## Classes
 
+- [`compiler.KeysetRestrictionHandler`](./concrete.compiler.md): Handler to serialize and deserialize keyset restrictions
+- [`compiler.RangeRestrictionHandler`](./concrete.compiler.md): Handler to serialize and deserialize range restrictions
 - [`compilation_context.CompilationContext`](./concrete.compiler.compilation_context.md): Compilation context.
 - [`compilation_feedback.MoreCircuitCompilationFeedback`](./concrete.compiler.compilation_feedback.md): Helper class for compilation feedback.
 - [`tfhers_int.TfhersExporter`](./concrete.compiler.tfhers_int.md): A helper class to import and export TFHErs big integers.

@@ -1,4 +1,4 @@
-target-version = "py38"
+target-version = "py39"
 line-length = 100
 select = [
     "F", "E", "W", "C90", "I", "UP", "N", "YTT", "S", "BLE", "FBT", "B", "C4",

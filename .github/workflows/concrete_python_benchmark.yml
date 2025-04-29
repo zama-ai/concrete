@@ -60,7 +60,7 @@ jobs:
           run: |
             set -e
 
-            export PYTHON=python
+            export PYTHON=python3.10
 
             cd /concrete/frontends/concrete-python
             make PYTHON=$PYTHON venv

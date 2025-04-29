@@ -60,7 +60,7 @@ Concrete is a versatile library that can be used for a variety of purposes. For 
 ## Getting Started
 
 ### System Requirements
-- Python 3.8 - 3.12
+- Python 3.9 - 3.12
 - 8GB RAM minimum (16GB recommended)
 - x86_64 or ARM64 processor
 
@@ -93,6 +93,7 @@ docker pull zamafhe/concrete-python:v2.0.0-gpu
 
 | Concrete Version | Python Version | CUDA Support |
 |-----------------|----------------|--------------|
+| 2.11.0          | 3.9 - 3.12     | ≥ 11.8      |
 | 2.0.0           | 3.8 - 3.12     | ≥ 11.8      |
 | 1.1.0           | 3.8 - 3.10     | ≥ 11.7      |
 

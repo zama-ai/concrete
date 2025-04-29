@@ -147,7 +147,7 @@ You can create a tarball containing libs, bins, and include files for the tools 
 > The wheel built in the following steps is for `concrete-compiler` (which doesn't have the frontend layer) and not `concrete-python`. If you are interested in the `concrete-python` package, then you should build it from [here](https://github.com/zama-ai/concrete/tree/main/frontends/concrete-python) instead.
 
 Currently supported platforms:
-- Linux x86_64 for python 3.8, 3.9, 3.10, and 3.11
+- Linux x86_64 for python 3.9, 3.10, 3.11, and 3.12
 
 pybind11 is required to build the python package, you can install it in your current environment with:
 

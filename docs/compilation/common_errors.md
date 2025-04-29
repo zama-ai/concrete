@@ -9,7 +9,7 @@ This document explains the most common errors and provides solutions to fix them
 **Cause**: The installation does not work fine for you.
 
 **Possible solutions**:
-- Be sure that you use a supported Python version (currently from 3.8 to 3.12, included).
+- Be sure that you use a supported Python version (currently from 3.9 to 3.12, included).
 - Check that you have done `pip install -U pip wheel setuptools` before.
 - Consider adding a `--extra-index-url https://pypi.zama.ai/cpu` or `--extra-index-url https://pypi.zama.ai/gpu`, depending on whether you want the CPU or the GPU wheel.
 - Concrete requires glibc>=2.28, be sure to have a sufficiently recent version.
