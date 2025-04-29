@@ -7,7 +7,7 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from ..representation import Graph
 from .configuration import Configuration
@@ -233,8 +233,8 @@ class FunctionDebugArtifacts:
     """
 
     source_code: Optional[str]
-    parameter_encryption_statuses: Dict[str, str]
-    textual_representations_of_graphs: Dict[str, List[str]]
+    parameter_encryption_statuses: dict[str, str]
+    textual_representations_of_graphs: dict[str, list[str]]
     final_graph: Optional[Graph]
 
     def __init__(self):
@@ -297,11 +297,11 @@ class ModuleDebugArtifacts:
     output_directory: Path
     mlir_to_compile: Optional[str]
     _execution_runtime: Optional["Lazy[ExecutionRt]"]
-    functions: Dict[str, FunctionDebugArtifacts]
+    functions: dict[str, FunctionDebugArtifacts]
 
     def __init__(
         self,
-        function_names: Optional[List[str]] = None,
+        function_names: Optional[list[str]] = None,
         output_directory: Union[str, Path] = DEFAULT_OUTPUT_DIRECTORY,
     ):
         self.output_directory = Path(output_directory)

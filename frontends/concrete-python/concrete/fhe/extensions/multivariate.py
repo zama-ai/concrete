@@ -3,7 +3,7 @@ Declaration of `multivariate` extension.
 """
 
 from copy import deepcopy
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
@@ -15,7 +15,7 @@ from ..values import ValueDescription
 
 def multivariate(
     function: Callable,
-    outputs: Optional[Union[BaseDataType, Type[ScalarAnnotation]]] = None,
+    outputs: Optional[Union[BaseDataType, type[ScalarAnnotation]]] = None,
 ) -> Callable:
     """
     Wrap a multivariate function so that it is traced into a single generic node.

@@ -1,7 +1,6 @@
 import random
 import time
 from enum import IntEnum, auto
-from typing import Set
 
 import numpy as np
 
@@ -71,7 +70,7 @@ class Order:
         return f"{repr(self.order_type)} {self.order_quantity} of {repr(self.order_symbol)}"
 
     @staticmethod
-    def random(skiplist: Set[OrderSymbol]) -> "Order":
+    def random(skiplist: set[OrderSymbol]) -> "Order":
         order_type = random.choice(list(OrderType))
         order_symbol = random.choice(list(set(OrderSymbol) - skiplist))
         order_quantity = random.randint(MINIMUM_ORDER_QUANTITY, MAXIMUM_ORDER_QUANTITY)
@@ -192,7 +191,7 @@ print()
 # Generate random orders
 sample_bank_orders = []
 
-blacklist: Set[OrderSymbol] = set()
+blacklist: set[OrderSymbol] = set()
 for _ in range(NUMBER_OF_BANK_ORDERS):
     order = Order.random(blacklist)
     blacklist.add(order.order_symbol)
@@ -200,7 +199,7 @@ for _ in range(NUMBER_OF_BANK_ORDERS):
 
 sample_client_orders = []
 
-blacklist: Set[OrderSymbol] = set()
+blacklist: set[OrderSymbol] = set()
 for _ in range(NUMBER_OF_CLIENT_ORDERS):
     order = Order.random(blacklist)
     blacklist.add(order.order_symbol)

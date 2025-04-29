@@ -8,7 +8,7 @@ import random
 import warnings
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Union
 
 import numpy as np
 import pytest
@@ -159,7 +159,7 @@ class Helpers:
         )
 
     @staticmethod
-    def generate_encryption_statuses(parameters: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+    def generate_encryption_statuses(parameters: dict[str, dict[str, Any]]) -> dict[str, str]:
         """
         Generate parameter encryption statuses accoring to a parameter specification.
 
@@ -187,9 +187,9 @@ class Helpers:
 
     @staticmethod
     def generate_inputset(
-        parameters: Dict[str, Dict[str, Any]],
+        parameters: dict[str, dict[str, Any]],
         size: int = 128,
-    ) -> List[Union[Tuple[Union[int, np.ndarray], ...], Union[int, np.ndarray]]]:
+    ) -> list[Union[tuple[Union[int, np.ndarray], ...], Union[int, np.ndarray]]]:
         """
         Generate a random inputset of desired size accoring to a parameter specification.
 
@@ -222,7 +222,7 @@ class Helpers:
         return inputset
 
     @staticmethod
-    def generate_sample(parameters: Dict[str, Dict[str, Any]]) -> List[Union[int, np.ndarray]]:
+    def generate_sample(parameters: dict[str, dict[str, Any]]) -> list[Union[int, np.ndarray]]:
         """
         Generate a random sample accoring to a parameter specification.
 
@@ -260,7 +260,7 @@ class Helpers:
     def check_execution(
         circuit: fhe.Circuit,
         function: Callable,
-        sample: Union[Any, List[Any]],
+        sample: Union[Any, list[Any]],
         retries: int = 1,
         only_simulation: bool = False,
     ):
@@ -362,7 +362,7 @@ Actual Output During Simulation
 
     @staticmethod
     def check_composition(
-        circuit: fhe.Circuit, function: Callable, sample: Union[Any, List[Any]], composed: int
+        circuit: fhe.Circuit, function: Callable, sample: Union[Any, list[Any]], composed: int
     ):
         """
         Assert that `circuit` behaves the same as `function` on `sample` when composed.

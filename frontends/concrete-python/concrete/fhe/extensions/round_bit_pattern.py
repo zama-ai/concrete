@@ -3,8 +3,9 @@ Declaration of `round_bit_pattern` function, to provide an interface for rounded
 """
 
 import threading
+from collections.abc import Iterable
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
@@ -70,7 +71,7 @@ class AutoRounder:
         self.lsbs_to_remove = 0
 
     @staticmethod
-    def adjust(function: Callable, inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]]):
+    def adjust(function: Callable, inputset: Union[Iterable[Any], Iterable[tuple[Any, ...]]]):
         """
         Adjust AutoRounders in a function using an inputset.
         """
@@ -124,7 +125,7 @@ class AutoRounder:
 
         # pylint: enable=protected-access,too-many-branches
 
-    def dump_dict(self) -> Dict:
+    def dump_dict(self) -> dict:
         """
         Dump properties of the rounder to a dict.
         """
@@ -139,7 +140,7 @@ class AutoRounder:
         }
 
     @classmethod
-    def load_dict(cls, properties: Dict) -> "AutoRounder":
+    def load_dict(cls, properties: dict) -> "AutoRounder":
         """
         Load previously dumped rounder.
         """
@@ -156,11 +157,11 @@ class AutoRounder:
 
 
 def round_bit_pattern(
-    x: Union[int, np.integer, List, np.ndarray, Tracer],
+    x: Union[int, np.integer, list, np.ndarray, Tracer],
     lsbs_to_remove: Union[int, AutoRounder],
     overflow_protection: bool = True,
     exactness: Optional[Exactness] = None,
-) -> Union[int, np.integer, List, np.ndarray, Tracer]:
+) -> Union[int, np.integer, list, np.ndarray, Tracer]:
     """
     Round the bit pattern of an integer.
 

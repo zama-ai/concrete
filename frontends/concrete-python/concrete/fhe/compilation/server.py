@@ -7,8 +7,9 @@ Declaration of `Server` class.
 import json
 import shutil
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 # mypy: disable-error-code=attr-defined
 import concrete.compiler
@@ -60,14 +61,14 @@ class Server:
     _library: Library
     _mlir: Optional[str]
     _configuration: Optional[Configuration]
-    _composition_rules: Optional[List[CompositionRule]]
+    _composition_rules: Optional[list[CompositionRule]]
     _tfhers_specs: Optional[TFHERSClientSpecs]
 
     def __init__(
         self,
         library: Library,
         is_simulated: bool,
-        composition_rules: Optional[List[CompositionRule]],
+        composition_rules: Optional[list[CompositionRule]],
         tfhers_specs: Optional[TFHERSClientSpecs] = None,
     ):
         self.is_simulated = is_simulated
@@ -377,10 +378,10 @@ class Server:
 
     def run(
         self,
-        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+        *args: Optional[Union[Value, tuple[Optional[Value], ...]]],
         evaluation_keys: Optional[EvaluationKeys] = None,
         function_name: Optional[str] = None,
-    ) -> Union[Value, Tuple[Value, ...]]:
+    ) -> Union[Value, tuple[Value, ...]]:
         """
         Evaluate.
 
@@ -412,7 +413,7 @@ Provide a `function_name` keyword argument to disambiguate."
             message = "Expected evaluation keys to be provided when not in simulation mode"
             raise RuntimeError(message)
 
-        flattened_args: List[Optional[Value]] = []
+        flattened_args: list[Optional[Value]] = []
         for arg in args:
             if isinstance(arg, tuple):
                 flattened_args.extend(arg)
@@ -526,7 +527,7 @@ Provide a `function_name` keyword argument to disambiguate."
         """
         return self._library.get_program_compilation_feedback().complexity
 
-    def memory_usage_per_location(self, function: str) -> Dict[str, Optional[int]]:
+    def memory_usage_per_location(self, function: str) -> dict[str, Optional[int]]:
         """
         Get the memory usage of operations per location.
         """
@@ -567,7 +568,7 @@ Provide a `function_name` keyword argument to disambiguate."
             operations={PrimitiveOperation.PBS, PrimitiveOperation.WOP_PBS},
         )
 
-    def programmable_bootstrap_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
+    def programmable_bootstrap_count_per_parameter(self, function: str) -> dict[Parameter, int]:
         """
         Get the number of programmable bootstraps per parameter in the compiled program.
         """
@@ -578,7 +579,7 @@ Provide a `function_name` keyword argument to disambiguate."
             program_info=self.program_info,
         )
 
-    def programmable_bootstrap_count_per_tag(self, function: str) -> Dict[str, int]:
+    def programmable_bootstrap_count_per_tag(self, function: str) -> dict[str, int]:
         """
         Get the number of programmable bootstraps per tag in the compiled program.
         """
@@ -589,7 +590,7 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def programmable_bootstrap_count_per_tag_per_parameter(
         self, function: str
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of programmable bootstraps per tag per parameter in the compiled program.
         """
@@ -611,7 +612,7 @@ Provide a `function_name` keyword argument to disambiguate."
             operations={PrimitiveOperation.KEY_SWITCH, PrimitiveOperation.WOP_PBS},
         )
 
-    def key_switch_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
+    def key_switch_count_per_parameter(self, function: str) -> dict[Parameter, int]:
         """
         Get the number of key switches per parameter in the compiled program.
         """
@@ -622,7 +623,7 @@ Provide a `function_name` keyword argument to disambiguate."
             program_info=self.program_info,
         )
 
-    def key_switch_count_per_tag(self, function: str) -> Dict[str, int]:
+    def key_switch_count_per_tag(self, function: str) -> dict[str, int]:
         """
         Get the number of key switches per tag in the compiled program.
         """
@@ -633,7 +634,7 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def key_switch_count_per_tag_per_parameter(
         self, function: str
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of key switches per tag per parameter in the compiled program.
         """
@@ -655,7 +656,7 @@ Provide a `function_name` keyword argument to disambiguate."
             operations={PrimitiveOperation.WOP_PBS},
         )
 
-    def packing_key_switch_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
+    def packing_key_switch_count_per_parameter(self, function: str) -> dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the compiled program.
         """
@@ -666,7 +667,7 @@ Provide a `function_name` keyword argument to disambiguate."
             program_info=self.program_info,
         )
 
-    def packing_key_switch_count_per_tag(self, function: str) -> Dict[str, int]:
+    def packing_key_switch_count_per_tag(self, function: str) -> dict[str, int]:
         """
         Get the number of packing key switches per tag in the compiled program.
         """
@@ -677,7 +678,7 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def packing_key_switch_count_per_tag_per_parameter(
         self, function: str
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the compiled program.
         """
@@ -699,7 +700,7 @@ Provide a `function_name` keyword argument to disambiguate."
             operations={PrimitiveOperation.CLEAR_ADDITION},
         )
 
-    def clear_addition_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
+    def clear_addition_count_per_parameter(self, function: str) -> dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the compiled program.
         """
@@ -710,7 +711,7 @@ Provide a `function_name` keyword argument to disambiguate."
             program_info=self.program_info,
         )
 
-    def clear_addition_count_per_tag(self, function: str) -> Dict[str, int]:
+    def clear_addition_count_per_tag(self, function: str) -> dict[str, int]:
         """
         Get the number of clear additions per tag in the compiled program.
         """
@@ -721,7 +722,7 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def clear_addition_count_per_tag_per_parameter(
         self, function: str
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the compiled program.
         """
@@ -743,7 +744,7 @@ Provide a `function_name` keyword argument to disambiguate."
             operations={PrimitiveOperation.ENCRYPTED_ADDITION},
         )
 
-    def encrypted_addition_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
+    def encrypted_addition_count_per_parameter(self, function: str) -> dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the compiled program.
         """
@@ -754,7 +755,7 @@ Provide a `function_name` keyword argument to disambiguate."
             program_info=self.program_info,
         )
 
-    def encrypted_addition_count_per_tag(self, function: str) -> Dict[str, int]:
+    def encrypted_addition_count_per_tag(self, function: str) -> dict[str, int]:
         """
         Get the number of encrypted additions per tag in the compiled program.
         """
@@ -765,7 +766,7 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def encrypted_addition_count_per_tag_per_parameter(
         self, function: str
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the compiled program.
         """
@@ -787,7 +788,7 @@ Provide a `function_name` keyword argument to disambiguate."
             operations={PrimitiveOperation.CLEAR_MULTIPLICATION},
         )
 
-    def clear_multiplication_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
+    def clear_multiplication_count_per_parameter(self, function: str) -> dict[Parameter, int]:
         """
         Get the number of clear multiplications per parameter in the compiled program.
         """
@@ -798,7 +799,7 @@ Provide a `function_name` keyword argument to disambiguate."
             program_info=self.program_info,
         )
 
-    def clear_multiplication_count_per_tag(self, function: str) -> Dict[str, int]:
+    def clear_multiplication_count_per_tag(self, function: str) -> dict[str, int]:
         """
         Get the number of clear multiplications per tag in the compiled program.
         """
@@ -809,7 +810,7 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def clear_multiplication_count_per_tag_per_parameter(
         self, function: str
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the compiled program.
         """
@@ -831,7 +832,7 @@ Provide a `function_name` keyword argument to disambiguate."
             operations={PrimitiveOperation.ENCRYPTED_NEGATION},
         )
 
-    def encrypted_negation_count_per_parameter(self, function: str) -> Dict[Parameter, int]:
+    def encrypted_negation_count_per_parameter(self, function: str) -> dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the compiled program.
         """
@@ -842,7 +843,7 @@ Provide a `function_name` keyword argument to disambiguate."
             program_info=self.program_info,
         )
 
-    def encrypted_negation_count_per_tag(self, function: str) -> Dict[str, int]:
+    def encrypted_negation_count_per_tag(self, function: str) -> dict[str, int]:
         """
         Get the number of encrypted negations per tag in the compiled program.
         """
@@ -853,7 +854,7 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def encrypted_negation_count_per_tag_per_parameter(
         self, function: str
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the compiled program.
         """

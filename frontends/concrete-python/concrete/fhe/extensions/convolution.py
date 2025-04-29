@@ -4,7 +4,7 @@ Tracing and evaluation of convolution.
 
 import math
 from copy import deepcopy
-from typing import Callable, List, Optional, Tuple, Union, cast
+from typing import Callable, Optional, Union, cast
 
 import numpy as np
 import torch
@@ -24,12 +24,12 @@ SUPPORTED_AUTO_PAD = {
 
 def conv(
     x: Union[np.ndarray, Tracer],
-    weight: Union[np.ndarray, List, Tracer],
-    bias: Optional[Union[np.ndarray, List, Tracer]] = None,
-    pads: Optional[Union[Tuple[int, ...], List[int]]] = None,
-    strides: Optional[Union[Tuple[int, ...], List[int]]] = None,
-    dilations: Optional[Union[Tuple[int, ...], List[int]]] = None,
-    kernel_shape: Optional[Union[Tuple[int, ...], List[int]]] = None,
+    weight: Union[np.ndarray, list, Tracer],
+    bias: Optional[Union[np.ndarray, list, Tracer]] = None,
+    pads: Optional[Union[tuple[int, ...], list[int]]] = None,
+    strides: Optional[Union[tuple[int, ...], list[int]]] = None,
+    dilations: Optional[Union[tuple[int, ...], list[int]]] = None,
+    kernel_shape: Optional[Union[tuple[int, ...], list[int]]] = None,
     group: int = 1,
     auto_pad: str = "NOTSET",
 ) -> Union[np.ndarray, Tracer]:
@@ -193,9 +193,9 @@ def _conv1d(
     x: Union[np.ndarray, Tracer],
     weight: Union[np.ndarray, Tracer],
     bias: Optional[Union[np.ndarray, Tracer]],
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
     auto_pad: str,  # pylint: disable=unused-argument
 ) -> Union[np.ndarray, Tracer]:
@@ -260,9 +260,9 @@ def _conv2d(
     x: Union[np.ndarray, Tracer],
     weight: Union[np.ndarray, Tracer],
     bias: Optional[Union[np.ndarray, Tracer]],
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
     auto_pad: str,  # pylint: disable=unused-argument
 ) -> Union[np.ndarray, Tracer]:
@@ -327,9 +327,9 @@ def _conv3d(
     x: Union[np.ndarray, Tracer],
     weight: Union[np.ndarray, Tracer],
     bias: Optional[Union[np.ndarray, Tracer]],
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
     auto_pad: str,  # pylint: disable=unused-argument
 ) -> Union[np.ndarray, Tracer]:
@@ -395,9 +395,9 @@ def _trace_or_eval(
     x: Union[np.ndarray, Tracer],
     weight: Union[np.ndarray, Tracer],
     bias: Optional[Union[np.ndarray, Tracer]],
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
 ) -> Union[np.ndarray, Tracer]:
     """
@@ -448,9 +448,9 @@ def _trace_conv(
     x: Tracer,
     weight: Union[np.ndarray, Tracer],
     bias: Optional[Union[np.ndarray, Tracer]],
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
     conv_func: str,
 ) -> Tracer:
@@ -538,9 +538,9 @@ def _evaluate_conv1d(
     x: np.ndarray,
     weight: np.ndarray,
     bias: np.ndarray,
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
 ) -> np.ndarray:
     """
@@ -567,9 +567,9 @@ def _evaluate_conv2d(
     x: np.ndarray,
     weight: np.ndarray,
     bias: np.ndarray,
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
 ) -> np.ndarray:
     """
@@ -596,9 +596,9 @@ def _evaluate_conv3d(
     x: np.ndarray,
     weight: np.ndarray,
     bias: np.ndarray,
-    pads: Union[Tuple[int, ...], List[int]],
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
 ) -> np.ndarray:
     """
@@ -625,9 +625,9 @@ def _evaluate_conv(
     x: np.ndarray,
     weight: np.ndarray,
     bias: np.ndarray,
-    pads: Union[Tuple[int, ...], List[int]],  # pylint: disable=unused-argument
-    strides: Union[Tuple[int, ...], List[int]],
-    dilations: Union[Tuple[int, ...], List[int]],
+    pads: Union[tuple[int, ...], list[int]],  # pylint: disable=unused-argument
+    strides: Union[tuple[int, ...], list[int]],
+    dilations: Union[tuple[int, ...], list[int]],
     group: int,
     conv_func: str,
 ) -> np.ndarray:

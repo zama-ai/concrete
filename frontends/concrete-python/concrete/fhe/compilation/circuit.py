@@ -5,7 +5,7 @@ Declaration of `Circuit` class.
 # pylint: disable=import-error,no-member,no-name-in-module
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 from concrete.compiler import CompilationContext, LweSecretKey, Parameter
@@ -130,7 +130,7 @@ class Circuit:
         force: bool = False,
         seed: Optional[int] = None,
         encryption_seed: Optional[int] = None,
-        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
+        initial_keys: Optional[dict[int, LweSecretKey]] = None,
     ):
         """
         Generate keys required for homomorphic evaluation.
@@ -157,8 +157,8 @@ class Circuit:
 
     def encrypt(
         self,
-        *args: Optional[Union[int, np.ndarray, List]],
-    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
+        *args: Optional[Union[int, np.ndarray, list]],
+    ) -> Optional[Union[Value, tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
 
@@ -174,8 +174,8 @@ class Circuit:
 
     def run(
         self,
-        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
-    ) -> Union[Value, Tuple[Value, ...]]:
+        *args: Optional[Union[Value, tuple[Optional[Value], ...]]],
+    ) -> Union[Value, tuple[Value, ...]]:
         """
         Evaluate the circuit.
 
@@ -192,8 +192,8 @@ class Circuit:
 
     def decrypt(
         self,
-        *results: Union[Value, Tuple[Value, ...]],
-    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+        *results: Union[Value, tuple[Value, ...]],
+    ) -> Optional[Union[int, np.ndarray, tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
 
@@ -289,7 +289,7 @@ class Circuit:
         return self._module.complexity  # pragma: no cover
 
     @property
-    def memory_usage_per_location(self) -> Dict[str, Optional[int]]:
+    def memory_usage_per_location(self) -> dict[str, Optional[int]]:
         """
         Get the memory usage of operations in the circuit per location.
         """
@@ -307,14 +307,14 @@ class Circuit:
         return self._function.programmable_bootstrap_count  # pragma: no cover
 
     @property
-    def programmable_bootstrap_count_per_parameter(self) -> Dict[Parameter, int]:
+    def programmable_bootstrap_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of programmable bootstraps per bit width in the circuit.
         """
         return self._function.programmable_bootstrap_count_per_parameter  # pragma: no cover
 
     @property
-    def programmable_bootstrap_count_per_tag(self) -> Dict[str, int]:
+    def programmable_bootstrap_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of programmable bootstraps per tag in the circuit.
         """
@@ -323,7 +323,7 @@ class Circuit:
     @property
     def programmable_bootstrap_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[int, int]]:
+    ) -> dict[str, dict[int, int]]:
         """
         Get the number of programmable bootstraps per tag per bit width in the circuit.
         """
@@ -339,21 +339,21 @@ class Circuit:
         return self._function.key_switch_count  # pragma: no cover
 
     @property
-    def key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
+    def key_switch_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of key switches per parameter in the circuit.
         """
         return self._function.key_switch_count_per_parameter  # pragma: no cover
 
     @property
-    def key_switch_count_per_tag(self) -> Dict[str, int]:
+    def key_switch_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of key switches per tag in the circuit.
         """
         return self._function.key_switch_count_per_tag  # pragma: no cover
 
     @property
-    def key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def key_switch_count_per_tag_per_parameter(self) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of key switches per tag per parameter in the circuit.
         """
@@ -369,14 +369,14 @@ class Circuit:
         return self._function.packing_key_switch_count  # pragma: no cover
 
     @property
-    def packing_key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
+    def packing_key_switch_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the circuit.
         """
         return self._function.packing_key_switch_count_per_parameter  # pragma: no cover
 
     @property
-    def packing_key_switch_count_per_tag(self) -> Dict[str, int]:
+    def packing_key_switch_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of packing key switches per tag in the circuit.
         """
@@ -385,7 +385,7 @@ class Circuit:
     @property
     def packing_key_switch_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the circuit.
         """
@@ -401,14 +401,14 @@ class Circuit:
         return self._function.clear_addition_count  # pragma: no cover
 
     @property
-    def clear_addition_count_per_parameter(self) -> Dict[Parameter, int]:
+    def clear_addition_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the circuit.
         """
         return self._function.clear_addition_count_per_parameter  # pragma: no cover
 
     @property
-    def clear_addition_count_per_tag(self) -> Dict[str, int]:
+    def clear_addition_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of clear additions per tag in the circuit.
         """
@@ -417,7 +417,7 @@ class Circuit:
     @property
     def clear_addition_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the circuit.
         """
@@ -433,14 +433,14 @@ class Circuit:
         return self._function.encrypted_addition_count  # pragma: no cover
 
     @property
-    def encrypted_addition_count_per_parameter(self) -> Dict[Parameter, int]:
+    def encrypted_addition_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the circuit.
         """
         return self._function.encrypted_addition_count_per_parameter  # pragma: no cover
 
     @property
-    def encrypted_addition_count_per_tag(self) -> Dict[str, int]:
+    def encrypted_addition_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of encrypted additions per tag in the circuit.
         """
@@ -449,7 +449,7 @@ class Circuit:
     @property
     def encrypted_addition_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the circuit.
         """
@@ -465,14 +465,14 @@ class Circuit:
         return self._function.clear_multiplication_count  # pragma: no cover
 
     @property
-    def clear_multiplication_count_per_parameter(self) -> Dict[Parameter, int]:
+    def clear_multiplication_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of clear multiplications per parameter in the circuit.
         """
         return self._function.clear_multiplication_count_per_parameter  # pragma: no cover
 
     @property
-    def clear_multiplication_count_per_tag(self) -> Dict[str, int]:
+    def clear_multiplication_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of clear multiplications per tag in the circuit.
         """
@@ -481,7 +481,7 @@ class Circuit:
     @property
     def clear_multiplication_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the circuit.
         """
@@ -497,14 +497,14 @@ class Circuit:
         return self._function.encrypted_negation_count  # pragma: no cover
 
     @property
-    def encrypted_negation_count_per_parameter(self) -> Dict[Parameter, int]:
+    def encrypted_negation_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the circuit.
         """
         return self._function.encrypted_negation_count_per_parameter  # pragma: no cover
 
     @property
-    def encrypted_negation_count_per_tag(self) -> Dict[str, int]:
+    def encrypted_negation_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of encrypted negations per tag in the circuit.
         """
@@ -513,7 +513,7 @@ class Circuit:
     @property
     def encrypted_negation_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the circuit.
         """
@@ -522,7 +522,7 @@ class Circuit:
     # All Statistics
 
     @property
-    def statistics(self) -> Dict:
+    def statistics(self) -> dict:
         """
         Get all statistics of the circuit.
         """

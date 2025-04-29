@@ -4,7 +4,8 @@ Declaration of classes related to composition.
 
 # pylint: disable=import-error,no-name-in-module
 
-from typing import Iterable, List, NamedTuple, Protocol, Tuple, runtime_checkable
+from collections.abc import Iterable
+from typing import NamedTuple, Protocol, runtime_checkable
 
 from ..representation import Graph
 
@@ -18,7 +19,7 @@ class CompositionClause(NamedTuple):
     pos: int
 
     @staticmethod
-    def create(tup: Tuple[str, int]) -> "CompositionClause":
+    def create(tup: tuple[str, int]) -> "CompositionClause":
         """
         Create a composition clause from a tuple of a function name and a position.
         """
@@ -34,7 +35,7 @@ class CompositionRule(NamedTuple):
     to: CompositionClause
 
     @staticmethod
-    def create(tup: Tuple[CompositionClause, CompositionClause]) -> "CompositionRule":
+    def create(tup: tuple[CompositionClause, CompositionClause]) -> "CompositionRule":
         """
         Create a composition rule from a tuple containing an output clause and an input clause.
         """
@@ -47,7 +48,7 @@ class CompositionPolicy(Protocol):
     A protocol for composition policies.
     """
 
-    def get_rules_iter(self, funcs: List[Graph]) -> Iterable[CompositionRule]:
+    def get_rules_iter(self, funcs: list[Graph]) -> Iterable[CompositionRule]:
         """
         Return an iterator over composition rules.
         """

@@ -4,7 +4,6 @@ Benchmarks of the levenshtein distance example.
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Tuple
 
 import py_progress_tracker as progress
 
@@ -15,8 +14,8 @@ from examples.levenshtein_distance.levenshtein_distance import Alphabet, Levensh
 @lru_cache
 def levenshtein_on_server(
     server: fhe.Server,
-    x: Tuple[fhe.Value],
-    y: Tuple[fhe.Value],
+    x: tuple[fhe.Value],
+    y: tuple[fhe.Value],
     evaluation_keys: fhe.EvaluationKeys,
 ):
     """

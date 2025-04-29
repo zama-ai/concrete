@@ -6,7 +6,7 @@ import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import linkcheckmd as lc
 
@@ -18,7 +18,7 @@ MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=
 # pylint: disable-next=too-many-branches
 def check_content_for_dead_links(
     content: str, file_path: Path, cell_id: Optional[int] = None
-) -> List[str]:
+) -> list[str]:
     """Check the content of a markdown file for dead links.
 
     This checks a markdown file for dead-links to local files.
@@ -31,7 +31,7 @@ def check_content_for_dead_links(
     Returns:
         List[str]: a list of errors (dead-links) found.
     """
-    errors: List[str] = []
+    errors: list[str] = []
     links = []
 
     for regex in MARKDOWN_LINK_REGEX:
@@ -118,7 +118,7 @@ def main():
     dead links to local files.
     """
     root = Path(".")
-    errors: List[str] = []
+    errors: list[str] = []
 
     gitignore_file = root / ".gitignore"
     if gitignore_file.exists():

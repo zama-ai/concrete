@@ -339,7 +339,7 @@ module {
   }
 }
 
-        """.strip(),
+        """.strip(),  # noqa: E501
         circuit3.mlir.strip(),
     )
     compiler.reset()

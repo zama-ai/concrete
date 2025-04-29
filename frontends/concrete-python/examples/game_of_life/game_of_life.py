@@ -12,7 +12,7 @@ environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 # pylint: disable=wrong-import-position,no-member
 
 import argparse
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 # ruff: noqa:E402
 import pygame
@@ -320,10 +320,11 @@ class GameOfLife:
         if implementation == "method_basic":
             return GameOfLife.method_basic(dimension, configuration, compiled)
 
-        raise ValueError("unknown implementation")
+        msg = "unknown implementation"
+        raise ValueError(msg)
 
     @staticmethod
-    def implementations() -> List[str]:
+    def implementations() -> list[str]:
         return [
             "method_3b",
             "method_4b",

@@ -3,10 +3,8 @@ Tests of everything related to restrictions.
 """
 
 import numpy as np
-import pytest
 from mlir._mlir_libs._concretelang._compiler import (
     KeysetInfo,
-    KeysetRestriction,
     PartitionDefinition,
     RangeRestriction,
 )
@@ -118,4 +116,4 @@ def test_generic_restriction():
         keyset_restriction=generic_keyset_info.get_restriction(),
     )
     compiled_keyset_info = restricted_module.keys.specs.program_info.get_keyset_info()
-    assert all([k in generic_keyset_info.secret_keys() for k in compiled_keyset_info.secret_keys()])
+    assert all(k in generic_keyset_info.secret_keys() for k in compiled_keyset_info.secret_keys())

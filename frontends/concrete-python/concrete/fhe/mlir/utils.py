@@ -8,7 +8,7 @@ from collections import defaultdict, deque
 from copy import deepcopy
 from enum import IntEnum
 from itertools import chain, product
-from typing import Any, DefaultDict, List, Optional, Tuple, Union, cast
+from typing import Any, Optional, Union, cast
 
 import numpy as np
 from mlir.dialects import tensor
@@ -77,7 +77,7 @@ def flood_replace_none_values(table: list):
     assert_that(all(value is not None for value in table))
 
 
-def construct_table_multivariate(node: Node, preds: List[Node]) -> List[Any]:
+def construct_table_multivariate(node: Node, preds: list[Node]) -> list[Any]:
     """
     Construct the lookup table for a multivariate node.
 
@@ -103,7 +103,7 @@ def construct_table_multivariate(node: Node, preds: List[Node]) -> List[Any]:
 
     np.seterr(divide="ignore")
 
-    table: List[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
+    table: list[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
     for packed_value in packed_values:
         inputs = []
 
@@ -139,7 +139,7 @@ def construct_table_multivariate(node: Node, preds: List[Node]) -> List[Any]:
     return table
 
 
-def construct_table(node: Node, preds: List[Node], configuration: Configuration) -> List[Any]:
+def construct_table(node: Node, preds: list[Node], configuration: Configuration) -> list[Any]:
     """
     Construct the lookup table for an Operation.Generic node.
 
@@ -248,8 +248,8 @@ def construct_table(node: Node, preds: List[Node], configuration: Configuration)
 
     np.seterr(divide="ignore")
 
-    inputs: List[Any] = [pred() if pred.operation == Operation.Constant else None for pred in preds]
-    table: List[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
+    inputs: list[Any] = [pred() if pred.operation == Operation.Constant else None for pred in preds]
+    table: list[Optional[Union[int, np.bool_, np.integer, np.floating, np.ndarray]]] = []
     for value in values:
         try:
             inputs[variable_input_index] = np.ones(variable_input_shape, dtype=np.int64) * value
@@ -275,9 +275,9 @@ def construct_table(node: Node, preds: List[Node], configuration: Configuration)
 
 def construct_deduplicated_tables(
     node: Node,
-    preds: List[Node],
+    preds: list[Node],
     configuration: Configuration,
-) -> Tuple[Tuple[np.ndarray, Optional[List[Tuple[int, ...]]]], ...]:
+) -> tuple[tuple[np.ndarray, Optional[list[tuple[int, ...]]]], ...]:
     """
     Construct lookup tables for each cell of the input for an Operation.Generic node.
 
@@ -335,9 +335,9 @@ def construct_deduplicated_tables(
     )
 
     all_cells_idx = product(*tuple(range(max_val) for max_val in node_complete_table.shape[:-1]))
-    tables_to_cell_idx: DefaultDict[HashableNdarray, List[Tuple[int, ...]]] = defaultdict(list)
+    tables_to_cell_idx: defaultdict[HashableNdarray, list[tuple[int, ...]]] = defaultdict(list)
 
-    idx: Tuple[int, ...]
+    idx: tuple[int, ...]
     all_idx_set = set()
     for idx in all_cells_idx:
         hashable_array = HashableNdarray(node_complete_table[idx])

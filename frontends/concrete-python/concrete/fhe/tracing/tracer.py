@@ -4,7 +4,7 @@ Declaration of `Tracer` class.
 
 import inspect
 from copy import deepcopy
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Callable, ClassVar, Optional, Union, cast
 
 import networkx as nx
 import numpy as np
@@ -23,7 +23,7 @@ class Tracer:
     """
 
     computation: Node
-    input_tracers: List["Tracer"]
+    input_tracers: list["Tracer"]
     output: ValueDescription
 
     # property to keep track of assignments
@@ -36,7 +36,7 @@ class Tracer:
     @staticmethod
     def trace(
         function: Callable,
-        parameters: Dict[str, ValueDescription],
+        parameters: dict[str, ValueDescription],
         is_direct: bool = False,
         location: str = "",
     ) -> Graph:
@@ -110,16 +110,16 @@ class Tracer:
         output_tracers = tuple(sanitized_tracers)
 
         def create_graph_from_output_tracers(
-            arguments: Dict[str, Tracer],
-            output_tracers: Tuple[Tracer, ...],
+            arguments: dict[str, Tracer],
+            output_tracers: tuple[Tracer, ...],
         ) -> nx.MultiDiGraph:
             graph = nx.MultiDiGraph()
 
-            visited_tracers: Set[Tracer] = set()
+            visited_tracers: set[Tracer] = set()
             current_tracers = {tracer: None for tracer in output_tracers}
 
             while current_tracers:
-                next_tracers: Dict[Tracer, None] = {}
+                next_tracers: dict[Tracer, None] = {}
                 for tracer in current_tracers:
                     if tracer not in visited_tracers:
                         current_node = tracer.computation
@@ -171,7 +171,7 @@ class Tracer:
 
         # pylint: enable=too-many-statements
 
-    def __init__(self, computation: Node, input_tracers: List["Tracer"]):
+    def __init__(self, computation: Node, input_tracers: list["Tracer"]):
         self.computation = computation
         self.input_tracers = input_tracers
         self.output = computation.output
@@ -214,7 +214,7 @@ class Tracer:
         computation = Node.constant(value)
         return Tracer(computation, [])
 
-    SUPPORTED_NUMPY_OPERATORS: ClassVar[Set[Any]] = {
+    SUPPORTED_NUMPY_OPERATORS: ClassVar[set[Any]] = {
         np.abs,
         np.absolute,
         np.add,
@@ -318,7 +318,7 @@ class Tracer:
         np.zeros_like,
     }
 
-    SUPPORTED_KWARGS: ClassVar[Dict[Any, Set[str]]] = {
+    SUPPORTED_KWARGS: ClassVar[dict[Any, set[str]]] = {
         np.around: {
             "decimals",
         },
@@ -423,7 +423,7 @@ class Tracer:
         sample = [sampler(arg) for arg in args]
         evaluation = operation(*sample, **kwargs)
 
-        def extract_tracers(arg: Any, tracers: List[Tracer]):
+        def extract_tracers(arg: Any, tracers: list[Tracer]):
             if isinstance(arg, tuple):
                 for item in arg:
                     extract_tracers(item, tracers)
@@ -431,7 +431,7 @@ class Tracer:
             if isinstance(arg, Tracer):
                 tracers.append(arg)
 
-        tracers: List[Tracer] = []
+        tracers: list[Tracer] = []
         for arg in args:
             extract_tracers(arg, tracers)
 
@@ -440,7 +440,7 @@ class Tracer:
 
         if Tracer._is_direct and isinstance(output_value.dtype, Integer):
             assert all(isinstance(tracer.output.dtype, Integer) for tracer in tracers)
-            dtypes = cast(List[Integer], [tracer.output.dtype for tracer in tracers])
+            dtypes = cast(list[Integer], [tracer.output.dtype for tracer in tracers])
 
             output_value.dtype.bit_width = max(dtype.bit_width for dtype in dtypes)
             output_value.dtype.is_signed = any(dtype.is_signed for dtype in dtypes)
@@ -636,7 +636,7 @@ class Tracer:
             else Tracer._trace_numpy_operation(np.not_equal, self, self.sanitize(other))
         )
 
-    def astype(self, dtype: Union[DTypeLike, Type["ScalarAnnotation"]]) -> "Tracer":
+    def astype(self, dtype: Union[DTypeLike, type["ScalarAnnotation"]]) -> "Tracer":
         """
         Trace numpy.ndarray.astype(dtype).
         """
@@ -729,7 +729,7 @@ class Tracer:
 
         return Tracer._trace_numpy_operation(np.reshape, self, newshape=(self.output.size,))
 
-    def reshape(self, *newshape: Union[Any, Tuple[Any, ...]]) -> "Tracer":
+    def reshape(self, *newshape: Union[Any, tuple[Any, ...]]) -> "Tracer":
         """
         Trace numpy.ndarray.reshape(newshape).
         """
@@ -748,7 +748,7 @@ class Tracer:
 
         return Tracer._trace_numpy_operation(np.around, self, decimals=decimals)
 
-    def transpose(self, axes: Optional[Tuple[int, ...]] = None) -> "Tracer":
+    def transpose(self, axes: Optional[tuple[int, ...]] = None) -> "Tracer":
         """
         Trace numpy.ndarray.transpose().
         """
@@ -766,7 +766,7 @@ class Tracer:
             slice,
             np.ndarray,
             list,
-            Tuple[Union[int, np.integer, slice, np.ndarray, list, "Tracer"], ...],
+            tuple[Union[int, np.integer, slice, np.ndarray, list, "Tracer"], ...],
             "Tracer",
         ],
     ) -> "Tracer":
@@ -853,7 +853,7 @@ class Tracer:
 
         if any(isinstance(indexing_element, Tracer) for indexing_element in index):
             dynamic_indices = []
-            static_indices: List[Any] = []
+            static_indices: list[Any] = []
 
             for indexing_element in index:
                 if isinstance(indexing_element, Tracer):
@@ -901,7 +901,7 @@ class Tracer:
             slice,
             np.ndarray,
             list,
-            Tuple[Union[int, np.integer, slice, np.ndarray, list, "Tracer"], ...],
+            tuple[Union[int, np.integer, slice, np.ndarray, list, "Tracer"], ...],
             "Tracer",
         ],
         value: Any,
@@ -975,7 +975,7 @@ class Tracer:
 
         if any(isinstance(indexing_element, Tracer) for indexing_element in index):
             dynamic_indices = []
-            static_indices: List[Any] = []
+            static_indices: list[Any] = []
 
             for indexing_element in index:
                 if isinstance(indexing_element, Tracer):
@@ -1034,7 +1034,7 @@ class Tracer:
         self.last_version = new_version
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """
         Trace numpy.ndarray.shape.
         """

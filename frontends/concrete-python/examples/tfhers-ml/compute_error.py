@@ -45,12 +45,12 @@ def compute_error(plaintext_file, quantized_predictions_file):
             error_in_units = round((a - b) / (1 << 10))
             errors.append((i, error_in_units))
 
-    print("Number of differing values: {}".format(num_differences))
-    print("Total values compared: {}".format(total_values))
+    print(f"Number of differing values: {num_differences}")
+    print(f"Total values compared: {total_values}")
     if num_differences > 0:
         print("Differences (index, error in units of 2^10):")
         for idx, error_in_units in errors:
-            print("Index {}: error = {}".format(idx, error_in_units))
+            print(f"Index {idx}: error = {error_in_units}")
 
     # success is when we don't offset by more than 1
     for error in errors:

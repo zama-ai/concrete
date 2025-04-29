@@ -4,7 +4,8 @@ Conversion of indexing operation.
 
 # pylint: disable=import-error,no-name-in-module
 
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, Optional, Union
 
 import numpy as np
 from concrete.lang.dialects import fhelinalg, tracing
@@ -298,7 +299,7 @@ def process_indexing_element(
 
 def generate_fancy_indices(
     ctx: Context,
-    indexing_element_shape: Tuple[int, ...],
+    indexing_element_shape: tuple[int, ...],
     x: Conversion,
     index: Sequence[Union[int, np.integer, slice, np.ndarray, list, Conversion]],
     check_out_of_bounds: bool,
@@ -392,7 +393,7 @@ def generate_fancy_indices(
 
             else:
                 if len(fancy_indices_start_positions) == 1:
-                    broadcast_shape: Tuple[int, ...] = (1,)
+                    broadcast_shape: tuple[int, ...] = (1,)
                     for original_indexing_element in index:
                         if isinstance(original_indexing_element, (list, np.ndarray)) or (
                             isinstance(original_indexing_element, Conversion)
@@ -565,11 +566,11 @@ def indexing(
             original_bit_width=x.original_bit_width,
         )
 
-    static_offsets: List[Any] = []
-    static_sizes: List[Any] = []
-    static_strides: List[Any] = []
+    static_offsets: list[Any] = []
+    static_sizes: list[Any] = []
+    static_strides: list[Any] = []
 
-    dynamic_offsets: List[Any] = []
+    dynamic_offsets: list[Any] = []
 
     destroyed_dimensions = []
     for dimension, (indexing_element, dimension_size) in enumerate(zip(index, x.shape)):

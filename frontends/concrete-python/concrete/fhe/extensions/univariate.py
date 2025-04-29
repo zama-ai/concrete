@@ -3,7 +3,7 @@ Declaration of `univariate` function.
 """
 
 from copy import deepcopy
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
@@ -15,7 +15,7 @@ from ..values import ValueDescription
 
 def univariate(
     function: Callable[[Any], Any],
-    outputs: Optional[Union[BaseDataType, Type[ScalarAnnotation]]] = None,
+    outputs: Optional[Union[BaseDataType, type[ScalarAnnotation]]] = None,
 ) -> Callable[[Union[Tracer, Any]], Union[Tracer, Any]]:
     """
     Wrap a univariate function so that it is traced into a single generic node.

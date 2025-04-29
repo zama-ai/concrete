@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from concrete import fhe
-from concrete.fhe.compilation import Configuration, server
+from concrete.fhe.compilation import Configuration
 from concrete.fhe.compilation.configuration import SecurityLevel
 
 from ..conftest import USE_MULTI_PRECISION
@@ -189,7 +189,7 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             TypeError,
             (
                 "Unexpected type for keyword argument 'additional_pre_processors' "
-                "(expected 'Optional[List[GraphProcessor]]', got 'str')"
+                "(expected 'Optional[list[GraphProcessor]]', got 'str')"
             ),
         ),
         pytest.param(
@@ -197,7 +197,7 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             TypeError,
             (
                 "Unexpected type for keyword argument 'additional_post_processors' "
-                "(expected 'Optional[List[GraphProcessor]]', got 'str')"
+                "(expected 'Optional[list[GraphProcessor]]', got 'str')"
             ),
         ),
     ],

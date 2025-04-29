@@ -5,7 +5,8 @@ Declaration of `Compiler` class.
 # pylint: disable=import-error,no-name-in-module
 
 
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
@@ -33,7 +34,7 @@ class Compiler:
     @staticmethod
     def assemble(
         function: Callable,
-        parameter_values: Dict[str, ValueDescription],
+        parameter_values: dict[str, ValueDescription],
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         **kwargs,
@@ -85,7 +86,7 @@ class Compiler:
     def __init__(
         self,
         function: Callable,
-        parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]],
+        parameter_encryption_statuses: dict[str, Union[str, EncryptionStatus]],
         composition: Optional[Union[NotComposable, AllComposable]] = None,
     ):
         if composition is None:
@@ -111,13 +112,13 @@ class Compiler:
         np.floating,
         np.ndarray,
         TracedOutput,
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, TracedOutput], ...],
+        tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, TracedOutput], ...],
     ]:
         return self._func_def(*args, **kwargs)
 
     def trace(
         self,
-        inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
+        inputset: Optional[Union[Iterable[Any], Iterable[tuple[Any, ...]]]] = None,
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         **kwargs,
@@ -163,7 +164,7 @@ class Compiler:
 
     def compile(
         self,
-        inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
+        inputset: Optional[Union[Iterable[Any], Iterable[tuple[Any, ...]]]] = None,
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         **kwargs,

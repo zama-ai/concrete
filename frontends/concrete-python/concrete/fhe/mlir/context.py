@@ -4,8 +4,9 @@ Declaration of `Context` class.
 
 # pylint: disable=import-error,no-name-in-module
 
+from collections.abc import Mapping, Sequence
 from random import randint
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 from concrete.lang.dialects import fhe, fhelinalg
@@ -74,15 +75,15 @@ class Context:
 
     graph: Graph
 
-    conversions: Dict[Node, Conversion]
+    conversions: dict[Node, Conversion]
     converting: Node
 
-    conversion_cache: Dict[Tuple, Tuple[Conversion, ...]]
-    constant_cache: Dict[MlirAttribute, MlirOperation]
+    conversion_cache: dict[tuple, tuple[Conversion, ...]]
+    constant_cache: dict[MlirAttribute, MlirOperation]
 
     configuration: Configuration
 
-    tfhers_partition: Dict[tfhers.CryptoParams, str]
+    tfhers_partition: dict[tfhers.CryptoParams, str]
 
     def __init__(self, context: MlirContext, graph: Graph, configuration: Configuration):
         self.context = context
@@ -130,7 +131,7 @@ class Context:
         """
         return ConversionType(NoneType.get())
 
-    def tensor(self, element_type: ConversionType, shape: Tuple[int, ...]) -> ConversionType:
+    def tensor(self, element_type: ConversionType, shape: tuple[int, ...]) -> ConversionType:
         """
         Get tensor type (e.g., tensor<5xi3>, tensor<3x2x!FHE.eint<5>>).
         """
@@ -202,7 +203,7 @@ class Context:
         type_: ConversionType,
         bit_width: Optional[int] = None,
         is_signed: Optional[bool] = None,
-        shape: Optional[Tuple[int, ...]] = None,
+        shape: Optional[tuple[int, ...]] = None,
     ) -> ConversionType:
         """
         Fork a type with some properties update.
@@ -260,7 +261,7 @@ class Context:
 
         return MlirAttribute.parse(f"{value} : {resulting_type.mlir}")
 
-    def error(self, highlights: Mapping[Node, Union[str, List[str]]]):
+    def error(self, highlights: Mapping[Node, Union[str, list[str]]]):
         """
         Fail compilation with an error.
 
@@ -560,7 +561,7 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         y: Conversion,
-        accept: Set[Comparison],
+        accept: set[Comparison],
     ) -> Conversion:
         """
         Compare two encrypted values.
@@ -664,7 +665,7 @@ class Context:
         self,
         resulting_type: ConversionType,
         subtraction: Conversion,
-        accept: Set[Comparison],
+        accept: set[Comparison],
     ) -> Conversion:
         """
         Apply the final comparison table and return comparison result.
@@ -701,7 +702,7 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         y: Conversion,
-        accept: Set[Comparison],
+        accept: set[Comparison],
         x_minus_y_dtype: Integer,
     ) -> Conversion:
         """
@@ -743,7 +744,7 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         y: Conversion,
-        accept: Set[Comparison],
+        accept: set[Comparison],
     ) -> Optional[Conversion]:
         """
         Compare encrypted values using clipping trick.
@@ -881,7 +882,7 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         y: Conversion,
-        accept: Set[Comparison],
+        accept: set[Comparison],
     ) -> Conversion:
         """
         Compare encrypted values using chunks.
@@ -1058,12 +1059,12 @@ class Context:
         resulting_type: ConversionType,
         x: Conversion,
         y: Conversion,
-        accept: Set[Comparison],
+        accept: set[Comparison],
         x_offset: int,
         y_offset: int,
         x_was_signed: bool,
         y_was_signed: bool,
-        chunk_ranges: List[Tuple[int, int]],
+        chunk_ranges: list[tuple[int, int]],
     ) -> Conversion:
         """
         Check equality of encrypted values using chunks.
@@ -1123,7 +1124,7 @@ class Context:
         x_offset: int,
         y: Conversion,
         y_offset: int,
-    ) -> List[Tuple[int, int]]:
+    ) -> list[tuple[int, int]]:
         """
         Calculate best chunk ranges for given operands.
 
@@ -1184,14 +1185,14 @@ class Context:
     def convert_to_chunks_and_map(
         self,
         resulting_scalar_type: ConversionType,
-        resulting_shape: Tuple[int, ...],
-        chunk_ranges: List[Tuple[int, int]],
+        resulting_shape: tuple[int, ...],
+        chunk_ranges: list[tuple[int, int]],
         x: Conversion,
         x_offset: int,
         y: Conversion,
         y_offset: int,
         mapper: Callable,
-    ) -> List[Conversion]:
+    ) -> list[Conversion]:
         """
         Extract the chunks of two values, pack them in a single integer and map the integer.
 
@@ -1321,7 +1322,7 @@ class Context:
 
         return result
 
-    def pack_multivariate_inputs(self, xs: List[Conversion]) -> Conversion:
+    def pack_multivariate_inputs(self, xs: list[Conversion]) -> Conversion:
         """
         Packs inputs of multivariate table lookups.
 
@@ -1409,7 +1410,7 @@ class Context:
         x: Conversion,
         y: Conversion,
         x_minus_y_dtype: Integer,
-        intermediate_table: List[int],
+        intermediate_table: list[int],
     ) -> Conversion:
         """
         Calculate minimum or maximum between two encrypted values using minimum or maximum trick.
@@ -1885,7 +1886,7 @@ class Context:
             y.result,
         )
 
-    def array(self, resulting_type: ConversionType, elements: List[Conversion]) -> Conversion:
+    def array(self, resulting_type: ConversionType, elements: list[Conversion]) -> Conversion:
         assert self.is_bit_width_compatible(resulting_type, *elements)
 
         sanitized_elements = []
@@ -1947,7 +1948,7 @@ class Context:
         operation: Callable[[int, int], int],
     ) -> Conversion:
         if x.is_signed or y.is_signed:
-            highlights: Dict[Node, Union[str, List[str]]] = {
+            highlights: dict[Node, Union[str, list[str]]] = {
                 self.converting: "but only unsigned-unsigned bitwise operations are supported",
             }
             if x.is_signed:
@@ -2110,7 +2111,7 @@ class Context:
     ) -> Conversion:
         return self.bitwise(resulting_type, x, y, lambda a, b: a ^ b)
 
-    def broadcast_to(self, x: Conversion, shape: Tuple[int, ...]):
+    def broadcast_to(self, x: Conversion, shape: tuple[int, ...]):
         if x.shape == shape:
             return x
 
@@ -2142,7 +2143,7 @@ class Context:
     def concatenate(
         self,
         resulting_type: ConversionType,
-        xs: List[Conversion],
+        xs: list[Conversion],
         axis: Optional[int],
     ) -> Conversion:
         assert self.is_bit_width_compatible(resulting_type, *xs)
@@ -2281,7 +2282,7 @@ class Context:
 
     def dot(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         if x.is_clear and y.is_clear:
-            highlights: Dict[Node, Union[str, List[str]]] = {
+            highlights: dict[Node, Union[str, list[str]]] = {
                 x.origin: "lhs is clear",
                 y.origin: ("rhs is clear" if x.origin is not y.origin else "operand is clear"),
                 self.converting: "but clear-clear dot products are not supported",
@@ -2365,7 +2366,7 @@ class Context:
         assert table.is_clear and on.is_encrypted
 
         if table.shape != (2**on.bit_width,):
-            highlights: Dict[Node, Union[str, List[str]]] = {
+            highlights: dict[Node, Union[str, list[str]]] = {
                 table.origin: [
                     f"table has the shape {table.shape}",
                 ],
@@ -2426,7 +2427,7 @@ class Context:
         bits: Union[int, np.integer, slice],
     ) -> Conversion:
         if x.is_clear:
-            highlights: Dict[Node, Union[str, List[str]]] = {
+            highlights: dict[Node, Union[str, list[str]]] = {
                 x.origin: "operand is clear",
                 self.converting: "but clear bit extraction is not supported",
             }
@@ -2626,7 +2627,7 @@ class Context:
 
     def matmul(self, resulting_type: ConversionType, x: Conversion, y: Conversion) -> Conversion:
         if x.is_clear and y.is_clear:
-            highlights: Dict[Node, Union[str, List[str]]] = {
+            highlights: dict[Node, Union[str, list[str]]] = {
                 x.origin: "lhs is clear",
                 y.origin: ("rhs is clear" if x.origin is not y.origin else "operand is clear"),
                 self.converting: "but clear-clear matrix multiplications are not supported",
@@ -2779,7 +2780,7 @@ class Context:
         self,
         resulting_type: ConversionType,
         x: Conversion,
-        kernel_shape: Tuple[int, ...],
+        kernel_shape: tuple[int, ...],
         strides: Sequence[int],
         dilations: Sequence[int],
     ):
@@ -3085,7 +3086,7 @@ class Context:
     def multivariate_tlu(
         self,
         resulting_type: ConversionType,
-        xs: List[Conversion],
+        xs: list[Conversion],
         table: Sequence[int],
     ) -> Conversion:
         assert resulting_type.is_encrypted
@@ -3096,7 +3097,7 @@ class Context:
     def multivariate_multi_tlu(
         self,
         resulting_type: ConversionType,
-        xs: List[Conversion],
+        xs: list[Conversion],
         tables: Any,
         mapping: Any,
     ):
@@ -3201,7 +3202,7 @@ class Context:
 
         return self.tree_add(resulting_type, filtered_chunks)
 
-    def reshape(self, x: Conversion, shape: Tuple[int, ...]) -> Conversion:
+    def reshape(self, x: Conversion, shape: tuple[int, ...]) -> Conversion:
         if x.is_scalar:
             x = self.tensorize(x)
 
@@ -3217,7 +3218,7 @@ class Context:
         # this is a limitation of the current compiler, it will be improved in the future (#1060)
         can_be_converted_directly = len(input_shape) != len(output_shape)
 
-        reassociation: List[List[int]] = []
+        reassociation: list[list[int]] = []
         if can_be_converted_directly:
             if len(output_shape) == 1:
                 # output is 1 dimensional so collapse every dimension into the same dimension
@@ -3477,7 +3478,7 @@ class Context:
         original_resulting_bit_width: int,
     ) -> Conversion:
         if x.is_signed or b.is_signed:
-            highlights: Dict[Node, Union[str, List[str]]] = {
+            highlights: dict[Node, Union[str, list[str]]] = {
                 self.converting: "but only unsigned-unsigned bitwise shifts are supported",
             }
             if x.is_signed:
@@ -3890,7 +3891,7 @@ class Context:
             original_bit_width=x.original_bit_width,
         )
 
-    def tree_add(self, resulting_type: ConversionType, xs: List[Conversion]) -> Conversion:
+    def tree_add(self, resulting_type: ConversionType, xs: list[Conversion]) -> Conversion:
         resulting_element_type = (self.eint if resulting_type.is_unsigned else self.esint)(
             resulting_type.bit_width
         )

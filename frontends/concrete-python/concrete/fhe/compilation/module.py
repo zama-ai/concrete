@@ -5,10 +5,11 @@ Declaration of `FheModule` classes.
 # pylint: disable=import-error,no-member,no-name-in-module
 
 import asyncio
+from collections.abc import Awaitable, Iterable
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from threading import Thread
-from typing import Any, Awaitable, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, NamedTuple, Optional, Union
 
 import numpy as np
 from concrete.compiler import CompilationContext, LweSecretKey, Parameter
@@ -106,7 +107,7 @@ class FheFunction:
         np.integer,
         np.floating,
         np.ndarray,
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+        tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
     ]:
         return self.graph(*args)
 
@@ -152,22 +153,22 @@ class FheFunction:
 
     def _simulate_encrypt(
         self,
-        *args: Optional[Union[int, np.ndarray, List]],
-    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
+        *args: Optional[Union[int, np.ndarray, list]],
+    ) -> Optional[Union[Value, tuple[Optional[Value], ...]]]:
 
         return self.simulation_runtime.val.client.simulate_encrypt(*args, function_name=self.name)
 
     def _simulate_run(
         self,
-        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
-    ) -> Union[Value, Tuple[Value, ...]]:
+        *args: Optional[Union[Value, tuple[Optional[Value], ...]]],
+    ) -> Union[Value, tuple[Value, ...]]:
 
         return self.simulation_runtime.val.server.run(*args, function_name=self.name)
 
     def _simulate_decrypt(
         self,
-        *results: Union[Value, Tuple[Value, ...]],
-    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+        *results: Union[Value, tuple[Value, ...]],
+    ) -> Optional[Union[int, np.ndarray, tuple[Optional[Union[int, np.ndarray]], ...]]]:
 
         return self.simulation_runtime.val.client.simulate_decrypt(
             *results, function_name=self.name
@@ -190,8 +191,8 @@ class FheFunction:
 
     def encrypt(
         self,
-        *args: Optional[Union[int, np.ndarray, List]],
-    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
+        *args: Optional[Union[int, np.ndarray, list]],
+    ) -> Optional[Union[Value, tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
 
@@ -210,7 +211,7 @@ class FheFunction:
 
     def run_sync(
         self,
-        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
+        *args: Optional[Union[Value, tuple[Optional[Value], ...]]],
     ) -> Any:
         """
         Evaluate the function synchronuously.
@@ -227,8 +228,8 @@ class FheFunction:
         return self._run(True, *args)
 
     def run_async(
-        self, *args: Optional[Union[Value, Tuple[Optional[Value], ...]]]
-    ) -> Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+        self, *args: Optional[Union[Value, tuple[Optional[Value], ...]]]
+    ) -> Union[Value, tuple[Value, ...], Awaitable[Union[Value, tuple[Value, ...]]]]:
         """
         Evaluate the function asynchronuously.
 
@@ -253,8 +254,8 @@ class FheFunction:
 
     def run(
         self,
-        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
-    ) -> Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+        *args: Optional[Union[Value, tuple[Optional[Value], ...]]],
+    ) -> Union[Value, tuple[Value, ...], Awaitable[Union[Value, tuple[Value, ...]]]]:
         """
         Evaluate the function.
 
@@ -264,7 +265,8 @@ class FheFunction:
 
         Returns:
             Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
-                result(s) of evaluation or future of result(s) of evaluation if configured with async_run=True
+                result(s) of evaluation or future of result(s) of evaluation if configured with
+                async_run=True
         """
         if isinstance(self.execution_runtime.val, ExecutionRt):
             auto_schedule_run = self.execution_runtime.val.auto_schedule_run
@@ -275,8 +277,8 @@ class FheFunction:
     def _run(
         self,
         sync: bool,
-        *args: Optional[Union[Value, Tuple[Optional[Value], ...]]],
-    ) -> Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]:
+        *args: Optional[Union[Value, tuple[Optional[Value], ...]]],
+    ) -> Union[Value, tuple[Value, ...], Awaitable[Union[Value, tuple[Value, ...]]]]:
         """
         Evaluate the function.
 
@@ -332,8 +334,8 @@ class FheFunction:
         )  # type: ignore
 
     def decrypt(
-        self, *results: Union[Value, Tuple[Value, ...], Awaitable[Union[Value, Tuple[Value, ...]]]]
-    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+        self, *results: Union[Value, tuple[Value, ...], Awaitable[Union[Value, tuple[Value, ...]]]]
+    ) -> Optional[Union[int, np.ndarray, tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
 
@@ -393,7 +395,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def programmable_bootstrap_count_per_parameter(self) -> Dict[Parameter, int]:
+    def programmable_bootstrap_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of programmable bootstraps per bit width in the function.
         """
@@ -402,7 +404,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def programmable_bootstrap_count_per_tag(self) -> Dict[str, int]:
+    def programmable_bootstrap_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of programmable bootstraps per tag in the function.
         """
@@ -413,7 +415,7 @@ class FheFunction:
     @property
     def programmable_bootstrap_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[int, int]]:
+    ) -> dict[str, dict[int, int]]:
         """
         Get the number of programmable bootstraps per tag per bit width in the function.
         """
@@ -431,7 +433,7 @@ class FheFunction:
         return self.execution_runtime.val.server.key_switch_count(self.name)  # pragma: no cover
 
     @property
-    def key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
+    def key_switch_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of key switches per parameter in the function.
         """
@@ -440,7 +442,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def key_switch_count_per_tag(self) -> Dict[str, int]:
+    def key_switch_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of key switches per tag in the function.
         """
@@ -449,7 +451,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def key_switch_count_per_tag_per_parameter(self) -> Dict[str, Dict[Parameter, int]]:
+    def key_switch_count_per_tag_per_parameter(self) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of key switches per tag per parameter in the function.
         """
@@ -469,7 +471,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def packing_key_switch_count_per_parameter(self) -> Dict[Parameter, int]:
+    def packing_key_switch_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of packing key switches per parameter in the function.
         """
@@ -478,7 +480,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def packing_key_switch_count_per_tag(self) -> Dict[str, int]:
+    def packing_key_switch_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of packing key switches per tag in the function.
         """
@@ -489,7 +491,7 @@ class FheFunction:
     @property
     def packing_key_switch_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of packing key switches per tag per parameter in the function.
         """
@@ -507,7 +509,7 @@ class FheFunction:
         return self.execution_runtime.val.server.clear_addition_count(self.name)  # pragma: no cover
 
     @property
-    def clear_addition_count_per_parameter(self) -> Dict[Parameter, int]:
+    def clear_addition_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of clear additions per parameter in the function.
         """
@@ -516,7 +518,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def clear_addition_count_per_tag(self) -> Dict[str, int]:
+    def clear_addition_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of clear additions per tag in the function.
         """
@@ -527,7 +529,7 @@ class FheFunction:
     @property
     def clear_addition_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of clear additions per tag per parameter in the function.
         """
@@ -547,7 +549,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def encrypted_addition_count_per_parameter(self) -> Dict[Parameter, int]:
+    def encrypted_addition_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of encrypted additions per parameter in the function.
         """
@@ -556,7 +558,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def encrypted_addition_count_per_tag(self) -> Dict[str, int]:
+    def encrypted_addition_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of encrypted additions per tag in the function.
         """
@@ -567,7 +569,7 @@ class FheFunction:
     @property
     def encrypted_addition_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of encrypted additions per tag per parameter in the function.
         """
@@ -587,7 +589,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def clear_multiplication_count_per_parameter(self) -> Dict[Parameter, int]:
+    def clear_multiplication_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of clear multiplications per parameter in the function.
         """
@@ -596,7 +598,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def clear_multiplication_count_per_tag(self) -> Dict[str, int]:
+    def clear_multiplication_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of clear multiplications per tag in the function.
         """
@@ -607,7 +609,7 @@ class FheFunction:
     @property
     def clear_multiplication_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of clear multiplications per tag per parameter in the function.
         """
@@ -627,7 +629,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def encrypted_negation_count_per_parameter(self) -> Dict[Parameter, int]:
+    def encrypted_negation_count_per_parameter(self) -> dict[Parameter, int]:
         """
         Get the number of encrypted negations per parameter in the function.
         """
@@ -636,7 +638,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def encrypted_negation_count_per_tag(self) -> Dict[str, int]:
+    def encrypted_negation_count_per_tag(self) -> dict[str, int]:
         """
         Get the number of encrypted negations per tag in the function.
         """
@@ -647,7 +649,7 @@ class FheFunction:
     @property
     def encrypted_negation_count_per_tag_per_parameter(
         self,
-    ) -> Dict[str, Dict[Parameter, int]]:
+    ) -> dict[str, dict[Parameter, int]]:
         """
         Get the number of encrypted negations per tag per parameter in the function.
         """
@@ -656,7 +658,7 @@ class FheFunction:
         )  # pragma: no cover
 
     @property
-    def statistics(self) -> Dict:
+    def statistics(self) -> dict:
         """
         Get all statistics of the function.
         """
@@ -701,7 +703,7 @@ class FheModule:
     """
 
     configuration: Configuration
-    graphs: Dict[str, Graph]
+    graphs: dict[str, Graph]
     mlir_module: MlirModule
     compilation_context: CompilationContext
     execution_runtime: Lazy[ExecutionRt]
@@ -709,7 +711,7 @@ class FheModule:
 
     def __init__(
         self,
-        graphs: Dict[str, Graph],
+        graphs: dict[str, Graph],
         mlir: MlirModule,
         compilation_context: CompilationContext,
         configuration: Optional[Configuration] = None,
@@ -791,7 +793,7 @@ class FheModule:
         force: bool = False,
         seed: Optional[int] = None,
         encryption_seed: Optional[int] = None,
-        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
+        initial_keys: Optional[dict[int, LweSecretKey]] = None,
     ):
         """
         Generate keys required for homomorphic evaluation.
@@ -864,7 +866,7 @@ class FheModule:
         return self.execution_runtime.val.server.complexity  # pragma: no cover
 
     @property
-    def statistics(self) -> Dict:
+    def statistics(self) -> dict:
         """
         Get all statistics of the module.
         """
@@ -882,7 +884,7 @@ class FheModule:
         }
         return statistics
 
-    def functions(self) -> Dict[str, FheFunction]:
+    def functions(self) -> dict[str, FheFunction]:
         """
         Return a dictionnary containing all the functions of the module.
         """

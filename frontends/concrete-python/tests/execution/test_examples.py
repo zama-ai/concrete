@@ -411,7 +411,7 @@ def test_tfhers_example():
     path_to_test_script = f"{os.path.dirname(os.path.abspath(__file__))}/../../examples/tfhers/"
     test_script_filename = "test.sh"
     assert (
-        os.system(f"cd {path_to_test_script} && sh {test_script_filename}") == 0
+        os.system(f"cd {path_to_test_script} && sh {test_script_filename}") == 0  # noqa: S605
     ), "test script failed"
 
 
@@ -419,5 +419,5 @@ def test_tfhers_ml_example():
     path_to_test_script = f"{os.path.dirname(os.path.abspath(__file__))}/../../examples/tfhers-ml/"
     test_script_filename = "test.sh"
     assert (
-        os.system(f"cd {path_to_test_script} && sh {test_script_filename}") == 0
+        os.system(f"cd {path_to_test_script} && sh {test_script_filename}") == 0  # noqa: S605
     ), "test script failed"

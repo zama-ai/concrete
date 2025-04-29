@@ -6,7 +6,7 @@ Declaration of `Keys` class.
 
 import pathlib
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from concrete.compiler import Keyset, KeysetCache, LweSecretKey
 
@@ -50,7 +50,7 @@ class Keys:
         force: bool = False,
         secret_seed: Optional[int] = None,
         encryption_seed: Optional[int] = None,
-        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
+        initial_keys: Optional[dict[int, LweSecretKey]] = None,
     ):
         """
         Generate new keys.

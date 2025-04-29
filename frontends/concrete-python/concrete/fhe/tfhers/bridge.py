@@ -2,7 +2,7 @@
 Declaration of `tfhers.Bridge` class.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 # pylint: disable=import-error,no-member,no-name-in-module
 from concrete.compiler import LweSecretKey, TfhersExporter, TfhersFheIntDescription
@@ -42,32 +42,33 @@ class Bridge:
 
     # The following properties are for backward compatibility with the previous implementation
     @property
-    def input_types_per_func(self) -> Dict[str, List[Optional[TFHERSIntegerType]]]:
+    def input_types_per_func(self) -> dict[str, list[Optional[TFHERSIntegerType]]]:
         """Return the input types per function map."""
         return self.tfhers_specs.input_types_per_func
 
     @property
-    def input_shapes_per_func(self) -> Dict[str, List[Optional[Tuple[int, ...]]]]:
+    def input_shapes_per_func(self) -> dict[str, list[Optional[tuple[int, ...]]]]:
         """Return the input shapes per function map."""
         return self.tfhers_specs.input_shapes_per_func
 
     @property
-    def output_types_per_func(self) -> Dict[str, List[Optional[TFHERSIntegerType]]]:
+    def output_types_per_func(self) -> dict[str, list[Optional[TFHERSIntegerType]]]:
         """Return the output types per function map."""
         return self.tfhers_specs.output_types_per_func
 
     @property
-    def output_shapes_per_func(self) -> Dict[str, List[Optional[Tuple[int, ...]]]]:
+    def output_shapes_per_func(self) -> dict[str, list[Optional[tuple[int, ...]]]]:
         """Return the output shapes per function map."""
         return self.tfhers_specs.output_shapes_per_func
 
     def _get_default_func_or_raise_error(self, calling_func: str) -> str:
         if self._default_function is not None:
             return self._default_function
-        raise RuntimeError(
+        msg = (
             "Module contains more than one function, so please provide 'func_name' while "
             f"calling '{calling_func}'"
         )
+        raise RuntimeError(msg)
 
     def _input_type(self, func_name: str, input_idx: int) -> Optional[TFHERSIntegerType]:
         """Return the type of a certain input.
@@ -93,7 +94,7 @@ class Bridge:
         """
         return self.tfhers_specs.output_types_per_func[func_name][output_idx]
 
-    def _input_shape(self, func_name: str, input_idx: int) -> Optional[Tuple[int, ...]]:
+    def _input_shape(self, func_name: str, input_idx: int) -> Optional[tuple[int, ...]]:
         """Return the shape of a certain input.
 
         Args:
@@ -107,7 +108,7 @@ class Bridge:
 
     def _output_shape(
         self, func_name: str, output_idx: int
-    ) -> Optional[Tuple[int, ...]]:  # pragma: no cover
+    ) -> Optional[tuple[int, ...]]:  # pragma: no cover
         """Return the shape of a certain output.
 
         Args:
@@ -235,7 +236,7 @@ class Bridge:
 
     def keygen_with_initial_keys(
         self,
-        input_idx_to_key_buffer: Dict[Union[Tuple[str, int], int], bytes],
+        input_idx_to_key_buffer: dict[Union[tuple[str, int], int], bytes],
         force: bool = False,
         seed: Optional[int] = None,
         encryption_seed: Optional[int] = None,
@@ -261,7 +262,7 @@ class Bridge:
         Raises:
             RuntimeError: if failed to deserialize the key
         """
-        initial_keys: Dict[int, LweSecretKey] = {}
+        initial_keys: dict[int, LweSecretKey] = {}
         for idx in input_idx_to_key_buffer:
             if isinstance(idx, tuple):
                 func_name, input_idx = idx
@@ -269,11 +270,12 @@ class Bridge:
                 input_idx = idx
                 func_name = self._default_function
             else:
-                raise RuntimeError(
+                msg = (
                     "Module contains more than one function, so please make sure to mention "
                     "the function name (not just the position) in input_idx_to_key_buffer. "
                     "An example index would be a tuple ('my_func', 1)."
                 )
+                raise RuntimeError(msg)
             key_id = self._input_keyid(func_name, input_idx)
             # no need to deserialize the same key again
             if key_id in initial_keys:  # pragma: no cover
@@ -310,9 +312,7 @@ def new_bridge(
     Returns:
         Bridge: A new Bridge instance attached to the provided client.
     """
-    if isinstance(circuit_or_module_or_client, fhe.Circuit):
-        client = circuit_or_module_or_client.client
-    elif isinstance(circuit_or_module_or_client, fhe.Module):
+    if isinstance(circuit_or_module_or_client, (fhe.Circuit, fhe.Module)):
         client = circuit_or_module_or_client.client
     else:
         client = circuit_or_module_or_client

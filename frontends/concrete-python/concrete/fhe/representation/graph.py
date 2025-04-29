@@ -7,9 +7,10 @@ import os
 import re
 import tempfile
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -20,7 +21,7 @@ from ..dtypes import Float, Integer, UnsignedInteger
 from .node import Node
 from .operation import Operation
 
-P_ERROR_PER_ERROR_SIZE_CACHE: Dict[float, Dict[int, float]] = {}
+P_ERROR_PER_ERROR_SIZE_CACHE: dict[float, dict[int, float]] = {}
 
 
 class Graph:
@@ -30,10 +31,10 @@ class Graph:
 
     graph: nx.MultiDiGraph
 
-    input_nodes: Dict[int, Node]
-    output_nodes: Dict[int, Node]
+    input_nodes: dict[int, Node]
+    output_nodes: dict[int, Node]
 
-    input_indices: Dict[Node, int]
+    input_indices: dict[Node, int]
 
     is_direct: bool
 
@@ -47,8 +48,8 @@ class Graph:
     def __init__(
         self,
         graph: nx.MultiDiGraph,
-        input_nodes: Dict[int, Node],
-        output_nodes: Dict[int, Node],
+        input_nodes: dict[int, Node],
+        output_nodes: dict[int, Node],
         name: str,
         is_direct: bool = False,
         location: str = "",
@@ -79,7 +80,7 @@ class Graph:
         np.integer,
         np.floating,
         np.ndarray,
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+        tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
     ]:
         evaluation = self.evaluate(*args, p_error=p_error)
         result = tuple(evaluation[node] for node in self.ordered_outputs())
@@ -89,7 +90,7 @@ class Graph:
         self,
         *args: Any,
         p_error: Optional[float] = None,
-    ) -> Dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]]:
+    ) -> dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]]:
         r"""
         Perform the computation `Graph` represents and get resulting values for all nodes.
 
@@ -112,7 +113,7 @@ class Graph:
 
         assert isinstance(p_error, float)
 
-        node_results: Dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]] = {}
+        node_results: dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]] = {}
         for node in nx.topological_sort(self.graph):
             if node.operation == Operation.Input:
                 node_results[node] = node(args[self.input_indices[node]])
@@ -349,8 +350,8 @@ class Graph:
     def format(
         self,
         maximum_constant_length: int = 25,
-        highlighted_nodes: Optional[Dict[Node, List[str]]] = None,
-        highlighted_result: Optional[List[str]] = None,
+        highlighted_nodes: Optional[dict[Node, list[str]]] = None,
+        highlighted_result: Optional[list[str]] = None,
         show_types: bool = True,
         show_bounds: bool = True,
         show_tags: bool = True,
@@ -398,24 +399,24 @@ class Graph:
         # node -> identifier
         # e.g., id_map[node1] = 2
         # means line for node1 is in this form %2 = node1.format(...)
-        id_map: Dict[Node, int] = {}
+        id_map: dict[Node, int] = {}
 
         # lines that will be merged at the end
-        lines: List[str] = []
+        lines: list[str] = []
 
         # metadata to add to each line
         # (for alignment, this is done after lines are determined)
-        line_metadata: List[Dict[str, str]] = []
+        line_metadata: list[dict[str, str]] = []
 
         # default highlighted nodes is empty
         highlighted_nodes = highlighted_nodes if highlighted_nodes is not None else {}
 
         # highlight information for lines, this is required because highlights are added to lines
         # after their type information is added, and we only have line numbers, not nodes
-        highlighted_lines: Dict[int, List[str]] = {}
+        highlighted_lines: dict[int, list[str]] = {}
 
         # subgraphs to format after the main graph is formatted
-        subgraphs: Dict[str, Graph] = {}
+        subgraphs: dict[str, Graph] = {}
 
         # format nodes
         for node in nx.lexicographical_topological_sort(self.graph):
@@ -530,7 +531,7 @@ class Graph:
         # add return information
         # (if there is a single return, it's in the form `return %id`
         # (otherwise, it's in the form `return (%id1, %id2, ..., %idN)`
-        returns: List[str] = []
+        returns: list[str] = []
         for node in self.ordered_outputs():
             returns.append(f"%{id_map[node]}")
         lines.append(f"return {', '.join(returns)}")
@@ -627,8 +628,8 @@ class Graph:
 
     def measure_bounds(
         self,
-        inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]],
-    ) -> Dict[Node, Dict[str, Union[np.integer, np.floating]]]:
+        inputset: Union[Iterable[Any], Iterable[tuple[Any, ...]]],
+    ) -> dict[Node, dict[str, Union[np.integer, np.floating]]]:
         """
         Evaluate the `Graph` using an inputset and measure bounds.
 
@@ -696,7 +697,7 @@ class Graph:
 
         return bounds
 
-    def update_with_bounds(self, bounds: Dict[Node, Dict[str, Union[np.integer, np.floating]]]):
+    def update_with_bounds(self, bounds: dict[Node, dict[str, Union[np.integer, np.floating]]]):
         """
         Update `ValueDescription`s within the `Graph` according to measured bounds.
 
@@ -745,7 +746,7 @@ class Graph:
                         input_idx = edge["input_idx"]
                         successor.inputs[input_idx] = node.output
 
-    def ordered_inputs(self) -> List[Node]:
+    def ordered_inputs(self) -> list[Node]:
         """
         Get the input nodes of the `Graph`, ordered by their indices.
 
@@ -756,7 +757,7 @@ class Graph:
 
         return [self.input_nodes[idx] for idx in range(len(self.input_nodes))]
 
-    def ordered_outputs(self) -> List[Node]:
+    def ordered_outputs(self) -> list[Node]:
         """
         Get the output nodes of the `Graph`, ordered by their indices.
 
@@ -767,7 +768,7 @@ class Graph:
 
         return [self.output_nodes[idx] for idx in range(len(self.output_nodes))]
 
-    def ordered_preds_of(self, node: Node) -> List[Node]:
+    def ordered_preds_of(self, node: Node) -> list[Node]:
         """
         Get predecessors of `node`, ordered by their indices.
 
@@ -780,7 +781,7 @@ class Graph:
                 ordered predecessors of `node`.
         """
 
-        idx_to_pred: Dict[int, Node] = {}
+        idx_to_pred: dict[int, Node] = {}
         for pred in self.graph.predecessors(node):
             edge_data = self.graph.get_edge_data(pred, node)
             idx_to_pred.update((data["input_idx"], pred) for data in edge_data.values())
@@ -804,12 +805,12 @@ class Graph:
 
     def query_nodes(
         self,
-        tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
-        operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        tag_filter: Optional[Union[str, list[str], re.Pattern]] = None,
+        operation_filter: Optional[Union[str, list[str], re.Pattern]] = None,
         is_encrypted_filter: Optional[bool] = None,
         custom_filter: Optional[Callable[[Node], bool]] = None,
         ordered: bool = False,
-    ) -> List[Node]:
+    ) -> list[Node]:
         """
         Query nodes within the graph.
 
@@ -883,8 +884,8 @@ class Graph:
 
     def maximum_integer_bit_width(
         self,
-        tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
-        operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        tag_filter: Optional[Union[str, list[str], re.Pattern]] = None,
+        operation_filter: Optional[Union[str, list[str], re.Pattern]] = None,
         is_encrypted_filter: Optional[bool] = None,
         custom_filter: Optional[Callable[[Node], bool]] = None,
         assigned_bit_width: bool = False,
@@ -933,11 +934,11 @@ class Graph:
 
     def integer_range(
         self,
-        tag_filter: Optional[Union[str, List[str], re.Pattern]] = None,
-        operation_filter: Optional[Union[str, List[str], re.Pattern]] = None,
+        tag_filter: Optional[Union[str, list[str], re.Pattern]] = None,
+        operation_filter: Optional[Union[str, list[str], re.Pattern]] = None,
         is_encrypted_filter: Optional[bool] = None,
         custom_filter: Optional[Callable[[Node], bool]] = None,
-    ) -> Optional[Tuple[int, int]]:
+    ) -> Optional[tuple[int, int]]:
         """
         Get integer range of the graph.
 
@@ -965,7 +966,7 @@ class Graph:
         if self.is_direct:
             return None
 
-        result: Optional[Tuple[int, int]] = None
+        result: Optional[tuple[int, int]] = None
 
         query = self.query_nodes(tag_filter, operation_filter, is_encrypted_filter, custom_filter)
         filtered_bounds = (
@@ -1016,7 +1017,7 @@ class GraphProcessor(ABC):
         """
 
     @staticmethod
-    def error(graph: Graph, highlights: Mapping[Node, Union[str, List[str]]]):
+    def error(graph: Graph, highlights: Mapping[Node, Union[str, list[str]]]):
         """
         Fail processing with an error.
 
@@ -1048,7 +1049,7 @@ class MultiGraphProcessor(GraphProcessor):
     """
 
     @abstractmethod
-    def apply_many(self, graphs: Dict[str, Graph]):
+    def apply_many(self, graphs: dict[str, Graph]):
         """
         Process a dictionary of graphs.
         """

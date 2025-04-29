@@ -1,5 +1,5 @@
 import time
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -14,7 +14,7 @@ class StaticKeyValueDatabase:
 
     _number_of_key_chunks: int
     _number_of_value_chunks: int
-    _state_shape: Tuple[int, ...]
+    _state_shape: tuple[int, ...]
 
     module: fhe.Module
     state: Optional[fhe.Value]
@@ -244,7 +244,7 @@ class StaticKeyValueDatabase:
     def keygen(self, force: bool = False):
         self.module.keygen(force=force)
 
-    def initialize(self, initial_state: Optional[Union[List, np.ndarray]] = None):
+    def initialize(self, initial_state: Optional[Union[list, np.ndarray]] = None):
         if initial_state is None:
             initial_state = np.zeros(self._state_shape, dtype=np.int64)
 
@@ -263,7 +263,7 @@ class StaticKeyValueDatabase:
 
         self.state = initial_state_encrypted  # type: ignore
 
-    def decode_entry(self, entry: np.ndarray) -> Optional[Tuple[int, int]]:
+    def decode_entry(self, entry: np.ndarray) -> Optional[tuple[int, int]]:
         if entry[0] == 0:
             return None
 

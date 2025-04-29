@@ -152,8 +152,7 @@ def test_min_max(
     def function(x):
         if operation == "min":
             return np.min(x, axis=axis, keepdims=keepdims)
-        else:
-            return np.max(x, axis=axis, keepdims=keepdims)
+        return np.max(x, axis=axis, keepdims=keepdims)
 
     parameter_encryption_statuses = {"x": "encrypted"}
     configuration = helpers.configuration()

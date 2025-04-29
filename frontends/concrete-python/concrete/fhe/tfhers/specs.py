@@ -1,6 +1,6 @@
 """TFHE-rs client specs."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from ..representation import Graph
 from .dtypes import TFHERSIntegerType
@@ -21,17 +21,17 @@ class TFHERSClientSpecs:
         maps every output to a shape for every function in the module. None means a non-tfhers type
     """
 
-    input_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]]
-    output_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]]
-    input_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]]
-    output_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]]
+    input_types_per_func: dict[str, list[Optional[TFHERSIntegerType]]]
+    output_types_per_func: dict[str, list[Optional[TFHERSIntegerType]]]
+    input_shapes_per_func: dict[str, list[Optional[tuple[int, ...]]]]
+    output_shapes_per_func: dict[str, list[Optional[tuple[int, ...]]]]
 
     def __init__(
         self,
-        input_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-        output_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-        input_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]],
-        output_shapes_per_func: Dict[str, List[Optional[Tuple[int, ...]]]],
+        input_types_per_func: dict[str, list[Optional[TFHERSIntegerType]]],
+        output_types_per_func: dict[str, list[Optional[TFHERSIntegerType]]],
+        input_shapes_per_func: dict[str, list[Optional[tuple[int, ...]]]],
+        output_shapes_per_func: dict[str, list[Optional[tuple[int, ...]]]],
     ):
         self.input_types_per_func = input_types_per_func
         self.output_types_per_func = output_types_per_func
@@ -47,7 +47,7 @@ class TFHERSClientSpecs:
         )
 
     @staticmethod
-    def from_graphs(graphs: Dict[str, Graph]) -> "TFHERSClientSpecs":
+    def from_graphs(graphs: dict[str, Graph]) -> "TFHERSClientSpecs":
         """Create a TFHERSClientSpecs instance from a dictionary of graphs.
 
         Args:
@@ -63,8 +63,8 @@ class TFHERSClientSpecs:
         output_shapes_per_func = {}
 
         for func_name, graph in graphs.items():
-            input_types: List[Optional[TFHERSIntegerType]] = []
-            input_shapes: List[Optional[Tuple[int, ...]]] = []
+            input_types: list[Optional[TFHERSIntegerType]] = []
+            input_shapes: list[Optional[tuple[int, ...]]] = []
             for input_node in graph.ordered_inputs():
                 if isinstance(input_node.output.dtype, TFHERSIntegerType):
                     input_types.append(input_node.output.dtype)
@@ -75,8 +75,8 @@ class TFHERSClientSpecs:
             input_types_per_func[func_name] = input_types
             input_shapes_per_func[func_name] = input_shapes
 
-            output_types: List[Optional[TFHERSIntegerType]] = []
-            output_shapes: List[Optional[Tuple[int, ...]]] = []
+            output_types: list[Optional[TFHERSIntegerType]] = []
+            output_shapes: list[Optional[tuple[int, ...]]] = []
             for output_node in graph.ordered_outputs():
                 if isinstance(output_node.output.dtype, TFHERSIntegerType):
                     output_types.append(output_node.output.dtype)
@@ -94,7 +94,7 @@ class TFHERSClientSpecs:
             output_shapes_per_func,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the TFHERSClientSpecs object to a dictionary representation.
 
         Returns:
@@ -115,7 +115,7 @@ class TFHERSClientSpecs:
         }
 
     @staticmethod
-    def from_dict(dict_obj: Dict[str, Any]) -> "TFHERSClientSpecs":
+    def from_dict(dict_obj: dict[str, Any]) -> "TFHERSClientSpecs":
         """Create a TFHERSClientSpecs instance from a dictionary.
 
         Args:
