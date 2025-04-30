@@ -3,6 +3,8 @@ Tests of everything related to restrictions.
 """
 
 import numpy as np
+
+# pylint: disable=import-error
 from mlir._mlir_libs._concretelang._compiler import (
     KeysetInfo,
     PartitionDefinition,
@@ -10,6 +12,9 @@ from mlir._mlir_libs._concretelang._compiler import (
 )
 
 from concrete import fhe
+
+# pylint: enable=import-error
+
 
 # pylint: disable=missing-class-docstring, missing-function-docstring, no-self-argument, unused-variable, no-member, unused-argument, function-redefined, expression-not-assigned
 # same disables for ruff:

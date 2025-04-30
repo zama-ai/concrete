@@ -699,8 +699,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     # serialize key
     _, key_path = tempfile.mkstemp()
     serialized_key = tfhers_bridge.serialize_input_secret_key(input_idx=0)
-    with open(key_path, "wb") as fw:
-        fw.write(serialized_key)
+    with open(key_path, "wb") as ct_out_writer:
+        ct_out_writer.write(serialized_key)
 
     ct1, ct2 = sample
     _, ct1_path = tempfile.mkstemp()
@@ -784,11 +784,11 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
 
     # import ciphertexts and run
     cts = []
-    with open(ct1_path, "rb") as fr:
-        buff = fr.read()
+    with open(ct1_path, "rb") as ct1_reader:
+        buff = ct1_reader.read()
         cts.append(tfhers_bridge.import_value(buff, 0))
-    with open(ct2_path, "rb") as fr:
-        buff = fr.read()
+    with open(ct2_path, "rb") as ct2_reader:
+        buff = ct2_reader.read()
         cts.append(tfhers_bridge.import_value(buff, 1))
     os.remove(ct1_path)
     os.remove(ct2_path)
@@ -805,8 +805,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     buff = tfhers_bridge.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
     _, ct_out_path = tempfile.mkstemp()
     _, pt_path = tempfile.mkstemp()
-    with open(ct_out_path, "wb") as fw:
-        fw.write(buff)
+    with open(ct_out_path, "wb") as ct_out_writer:
+        ct_out_writer.write(buff)
 
     assert (
         os.system(
@@ -1315,15 +1315,18 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     os.remove(sum_ct_path)
 
 
+# pylint: disable=no-self-argument,missing-function-docstring,missing-class-docstring
+
+
 @fhe.module()
 class AddModuleOneFunc:
     func_count = 1
 
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add(x, y):
-        x = tfhers.to_native(x)
-        y = tfhers.to_native(y)
-        return tfhers.from_native(x + y, TFHERS_UINT_8_3_2_4096)
+        input_x = tfhers.to_native(x)
+        input_y = tfhers.to_native(y)
+        return tfhers.from_native(input_x + input_y, TFHERS_UINT_8_3_2_4096)
 
 
 @fhe.module()
@@ -1332,13 +1335,16 @@ class AddModuleTwoFunc:
 
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add(x, y):
-        x = tfhers.to_native(x)
-        y = tfhers.to_native(y)
-        return tfhers.from_native(x + y, TFHERS_UINT_8_3_2_4096)
+        native_x = tfhers.to_native(x)
+        native_y = tfhers.to_native(y)
+        return tfhers.from_native(native_x + native_y, TFHERS_UINT_8_3_2_4096)
 
     @fhe.function({"x": "encrypted"})
     def inc(x):
         return x + 1
+
+
+# pylint: enable=no-self-argument,missing-function-docstring,missing-class-docstring
 
 
 @pytest.mark.parametrize(

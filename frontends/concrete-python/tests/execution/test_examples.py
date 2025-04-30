@@ -408,6 +408,9 @@ Actual Output
 
 
 def test_tfhers_example():
+    """
+    Test the TFHE-rs example.
+    """
     path_to_test_script = f"{os.path.dirname(os.path.abspath(__file__))}/../../examples/tfhers/"
     test_script_filename = "test.sh"
     assert (
@@ -416,6 +419,9 @@ def test_tfhers_example():
 
 
 def test_tfhers_ml_example():
+    """
+    Test the TFHE-rs ML example.
+    """
     path_to_test_script = f"{os.path.dirname(os.path.abspath(__file__))}/../../examples/tfhers-ml/"
     test_script_filename = "test.sh"
     assert (

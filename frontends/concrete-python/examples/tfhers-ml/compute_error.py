@@ -16,11 +16,11 @@ import click
 def compute_error(plaintext_file, quantized_predictions_file):
     """Compute the error between decrypted rescaled values and quantized predictions."""
     # Read rescaled plaintext values from plaintext_file
-    with open(plaintext_file) as f:
+    with open(plaintext_file, encoding="utf-8") as f:
         rescaled_plaintext_values = [int(x) for x in f.read().strip().split(",")]
 
     # Read quantized_predictions from quantized_predictions_file
-    with open(quantized_predictions_file) as f:
+    with open(quantized_predictions_file, encoding="utf-8") as f:
         data = json.load(f)
         quantized_predictions = data["quantized_predictions"]
 
@@ -60,4 +60,6 @@ def compute_error(plaintext_file, quantized_predictions_file):
 
 
 if __name__ == "__main__":
+    # pylint: disable=no-value-for-parameter
     compute_error()
+    # pylint: enable=no-value-for-parameter

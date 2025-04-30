@@ -178,6 +178,7 @@ def test_tfhers_encryption_variance(crypto_params: tfhers.CryptoParams):
 @pytest.mark.parametrize("is_signed", [True, False])
 @pytest.mark.parametrize("n_bits", [5, 8, 13, 16])
 def test_load_tfhers_params_dict(params_dict, is_signed, n_bits):
+    """Test loading tfhers params dict"""
     dtype = tfhers.get_type_from_params_dict(params_dict, is_signed, n_bits)
     assert dtype.bit_width == n_bits
     assert dtype.is_signed == is_signed
@@ -190,10 +191,10 @@ def test_load_tfhers_params_dict(params_dict, is_signed, n_bits):
 
 @pytest.mark.parametrize("params_dict", (DEFAULT_TFHERS_PARAMS_DICT,))
 def test_load_tfhers_params_file(params_dict):
-    ftemp = tempfile.NamedTemporaryFile(delete=False)
-    fpath = ftemp.name
-    ftemp.write(bytes(json.dumps(params_dict), "utf8"))
-    ftemp.close()
+    """Test loading tfhers params file"""
+    with tempfile.NamedTemporaryFile(delete=False) as ftemp:
+        fpath = ftemp.name
+        ftemp.write(bytes(json.dumps(params_dict), "utf8"))
 
     tfhers.get_type_from_params(fpath, True, 8)
     os.unlink(fpath)

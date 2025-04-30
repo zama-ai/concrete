@@ -9,12 +9,17 @@ from pathlib import Path
 from typing import Optional, Union, get_type_hints
 
 import numpy as np
+
+# pylint: disable=import-error
 from mlir._mlir_libs._concretelang._compiler import KeysetRestriction, RangeRestriction
 
 from ..dtypes import Integer
 from ..representation import GraphProcessor
 from ..values import ValueDescription
 from .utils import friendly_type_format
+
+# pylint: enable=import-error
+
 
 MAXIMUM_TLU_BIT_WIDTH = 16
 

@@ -88,6 +88,7 @@ class StaticKeyValueDatabase:
         number_of_key_chunks = self._number_of_key_chunks
         state_shape = self._state_shape
 
+        # pylint: disable=no-self-argument
         @fhe.module()
         class StaticKeyValueDatabaseModule:
             @fhe.function({"state": "clear"})
@@ -177,6 +178,8 @@ class StaticKeyValueDatabase:
             def inspect(state):
                 return state
 
+            # pylint: enable=no-self-argument
+
             composition = fhe.Wired(
                 {
                     # from reset
@@ -230,6 +233,7 @@ class StaticKeyValueDatabase:
             for i in range(20)
         ]
 
+        # pylint: disable=no-member
         return StaticKeyValueDatabaseModule.compile(  # type: ignore
             {
                 "reset": [sample_state],
@@ -240,6 +244,7 @@ class StaticKeyValueDatabase:
             },
             configuration,
         )
+        # pylint: enable=no-member
 
     def keygen(self, force: bool = False):
         self.module.keygen(force=force)
@@ -348,7 +353,7 @@ def query(db: StaticKeyValueDatabase, key: int) -> Optional[int]:
     return db.decode_value(value)  # type: ignore
 
 
-if __name__ == "__main__":
+def main():
     print("Compiling...")
     start = time.time()
     db = StaticKeyValueDatabase(number_of_entries=10)
@@ -424,3 +429,7 @@ if __name__ == "__main__":
     # Query the database for the key=maximum_key
     # The value minimum_value should be returned
     assert query(db, maximum_key) == minimum_value
+
+
+if __name__ == "__main__":
+    main()
