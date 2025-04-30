@@ -522,6 +522,7 @@ jobs:
 
           # Running tests
           make tfhers-utils
+          make concrete-rust-keygen
           pytest tests -svv -n auto
       - name: Slack Notification
         if: ${{ failure() }}
@@ -707,6 +708,7 @@ jobs:
 
           # Running tests
           make tfhers-utils
+          make concrete-rust-keygen
           mkdir ./KeySetCache
           pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
       - name: Cleanup host
