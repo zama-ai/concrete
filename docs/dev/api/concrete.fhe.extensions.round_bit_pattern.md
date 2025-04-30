@@ -11,17 +11,17 @@ Declaration of `round_bit_pattern` function, to provide an interface for rounded
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `round_bit_pattern`
 
 ```python
 round_bit_pattern(
-    x: Union[int, integer, List, ndarray, Tracer],
+    x: Union[int, integer, list, ndarray, Tracer],
     lsbs_to_remove: Union[int, AutoRounder],
     overflow_protection: bool = True,
     exactness: Optional[Exactness] = None
-) → Union[int, integer, List, ndarray, Tracer]
+) → Union[int, integer, list, ndarray, Tracer]
 ```
 
 Round the bit pattern of an integer. 
@@ -55,12 +55,12 @@ x = 0b_1011_1000 , lsbs_to_remove = 3 => 0b_1011_1000 x = 0b_1011_1001 , lsbs_to
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Adjusting`
 Adjusting class, to be used as early stop signal during adjustment. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -78,12 +78,12 @@ __init__(rounder: 'AutoRounder', input_min: int, input_max: int)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `AutoRounder`
 AutoRounder class, to optimize for number of msbs to keep during round bit pattern operation. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -100,14 +100,14 @@ __init__(target_msbs: int = 16)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `adjust`
 
 ```python
 adjust(
     function: Callable,
-    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ]]]
+    inputset: Union[Iterable[Any], Iterable[tuple[Any, ]]]
 )
 ```
 
@@ -115,24 +115,24 @@ Adjust AutoRounders in a function using an inputset.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
 ```python
-dump_dict() → Dict
+dump_dict() → dict
 ```
 
 Dump properties of the rounder to a dict. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/round_bit_pattern.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
 ```python
-load_dict(properties: Dict) → AutoRounder
+load_dict(properties: dict) → AutoRounder
 ```
 
 Load previously dumped rounder. 

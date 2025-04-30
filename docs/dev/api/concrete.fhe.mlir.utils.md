@@ -34,7 +34,7 @@ Use flooding algorithm to replace `None` values.
 ## <kbd>function</kbd> `construct_table_multivariate`
 
 ```python
-construct_table_multivariate(node: Node, preds: List[Node]) → List[Any]
+construct_table_multivariate(node: Node, preds: list[Node]) → list[Any]
 ```
 
 Construct the lookup table for a multivariate node. 
@@ -61,9 +61,9 @@ Construct the lookup table for a multivariate node.
 ```python
 construct_table(
     node: Node,
-    preds: List[Node],
+    preds: list[Node],
     configuration: Configuration
-) → List[Any]
+) → list[Any]
 ```
 
 Construct the lookup table for an Operation.Generic node. 
@@ -92,9 +92,9 @@ Construct the lookup table for an Operation.Generic node.
 ```python
 construct_deduplicated_tables(
     node: Node,
-    preds: List[Node],
+    preds: list[Node],
     configuration: Configuration
-) → Tuple[Tuple[ndarray, Optional[List[Tuple[int, ]]]], ]
+) → tuple[tuple[ndarray, Optional[list[tuple[int, ]]]], ]
 ```
 
 Construct lookup tables for each cell of the input for an Operation.Generic node. 

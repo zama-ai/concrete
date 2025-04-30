@@ -19,7 +19,7 @@ ValueDescription class, to combine data type, shape, and encryption status into 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(dtype: BaseDataType, shape: Tuple[int, ], is_encrypted: bool)
+__init__(dtype: BaseDataType, shape: tuple[int, ], is_encrypted: bool)
 ```
 
 

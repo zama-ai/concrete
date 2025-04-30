@@ -13,7 +13,7 @@ Declaration of `zeros` and `zero` functions, to simplify creation of encrypted z
 ## <kbd>function</kbd> `zeros`
 
 ```python
-zeros(shape: Union[int, Tuple[int, ]]) → Union[ndarray, Tracer]
+zeros(shape: Union[int, tuple[int, ]]) → Union[ndarray, Tracer]
 ```
 
 Create an encrypted array of zeros. 

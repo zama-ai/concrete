@@ -18,12 +18,12 @@ Tracing and evaluation of convolution.
 ```python
 conv(
     x: Union[ndarray, Tracer],
-    weight: Union[ndarray, List, Tracer],
-    bias: Optional[ndarray, List, Tracer] = None,
-    pads: Optional[Tuple[int, ], List[int]] = None,
-    strides: Optional[Tuple[int, ], List[int]] = None,
-    dilations: Optional[Tuple[int, ], List[int]] = None,
-    kernel_shape: Optional[Tuple[int, ], List[int]] = None,
+    weight: Union[ndarray, list, Tracer],
+    bias: Optional[ndarray, list, Tracer] = None,
+    pads: Optional[tuple[int, ], list[int]] = None,
+    strides: Optional[tuple[int, ], list[int]] = None,
+    dilations: Optional[tuple[int, ], list[int]] = None,
+    kernel_shape: Optional[tuple[int, ], list[int]] = None,
     group: int = 1,
     auto_pad: str = 'NOTSET'
 ) → Union[ndarray, Tracer]

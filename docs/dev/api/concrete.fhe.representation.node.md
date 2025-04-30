@@ -24,11 +24,11 @@ Node class, to represent computation in a computation graph.
 
 ```python
 __init__(
-    inputs: List[ValueDescription],
+    inputs: list[ValueDescription],
     output: ValueDescription,
     operation: Operation,
     evaluator: Callable,
-    properties: Optional[Dict[str, Any]] = None
+    properties: Optional[dict[str, Any]] = None
 )
 ```
 
@@ -106,7 +106,7 @@ Create an Operation.Constant node.
 ### <kbd>method</kbd> `format`
 
 ```python
-format(predecessors: List[str], maximum_constant_length: int = 45) → str
+format(predecessors: list[str], maximum_constant_length: int = 45) → str
 ```
 
 Get the textual representation of the `Node` (dependent to preds). 
@@ -132,12 +132,12 @@ Get the textual representation of the `Node` (dependent to preds).
 ```python
 generic(
     name: str,
-    inputs: List[ValueDescription],
+    inputs: list[ValueDescription],
     output: ValueDescription,
     operation: Callable,
-    args: Optional[Tuple[Any, ]] = None,
-    kwargs: Optional[Dict[str, Any]] = None,
-    attributes: Optional[Dict[str, Any]] = None
+    args: Optional[tuple[Any, ]] = None,
+    kwargs: Optional[dict[str, Any]] = None,
+    attributes: Optional[dict[str, Any]] = None
 )
 ```
 

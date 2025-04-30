@@ -64,9 +64,9 @@ Get the client specs for the client.
 
 ```python
 decrypt(
-    *results: Union[Value, Tuple[Value, ]],
+    *results: Union[Value, tuple[Value, ]],
     function_name: Optional[str] = None
-) → Union[int, ndarray, Tuple[Union[int, ndarray, NoneType], ], NoneType]
+) → Union[int, ndarray, tuple[Union[int, ndarray, NoneType], ], NoneType]
 ```
 
 Decrypt result(s) of evaluation. 
@@ -89,9 +89,9 @@ Decrypt result(s) of evaluation.
 
 ```python
 encrypt(
-    *args: Optional[int, ndarray, List],
+    *args: Optional[int, ndarray, list],
     function_name: Optional[str] = None
-) → Union[Value, Tuple[Optional[Value], ], NoneType]
+) → Union[Value, tuple[Optional[Value], ], NoneType]
 ```
 
 Encrypt argument(s) to for evaluation. 
@@ -117,7 +117,7 @@ keygen(
     force: bool = False,
     secret_seed: Optional[int] = None,
     encryption_seed: Optional[int] = None,
-    initial_keys: Optional[Dict[int, LweSecretKey]] = None
+    initial_keys: Optional[dict[int, LweSecretKey]] = None
 )
 ```
 
@@ -189,9 +189,9 @@ Save the client into the given path in zip format.
 
 ```python
 simulate_decrypt(
-    *results: Union[Value, Tuple[Value, ]],
+    *results: Union[Value, tuple[Value, ]],
     function_name: Optional[str] = None
-) → Union[int, ndarray, Tuple[Union[int, ndarray, NoneType], ], NoneType]
+) → Union[int, ndarray, tuple[Union[int, ndarray, NoneType], ], NoneType]
 ```
 
 Simulate decryption of result(s) of evaluation. 
@@ -214,9 +214,9 @@ Simulate decryption of result(s) of evaluation.
 
 ```python
 simulate_encrypt(
-    *args: Optional[int, ndarray, List],
+    *args: Optional[int, ndarray, list],
     function_name: Optional[str] = None
-) → Union[Value, Tuple[Optional[Value], ], NoneType]
+) → Union[Value, tuple[Optional[Value], ], NoneType]
 ```
 
 Simulate encryption of argument(s) for evaluation. 

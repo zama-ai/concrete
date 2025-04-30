@@ -24,10 +24,10 @@ input_types_per_func (Dict[str, List[Optional[TFHERSIntegerType]]]):  maps every
 
 ```python
 __init__(
-    input_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-    output_types_per_func: Dict[str, List[Optional[TFHERSIntegerType]]],
-    input_shapes_per_func: Dict[str, List[Optional[Tuple[int, ]]]],
-    output_shapes_per_func: Dict[str, List[Optional[Tuple[int, ]]]]
+    input_types_per_func: dict[str, list[Optional[TFHERSIntegerType]]],
+    output_types_per_func: dict[str, list[Optional[TFHERSIntegerType]]],
+    input_shapes_per_func: dict[str, list[Optional[tuple[int, ]]]],
+    output_shapes_per_func: dict[str, list[Optional[tuple[int, ]]]]
 )
 ```
 
@@ -45,7 +45,7 @@ __init__(
 ### <kbd>method</kbd> `from_dict`
 
 ```python
-from_dict(dict_obj: Dict[str, Any]) → TFHERSClientSpecs
+from_dict(dict_obj: dict[str, Any]) → TFHERSClientSpecs
 ```
 
 Create a TFHERSClientSpecs instance from a dictionary. 
@@ -69,7 +69,7 @@ Create a TFHERSClientSpecs instance from a dictionary.
 ### <kbd>method</kbd> `from_graphs`
 
 ```python
-from_graphs(graphs: Dict[str, Graph]) → TFHERSClientSpecs
+from_graphs(graphs: dict[str, Graph]) → TFHERSClientSpecs
 ```
 
 Create a TFHERSClientSpecs instance from a dictionary of graphs. 
@@ -91,7 +91,7 @@ Create a TFHERSClientSpecs instance from a dictionary of graphs.
 ### <kbd>method</kbd> `to_dict`
 
 ```python
-to_dict() → Dict[str, Any]
+to_dict() → dict[str, Any]
 ```
 
 Convert the TFHERSClientSpecs object to a dictionary representation. 

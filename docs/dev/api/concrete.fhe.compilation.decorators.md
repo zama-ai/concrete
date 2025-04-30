@@ -8,7 +8,7 @@ Declaration of `circuit` and `compiler` decorators.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L23"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `circuit`
 
@@ -37,7 +37,7 @@ Provide a direct interface for compilation of single circuit programs.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compiler`
 
@@ -55,7 +55,7 @@ Provide an easy interface for the compilation of single-circuit programs.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `module`
 
@@ -68,12 +68,12 @@ Provide an easy interface for the compilation of multi functions modules.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L200"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `function`
 
 ```python
-function(parameters: Dict[str, Union[str, EncryptionStatus]])
+function(parameters: dict[str, Union[str, EncryptionStatus]])
 ```
 
 Provide an easy interface to define a function within an fhe module. 
@@ -86,12 +86,12 @@ Provide an easy interface to define a function within an fhe module.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Compilable`
 Compilable class, to wrap a function and provide methods to trace and compile it. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -108,13 +108,13 @@ __init__(function_: Callable, parameters)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
 ```python
 compile(
-    inputset: Optional[Iterable[Any], Iterable[Tuple[Any, ]]] = None,
+    inputset: Optional[Iterable[Any], Iterable[tuple[Any, ]]] = None,
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     **kwargs
@@ -141,7 +141,7 @@ Compile the function into a circuit.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reset`
 
@@ -153,13 +153,13 @@ Reset the compilable so that another compilation with another inputset can be pe
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/decorators.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `trace`
 
 ```python
 trace(
-    inputset: Optional[Iterable[Any], Iterable[Tuple[Any, ]]] = None,
+    inputset: Optional[Iterable[Any], Iterable[tuple[Any, ]]] = None,
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     **kwargs

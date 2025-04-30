@@ -15,7 +15,7 @@ Declaration of `univariate` function.
 ```python
 univariate(
     function: Callable[[Any], Any],
-    outputs: Optional[BaseDataType, Type[ScalarAnnotation]] = None
+    outputs: Optional[BaseDataType, type[ScalarAnnotation]] = None
 ) → Callable[[Union[Tracer, Any]], Union[Tracer, Any]]
 ```
 

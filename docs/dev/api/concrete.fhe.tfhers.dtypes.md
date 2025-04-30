@@ -76,7 +76,7 @@ This will return different values depending on the encryption key choice.
 ### <kbd>method</kbd> `from_dict`
 
 ```python
-from_dict(dict_obj: Dict[str, Any]) → CryptoParams
+from_dict(dict_obj: dict[str, Any]) → CryptoParams
 ```
 
 Create a CryptoParams instance from a dictionary. 
@@ -99,7 +99,7 @@ Create a CryptoParams instance from a dictionary.
 ### <kbd>method</kbd> `to_dict`
 
 ```python
-to_dict() → Dict[str, Any]
+to_dict() → dict[str, Any]
 ```
 
 Convert the CryptoParams object to a dictionary representation. 
@@ -230,7 +230,7 @@ Create a TFHERSIntegerType instance from a dictionary.
 ### <kbd>method</kbd> `to_dict`
 
 ```python
-to_dict() → Dict[str, Any]
+to_dict() → dict[str, Any]
 ```
 
 Convert the object to a dictionary representation. 

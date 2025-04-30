@@ -8,7 +8,7 @@ Declaration of `tfhers.Bridge` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L303"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `new_bridge`
 
@@ -82,7 +82,7 @@ Return the output types per function map.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `export_value`
 
@@ -112,7 +112,7 @@ Export a value as a serialized TFHErs integer.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `import_value`
 
@@ -142,13 +142,13 @@ Import a serialized TFHErs integer as a Value.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `keygen_with_initial_keys`
 
 ```python
 keygen_with_initial_keys(
-    input_idx_to_key_buffer: Dict[Union[Tuple[str, int], int], bytes],
+    input_idx_to_key_buffer: dict[Union[tuple[str, int], int], bytes],
     force: bool = False,
     seed: Optional[int] = None,
     encryption_seed: Optional[int] = None
@@ -177,7 +177,7 @@ Generate keys using an initial set of secret keys.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/tfhers/bridge.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `serialize_input_secret_key`
 

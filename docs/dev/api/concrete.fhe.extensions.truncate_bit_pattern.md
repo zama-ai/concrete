@@ -11,15 +11,15 @@ Declaration of `truncate_bit_pattern` extension.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `truncate_bit_pattern`
 
 ```python
 truncate_bit_pattern(
-    x: Union[int, integer, List, ndarray, Tracer],
+    x: Union[int, integer, list, ndarray, Tracer],
     lsbs_to_remove: Union[int, AutoTruncator]
-) → Union[int, integer, List, ndarray, Tracer]
+) → Union[int, integer, list, ndarray, Tracer]
 ```
 
 Round the bit pattern of an integer. 
@@ -43,12 +43,12 @@ x = 0b_0000 , lsbs_to_remove = 2 => 0b_0000 x = 0b_0001 , lsbs_to_remove = 2 => 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Adjusting`
 Adjusting class, to be used as early stop signal during adjustment. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -66,12 +66,12 @@ __init__(truncator: 'AutoTruncator', input_min: int, input_max: int)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `AutoTruncator`
 AutoTruncator class, to optimize for the number of msbs to keep during truncate operation. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -88,14 +88,14 @@ __init__(target_msbs: int = 16)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `adjust`
 
 ```python
 adjust(
     function: Callable,
-    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ]]]
+    inputset: Union[Iterable[Any], Iterable[tuple[Any, ]]]
 )
 ```
 
@@ -103,24 +103,24 @@ Adjust AutoTruncators in a function using an inputset.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
 ```python
-dump_dict() → Dict
+dump_dict() → dict
 ```
 
 Dump properties of the truncator to a dict. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/extensions/truncate_bit_pattern.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
 ```python
-load_dict(properties: Dict) → AutoTruncator
+load_dict(properties: dict) → AutoTruncator
 ```
 
 Load previously dumped truncator. 

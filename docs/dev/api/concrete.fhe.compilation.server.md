@@ -13,12 +13,12 @@ Declaration of `Server` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Server`
 Server class, which can be used to perform homomorphic computation. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -26,7 +26,7 @@ Server class, which can be used to perform homomorphic computation.
 __init__(
     library: Library,
     is_simulated: bool,
-    composition_rules: Optional[List[CompositionRule]],
+    composition_rules: Optional[list[CompositionRule]],
     tfhers_specs: Optional[TFHERSClientSpecs] = None
 )
 ```
@@ -88,7 +88,7 @@ Get size of the secret keys of the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L473"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `cleanup`
 
@@ -100,7 +100,7 @@ Cleanup the temporary library output directory.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L693"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L694"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count`
 
@@ -112,47 +112,47 @@ Get the number of clear additions in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L702"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count_per_parameter`
 
 ```python
 clear_addition_count_per_parameter(
     function: str
-) → Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
+) → dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
 ```
 
 Get the number of clear additions per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L713"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L714"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count_per_tag`
 
 ```python
-clear_addition_count_per_tag(function: str) → Dict[str, int]
+clear_addition_count_per_tag(function: str) → dict[str, int]
 ```
 
 Get the number of clear additions per tag in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L723"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_addition_count_per_tag_per_parameter`
 
 ```python
 clear_addition_count_per_tag_per_parameter(
     function: str
-) → Dict[str, Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
+) → dict[str, dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
 ```
 
 Get the number of clear additions per tag per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L781"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L782"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count`
 
@@ -164,47 +164,47 @@ Get the number of clear multiplications in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L790"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L791"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count_per_parameter`
 
 ```python
 clear_multiplication_count_per_parameter(
     function: str
-) → Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
+) → dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
 ```
 
 Get the number of clear multiplications per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L801"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L802"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count_per_tag`
 
 ```python
-clear_multiplication_count_per_tag(function: str) → Dict[str, int]
+clear_multiplication_count_per_tag(function: str) → dict[str, int]
 ```
 
 Get the number of clear multiplications per tag in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L810"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L811"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clear_multiplication_count_per_tag_per_parameter`
 
 ```python
 clear_multiplication_count_per_tag_per_parameter(
     function: str
-) → Dict[str, Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
+) → dict[str, dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
 ```
 
 Get the number of clear multiplications per tag per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `create`
 
@@ -238,7 +238,7 @@ Create a server using MLIR and output sign information.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L737"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L738"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count`
 
@@ -250,47 +250,47 @@ Get the number of encrypted additions in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L746"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L747"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count_per_parameter`
 
 ```python
 encrypted_addition_count_per_parameter(
     function: str
-) → Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
+) → dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
 ```
 
 Get the number of encrypted additions per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L757"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L758"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count_per_tag`
 
 ```python
-encrypted_addition_count_per_tag(function: str) → Dict[str, int]
+encrypted_addition_count_per_tag(function: str) → dict[str, int]
 ```
 
 Get the number of encrypted additions per tag in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L766"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L767"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_addition_count_per_tag_per_parameter`
 
 ```python
 encrypted_addition_count_per_tag_per_parameter(
     function: str
-) → Dict[str, Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
+) → dict[str, dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
 ```
 
 Get the number of encrypted additions per tag per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L825"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L826"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count`
 
@@ -302,47 +302,47 @@ Get the number of encrypted negations in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L834"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L835"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count_per_parameter`
 
 ```python
 encrypted_negation_count_per_parameter(
     function: str
-) → Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
+) → dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
 ```
 
 Get the number of encrypted negations per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L845"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L846"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count_per_tag`
 
 ```python
-encrypted_negation_count_per_tag(function: str) → Dict[str, int]
+encrypted_negation_count_per_tag(function: str) → dict[str, int]
 ```
 
 Get the number of encrypted negations per tag in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L854"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L855"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `encrypted_negation_count_per_tag_per_parameter`
 
 ```python
 encrypted_negation_count_per_tag_per_parameter(
     function: str
-) → Dict[str, Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
+) → dict[str, dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
 ```
 
 Get the number of encrypted negations per tag per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L605"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L606"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count`
 
@@ -354,47 +354,47 @@ Get the number of key switches in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L614"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L615"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count_per_parameter`
 
 ```python
 key_switch_count_per_parameter(
     function: str
-) → Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
+) → dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
 ```
 
 Get the number of key switches per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count_per_tag`
 
 ```python
-key_switch_count_per_tag(function: str) → Dict[str, int]
+key_switch_count_per_tag(function: str) → dict[str, int]
 ```
 
 Get the number of key switches per tag in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L634"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L635"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `key_switch_count_per_tag_per_parameter`
 
 ```python
 key_switch_count_per_tag_per_parameter(
     function: str
-) → Dict[str, Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
+) → dict[str, dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
 ```
 
 Get the number of key switches per tag per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L306"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -418,19 +418,19 @@ Load the server from the given path in zip format.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L529"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L530"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `memory_usage_per_location`
 
 ```python
-memory_usage_per_location(function: str) → Dict[str, Optional[int]]
+memory_usage_per_location(function: str) → dict[str, Optional[int]]
 ```
 
 Get the memory usage of operations per location. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L649"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L650"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count`
 
@@ -442,47 +442,47 @@ Get the number of packing key switches in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L658"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L659"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count_per_parameter`
 
 ```python
 packing_key_switch_count_per_parameter(
     function: str
-) → Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
+) → dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
 ```
 
 Get the number of packing key switches per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L669"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L670"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count_per_tag`
 
 ```python
-packing_key_switch_count_per_tag(function: str) → Dict[str, int]
+packing_key_switch_count_per_tag(function: str) → dict[str, int]
 ```
 
 Get the number of packing key switches per tag in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L678"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `packing_key_switch_count_per_tag_per_parameter`
 
 ```python
 packing_key_switch_count_per_tag_per_parameter(
     function: str
-) → Dict[str, Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
+) → dict[str, dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
 ```
 
 Get the number of packing key switches per tag per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L561"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L562"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count`
 
@@ -494,56 +494,56 @@ Get the number of programmable bootstraps in the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L571"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count_per_parameter`
 
 ```python
 programmable_bootstrap_count_per_parameter(
     function: str
-) → Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
+) → dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]
 ```
 
 Get the number of programmable bootstraps per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L582"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count_per_tag`
 
 ```python
-programmable_bootstrap_count_per_tag(function: str) → Dict[str, int]
+programmable_bootstrap_count_per_tag(function: str) → dict[str, int]
 ```
 
 Get the number of programmable bootstraps per tag in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L590"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L591"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `programmable_bootstrap_count_per_tag_per_parameter`
 
 ```python
 programmable_bootstrap_count_per_tag_per_parameter(
     function: str
-) → Dict[str, Dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
+) → dict[str, dict[Union[LweSecretKeyParam, BootstrapKeyParam, KeyswitchKeyParam, PackingKeyswitchKeyParam], int]]
 ```
 
 Get the number of programmable bootstraps per tag per parameter in the compiled program. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L378"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
 ```python
 run(
-    *args: Optional[Value, Tuple[Optional[Value], ]],
+    *args: Optional[Value, tuple[Optional[Value], ]],
     evaluation_keys: Optional[EvaluationKeys] = None,
     function_name: Optional[str] = None
-) → Union[Value, Tuple[Value, ]]
+) → Union[Value, tuple[Value, ]]
 ```
 
 Evaluate. 
@@ -564,7 +564,7 @@ Evaluate.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
@@ -583,7 +583,7 @@ Save the server into the given path in zip format.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L539"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L540"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `size_of_inputs`
 
@@ -595,7 +595,7 @@ Get size of the inputs of the compiled program.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/compilation/server.py#L550"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `size_of_outputs`
 

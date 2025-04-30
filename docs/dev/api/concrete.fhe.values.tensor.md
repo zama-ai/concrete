@@ -8,14 +8,14 @@ Declaration of `ClearTensor` and `EncryptedTensor` wrappers.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L11"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L9"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `clear_tensor_builder`
 
 ```python
 clear_tensor_builder(
     dtype: BaseDataType,
-    shape: Tuple[int, ]
+    shape: tuple[int, ]
 ) → ValueDescription
 ```
 
@@ -36,14 +36,14 @@ Build a clear tensor value.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L11"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L9"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `clear_tensor_builder`
 
 ```python
 clear_tensor_builder(
     dtype: BaseDataType,
-    shape: Tuple[int, ]
+    shape: tuple[int, ]
 ) → ValueDescription
 ```
 
@@ -64,14 +64,14 @@ Build a clear tensor value.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `encrypted_tensor_builder`
 
 ```python
 encrypted_tensor_builder(
     dtype: BaseDataType,
-    shape: Tuple[int, ]
+    shape: tuple[int, ]
 ) → ValueDescription
 ```
 
@@ -92,14 +92,14 @@ Build an encrypted tensor value.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/values/tensor.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `encrypted_tensor_builder`
 
 ```python
 encrypted_tensor_builder(
     dtype: BaseDataType,
-    shape: Tuple[int, ]
+    shape: tuple[int, ]
 ) → ValueDescription
 ```
 

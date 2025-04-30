@@ -12,20 +12,20 @@ Declaration of `Graph` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Graph`
 Graph class, to represent computation graphs. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
     graph: MultiDiGraph,
-    input_nodes: Dict[int, Node],
-    output_nodes: Dict[int, Node],
+    input_nodes: dict[int, Node],
+    output_nodes: dict[int, Node],
     name: str,
     is_direct: bool = False,
     location: str = ''
@@ -53,7 +53,7 @@ Returns the number of outputs of the graph.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `draw`
 
@@ -87,7 +87,7 @@ That this function requires the python `pygraphviz` package which itself require
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `evaluate`
 
@@ -95,7 +95,7 @@ That this function requires the python `pygraphviz` package which itself require
 evaluate(
     *args: Any,
     p_error: Optional[float] = None
-) → Dict[Node, Union[bool_, integer, floating, ndarray]]
+) → dict[Node, Union[bool_, integer, floating, ndarray]]
 ```
 
 Perform the computation `Graph` represents and get resulting values for all nodes. 
@@ -114,15 +114,15 @@ Perform the computation `Graph` represents and get resulting values for all node
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L350"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `format`
 
 ```python
 format(
     maximum_constant_length: int = 25,
-    highlighted_nodes: Optional[Dict[Node, List[str]]] = None,
-    highlighted_result: Optional[List[str]] = None,
+    highlighted_nodes: Optional[dict[Node, list[str]]] = None,
+    highlighted_result: Optional[list[str]] = None,
     show_types: bool = True,
     show_bounds: bool = True,
     show_tags: bool = True,
@@ -159,7 +159,7 @@ Get the textual representation of the `Graph`.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L588"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `format_bit_width_assignments`
 
@@ -176,7 +176,7 @@ Get the textual representation of bit width assignments of the graph.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L571"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `format_bit_width_constraints`
 
@@ -193,17 +193,17 @@ Get the textual representation of bit width constraints of the graph.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L934"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L935"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `integer_range`
 
 ```python
 integer_range(
-    tag_filter: Optional[str, List[str], Pattern] = None,
-    operation_filter: Optional[str, List[str], Pattern] = None,
+    tag_filter: Optional[str, list[str], Pattern] = None,
+    operation_filter: Optional[str, list[str], Pattern] = None,
     is_encrypted_filter: Optional[bool] = None,
     custom_filter: Optional[Callable[[Node], bool]] = None
-) → Optional[Tuple[int, int]]
+) → Optional[tuple[int, int]]
 ```
 
 Get integer range of the graph. 
@@ -228,14 +228,14 @@ Only nodes after filtering will be used to calculate the result.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L884"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L885"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `maximum_integer_bit_width`
 
 ```python
 maximum_integer_bit_width(
-    tag_filter: Optional[str, List[str], Pattern] = None,
-    operation_filter: Optional[str, List[str], Pattern] = None,
+    tag_filter: Optional[str, list[str], Pattern] = None,
+    operation_filter: Optional[str, list[str], Pattern] = None,
     is_encrypted_filter: Optional[bool] = None,
     custom_filter: Optional[Callable[[Node], bool]] = None,
     assigned_bit_width: bool = False
@@ -266,14 +266,14 @@ Only nodes after filtering will be used to calculate the result.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L628"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L629"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `measure_bounds`
 
 ```python
 measure_bounds(
-    inputset: Union[Iterable[Any], Iterable[Tuple[Any, ]]]
-) → Dict[Node, Dict[str, Union[integer, floating]]]
+    inputset: Union[Iterable[Any], Iterable[tuple[Any, ]]]
+) → dict[Node, dict[str, Union[integer, floating]]]
 ```
 
 Evaluate the `Graph` using an inputset and measure bounds. 
@@ -304,12 +304,12 @@ e.g.,
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L748"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L749"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `ordered_inputs`
 
 ```python
-ordered_inputs() → List[Node]
+ordered_inputs() → list[Node]
 ```
 
 Get the input nodes of the `Graph`, ordered by their indices. 
@@ -321,12 +321,12 @@ Get the input nodes of the `Graph`, ordered by their indices.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L759"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L760"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `ordered_outputs`
 
 ```python
-ordered_outputs() → List[Node]
+ordered_outputs() → list[Node]
 ```
 
 Get the output nodes of the `Graph`, ordered by their indices. 
@@ -338,12 +338,12 @@ Get the output nodes of the `Graph`, ordered by their indices.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L770"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L771"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `ordered_preds_of`
 
 ```python
-ordered_preds_of(node: Node) → List[Node]
+ordered_preds_of(node: Node) → list[Node]
 ```
 
 Get predecessors of `node`, ordered by their indices. 
@@ -360,7 +360,7 @@ Get predecessors of `node`, ordered by their indices.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L790"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prune_useless_nodes`
 
@@ -372,18 +372,18 @@ Remove unreachable nodes from the graph.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L805"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L806"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `query_nodes`
 
 ```python
 query_nodes(
-    tag_filter: Optional[str, List[str], Pattern] = None,
-    operation_filter: Optional[str, List[str], Pattern] = None,
+    tag_filter: Optional[str, list[str], Pattern] = None,
+    operation_filter: Optional[str, list[str], Pattern] = None,
     is_encrypted_filter: Optional[bool] = None,
     custom_filter: Optional[Callable[[Node], bool]] = None,
     ordered: bool = False
-) → List[Node]
+) → list[Node]
 ```
 
 Query nodes within the graph. 
@@ -410,12 +410,12 @@ Filters work like so:  str -> nodes without exact match is skipped  List[str] ->
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L699"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L700"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `update_with_bounds`
 
 ```python
-update_with_bounds(bounds: Dict[Node, Dict[str, Union[integer, floating]]])
+update_with_bounds(bounds: dict[Node, dict[str, Union[integer, floating]]])
 ```
 
 Update `ValueDescription`s within the `Graph` according to measured bounds. 
@@ -428,7 +428,7 @@ Update `ValueDescription`s within the `Graph` according to measured bounds.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1005"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1006"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GraphProcessor`
 GraphProcessor base class, to define the API for a graph processing pipeline. 
@@ -440,7 +440,7 @@ Process a single graph.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1012"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1013"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `apply`
 
@@ -452,12 +452,12 @@ Process the graph.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1018"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1019"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `error`
 
 ```python
-error(graph: Graph, highlights: Mapping[Node, Union[str, List[str]]])
+error(graph: Graph, highlights: Mapping[Node, Union[str, list[str]]])
 ```
 
 Fail processing with an error. 
@@ -472,7 +472,7 @@ Fail processing with an error.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1043"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1044"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MultiGraphProcessor`
 MultiGraphProcessor base class, to define the API for a multiple graph processing pipeline. 
@@ -484,7 +484,7 @@ Processes multiple graphs at once.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1056"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1057"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `apply`
 
@@ -496,24 +496,24 @@ Process a single graph.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1050"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1051"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `apply_many`
 
 ```python
-apply_many(graphs: Dict[str, Graph])
+apply_many(graphs: dict[str, Graph])
 ```
 
 Process a dictionary of graphs. 
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1018"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/graph.py#L1019"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `error`
 
 ```python
-error(graph: Graph, highlights: Mapping[Node, Union[str, List[str]]])
+error(graph: Graph, highlights: Mapping[Node, Union[str, list[str]]])
 ```
 
 Fail processing with an error. 
