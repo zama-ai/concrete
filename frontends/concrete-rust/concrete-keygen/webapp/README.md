@@ -1,5 +1,8 @@
 # Chunked KeyGen WebApp
 
+> [!IMPORTANT]
+> This is a demo app that demonstrates how to use the chunked key generation. It's not meant for production.
+
 ### Build the Wasm module
 Make sure you run `make build-webapp` in the parent directory first so that you have the wasm module under pkg/
 
