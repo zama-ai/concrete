@@ -4,7 +4,7 @@ Declaration of `TFHERSIntegerType` class.
 
 from enum import Enum
 from functools import partial
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 import numpy as np
 
@@ -50,7 +50,7 @@ class CryptoParams:
         self.glwe_noise_distribution = glwe_noise_distribution
         self.encryption_key_choice = encryption_key_choice
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the CryptoParams object to a dictionary representation.
 
         Returns:
@@ -69,7 +69,7 @@ class CryptoParams:
         }
 
     @staticmethod
-    def from_dict(dict_obj: Dict[str, Any]) -> "CryptoParams":
+    def from_dict(dict_obj: dict[str, Any]) -> "CryptoParams":
         """Create a CryptoParams instance from a dictionary.
 
         Args:
@@ -160,7 +160,7 @@ class TFHERSIntegerType(Integer):
         self.msg_width = msg_width
         self.params = params
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the object to a dictionary representation.
 
         Returns:

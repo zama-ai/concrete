@@ -74,7 +74,8 @@ class Alphabet:
         if alphabet_name == "ACTG":
             return Alphabet.dna()
 
-        raise ValueError(f"Unknown alphabet {alphabet_name}")
+        msg = f"Unknown alphabet {alphabet_name}"
+        raise ValueError(msg)
 
     def random_pick_in_values(self) -> int:
         """Pick the integer-encoding of a random char in an alphabet."""
@@ -83,7 +84,7 @@ class Alphabet:
     def random_string(self, length: int) -> str:
         """Pick a random string in the alphabet."""
         ans = "".join([random.choice(list(self.mapping_to_int)) for _ in range(length)])
-        assert all([c in self.letters for c in ans]), "Issue in generation"
+        assert all(c in self.letters for c in ans), "Issue in generation"
         return ans
 
     def prepare_random_patterns(self, len_min: int, len_max: int, nb_strings: int) -> list:

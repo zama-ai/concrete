@@ -2,7 +2,7 @@
 Declaration of `ValueDescription` class.
 """
 
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -15,7 +15,7 @@ class ValueDescription:
     """
 
     dtype: BaseDataType
-    shape: Tuple[int, ...]
+    shape: tuple[int, ...]
     is_encrypted: bool
 
     @staticmethod
@@ -105,7 +105,7 @@ class ValueDescription:
 
         # pylint: enable=too-many-branches,too-many-return-statements
 
-    def __init__(self, dtype: BaseDataType, shape: Tuple[int, ...], is_encrypted: bool):
+    def __init__(self, dtype: BaseDataType, shape: tuple[int, ...], is_encrypted: bool):
         self.dtype = dtype
         self.shape = shape
         self.is_encrypted = is_encrypted

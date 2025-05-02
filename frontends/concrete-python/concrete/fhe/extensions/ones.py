@@ -2,7 +2,7 @@
 Declaration of `ones` and `one` functions, to simplify creation of encrypted ones.
 """
 
-from typing import Tuple, Union
+from typing import Union
 
 import numpy as np
 
@@ -11,7 +11,7 @@ from ..tracing import Tracer
 from ..values import ValueDescription
 
 
-def ones(shape: Union[int, Tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
+def ones(shape: Union[int, tuple[int, ...]]) -> Union[np.ndarray, Tracer]:
     """
     Create an encrypted array of ones.
 

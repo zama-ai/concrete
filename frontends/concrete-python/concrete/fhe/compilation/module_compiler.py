@@ -6,8 +6,9 @@ Declaration of `MultiCompiler` class.
 
 import inspect
 import traceback
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 from concrete.compiler import CompilationContext
@@ -36,19 +37,19 @@ class FunctionDef:
     """
 
     function: Callable
-    parameter_encryption_statuses: Dict[str, EncryptionStatus]
-    inputset: List[Any]
+    parameter_encryption_statuses: dict[str, EncryptionStatus]
+    inputset: list[Any]
     graph: Optional[Graph]
     location: str
 
     _is_direct: bool
-    _parameter_values: Dict[str, ValueDescription]
-    _trace_wires: Optional[Set["Wire"]]
+    _parameter_values: dict[str, ValueDescription]
+    _trace_wires: Optional[set["Wire"]]
 
     def __init__(
         self,
         function: Callable,
-        parameter_encryption_statuses: Dict[str, Union[str, EncryptionStatus]],
+        parameter_encryption_statuses: dict[str, Union[str, EncryptionStatus]],
     ):
         signature = inspect.signature(function)
 
@@ -113,7 +114,7 @@ class FunctionDef:
 
     def trace(
         self,
-        sample: Union[Any, Tuple[Any, ...]],
+        sample: Union[Any, tuple[Any, ...]],
         artifacts: Optional[FunctionDebugArtifacts] = None,
     ):
         """
@@ -152,7 +153,7 @@ class FunctionDef:
     def evaluate(
         self,
         action: str,
-        inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]],
+        inputset: Optional[Union[Iterable[Any], Iterable[tuple[Any, ...]]]],
         configuration: Configuration,
         artifacts: FunctionDebugArtifacts,
     ):
@@ -248,7 +249,7 @@ class FunctionDef:
         np.floating,
         np.ndarray,
         "TracedOutput",
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, "TracedOutput"], ...],
+        tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, "TracedOutput"], ...],
     ]:
         if len(kwargs) != 0:
             message = f"Calling function '{self.function.__name__}' with kwargs is not supported"
@@ -292,7 +293,7 @@ class FunctionDef:
         np.integer,
         np.floating,
         np.ndarray,
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
+        tuple[Union[np.bool_, np.integer, np.floating, np.ndarray], ...],
     ]:
         # If the _trace_wires property points to a wire list, we use wire tracing.
         if self._trace_wires is None:
@@ -316,7 +317,7 @@ class FunctionDef:
         np.floating,
         np.ndarray,
         "TracedOutput",
-        Tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, "TracedOutput"], ...],
+        tuple[Union[np.bool_, np.integer, np.floating, np.ndarray, "TracedOutput"], ...],
     ]:
         # If the _trace_wires property points to a wire list, we use wire tracing.
         if self._trace_wires is None:
@@ -333,11 +334,11 @@ class ModuleCompiler:
     """
 
     default_configuration: Configuration
-    functions: Dict[str, FunctionDef]
+    functions: dict[str, FunctionDef]
     compilation_context: CompilationContext
     composition: CompositionPolicy
 
-    def __init__(self, functions: List[FunctionDef], composition: CompositionPolicy):
+    def __init__(self, functions: list[FunctionDef], composition: CompositionPolicy):
         self.default_configuration = Configuration(
             p_error=0.00001,
             parameter_selection_strategy="multi",
@@ -346,7 +347,7 @@ class ModuleCompiler:
         self.compilation_context = CompilationContext()
         self.composition = composition
 
-    def wire_pipeline(self, inputset: Union[Iterable[Any], Iterable[Tuple[Any, ...]]]):
+    def wire_pipeline(self, inputset: Union[Iterable[Any], Iterable[tuple[Any, ...]]]):
         """
         Return a context manager that traces wires automatically.
         """
@@ -356,7 +357,7 @@ class ModuleCompiler:
     def compile(
         self,
         inputsets: Optional[
-            Dict[str, Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]]]
+            dict[str, Optional[Union[Iterable[Any], Iterable[tuple[Any, ...]]]]]
         ] = None,
         configuration: Optional[Configuration] = None,
         module_artifacts: Optional[ModuleDebugArtifacts] = None,

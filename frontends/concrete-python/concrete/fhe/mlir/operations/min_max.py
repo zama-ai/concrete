@@ -2,8 +2,9 @@
 Conversion of min and max operations.
 """
 
+from collections.abc import Sequence
 from copy import deepcopy
-from typing import Sequence, Set, Tuple, Union
+from typing import Union
 
 import numpy as np
 
@@ -171,10 +172,10 @@ def min_max(
         """
 
         # list of indices that have been accumulated
-        indices: Set[Tuple[int, ...]]
+        indices: set[tuple[int, ...]]
 
         # initialize the mock with a starting index
-        def __init__(self, index: Tuple[int, ...]):
+        def __init__(self, index: tuple[int, ...]):
             self.indices = {index}
 
         # get the representation of the mock

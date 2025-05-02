@@ -87,7 +87,7 @@ generate(
     force: bool = False,
     secret_seed: Optional[int] = None,
     encryption_seed: Optional[int] = None,
-    initial_keys: Optional[Dict[int, LweSecretKey]] = None
+    initial_keys: Optional[dict[int, LweSecretKey]] = None
 )
 ```
 

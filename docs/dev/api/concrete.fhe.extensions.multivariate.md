@@ -15,7 +15,7 @@ Declaration of `multivariate` extension.
 ```python
 multivariate(
     function: Callable,
-    outputs: Optional[BaseDataType, Type[ScalarAnnotation]] = None
+    outputs: Optional[BaseDataType, type[ScalarAnnotation]] = None
 ) → Callable
 ```
 

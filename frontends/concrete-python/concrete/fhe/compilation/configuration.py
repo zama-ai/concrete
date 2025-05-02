@@ -6,15 +6,20 @@ import platform
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple, Union, get_type_hints
+from typing import Optional, Union, get_type_hints
 
 import numpy as np
+
+# pylint: disable=import-error
 from mlir._mlir_libs._concretelang._compiler import KeysetRestriction, RangeRestriction
 
 from ..dtypes import Integer
 from ..representation import GraphProcessor
 from ..values import ValueDescription
 from .utils import friendly_type_format
+
+# pylint: enable=import-error
+
 
 MAXIMUM_TLU_BIT_WIDTH = 16
 
@@ -373,7 +378,7 @@ class ComparisonStrategy(str, Enum):
 
         return True
 
-    def promotions(self, x: ValueDescription, y: ValueDescription) -> Tuple[int, int]:
+    def promotions(self, x: ValueDescription, y: ValueDescription) -> tuple[int, int]:
         """
         Get bit-width promotions for the strategy.
 
@@ -393,7 +398,7 @@ class ComparisonStrategy(str, Enum):
             smaller_dtype: Integer,
             bigger_dtype: Integer,
             subtraction_dtype: Integer,
-        ) -> Tuple[int, int]:
+        ) -> tuple[int, int]:
             smaller_bit_width = smaller_dtype.bit_width
             bigger_bit_width = bigger_dtype.bit_width
             subtraction_bit_width = subtraction_dtype.bit_width
@@ -627,7 +632,7 @@ class BitwiseStrategy(str, Enum):
 
         return True
 
-    def promotions(self, x: ValueDescription, y: ValueDescription) -> Tuple[int, int]:
+    def promotions(self, x: ValueDescription, y: ValueDescription) -> tuple[int, int]:
         """
         Get bit-width promotions for the strategy.
 
@@ -646,7 +651,7 @@ class BitwiseStrategy(str, Enum):
         def _promotions(
             smaller_dtype: Integer,
             bigger_dtype: Integer,
-        ) -> Tuple[int, int]:
+        ) -> tuple[int, int]:
             smaller_bit_width = smaller_dtype.bit_width
             bigger_bit_width = bigger_dtype.bit_width
             packing_bit_width = smaller_bit_width + bigger_bit_width
@@ -781,7 +786,7 @@ class MultivariateStrategy(str, Enum):
 
         return sum_of_bit_widths <= MAXIMUM_TLU_BIT_WIDTH
 
-    def promotions(self, *args: ValueDescription) -> Tuple[int, ...]:
+    def promotions(self, *args: ValueDescription) -> tuple[int, ...]:
         """
         Get bit-width promotions for the strategy.
 
@@ -915,7 +920,7 @@ class MinMaxStrategy(str, Enum):
 
         return True
 
-    def promotions(self, x: ValueDescription, y: ValueDescription) -> Tuple[int, int]:
+    def promotions(self, x: ValueDescription, y: ValueDescription) -> tuple[int, int]:
         """
         Get bit-width promotions for the strategy.
 
@@ -982,17 +987,17 @@ class Configuration:
     fhe_execution: bool
     compiler_debug_mode: bool
     compiler_verbose_mode: bool
-    comparison_strategy_preference: List[ComparisonStrategy]
-    bitwise_strategy_preference: List[BitwiseStrategy]
+    comparison_strategy_preference: list[ComparisonStrategy]
+    bitwise_strategy_preference: list[BitwiseStrategy]
     shifts_with_promotion: bool
-    multivariate_strategy_preference: List[MultivariateStrategy]
-    min_max_strategy_preference: List[MinMaxStrategy]
+    multivariate_strategy_preference: list[MultivariateStrategy]
+    min_max_strategy_preference: list[MinMaxStrategy]
     use_gpu: bool
     relu_on_bits_threshold: int
     relu_on_bits_chunk_size: int
     if_then_else_chunk_size: int
-    additional_pre_processors: List[GraphProcessor]
-    additional_post_processors: List[GraphProcessor]
+    additional_pre_processors: list[GraphProcessor]
+    additional_post_processors: list[GraphProcessor]
     rounding_exactness: Exactness
     approximate_rounding_config: ApproximateRoundingConfig
     optimize_tlu_based_on_measured_bounds: bool
@@ -1049,25 +1054,25 @@ class Configuration:
         compiler_debug_mode: bool = False,
         compiler_verbose_mode: bool = False,
         comparison_strategy_preference: Optional[
-            Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]
+            Union[ComparisonStrategy, str, list[Union[ComparisonStrategy, str]]]
         ] = None,
         bitwise_strategy_preference: Optional[
-            Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]
+            Union[BitwiseStrategy, str, list[Union[BitwiseStrategy, str]]]
         ] = None,
         shifts_with_promotion: bool = True,
         multivariate_strategy_preference: Optional[
-            Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]
+            Union[MultivariateStrategy, str, list[Union[MultivariateStrategy, str]]]
         ] = None,
         min_max_strategy_preference: Optional[
-            Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]
+            Union[MinMaxStrategy, str, list[Union[MinMaxStrategy, str]]]
         ] = None,
         composable: bool = False,
         use_gpu: bool = False,
         relu_on_bits_threshold: int = 7,
         relu_on_bits_chunk_size: int = 3,
         if_then_else_chunk_size: int = 3,
-        additional_pre_processors: Optional[List[GraphProcessor]] = None,
-        additional_post_processors: Optional[List[GraphProcessor]] = None,
+        additional_pre_processors: Optional[list[GraphProcessor]] = None,
+        additional_post_processors: Optional[list[GraphProcessor]] = None,
         rounding_exactness: Exactness = Exactness.EXACT,
         approximate_rounding_config: Optional[ApproximateRoundingConfig] = None,
         optimize_tlu_based_on_measured_bounds: bool = False,
@@ -1242,27 +1247,27 @@ class Configuration:
         compiler_verbose_mode: Union[Keep, bool] = KEEP,
         comparison_strategy_preference: Union[
             Keep,
-            Optional[Union[ComparisonStrategy, str, List[Union[ComparisonStrategy, str]]]],
+            Optional[Union[ComparisonStrategy, str, list[Union[ComparisonStrategy, str]]]],
         ] = KEEP,
         bitwise_strategy_preference: Union[
             Keep,
-            Optional[Union[BitwiseStrategy, str, List[Union[BitwiseStrategy, str]]]],
+            Optional[Union[BitwiseStrategy, str, list[Union[BitwiseStrategy, str]]]],
         ] = KEEP,
         shifts_with_promotion: Union[Keep, bool] = KEEP,
         multivariate_strategy_preference: Union[
             Keep,
-            Optional[Union[MultivariateStrategy, str, List[Union[MultivariateStrategy, str]]]],
+            Optional[Union[MultivariateStrategy, str, list[Union[MultivariateStrategy, str]]]],
         ] = KEEP,
         min_max_strategy_preference: Union[
-            Keep, Optional[Union[MinMaxStrategy, str, List[Union[MinMaxStrategy, str]]]]
+            Keep, Optional[Union[MinMaxStrategy, str, list[Union[MinMaxStrategy, str]]]]
         ] = KEEP,
         composable: Union[Keep, bool] = KEEP,
         use_gpu: Union[Keep, bool] = KEEP,
         relu_on_bits_threshold: Union[Keep, int] = KEEP,
         relu_on_bits_chunk_size: Union[Keep, int] = KEEP,
         if_then_else_chunk_size: Union[Keep, int] = KEEP,
-        additional_pre_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
-        additional_post_processors: Union[Keep, Optional[List[GraphProcessor]]] = KEEP,
+        additional_pre_processors: Union[Keep, Optional[list[GraphProcessor]]] = KEEP,
+        additional_post_processors: Union[Keep, Optional[list[GraphProcessor]]] = KEEP,
         rounding_exactness: Union[Keep, Exactness] = KEEP,
         approximate_rounding_config: Union[Keep, Optional[ApproximateRoundingConfig]] = KEEP,
         optimize_tlu_based_on_measured_bounds: Union[Keep, bool] = KEEP,

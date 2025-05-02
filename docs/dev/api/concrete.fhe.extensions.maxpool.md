@@ -23,11 +23,11 @@ Tracing and evaluation of maxpool.
 ```python
 maxpool(
     x: Union[ndarray, Tracer],
-    kernel_shape: Union[Tuple[int, ], List[int]],
-    strides: Optional[Tuple[int, ], List[int]] = None,
+    kernel_shape: Union[tuple[int, ], list[int]],
+    strides: Optional[tuple[int, ], list[int]] = None,
     auto_pad: str = 'NOTSET',
-    pads: Optional[Tuple[int, ], List[int]] = None,
-    dilations: Optional[Tuple[int, ], List[int]] = None,
+    pads: Optional[tuple[int, ], list[int]] = None,
+    dilations: Optional[tuple[int, ], list[int]] = None,
     ceil_mode: int = 0,
     storage_order: int = 0
 ) → Union[ndarray, Tracer]

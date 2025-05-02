@@ -34,7 +34,7 @@ def test_rust_keygen():
         f"{os.path.dirname(os.path.abspath(__file__))}"
         "/../../../concrete-rust/concrete-keygen/target/release/concrete-rust-keygen"
     )
-    assert os.system(f"{bin_path} {keyinfo_path} {keyset_path}") == 0
+    assert os.system(f"{bin_path} {keyinfo_path} {keyset_path}") == 0  # noqa: S605
 
     # deserialize keyset
     with open(keyset_path, "rb") as f:

@@ -3,15 +3,18 @@ Tests of everything related to restrictions.
 """
 
 import numpy as np
-import pytest
+
+# pylint: disable=import-error
 from mlir._mlir_libs._concretelang._compiler import (
     KeysetInfo,
-    KeysetRestriction,
     PartitionDefinition,
     RangeRestriction,
 )
 
 from concrete import fhe
+
+# pylint: enable=import-error
+
 
 # pylint: disable=missing-class-docstring, missing-function-docstring, no-self-argument, unused-variable, no-member, unused-argument, function-redefined, expression-not-assigned
 # same disables for ruff:
@@ -118,4 +121,4 @@ def test_generic_restriction():
         keyset_restriction=generic_keyset_info.get_restriction(),
     )
     compiled_keyset_info = restricted_module.keys.specs.program_info.get_keyset_info()
-    assert all([k in generic_keyset_info.secret_keys() for k in compiled_keyset_info.secret_keys()])
+    assert all(k in generic_keyset_info.secret_keys() for k in compiled_keyset_info.secret_keys())

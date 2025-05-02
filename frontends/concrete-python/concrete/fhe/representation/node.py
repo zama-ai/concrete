@@ -6,7 +6,7 @@ import os
 import time
 import traceback
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import z3
@@ -28,20 +28,20 @@ class Node:
     Node class, to represent computation in a computation graph.
     """
 
-    inputs: List[ValueDescription]
+    inputs: list[ValueDescription]
     output: ValueDescription
 
     operation: Operation
     evaluator: Callable
 
-    bounds: Optional[Tuple[Union[int, float], Union[int, float]]]
-    properties: Dict[str, Any]
+    bounds: Optional[tuple[Union[int, float], Union[int, float]]]
+    properties: dict[str, Any]
 
     location: str
     tag: str
     created_at: float
 
-    bit_width_constraints: List[z3.Bool]
+    bit_width_constraints: list[z3.Bool]
 
     @staticmethod
     def constant(constant: Any) -> "Node":
@@ -73,12 +73,12 @@ class Node:
     @staticmethod
     def generic(
         name: str,
-        inputs: List[ValueDescription],
+        inputs: list[ValueDescription],
         output: ValueDescription,
         operation: Callable,
-        args: Optional[Tuple[Any, ...]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        args: Optional[tuple[Any, ...]] = None,
+        kwargs: Optional[dict[str, Any]] = None,
+        attributes: Optional[dict[str, Any]] = None,
     ):
         """
         Create an Operation.Generic node.
@@ -150,11 +150,11 @@ class Node:
 
     def __init__(
         self,
-        inputs: List[ValueDescription],
+        inputs: list[ValueDescription],
         output: ValueDescription,
         operation: Operation,
         evaluator: Callable,
-        properties: Optional[Dict[str, Any]] = None,
+        properties: Optional[dict[str, Any]] = None,
     ):
         self.inputs = inputs
         self.output = output
@@ -174,7 +174,7 @@ class Node:
         # pylint: enable=cyclic-import,import-outside-toplevel
 
         for frame in reversed(traceback.extract_stack()):
-            if frame.filename == "<__array_function__ internals>":
+            if frame.filename == "<__array_function__ internals>":  # pragma: no cover
                 continue
 
             if frame.filename.startswith(fhe_directory):
@@ -195,7 +195,7 @@ class Node:
 
         self.bit_width_constraints = []
 
-    def __call__(self, *args: List[Any]) -> Union[np.bool_, np.integer, np.floating, np.ndarray]:
+    def __call__(self, *args: list[Any]) -> Union[np.bool_, np.integer, np.floating, np.ndarray]:
         def generic_error_message() -> str:
             result = f"Evaluation of {self.operation.value} '{self.label()}' node"
             if len(args) != 0:
@@ -277,7 +277,7 @@ class Node:
 
         return result
 
-    def format(self, predecessors: List[str], maximum_constant_length: int = 45) -> str:
+    def format(self, predecessors: list[str], maximum_constant_length: int = 45) -> str:
         """
         Get the textual representation of the `Node` (dependent to preds).
 
@@ -377,7 +377,7 @@ class Node:
             if name not in KWARGS_IGNORED_IN_FORMATTING
         )
 
-        if name in {"amin", "amax"}:
+        if name in {"amin", "amax"}:  # pragma: no cover
             name = name[1:]
 
         return f"{name}({', '.join(args)})"

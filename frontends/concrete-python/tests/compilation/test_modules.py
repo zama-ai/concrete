@@ -6,7 +6,7 @@ import inspect
 import tempfile
 from concurrent.futures import Future
 from pathlib import Path
-from typing import Awaitable
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -972,8 +972,8 @@ class IncDec:
 
     precision = 4
 
-    inputset = list(range(1, 2**precision - 1))
-    to_compile = {"inc": inputset, "dec": inputset}
+    inputset: ClassVar[list] = list(range(1, 2**precision - 1))
+    to_compile: ClassVar[dict[str, list]] = {"inc": inputset, "dec": inputset}
 
 
 def test_run_async():

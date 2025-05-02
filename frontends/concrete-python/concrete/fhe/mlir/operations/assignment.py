@@ -4,7 +4,8 @@ Conversion of assignment operation.
 
 # pylint: disable=import-error,no-name-in-module
 
-from typing import Any, List, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Union
 
 import numpy as np
 from concrete.lang.dialects import fhelinalg
@@ -141,11 +142,11 @@ def assignment(
     if is_fancy:
         return fancy_assignment(ctx, resulting_type, x, y, index)
 
-    static_offsets: List[Any] = []
-    static_sizes: List[Any] = []
-    static_strides: List[Any] = []
+    static_offsets: list[Any] = []
+    static_sizes: list[Any] = []
+    static_strides: list[Any] = []
 
-    dynamic_offsets: List[Any] = []
+    dynamic_offsets: list[Any] = []
 
     for indexing_element, dimension_size in zip(index, x.shape):
         offset: Any

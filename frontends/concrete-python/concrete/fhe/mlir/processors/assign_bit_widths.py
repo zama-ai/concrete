@@ -2,8 +2,6 @@
 Declaration of `AssignBitWidths` graph processor.
 """
 
-from typing import Dict, List
-
 import z3
 
 from ...compilation.composition import CompositionRule
@@ -31,22 +29,22 @@ class AssignBitWidths(MultiGraphProcessor):
     """
 
     single_precision: bool
-    composition_rules: List[CompositionRule]
-    comparison_strategy_preference: List[ComparisonStrategy]
-    bitwise_strategy_preference: List[BitwiseStrategy]
+    composition_rules: list[CompositionRule]
+    comparison_strategy_preference: list[ComparisonStrategy]
+    bitwise_strategy_preference: list[BitwiseStrategy]
     shifts_with_promotion: bool
-    multivariate_strategy_preference: List[MultivariateStrategy]
-    min_max_strategy_preference: List[MinMaxStrategy]
+    multivariate_strategy_preference: list[MultivariateStrategy]
+    min_max_strategy_preference: list[MinMaxStrategy]
 
     def __init__(
         self,
         single_precision: bool,
-        composition_rules: List[CompositionRule],
-        comparison_strategy_preference: List[ComparisonStrategy],
-        bitwise_strategy_preference: List[BitwiseStrategy],
+        composition_rules: list[CompositionRule],
+        comparison_strategy_preference: list[ComparisonStrategy],
+        bitwise_strategy_preference: list[BitwiseStrategy],
         shifts_with_promotion: bool,
-        multivariate_strategy_preference: List[MultivariateStrategy],
-        min_max_strategy_preference: List[MinMaxStrategy],
+        multivariate_strategy_preference: list[MultivariateStrategy],
+        min_max_strategy_preference: list[MinMaxStrategy],
     ):
         self.single_precision = single_precision
         self.composition_rules = composition_rules
@@ -56,10 +54,10 @@ class AssignBitWidths(MultiGraphProcessor):
         self.multivariate_strategy_preference = multivariate_strategy_preference
         self.min_max_strategy_preference = min_max_strategy_preference
 
-    def apply_many(self, graphs: Dict[str, Graph]):
+    def apply_many(self, graphs: dict[str, Graph]):
         optimizer = z3.Optimize()
 
-        bit_widths: Dict[Node, z3.Int] = {}
+        bit_widths: dict[Node, z3.Int] = {}
 
         for graph_name, graph in graphs.items():
             max_bit_width: z3.Int = z3.Int(f"{graph_name}.max")
@@ -135,13 +133,13 @@ class AdditionalConstraints:
 
     optimizer: z3.Optimize
     graph: Graph
-    bit_widths: Dict[Node, z3.Int]
+    bit_widths: dict[Node, z3.Int]
 
-    comparison_strategy_preference: List[ComparisonStrategy]
-    bitwise_strategy_preference: List[BitwiseStrategy]
+    comparison_strategy_preference: list[ComparisonStrategy]
+    bitwise_strategy_preference: list[BitwiseStrategy]
     shifts_with_promotion: bool
-    multivariate_strategy_preference: List[MultivariateStrategy]
-    min_max_strategy_preference: List[MinMaxStrategy]
+    multivariate_strategy_preference: list[MultivariateStrategy]
+    min_max_strategy_preference: list[MinMaxStrategy]
 
     node: Node
     bit_width: z3.Int
@@ -152,12 +150,12 @@ class AdditionalConstraints:
         self,
         optimizer: z3.Optimize,
         graph: Graph,
-        bit_widths: Dict[Node, z3.Int],
-        comparison_strategy_preference: List[ComparisonStrategy],
-        bitwise_strategy_preference: List[BitwiseStrategy],
+        bit_widths: dict[Node, z3.Int],
+        comparison_strategy_preference: list[ComparisonStrategy],
+        bitwise_strategy_preference: list[BitwiseStrategy],
         shifts_with_promotion: bool,
-        multivariate_strategy_preference: List[MultivariateStrategy],
-        min_max_strategy_preference: List[MinMaxStrategy],
+        multivariate_strategy_preference: list[MultivariateStrategy],
+        min_max_strategy_preference: list[MinMaxStrategy],
     ):
         self.optimizer = optimizer
         self.graph = graph
@@ -233,29 +231,29 @@ class AdditionalConstraints:
     # Conditions
     # ==========
 
-    def all_inputs_are_encrypted(self, node: Node, preds: List[Node]) -> bool:
+    def all_inputs_are_encrypted(self, node: Node, preds: list[Node]) -> bool:
         return all(pred.output.is_encrypted for pred in preds)
 
-    def some_inputs_are_clear(self, node: Node, preds: List[Node]) -> bool:
+    def some_inputs_are_clear(self, node: Node, preds: list[Node]) -> bool:
         return any(pred.output.is_clear for pred in preds)
 
-    def has_overflow_protection(self, node: Node, preds: List[Node]) -> bool:
+    def has_overflow_protection(self, node: Node, preds: list[Node]) -> bool:
         return node.properties["kwargs"]["overflow_protection"] is True
 
     # ===========
     # Constraints
     # ===========
 
-    def inputs_share_precision(self, node: Node, preds: List[Node]):
+    def inputs_share_precision(self, node: Node, preds: list[Node]):
         for i in range(len(preds) - 1):
             self.constraint(node, self.bit_widths[preds[i]] == self.bit_widths[preds[i + 1]])
 
-    def inputs_and_output_share_precision(self, node: Node, preds: List[Node]):
+    def inputs_and_output_share_precision(self, node: Node, preds: list[Node]):
         self.inputs_share_precision(node, preds)
         if len(preds) != 0:
             self.constraint(node, self.bit_widths[preds[-1]] == self.bit_widths[node])
 
-    def inputs_require_one_more_bit(self, node: Node, preds: List[Node]):
+    def inputs_require_one_more_bit(self, node: Node, preds: list[Node]):
         for pred in preds:
             assert isinstance(pred.output.dtype, Integer)
 
@@ -264,7 +262,7 @@ class AdditionalConstraints:
 
             self.constraint(node, self.bit_widths[pred] >= required_bit_width)
 
-    def comparison(self, node: Node, preds: List[Node]):
+    def comparison(self, node: Node, preds: list[Node]):
         assert len(preds) == 2
 
         x = preds[0]
@@ -291,7 +289,7 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
-    def bitwise(self, node: Node, preds: List[Node]):
+    def bitwise(self, node: Node, preds: list[Node]):
         assert len(preds) == 2
 
         x = preds[0]
@@ -324,7 +322,7 @@ class AdditionalConstraints:
         ):
             self.constraint(node, self.bit_widths[x] == self.bit_widths[node])
 
-    def multivariate(self, node: Node, preds: List[Node]):
+    def multivariate(self, node: Node, preds: list[Node]):
         assert all(
             pred.output.is_encrypted and pred.properties.get("name") != "round_bit_pattern"
             for pred in preds
@@ -351,7 +349,7 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
-    def minimum_maximum(self, node: Node, preds: List[Node]):
+    def minimum_maximum(self, node: Node, preds: list[Node]):
         assert len(preds) == 2
 
         x = preds[0]
@@ -389,7 +387,7 @@ class AdditionalConstraints:
                 node.properties["strategy"] = strategy
                 break
 
-    def min_max(self, node: Node, preds: List[Node]):
+    def min_max(self, node: Node, preds: list[Node]):
         assert len(preds) == 1
         self.minimum_maximum(node, [preds[0], preds[0]])
 

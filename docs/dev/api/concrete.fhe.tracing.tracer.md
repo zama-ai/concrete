@@ -19,7 +19,7 @@ Tracer class, to create computation graphs from python functions.
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(computation: Node, input_tracers: List[ForwardRef('Tracer')])
+__init__(computation: Node, input_tracers: list['Tracer'])
 ```
 
 
@@ -61,7 +61,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], type['ScalarAnnotation']]
 ) → Tracer
 ```
 
@@ -110,7 +110,7 @@ Trace numpy.ndarray.flatten().
 ### <kbd>method</kbd> `reshape`
 
 ```python
-reshape(*newshape: Union[Any, Tuple[Any, ]]) → Tracer
+reshape(*newshape: Union[Any, tuple[Any, ]]) → Tracer
 ```
 
 Trace numpy.ndarray.reshape(newshape). 
@@ -158,7 +158,7 @@ Try to create a tracer from a value.
 ```python
 trace(
     function: Callable,
-    parameters: Dict[str, ValueDescription],
+    parameters: dict[str, ValueDescription],
     is_direct: bool = False,
     location: str = ''
 ) → Graph
@@ -187,7 +187,7 @@ Trace `function` and create the `Graph` that represents it.
 ### <kbd>method</kbd> `transpose`
 
 ```python
-transpose(axes: Optional[Tuple[int, ]] = None) → Tracer
+transpose(axes: Optional[tuple[int, ]] = None) → Tracer
 ```
 
 Trace numpy.ndarray.transpose(). 
@@ -205,7 +205,7 @@ Base annotation for direct definition.
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(computation: Node, input_tracers: List[ForwardRef('Tracer')])
+__init__(computation: Node, input_tracers: list['Tracer'])
 ```
 
 
@@ -247,7 +247,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], type['ScalarAnnotation']]
 ) → Tracer
 ```
 
@@ -296,7 +296,7 @@ Trace numpy.ndarray.flatten().
 ### <kbd>method</kbd> `reshape`
 
 ```python
-reshape(*newshape: Union[Any, Tuple[Any, ]]) → Tracer
+reshape(*newshape: Union[Any, tuple[Any, ]]) → Tracer
 ```
 
 Trace numpy.ndarray.reshape(newshape). 
@@ -344,7 +344,7 @@ Try to create a tracer from a value.
 ```python
 trace(
     function: Callable,
-    parameters: Dict[str, ValueDescription],
+    parameters: dict[str, ValueDescription],
     is_direct: bool = False,
     location: str = ''
 ) → Graph
@@ -373,7 +373,7 @@ Trace `function` and create the `Graph` that represents it.
 ### <kbd>method</kbd> `transpose`
 
 ```python
-transpose(axes: Optional[Tuple[int, ]] = None) → Tracer
+transpose(axes: Optional[tuple[int, ]] = None) → Tracer
 ```
 
 Trace numpy.ndarray.transpose(). 
@@ -391,7 +391,7 @@ Base scalar annotation for direct definition.
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(computation: Node, input_tracers: List[ForwardRef('Tracer')])
+__init__(computation: Node, input_tracers: list['Tracer'])
 ```
 
 
@@ -433,7 +433,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], type['ScalarAnnotation']]
 ) → Tracer
 ```
 
@@ -482,7 +482,7 @@ Trace numpy.ndarray.flatten().
 ### <kbd>method</kbd> `reshape`
 
 ```python
-reshape(*newshape: Union[Any, Tuple[Any, ]]) → Tracer
+reshape(*newshape: Union[Any, tuple[Any, ]]) → Tracer
 ```
 
 Trace numpy.ndarray.reshape(newshape). 
@@ -530,7 +530,7 @@ Try to create a tracer from a value.
 ```python
 trace(
     function: Callable,
-    parameters: Dict[str, ValueDescription],
+    parameters: dict[str, ValueDescription],
     is_direct: bool = False,
     location: str = ''
 ) → Graph
@@ -559,7 +559,7 @@ Trace `function` and create the `Graph` that represents it.
 ### <kbd>method</kbd> `transpose`
 
 ```python
-transpose(axes: Optional[Tuple[int, ]] = None) → Tracer
+transpose(axes: Optional[tuple[int, ]] = None) → Tracer
 ```
 
 Trace numpy.ndarray.transpose(). 
@@ -577,7 +577,7 @@ Base tensor annotation for direct definition.
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(computation: Node, input_tracers: List[ForwardRef('Tracer')])
+__init__(computation: Node, input_tracers: list['Tracer'])
 ```
 
 
@@ -619,7 +619,7 @@ Trace numpy.ndarray.size.
 
 ```python
 astype(
-    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], Type[ForwardRef('ScalarAnnotation')]]
+    dtype: Union[dtype[Any], NoneType, type[Any], _SupportsDType[dtype[Any]], str, tuple[Any, int], tuple[Any, Union[SupportsIndex, Sequence[SupportsIndex]]], list[Any], _DTypeDict, tuple[Any, Any], type['ScalarAnnotation']]
 ) → Tracer
 ```
 
@@ -668,7 +668,7 @@ Trace numpy.ndarray.flatten().
 ### <kbd>method</kbd> `reshape`
 
 ```python
-reshape(*newshape: Union[Any, Tuple[Any, ]]) → Tracer
+reshape(*newshape: Union[Any, tuple[Any, ]]) → Tracer
 ```
 
 Trace numpy.ndarray.reshape(newshape). 
@@ -716,7 +716,7 @@ Try to create a tracer from a value.
 ```python
 trace(
     function: Callable,
-    parameters: Dict[str, ValueDescription],
+    parameters: dict[str, ValueDescription],
     is_direct: bool = False,
     location: str = ''
 ) → Graph
@@ -745,7 +745,7 @@ Trace `function` and create the `Graph` that represents it.
 ### <kbd>method</kbd> `transpose`
 
 ```python
-transpose(axes: Optional[Tuple[int, ]] = None) → Tracer
+transpose(axes: Optional[tuple[int, ]] = None) → Tracer
 ```
 
 Trace numpy.ndarray.transpose(). 

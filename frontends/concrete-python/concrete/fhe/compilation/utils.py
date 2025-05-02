@@ -5,21 +5,9 @@ Declaration of various functions and constants related to compilation.
 import json
 import os
 import re
+from collections.abc import Iterable
 from copy import deepcopy
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, Union
 
 import networkx as nx
 import numpy as np
@@ -77,7 +65,7 @@ class Lazy(Generic[T]):
 def inputset(
     *inputs: Union[ScalarAnnotation, ValueDescription, Callable[[int], Any]],
     size: int = 100,
-) -> List[Tuple[Any, ...]]:
+) -> list[tuple[Any, ...]]:
     """
     Generate a random inputset.
 
@@ -93,9 +81,9 @@ def inputset(
             generated inputset
     """
 
-    result: List[Tuple[Any, ...]] = []
+    result: list[tuple[Any, ...]] = []
     for i in range(size):
-        sample: List[Any] = []
+        sample: list[Any] = []
         for specification in inputs:
             is_value = isinstance(specification, ValueDescription)
             is_scalar_annotation = isinstance(specification, type) and issubclass(
@@ -120,9 +108,9 @@ def inputset(
 
 def validate_input_args(
     client_specs: ClientSpecs,
-    *args: Optional[Union[int, np.ndarray, List]],
+    *args: Optional[Union[int, np.ndarray, list]],
     function_name: str,
-) -> List[Optional[Union[int, np.ndarray]]]:
+) -> list[Optional[Union[int, np.ndarray]]]:
     """Validate input arguments.
 
     Args:
@@ -151,7 +139,7 @@ def validate_input_args(
         message = f"Expected {len(input_specs)} inputs but got {len(args)}"
         raise ValueError(message)
 
-    sanitized_args: Dict[int, Optional[Union[int, np.ndarray]]] = {}
+    sanitized_args: dict[int, Optional[Union[int, np.ndarray]]] = {}
     for index, (arg, spec) in enumerate(zip(args, input_specs)):
         if arg is None:
             sanitized_args[index] = None
@@ -234,7 +222,7 @@ def fuse(graph: Graph, artifacts: Optional["FunctionDebugArtifacts"] = None):
     """
 
     nx_graph = graph.graph
-    processed_terminal_nodes: Set[Node] = set()
+    processed_terminal_nodes: set[Node] = set()
 
     fusing_floats = True
     while True:
@@ -273,7 +261,7 @@ def fuse(graph: Graph, artifacts: Optional["FunctionDebugArtifacts"] = None):
         nx_graph.add_node(fused_node)
 
         if terminal_node in graph.output_nodes.values():
-            output_node_to_idx: Dict[Node, List[int]] = {
+            output_node_to_idx: dict[Node, list[int]] = {
                 out_node: [] for out_node in graph.output_nodes.values()
             }
             for output_idx, output_node in graph.output_nodes.items():
@@ -299,8 +287,8 @@ def fuse(graph: Graph, artifacts: Optional["FunctionDebugArtifacts"] = None):
 
 def find_float_subgraph_with_unique_terminal_node(
     graph: Graph,
-    processed_terminal_nodes: Set[Node],
-) -> Optional[Tuple[Dict[Node, None], Dict[Node, None], Node]]:
+    processed_terminal_nodes: set[Node],
+) -> Optional[tuple[dict[Node, None], dict[Node, None], Node]]:
     """
     Find a subgraph with float computations that end with an integer output.
 
@@ -333,7 +321,7 @@ def find_float_subgraph_with_unique_terminal_node(
     except StopIteration:
         return None
 
-    all_nodes: Dict[Node, None] = {}
+    all_nodes: dict[Node, None] = {}
 
     start_single_int_output_nodes_search_from = terminal_node
     while True:
@@ -375,8 +363,8 @@ def find_float_subgraph_with_unique_terminal_node(
 
 def find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_ancestor(
     graph: Graph,
-    processed_terminal_nodes: Set[Node],
-) -> Optional[Tuple[Dict[Node, None], Dict[Node, None], Node]]:
+    processed_terminal_nodes: set[Node],
+) -> Optional[tuple[dict[Node, None], dict[Node, None], Node]]:
     """
     Find a subgraph with a tlu computation that has multiple variable inputs \
     where all variable inputs share a common ancestor.
@@ -419,7 +407,7 @@ def find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_anc
     except StopIteration:
         return None
 
-    all_nodes: Dict[Node, None] = {}
+    all_nodes: dict[Node, None] = {}
 
     while True:
         variable_start_nodes = list(nx_graph.predecessors(terminal_node))
@@ -452,7 +440,7 @@ def find_tlu_subgraph_with_multiple_variable_inputs_that_has_a_single_common_anc
     return all_nodes, start_nodes, terminal_node
 
 
-def find_single_lca(graph: Graph, nodes: List[Node]) -> Optional[Node]:
+def find_single_lca(graph: Graph, nodes: list[Node]) -> Optional[Node]:
     """
     Find the single lowest common ancestor of a list of nodes.
 
@@ -505,7 +493,7 @@ def find_single_lca(graph: Graph, nodes: List[Node]) -> Optional[Node]:
 def is_single_common_ancestor(
     graph: Graph,
     candidate: Node,
-    nodes: List[Node],
+    nodes: list[Node],
 ) -> bool:
     """
     Determine if a node is the single common ancestor of a list of nodes.
@@ -635,9 +623,9 @@ def is_single_common_ancestor(
 
 def find_closest_integer_output_nodes(
     graph: Graph,
-    start_nodes: List[Node],
-    all_nodes: Dict[Node, None],
-) -> Tuple[Dict[Node, None], Dict[Node, None]]:
+    start_nodes: list[Node],
+    all_nodes: dict[Node, None],
+) -> tuple[dict[Node, None], dict[Node, None]]:
     """
     Find the closest upstream integer output nodes to a set of start nodes in a graph.
 
@@ -658,12 +646,12 @@ def find_closest_integer_output_nodes(
 
     nx_graph = graph.graph
 
-    closest_integer_output_nodes: Dict[Node, None] = {}
-    visited_nodes: Set[Node] = set()
+    closest_integer_output_nodes: dict[Node, None] = {}
+    visited_nodes: set[Node] = set()
 
     current_nodes = {start_node: None for start_node in start_nodes}
     while current_nodes:
-        next_nodes: Dict[Node, None] = {}
+        next_nodes: dict[Node, None] = {}
         for node in current_nodes:
             if node not in visited_nodes:
                 visited_nodes.add(node)
@@ -683,9 +671,9 @@ def find_closest_integer_output_nodes(
 def add_nodes_from_to(
     graph: Graph,
     from_nodes: Iterable[Node],
-    to_nodes: Dict[Node, None],
-    all_nodes: Dict[Node, None],
-) -> Dict[Node, None]:
+    to_nodes: dict[Node, None],
+    all_nodes: dict[Node, None],
+) -> dict[Node, None]:
     """
     Add nodes from `from_nodes` to `to_nodes`, to `all_nodes`.
 
@@ -710,11 +698,11 @@ def add_nodes_from_to(
     nx_graph = graph.graph
 
     all_nodes.update(to_nodes)
-    visited_nodes: Set[Node] = set()
+    visited_nodes: set[Node] = set()
 
     current_nodes = {from_node: None for from_node in from_nodes}
     while current_nodes:
-        next_nodes: Dict[Node, None] = {}
+        next_nodes: dict[Node, None] = {}
         for node in current_nodes:
             if node not in visited_nodes:
                 visited_nodes.add(node)
@@ -730,10 +718,10 @@ def add_nodes_from_to(
 
 def convert_subgraph_to_subgraph_node(
     graph: Graph,
-    all_nodes: Dict[Node, None],
-    start_nodes: Dict[Node, None],
+    all_nodes: dict[Node, None],
+    start_nodes: dict[Node, None],
     terminal_node: Node,
-) -> Optional[Tuple[Node, Node]]:
+) -> Optional[tuple[Node, Node]]:
     """
     Convert a subgraph to Operation.Generic node.
 
@@ -841,7 +829,7 @@ def convert_subgraph_to_subgraph_node(
 
 def check_subgraph_fusibility(
     graph: Graph,
-    all_nodes: Dict[Node, None],
+    all_nodes: dict[Node, None],
     variable_input_node: Node,
 ):
     """
@@ -912,8 +900,8 @@ def friendly_type_format(type_: type) -> str:
         except (AttributeError, ValueError):
             pass
         else:
-            if arg1 == None.__class__:
-                return f"Optional[{friendly_type_format(arg0)}]"  # pragma: no cover
+            if arg1 == None.__class__:  # pragma: no cover
+                return f"Optional[{friendly_type_format(arg0)}]"
 
     return result
 

@@ -6,12 +6,12 @@ import json
 import os
 import tempfile
 from functools import partial
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 import pytest
 
-import concrete.fhe as fhe
+from concrete import fhe
 from concrete.fhe import tfhers
 
 
@@ -53,8 +53,8 @@ def parameterize_partial_dtype(partial_dtype) -> tfhers.TFHERSIntegerType:
 def is_input_and_output_tfhers(
     circuit: Union[fhe.Circuit, fhe.Module],
     lwe_dim: int,
-    tfhers_ins: List[int],
-    tfhers_outs: List[int],
+    tfhers_ins: list[int],
+    tfhers_outs: list[int],
 ) -> bool:
     """Check if inputs and outputs description match tfhers parameters"""
     params = json.loads(circuit.client.specs.program_info.serialize())
@@ -660,7 +660,7 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
 
     parameter_encryption_statuses = helpers.generate_encryption_statuses(parameters)
 
-    is_tensor = all([param.get("shape") is not None for param in parameters.values()])
+    is_tensor = all(param.get("shape") is not None for param in parameters.values())
 
     # Only valid when running in multi
     if helpers.configuration().parameter_selection_strategy != fhe.ParameterSelectionStrategy.MULTI:
@@ -699,8 +699,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     # serialize key
     _, key_path = tempfile.mkstemp()
     serialized_key = tfhers_bridge.serialize_input_secret_key(input_idx=0)
-    with open(key_path, "wb") as fw:
-        fw.write(serialized_key)
+    with open(key_path, "wb") as ct_out_writer:
+        ct_out_writer.write(serialized_key)
 
     ct1, ct2 = sample
     _, ct1_path = tempfile.mkstemp()
@@ -730,9 +730,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
         elif isinstance(concrete_value, np.ndarray):
             values = concrete_value.flatten().tolist()
         else:
-            raise TypeError(
-                f"concrete_value should either be int or ndarray, not {type(concrete_value)}"
-            )
+            msg = f"concrete_value should either be int or ndarray, not {type(concrete_value)}"
+            raise TypeError(msg)
         return "--value=" + ",".join(map(str, values))
 
     # encrypt inputs and incremnt them by one in TFHErs
@@ -785,11 +784,11 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
 
     # import ciphertexts and run
     cts = []
-    with open(ct1_path, "rb") as fr:
-        buff = fr.read()
+    with open(ct1_path, "rb") as ct1_reader:
+        buff = ct1_reader.read()
         cts.append(tfhers_bridge.import_value(buff, 0))
-    with open(ct2_path, "rb") as fr:
-        buff = fr.read()
+    with open(ct2_path, "rb") as ct2_reader:
+        buff = ct2_reader.read()
         cts.append(tfhers_bridge.import_value(buff, 1))
     os.remove(ct1_path)
     os.remove(ct2_path)
@@ -806,8 +805,8 @@ def test_tfhers_binary_encrypted_complete_circuit_concrete_keygen(
     buff = tfhers_bridge.export_value(tfhers_encrypted_result, output_idx=0)  # type: ignore
     _, ct_out_path = tempfile.mkstemp()
     _, pt_path = tempfile.mkstemp()
-    with open(ct_out_path, "wb") as fw:
-        fw.write(buff)
+    with open(ct_out_path, "wb") as ct_out_writer:
+        ct_out_writer.write(buff)
 
     assert (
         os.system(
@@ -1052,7 +1051,8 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_concrete_keygen(
     )
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} --value={ct1} -c {ct1_path} --lwe-sk {key_path}"
+            f"{tfhers_utils} encrypt-with-key {'--signed' if dtype.is_signed else ''} "
+            f"--value={ct1} -c {ct1_path} --lwe-sk {key_path}"
         )
         == 0
     )
@@ -1196,7 +1196,8 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk {sk_path}"
+            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk "
+            f"{sk_path}"
         )
         == 0
     )
@@ -1277,7 +1278,8 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     random_value = np.random.randint(*tfhers_value_range)
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} "
+            f"--client-key {client_key_path}"
         )
         == 0
     )
@@ -1285,7 +1287,8 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     # add random value to the result ct
     assert (
         os.system(
-            f"{tfhers_utils} add -c {ct_out_path} {random_ct_path} -s {server_key_path} -o {sum_ct_path}"
+            f"{tfhers_utils} add -c {ct_out_path} {random_ct_path} -s {server_key_path} -o "
+            f"{sum_ct_path}"
         )
         == 0
     )
@@ -1312,15 +1315,18 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen(
     os.remove(sum_ct_path)
 
 
+# pylint: disable=no-self-argument,missing-function-docstring,missing-class-docstring
+
+
 @fhe.module()
 class AddModuleOneFunc:
     func_count = 1
 
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add(x, y):
-        x = tfhers.to_native(x)
-        y = tfhers.to_native(y)
-        return tfhers.from_native(x + y, TFHERS_UINT_8_3_2_4096)
+        input_x = tfhers.to_native(x)
+        input_y = tfhers.to_native(y)
+        return tfhers.from_native(input_x + input_y, TFHERS_UINT_8_3_2_4096)
 
 
 @fhe.module()
@@ -1329,13 +1335,16 @@ class AddModuleTwoFunc:
 
     @fhe.function({"x": "encrypted", "y": "encrypted"})
     def add(x, y):
-        x = tfhers.to_native(x)
-        y = tfhers.to_native(y)
-        return tfhers.from_native(x + y, TFHERS_UINT_8_3_2_4096)
+        native_x = tfhers.to_native(x)
+        native_y = tfhers.to_native(y)
+        return tfhers.from_native(native_x + native_y, TFHERS_UINT_8_3_2_4096)
 
     @fhe.function({"x": "encrypted"})
     def inc(x):
         return x + 1
+
+
+# pylint: enable=no-self-argument,missing-function-docstring,missing-class-docstring
 
 
 @pytest.mark.parametrize(
@@ -1420,7 +1429,8 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen_with_modules(
 
     assert (
         os.system(
-            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk {sk_path}"
+            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk "
+            f"{sk_path}"
         )
         == 0
     )
@@ -1525,7 +1535,8 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen_with_modules(
     random_value = np.random.randint(*tfhers_value_range)
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} "
+            f"--client-key {client_key_path}"
         )
         == 0
     )
@@ -1533,7 +1544,8 @@ def test_tfhers_binary_encrypted_complete_circuit_tfhers_keygen_with_modules(
     # add random value to the result ct
     assert (
         os.system(
-            f"{tfhers_utils} add -c {ct_out_path} {random_ct_path} -s {server_key_path} -o {sum_ct_path}"
+            f"{tfhers_utils} add -c {ct_out_path} {random_ct_path} -s {server_key_path} -o "
+            f"{sum_ct_path}"
         )
         == 0
     )
@@ -1710,7 +1722,8 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk {sk_path}"
+            f"{tfhers_utils} keygen -s {server_key_path} -c {client_key_path} --output-lwe-sk "
+            f"{sk_path}"
         )
         == 0
     )
@@ -1736,7 +1749,8 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
 
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key --value={pt1} -c {ct1_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value={pt1} -c {ct1_path} --client-key "
+            f"{client_key_path}"
         )
         == 0
     )
@@ -1781,7 +1795,8 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     random_value = np.random.randint(*tfhers_value_range)
     assert (
         os.system(
-            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} --client-key {client_key_path}"
+            f"{tfhers_utils} encrypt-with-key --value={random_value} -c {random_ct_path} "
+            f"--client-key {client_key_path}"
         )
         == 0
     )
@@ -1789,7 +1804,8 @@ def test_tfhers_one_tfhers_one_native_complete_circuit_tfhers_keygen(
     # add random value to the result ct
     assert (
         os.system(
-            f"{tfhers_utils} add -c {ct_out_path} {random_ct_path} -s {server_key_path} -o {sum_ct_path}"
+            f"{tfhers_utils} add -c {ct_out_path} {random_ct_path} -s {server_key_path} -o "
+            f"{sum_ct_path}"
         )
         == 0
     )

@@ -4,8 +4,9 @@ Declaration of `circuit` and `compiler` decorators.
 
 import functools
 import inspect
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 from ..representation import Graph
 from ..tracing.typing import ScalarAnnotation
@@ -45,7 +46,7 @@ def circuit(
     def decoration(function_: Callable):
         signature = inspect.signature(function_)
 
-        parameter_values: Dict[str, ValueDescription] = {}
+        parameter_values: dict[str, ValueDescription] = {}
         for name, details in signature.parameters.items():
             if name not in parameters:
                 continue
@@ -97,7 +98,7 @@ class Compilable:
 
     def trace(
         self,
-        inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
+        inputset: Optional[Union[Iterable[Any], Iterable[tuple[Any, ...]]]] = None,
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         **kwargs,
@@ -127,7 +128,7 @@ class Compilable:
 
     def compile(
         self,
-        inputset: Optional[Union[Iterable[Any], Iterable[Tuple[Any, ...]]]] = None,
+        inputset: Optional[Union[Iterable[Any], Iterable[tuple[Any, ...]]]] = None,
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         **kwargs,
@@ -197,7 +198,7 @@ def module():
     return decoration
 
 
-def function(parameters: Dict[str, Union[str, EncryptionStatus]]):
+def function(parameters: dict[str, Union[str, EncryptionStatus]]):
     """
     Provide an easy interface to define a function within an fhe module.
 

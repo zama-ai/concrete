@@ -5,7 +5,7 @@ Declaration of `ConversionType` and `Conversion` classes.
 # pylint: disable=import-error,no-name-in-module
 
 import re
-from typing import Optional, Tuple
+from typing import Optional
 
 from mlir.ir import OpResult as MlirOperation
 from mlir.ir import Type as MlirType
@@ -34,7 +34,7 @@ class ConversionType:
     bit_width: int
     is_encrypted: bool
     is_signed: bool
-    shape: Tuple[int, ...]
+    shape: tuple[int, ...]
 
     is_index: bool
 
@@ -202,7 +202,7 @@ class Conversion:
         return self.type.is_unsigned
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         return self.type.shape
 
     # pylint: enable=missing-function-docstring

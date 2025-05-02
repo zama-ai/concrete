@@ -437,6 +437,10 @@ def test_compiler_enable_fusing(helpers):
 
 
 def test_compiler_reset(helpers):
+    """
+    Test compiler reset.
+    """
+
     def f(x, y):
         return x + y
 
@@ -492,7 +496,7 @@ module {
   }
 }
 
-        """.strip(),
+        """.strip(),  # noqa: E501
         circuit3.mlir.strip(),
     )
     compiler.reset()

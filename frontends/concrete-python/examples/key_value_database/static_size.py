@@ -1,5 +1,5 @@
 import time
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -14,7 +14,7 @@ class StaticKeyValueDatabase:
 
     _number_of_key_chunks: int
     _number_of_value_chunks: int
-    _state_shape: Tuple[int, ...]
+    _state_shape: tuple[int, ...]
 
     module: fhe.Module
     state: Optional[fhe.Value]
@@ -88,6 +88,7 @@ class StaticKeyValueDatabase:
         number_of_key_chunks = self._number_of_key_chunks
         state_shape = self._state_shape
 
+        # pylint: disable=no-self-argument
         @fhe.module()
         class StaticKeyValueDatabaseModule:
             @fhe.function({"state": "clear"})
@@ -177,6 +178,8 @@ class StaticKeyValueDatabase:
             def inspect(state):
                 return state
 
+            # pylint: enable=no-self-argument
+
             composition = fhe.Wired(
                 {
                     # from reset
@@ -230,6 +233,7 @@ class StaticKeyValueDatabase:
             for i in range(20)
         ]
 
+        # pylint: disable=no-member
         return StaticKeyValueDatabaseModule.compile(  # type: ignore
             {
                 "reset": [sample_state],
@@ -240,11 +244,12 @@ class StaticKeyValueDatabase:
             },
             configuration,
         )
+        # pylint: enable=no-member
 
     def keygen(self, force: bool = False):
         self.module.keygen(force=force)
 
-    def initialize(self, initial_state: Optional[Union[List, np.ndarray]] = None):
+    def initialize(self, initial_state: Optional[Union[list, np.ndarray]] = None):
         if initial_state is None:
             initial_state = np.zeros(self._state_shape, dtype=np.int64)
 
@@ -263,7 +268,7 @@ class StaticKeyValueDatabase:
 
         self.state = initial_state_encrypted  # type: ignore
 
-    def decode_entry(self, entry: np.ndarray) -> Optional[Tuple[int, int]]:
+    def decode_entry(self, entry: np.ndarray) -> Optional[tuple[int, int]]:
         if entry[0] == 0:
             return None
 
@@ -348,7 +353,7 @@ def query(db: StaticKeyValueDatabase, key: int) -> Optional[int]:
     return db.decode_value(value)  # type: ignore
 
 
-if __name__ == "__main__":
+def main():
     print("Compiling...")
     start = time.time()
     db = StaticKeyValueDatabase(number_of_entries=10)
@@ -424,3 +429,7 @@ if __name__ == "__main__":
     # Query the database for the key=maximum_key
     # The value minimum_value should be returned
     assert query(db, maximum_key) == minimum_value
+
+
+if __name__ == "__main__":
+    main()

@@ -2,18 +2,19 @@
 Declaration of various functions and constants related to representation of computation.
 """
 
-from typing import Any, Dict, Hashable, Set, Union
+from collections.abc import Hashable
+from typing import Any, Union
 
 import numpy as np
 
 from ..internal.utils import assert_that
 
-KWARGS_IGNORED_IN_FORMATTING: Set[str] = {
+KWARGS_IGNORED_IN_FORMATTING: set[str] = {
     "subgraph",
     "terminal_node",
 }
 
-SPECIAL_OBJECT_MAPPING: Dict[Any, str] = {
+SPECIAL_OBJECT_MAPPING: dict[Any, str] = {
     np.float16: "float16",
     np.float32: "float32",
     np.float64: "float64",

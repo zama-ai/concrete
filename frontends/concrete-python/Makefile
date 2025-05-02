@@ -20,6 +20,7 @@ CONCRETE_VERSION?="" # empty mean latest
 # see https://pypi.zama.ai/cpu/concrete-python/index.html for available versions
 
 .ONESHELL:
+.SHELLFLAGS=-e -c
 .PHONY:
 .SILENT:
 

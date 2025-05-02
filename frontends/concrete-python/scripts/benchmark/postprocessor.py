@@ -10,7 +10,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from concrete import fhe
 
@@ -92,7 +92,7 @@ def git_iso_to_python_iso(date_str: str) -> str:
     return f"{splitted[0]}T{splitted[1]}{splitted[2][:3]}:{splitted[2][3:]}"
 
 
-def find_element_in_zip(elements: List[Tuple[str, Any]], key: str) -> Any:
+def find_element_in_zip(elements: list[tuple[str, Any]], key: str) -> Any:
     """Find the element in a dict represented as a zip."""
     for key_, value in elements:
         if key_ == key:

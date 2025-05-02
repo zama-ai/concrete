@@ -7,7 +7,7 @@ Declaration of `Client` class.
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 from concrete.compiler import ClientProgram, LweSecretKey
@@ -126,7 +126,7 @@ class Client:
         force: bool = False,
         secret_seed: Optional[int] = None,
         encryption_seed: Optional[int] = None,
-        initial_keys: Optional[Dict[int, LweSecretKey]] = None,
+        initial_keys: Optional[dict[int, LweSecretKey]] = None,
     ):
         """
         Generate keys required for homomorphic evaluation.
@@ -155,9 +155,9 @@ class Client:
 
     def encrypt(
         self,
-        *args: Optional[Union[int, np.ndarray, List]],
+        *args: Optional[Union[int, np.ndarray, list]],
         function_name: Optional[str] = None,
-    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
+    ) -> Optional[Union[Value, tuple[Optional[Value], ...]]]:
         """
         Encrypt argument(s) to for evaluation.
 
@@ -211,9 +211,9 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def simulate_encrypt(
         self,
-        *args: Optional[Union[int, np.ndarray, List]],
+        *args: Optional[Union[int, np.ndarray, list]],
         function_name: Optional[str] = None,
-    ) -> Optional[Union[Value, Tuple[Optional[Value], ...]]]:
+    ) -> Optional[Union[Value, tuple[Optional[Value], ...]]]:
         """
         Simulate encryption of argument(s) for evaluation.
 
@@ -263,9 +263,9 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def decrypt(
         self,
-        *results: Union[Value, Tuple[Value, ...]],
+        *results: Union[Value, tuple[Value, ...]],
         function_name: Optional[str] = None,
-    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+    ) -> Optional[Union[int, np.ndarray, tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Decrypt result(s) of evaluation.
 
@@ -289,7 +289,7 @@ Provide a `function_name` keyword argument to disambiguate."
 Provide a `function_name` keyword argument to disambiguate."
                 raise TypeError(msg)
 
-        flattened_results: List[Value] = []
+        flattened_results: list[Value] = []
         for result in results:
             if isinstance(result, tuple):  # pragma: no cover
                 # this branch is impossible to cover without multiple outputs
@@ -317,9 +317,9 @@ Provide a `function_name` keyword argument to disambiguate."
 
     def simulate_decrypt(
         self,
-        *results: Union[Value, Tuple[Value, ...]],
+        *results: Union[Value, tuple[Value, ...]],
         function_name: Optional[str] = None,
-    ) -> Optional[Union[int, np.ndarray, Tuple[Optional[Union[int, np.ndarray]], ...]]]:
+    ) -> Optional[Union[int, np.ndarray, tuple[Optional[Union[int, np.ndarray]], ...]]]:
         """
         Simulate decryption of result(s) of evaluation.
 
@@ -343,7 +343,7 @@ Provide a `function_name` keyword argument to disambiguate."
 Provide a `function_name` keyword argument to disambiguate."
                 raise TypeError(msg)
 
-        flattened_results: List[Value] = []
+        flattened_results: list[Value] = []
         for result in results:
             if isinstance(result, tuple):  # pragma: no cover
                 # this branch is impossible to cover without multiple outputs

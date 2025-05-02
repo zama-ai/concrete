@@ -2,9 +2,8 @@ import os
 from functools import partial
 
 import click
-import numpy as np
 
-import concrete.fhe as fhe
+from concrete import fhe
 from concrete.fhe import tfhers
 
 ### Options ###########################
@@ -108,7 +107,8 @@ def run(rust_ct_1: str, rust_ct_2: str, output_rust_ct: str, concrete_keyset_pat
     circuit, tfhers_bridge = ccompilee()
 
     if not os.path.exists(concrete_keyset_path):
-        raise RuntimeError("cannot find keys, you should run keygen before")
+        msg = "cannot find keys, you should run keygen before"
+        raise RuntimeError(msg)
     print(f"loading keys from '{concrete_keyset_path}'")
     with open(concrete_keyset_path, "rb") as f:
         eval_keys = fhe.EvaluationKeys.deserialize(f.read())

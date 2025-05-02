@@ -2,15 +2,13 @@
 Declaration of various functions and constants related to data types.
 """
 
-from typing import List
-
 from ..internal.utils import assert_that
 from .base import BaseDataType
 from .float import Float
 from .integer import Integer, SignedInteger, UnsignedInteger
 
 
-def combine_dtypes(dtypes: List[BaseDataType]) -> BaseDataType:
+def combine_dtypes(dtypes: list[BaseDataType]) -> BaseDataType:
     """
     Get the 'BaseDataType' that can represent a set of 'BaseDataType's.
 

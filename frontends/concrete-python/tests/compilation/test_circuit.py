@@ -7,11 +7,15 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+
+# pylint: disable=ungrouped-imports,no-name-in-module,import-error
 from concrete.compiler import CompilationContext
 from mlir.ir import Module as MlirModule
 
 from concrete import fhe
 from concrete.fhe import Client, ClientSpecs, EvaluationKeys, LookupTable, Server, Value
+
+# pylint: disable=ungrouped-imports,no-name-in-module,import-error
 
 
 def test_circuit_statistics(helpers):

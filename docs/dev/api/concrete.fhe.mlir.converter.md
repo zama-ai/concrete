@@ -12,12 +12,12 @@ Declaration of `Converter` class.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Converter`
 Converter class, to convert a computation graph to MLIR. 
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -37,12 +37,12 @@ __init__(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L322"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `add`
 
 ```python
-add(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+add(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -51,26 +51,12 @@ add(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `amax`
 
 ```python
-amax(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
-```
-
-
-
-
-
----
-
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `amin`
-
-```python
-amin(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+amax(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -81,10 +67,10 @@ amin(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 <a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>method</kbd> `array`
+### <kbd>method</kbd> `amin`
 
 ```python
-array(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+amin(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -93,12 +79,26 @@ array(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `array`
+
+```python
+array(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
+```
+
+
+
+
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L340"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `assign_dynamic`
 
 ```python
-assign_dynamic(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+assign_dynamic(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -107,12 +107,12 @@ assign_dynamic(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L356"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `assign_static`
 
 ```python
-assign_static(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+assign_static(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -121,12 +121,12 @@ assign_static(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L365"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L370"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwise_and`
 
 ```python
-bitwise_and(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+bitwise_and(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -135,12 +135,12 @@ bitwise_and(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L373"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L378"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwise_or`
 
 ```python
-bitwise_or(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+bitwise_or(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -149,12 +149,12 @@ bitwise_or(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwise_xor`
 
 ```python
-bitwise_xor(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+bitwise_xor(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -163,12 +163,12 @@ bitwise_xor(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `broadcast_to`
 
 ```python
-broadcast_to(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+broadcast_to(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -177,12 +177,12 @@ broadcast_to(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L393"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L398"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `concatenate`
 
 ```python
-concatenate(ctx: Context, node: Node, preds: List[Conversion])
+concatenate(ctx: Context, node: Node, preds: list[Conversion])
 ```
 
 
@@ -191,12 +191,12 @@ concatenate(ctx: Context, node: Node, preds: List[Conversion])
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L400"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `constant`
 
 ```python
-constant(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+constant(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -205,12 +205,12 @@ constant(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `conv1d`
 
 ```python
-conv1d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+conv1d(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -219,12 +219,12 @@ conv1d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L408"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L413"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `conv2d`
 
 ```python
-conv2d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+conv2d(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -233,12 +233,12 @@ conv2d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L421"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `conv3d`
 
 ```python
-conv3d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+conv3d(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -247,7 +247,7 @@ conv3d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `convert`
 
@@ -270,12 +270,12 @@ Return:  MlirModule:  In-memory MLIR module corresponding to the graph
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `convert_many`
 
 ```python
-convert_many(graphs: Dict[str, Graph], mlir_context: <locals>Context) → Module
+convert_many(graphs: dict[str, Graph], mlir_context: <locals>Context) → Module
 ```
 
 Convert multiple computation graphs to an MLIR module. 
@@ -291,12 +291,12 @@ Return:  MlirModule:  In-memory MLIR module corresponding to the graph
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L425"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L430"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy`
 
 ```python
-copy(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+copy(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -305,12 +305,12 @@ copy(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dot`
 
 ```python
-dot(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+dot(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -319,12 +319,12 @@ dot(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L433"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L438"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dynamic_tlu`
 
 ```python
-dynamic_tlu(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+dynamic_tlu(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -333,12 +333,12 @@ dynamic_tlu(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L437"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L442"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `equal`
 
 ```python
-equal(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+equal(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -347,12 +347,12 @@ equal(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L450"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `expand_dims`
 
 ```python
-expand_dims(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+expand_dims(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -361,7 +361,7 @@ expand_dims(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L454"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `extract_bit_pattern`
 
@@ -369,7 +369,7 @@ expand_dims(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 extract_bit_pattern(
     ctx: Context,
     node: Node,
-    preds: List[Conversion]
+    preds: list[Conversion]
 ) → Conversion
 ```
 
@@ -379,12 +379,12 @@ extract_bit_pattern(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L453"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `greater`
 
 ```python
-greater(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+greater(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -393,26 +393,12 @@ greater(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L461"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L466"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `greater_equal`
 
 ```python
-greater_equal(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
-```
-
-
-
-
-
----
-
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L469"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `identity`
-
-```python
-identity(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+greater_equal(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -423,10 +409,10 @@ identity(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 <a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L474"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>method</kbd> `index_dynamic`
+### <kbd>method</kbd> `identity`
 
 ```python
-index_dynamic(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+identity(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -435,12 +421,26 @@ index_dynamic(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L493"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `index_dynamic`
+
+```python
+index_dynamic(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
+```
+
+
+
+
+
+---
+
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `index_static`
 
 ```python
-index_static(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+index_static(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -449,12 +449,12 @@ index_static(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L506"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `left_shift`
 
 ```python
-left_shift(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+left_shift(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -463,12 +463,12 @@ left_shift(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `less`
 
 ```python
-less(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+less(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -477,12 +477,12 @@ less(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L523"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L528"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `less_equal`
 
 ```python
-less_equal(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+less_equal(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -491,12 +491,12 @@ less_equal(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L531"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L536"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `matmul`
 
 ```python
-matmul(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+matmul(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -505,12 +505,12 @@ matmul(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L535"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L540"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `max`
 
 ```python
-max(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+max(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -519,12 +519,12 @@ max(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L545"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L550"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `maximum`
 
 ```python
-maximum(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+maximum(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -533,12 +533,12 @@ maximum(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L553"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `maxpool1d`
 
 ```python
-maxpool1d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+maxpool1d(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -547,12 +547,12 @@ maxpool1d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L557"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L562"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `maxpool2d`
 
 ```python
-maxpool2d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+maxpool2d(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -561,12 +561,12 @@ maxpool2d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L567"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `maxpool3d`
 
 ```python
-maxpool3d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+maxpool3d(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -575,12 +575,12 @@ maxpool3d(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L571"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L576"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `min`
 
 ```python
-min(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+min(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -589,12 +589,12 @@ min(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L586"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `minimum`
 
 ```python
-minimum(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+minimum(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -603,12 +603,12 @@ minimum(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L594"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `multiply`
 
 ```python
-multiply(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+multiply(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -617,12 +617,12 @@ multiply(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L593"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L598"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `negative`
 
 ```python
-negative(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+negative(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -631,12 +631,12 @@ negative(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `node`
 
 ```python
-node(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+node(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 Convert a computation graph node into MLIR. 
@@ -654,12 +654,12 @@ Return:  Conversion:  conversion object corresponding to node
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L597"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L602"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `not_equal`
 
 ```python
-not_equal(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+not_equal(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -668,12 +668,12 @@ not_equal(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L605"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L610"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `ones`
 
 ```python
-ones(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+ones(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -682,12 +682,12 @@ ones(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `process`
 
 ```python
-process(graphs: Dict[str, Graph])
+process(graphs: dict[str, Graph])
 ```
 
 Process a computation graph for MLIR conversion. 
@@ -699,12 +699,12 @@ Process a computation graph for MLIR conversion.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L609"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L614"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `relu`
 
 ```python
-relu(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+relu(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -713,12 +713,12 @@ relu(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L618"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reshape`
 
 ```python
-reshape(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+reshape(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -727,12 +727,12 @@ reshape(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L617"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L622"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `right_shift`
 
 ```python
-right_shift(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+right_shift(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -741,7 +741,7 @@ right_shift(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L631"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L636"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `round_bit_pattern`
 
@@ -749,7 +749,7 @@ right_shift(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 round_bit_pattern(
     ctx: Context,
     node: Node,
-    preds: List[Conversion]
+    preds: list[Conversion]
 ) → Conversion
 ```
 
@@ -759,7 +759,7 @@ round_bit_pattern(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `simplify_tag`
 
@@ -771,12 +771,12 @@ Keep only `n` higher tag parts.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L678"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `squeeze`
 
 ```python
-squeeze(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+squeeze(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -785,7 +785,7 @@ squeeze(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L166"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `stdout_with_ansi_support`
 
@@ -797,12 +797,12 @@ Detect if ansi characters can be used (e.g. not the case in notebooks).
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L665"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L670"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `subtract`
 
 ```python
-subtract(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+subtract(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -811,12 +811,12 @@ subtract(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L669"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L674"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sum`
 
 ```python
-sum(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+sum(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -825,7 +825,7 @@ sum(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L997"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L1002"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `tfhers_from_native`
 
@@ -833,7 +833,7 @@ sum(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 tfhers_from_native(
     ctx: Context,
     node: Node,
-    preds: List[Conversion]
+    preds: list[Conversion]
 ) → Conversion
 ```
 
@@ -843,12 +843,12 @@ tfhers_from_native(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L932"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L937"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `tfhers_to_native`
 
 ```python
-tfhers_to_native(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+tfhers_to_native(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -857,12 +857,12 @@ tfhers_to_native(ctx: Context, node: Node, preds: List[Conversion]) → Conversi
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L749"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `tlu`
 
 ```python
-tlu(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+tlu(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -871,7 +871,7 @@ tlu(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L694"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L699"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `tlu_adjust`
 
@@ -885,7 +885,7 @@ tlu_adjust(table, variable_input, target_bit_width, clipping, reduce_precision)
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `trace_progress`
 
@@ -893,7 +893,7 @@ tlu_adjust(table, variable_input, target_bit_width, clipping, reduce_precision)
 trace_progress(
     configuration: Configuration,
     progress_index: int,
-    nodes: List[Node]
+    nodes: list[Node]
 )
 ```
 
@@ -910,12 +910,12 @@ Add a trace_message for progress.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L912"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L917"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `transpose`
 
 ```python
-transpose(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+transpose(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -924,7 +924,7 @@ transpose(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L920"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L925"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `truncate_bit_pattern`
 
@@ -932,7 +932,7 @@ transpose(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 truncate_bit_pattern(
     ctx: Context,
     node: Node,
-    preds: List[Conversion]
+    preds: list[Conversion]
 ) → Conversion
 ```
 
@@ -942,12 +942,12 @@ truncate_bit_pattern(
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L924"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L929"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `where`
 
 ```python
-where(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+where(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 
@@ -956,12 +956,12 @@ where(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L928"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/mlir/converter.py#L933"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `zeros`
 
 ```python
-zeros(ctx: Context, node: Node, preds: List[Conversion]) → Conversion
+zeros(ctx: Context, node: Node, preds: list[Conversion]) → Conversion
 ```
 
 

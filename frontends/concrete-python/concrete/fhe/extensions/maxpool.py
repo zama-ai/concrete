@@ -3,7 +3,7 @@ Tracing and evaluation of maxpool.
 """
 
 from copy import deepcopy
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -60,11 +60,11 @@ _EVALUATORS = {
 
 def maxpool(
     x: Union[np.ndarray, Tracer],
-    kernel_shape: Union[Tuple[int, ...], List[int]],
-    strides: Optional[Union[Tuple[int, ...], List[int]]] = None,
+    kernel_shape: Union[tuple[int, ...], list[int]],
+    strides: Optional[Union[tuple[int, ...], list[int]]] = None,
     auto_pad: str = "NOTSET",
-    pads: Optional[Union[Tuple[int, ...], List[int]]] = None,
-    dilations: Optional[Union[Tuple[int, ...], List[int]]] = None,
+    pads: Optional[Union[tuple[int, ...], list[int]]] = None,
+    dilations: Optional[Union[tuple[int, ...], list[int]]] = None,
     ceil_mode: int = 0,
     storage_order: int = 0,
 ) -> Union[np.ndarray, Tracer]:
@@ -117,7 +117,7 @@ def maxpool(
             maxpool over the input or traced computation
     """
 
-    def check_value_is_a_tuple_or_list_of_ints_of_size(value_name, value, size) -> Tuple[int, ...]:
+    def check_value_is_a_tuple_or_list_of_ints_of_size(value_name, value, size) -> tuple[int, ...]:
         if isinstance(value, list):
             value = tuple(value)
 
@@ -274,10 +274,10 @@ def maxpool(
 
 def _trace_or_evaluate(
     x: Union[np.ndarray, Tracer],
-    kernel_shape: Tuple[int, ...],
-    strides: Tuple[int, ...],
-    pads: Tuple[int, ...],
-    dilations: Tuple[int, ...],
+    kernel_shape: tuple[int, ...],
+    strides: tuple[int, ...],
+    pads: tuple[int, ...],
+    dilations: tuple[int, ...],
     ceil_mode: bool,
 ):
     if not isinstance(x, Tracer):
@@ -310,10 +310,10 @@ def _trace_or_evaluate(
 
 def _evaluate(
     x: np.ndarray,
-    kernel_shape: Tuple[int, ...],
-    strides: Tuple[int, ...],
-    pads: Tuple[int, ...],
-    dilations: Tuple[int, ...],
+    kernel_shape: tuple[int, ...],
+    strides: tuple[int, ...],
+    pads: tuple[int, ...],
+    dilations: tuple[int, ...],
     ceil_mode: bool,
 ) -> np.ndarray:
     # pylint: disable=no-member

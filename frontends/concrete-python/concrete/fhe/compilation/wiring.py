@@ -4,18 +4,9 @@ Declaration of wiring related class.
 
 # pylint: disable=import-error,no-name-in-module
 
+from collections.abc import Iterable
 from itertools import chain, product, repeat
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    Protocol,
-    Set,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional, Protocol, runtime_checkable
 
 from ..representation import Graph
 from .composition import CompositionClause, CompositionRule
@@ -29,7 +20,7 @@ class NotComposable:
     Composition policy that does not allow the forwarding of any output to any input.
     """
 
-    def get_rules_iter(self, _funcs: List["FunctionDef"]) -> Iterable[CompositionRule]:
+    def get_rules_iter(self, _funcs: list["FunctionDef"]) -> Iterable[CompositionRule]:
         """
         Return an iterator over composition rules.
         """
@@ -41,7 +32,7 @@ class AllComposable:
     Composition policy that allows to forward any output of the module to any of its input.
     """
 
-    def get_rules_iter(self, funcs: List[Graph]) -> Iterable[CompositionRule]:
+    def get_rules_iter(self, funcs: list[Graph]) -> Iterable[CompositionRule]:
         """
         Return an iterator over composition rules.
         """
@@ -174,12 +165,12 @@ class Wired:
     Composition policy which allows the forwarding of certain outputs to certain inputs.
     """
 
-    wires: Set[Wire]
+    wires: set[Wire]
 
-    def __init__(self, wires: Optional[Set[Wire]] = None):
+    def __init__(self, wires: Optional[set[Wire]] = None):
         self.wires = wires if wires else set()
 
-    def get_rules_iter(self, funcs: List[Graph]) -> Iterable[CompositionRule]:
+    def get_rules_iter(self, funcs: list[Graph]) -> Iterable[CompositionRule]:
         """
         Return an iterator over composition rules.
         """

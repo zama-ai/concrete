@@ -3,7 +3,7 @@ Tests of execution of bitwise operations.
 """
 
 import random
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Optional
 
 import numpy as np
 import pytest
@@ -18,13 +18,13 @@ operations = [
     ("^", lambda x, y: x ^ y),
 ]
 
-cases: List[
-    Tuple[
-        Tuple[str, Callable],
+cases: list[
+    tuple[
+        tuple[str, Callable],
         int,
         int,
-        Tuple[int, ...],
-        Tuple[int, ...],
+        tuple[int, ...],
+        tuple[int, ...],
         Optional[fhe.BitwiseStrategy],
     ]
 ] = []

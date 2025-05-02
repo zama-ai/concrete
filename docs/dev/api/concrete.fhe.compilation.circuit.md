@@ -337,8 +337,8 @@ Cleanup the temporary library output directory.
 
 ```python
 decrypt(
-    *results: Union[Value, Tuple[Value, ]]
-) → Union[int, ndarray, Tuple[Union[int, ndarray, NoneType], ], NoneType]
+    *results: Union[Value, tuple[Value, ]]
+) → Union[int, ndarray, tuple[Union[int, ndarray, NoneType], ], NoneType]
 ```
 
 Decrypt result(s) of evaluation. 
@@ -419,8 +419,8 @@ Enable FHE simulation.
 
 ```python
 encrypt(
-    *args: Optional[int, ndarray, List]
-) → Union[Value, Tuple[Optional[Value], ], NoneType]
+    *args: Optional[int, ndarray, list]
+) → Union[Value, tuple[Optional[Value], ], NoneType]
 ```
 
 Encrypt argument(s) to for evaluation. 
@@ -468,7 +468,7 @@ keygen(
     force: bool = False,
     seed: Optional[int] = None,
     encryption_seed: Optional[int] = None,
-    initial_keys: Optional[Dict[int, LweSecretKey]] = None
+    initial_keys: Optional[dict[int, LweSecretKey]] = None
 )
 ```
 
@@ -493,8 +493,8 @@ Generate keys required for homomorphic evaluation.
 
 ```python
 run(
-    *args: Optional[Value, Tuple[Optional[Value], ]]
-) → Union[Value, Tuple[Value, ]]
+    *args: Optional[Value, tuple[Optional[Value], ]]
+) → Union[Value, tuple[Value, ]]
 ```
 
 Evaluate the circuit. 

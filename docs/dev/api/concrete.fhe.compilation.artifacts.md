@@ -292,7 +292,7 @@ An object containing debug artifacts for an fhe module.
 
 ```python
 __init__(
-    function_names: Optional[List[str]] = None,
+    function_names: Optional[list[str]] = None,
     output_directory: Union[str, Path] = PosixPath('.artifacts')
 )
 ```

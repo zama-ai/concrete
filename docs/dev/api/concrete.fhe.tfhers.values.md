@@ -19,7 +19,7 @@ Wrap integer values (scalar or arrays) into typed values, using tfhers types.
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(dtype: TFHERSIntegerType, value: Union[List, int, ndarray])
+__init__(dtype: TFHERSIntegerType, value: Union[list, int, ndarray])
 ```
 
 

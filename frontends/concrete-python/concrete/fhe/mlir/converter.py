@@ -6,7 +6,8 @@ Declaration of `Converter` class.
 
 import math
 import sys
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Optional, Union
 
 import concrete.lang
 import concrete.lang.dialects.tracing
@@ -36,7 +37,7 @@ class Converter:
     """
 
     configuration: Configuration
-    composition_rules: List[CompositionRule]
+    composition_rules: list[CompositionRule]
 
     def __init__(
         self,
@@ -48,7 +49,7 @@ class Converter:
 
     def convert_many(
         self,
-        graphs: Dict[str, Graph],
+        graphs: dict[str, Graph],
         mlir_context: MlirContext,
     ) -> MlirModule:
         """
@@ -181,7 +182,7 @@ class Converter:
         return tag[:last_dot_pos]
 
     @classmethod
-    def trace_progress(cls, configuration: Configuration, progress_index: int, nodes: List[Node]):
+    def trace_progress(cls, configuration: Configuration, progress_index: int, nodes: list[Node]):
         """
         Add a trace_message for progress.
 
@@ -238,7 +239,7 @@ class Converter:
             return
         concrete.lang.dialects.tracing.TraceMessageOp(msg=msg)  # pylint: disable=no-member
 
-    def process(self, graphs: Dict[str, Graph]):
+    def process(self, graphs: dict[str, Graph]):
         """
         Process a computation graph for MLIR conversion.
 
@@ -281,7 +282,7 @@ class Converter:
                 for graph in graphs.values():
                     processor.apply(graph)
 
-    def node(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def node(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         """
         Convert a computation graph node into MLIR.
 
@@ -318,21 +319,25 @@ class Converter:
 
     # pylint: disable=missing-function-docstring,unused-argument
 
-    def add(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def add(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.add(ctx.typeof(node), preds[0], preds[1])
 
-    def amax(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def amax(
+        self, ctx: Context, node: Node, preds: list[Conversion]
+    ) -> Conversion:  # pragma: no cover
         return self.max(ctx, node, preds)
 
-    def amin(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def amin(
+        self, ctx: Context, node: Node, preds: list[Conversion]
+    ) -> Conversion:  # pragma: no cover
         return self.min(ctx, node, preds)
 
-    def array(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def array(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) > 0
         return ctx.array(ctx.typeof(node), elements=preds)
 
-    def assign_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def assign_dynamic(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) >= 3
 
         x = preds[0]
@@ -353,7 +358,7 @@ class Converter:
 
         return ctx.assign(ctx.typeof(node), x, y, indices)
 
-    def assign_static(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def assign_static(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.assign(
             ctx.typeof(node),
@@ -362,7 +367,7 @@ class Converter:
             node.properties["kwargs"]["index"],
         )
 
-    def bitwise_and(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def bitwise_and(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -370,7 +375,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def bitwise_or(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def bitwise_or(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -378,7 +383,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def bitwise_xor(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def bitwise_xor(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -386,26 +391,26 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def broadcast_to(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def broadcast_to(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.broadcast_to(preds[0], shape=node.output.shape)
 
-    def concatenate(self, ctx: Context, node: Node, preds: List[Conversion]):
+    def concatenate(self, ctx: Context, node: Node, preds: list[Conversion]):
         return ctx.concatenate(
             ctx.typeof(node),
             preds,
             axis=node.properties["kwargs"].get("axis", 0),
         )
 
-    def constant(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def constant(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 0
         return ctx.constant(ctx.typeof(node), data=node())
 
-    def conv1d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def conv1d(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         ctx.error({node: "1-dimensional convolutions are not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
-    def conv2d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def conv2d(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) in [2, 3]
         return ctx.conv2d(
             ctx.typeof(node),
@@ -418,23 +423,23 @@ class Converter:
             group=node.properties["kwargs"]["group"],
         )
 
-    def conv3d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def conv3d(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         ctx.error({node: "3-dimensional convolutions are not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
-    def copy(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def copy(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return preds[0]
 
-    def dot(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def dot(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.dot(ctx.typeof(node), preds[0], preds[1])
 
-    def dynamic_tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def dynamic_tlu(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.dynamic_tlu(ctx.typeof(node), preds[0], preds[1])
 
-    def equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def equal(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -442,15 +447,15 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def expand_dims(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def expand_dims(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.reshape(preds[0], shape=node.output.shape)
 
-    def extract_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def extract_bit_pattern(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.extract_bits(ctx.typeof(node), preds[0], bits=node.properties["kwargs"]["bits"])
 
-    def greater(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def greater(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -458,7 +463,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def greater_equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def greater_equal(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -466,12 +471,12 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def identity(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def identity(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         force_noise_refresh = node.properties["kwargs"].get("force_noise_refresh", False)
         return ctx.identity(ctx.typeof(node), preds[0], force_noise_refresh)
 
-    def index_dynamic(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def index_dynamic(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) >= 2
 
         x = preds[0]
@@ -490,7 +495,7 @@ class Converter:
 
         return ctx.index(ctx.typeof(node), x, indices)
 
-    def index_static(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def index_static(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.index(
             ctx.typeof(node),
@@ -498,7 +503,7 @@ class Converter:
             index=node.properties["kwargs"]["index"],
         )
 
-    def left_shift(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def left_shift(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -512,7 +517,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def less(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def less(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -520,7 +525,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def less_equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def less_equal(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -528,11 +533,11 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def matmul(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def matmul(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.matmul(ctx.typeof(node), preds[0], preds[1])
 
-    def max(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def max(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.min_max(
             ctx.typeof(node),
@@ -542,7 +547,7 @@ class Converter:
             operation="max",
         )
 
-    def maximum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def maximum(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -550,11 +555,11 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def maxpool1d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def maxpool1d(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         ctx.error({node: "1-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
-    def maxpool2d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def maxpool2d(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.maxpool2d(
             ctx.typeof(node),
@@ -564,11 +569,11 @@ class Converter:
             dilations=node.properties["kwargs"]["dilations"],
         )
 
-    def maxpool3d(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def maxpool3d(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         ctx.error({node: "3-dimensional maxpooling is not supported at the moment"})
         assert False, "unreachable"  # pragma: no cover
 
-    def min(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def min(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.min_max(
             ctx.typeof(node),
@@ -578,7 +583,7 @@ class Converter:
             operation="min",
         )
 
-    def minimum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def minimum(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -586,15 +591,15 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def multiply(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def multiply(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.mul(ctx.typeof(node), preds[0], preds[1])
 
-    def negative(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def negative(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.neg(ctx.typeof(node), preds[0])
 
-    def not_equal(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def not_equal(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -602,19 +607,19 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def ones(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def ones(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 0
         return ctx.ones(ctx.typeof(node))
 
-    def relu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def relu(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.relu(ctx.typeof(node), preds[0])
 
-    def reshape(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def reshape(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.reshape(preds[0], shape=node.output.shape)
 
-    def right_shift(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def right_shift(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
 
         if all(pred.is_encrypted for pred in preds):
@@ -628,7 +633,7 @@ class Converter:
 
         return self.tlu(ctx, node, preds)
 
-    def round_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def round_bit_pattern(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         pred = preds[0]
 
@@ -662,11 +667,11 @@ class Converter:
             overflow_detected,
         )
 
-    def subtract(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def subtract(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 2
         return ctx.sub(ctx.typeof(node), preds[0], preds[1])
 
-    def sum(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def sum(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.sum(
             ctx.typeof(node),
@@ -675,7 +680,7 @@ class Converter:
             keep_dims=node.properties["kwargs"].get("keepdims", False),
         )
 
-    def squeeze(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def squeeze(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         # because of the tracing logic, we have the correct output shape
 
         # if the output shape is (), it means (1, 1, ..., 1, 1) is squeezed
@@ -746,7 +751,7 @@ class Converter:
 
         return table[lower_clipping_index : upper_clipping_index + 1]
 
-    def tlu(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def tlu(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert node.converted_to_table_lookup
 
         is_multivariate = (
@@ -764,7 +769,7 @@ class Converter:
         if is_multivariate:
             sum_of_bit_widths = sum(pred.original_bit_width for pred in preds)
             if sum_of_bit_widths > MAXIMUM_TLU_BIT_WIDTH:
-                highlights: Dict[Node, Union[str, List[str]]] = {
+                highlights: dict[Node, Union[str, list[str]]] = {
                     pred.origin: f"this {pred.original_bit_width}-bit value is one of the inputs"
                     for pred in preds
                 }
@@ -806,8 +811,8 @@ class Converter:
 
         assert len(tables) > 0
 
-        lut_shape: Tuple[int, ...] = ()
-        map_shape: Tuple[int, ...] = ()
+        lut_shape: tuple[int, ...] = ()
+        map_shape: tuple[int, ...] = ()
 
         if len(tables) == 1:
             table = tables[0][0]
@@ -909,7 +914,7 @@ class Converter:
             mapping=map_values.tolist(),
         )
 
-    def transpose(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def transpose(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.transpose(
             ctx.typeof(node),
@@ -917,19 +922,19 @@ class Converter:
             axes=node.properties["kwargs"].get("axes", []),
         )
 
-    def truncate_bit_pattern(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def truncate_bit_pattern(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         return ctx.truncate_bit_pattern(preds[0], node.properties["kwargs"]["lsbs_to_remove"])
 
-    def where(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def where(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 3
         return ctx.where(ctx.typeof(node), *preds)
 
-    def zeros(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def zeros(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 0
         return ctx.zeros(ctx.typeof(node))
 
-    def tfhers_to_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def tfhers_to_native(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         tfhers_int = preds[0]
         dtype: TFHERSIntegerType = node.properties["attributes"]["type"]
@@ -994,7 +999,7 @@ class Converter:
 
         return result
 
-    def tfhers_from_native(self, ctx: Context, node: Node, preds: List[Conversion]) -> Conversion:
+    def tfhers_from_native(self, ctx: Context, node: Node, preds: list[Conversion]) -> Conversion:
         assert len(preds) == 1
         dtype: TFHERSIntegerType = node.properties["attributes"]["type"]
         output_tfhers_bit_width, carry_width, msg_width = (

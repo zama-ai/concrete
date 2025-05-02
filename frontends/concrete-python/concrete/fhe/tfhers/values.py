@@ -2,7 +2,7 @@
 Declaration of `TFHERSInteger` which wraps values as being of tfhers types.
 """
 
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
@@ -19,7 +19,7 @@ class TFHERSInteger:
     def __init__(
         self,
         dtype: TFHERSIntegerType,
-        value: Union[List, int, np.ndarray],
+        value: Union[list, int, np.ndarray],
     ):
         if isinstance(value, list):
             try:

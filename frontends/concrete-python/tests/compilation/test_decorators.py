@@ -284,6 +284,10 @@ def test_bad_circuit(helpers):
 
 
 def test_compiler_reset(helpers):
+    """
+    Test compiler reset.
+    """
+
     @fhe.compiler({"x": "encrypted", "y": "encrypted"})
     def compiler(x, y):
         return x + y
@@ -339,7 +343,7 @@ module {
   }
 }
 
-        """.strip(),
+        """.strip(),  # noqa: E501
         circuit3.mlir.strip(),
     )
     compiler.reset()

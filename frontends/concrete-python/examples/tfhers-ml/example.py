@@ -5,7 +5,7 @@ from functools import partial
 import click
 import numpy as np
 
-import concrete.fhe as fhe
+from concrete import fhe
 from concrete.fhe import tfhers
 
 ### Options ###########################
@@ -33,8 +33,10 @@ rounder = fhe.AutoRounder(target_msbs=8)  # We want to keep 8 MSBs
 
 
 @typing.no_type_check
-def ml_inference(q_X: np.ndarray) -> np.ndarray:
-    y_pred = q_X @ q_weights - weight_quantizer_zero_point * np.sum(q_X, axis=1, keepdims=True)
+def ml_inference(input_x: np.ndarray) -> np.ndarray:
+    y_pred = input_x @ q_weights - weight_quantizer_zero_point * np.sum(
+        input_x, axis=1, keepdims=True
+    )
     y_pred += q_bias
     y_pred = fhe.round_bit_pattern(y_pred, rounder)
     y_pred = y_pred >> rounder.lsbs_to_remove
@@ -150,7 +152,8 @@ def run(rust_ct: str, output_rust_ct: str, concrete_keyset_path: str):
     circuit, tfhers_bridge = ccompilee()
 
     if not os.path.exists(concrete_keyset_path):
-        raise RuntimeError("cannot find keys, you should run keygen before")
+        msg = "cannot find keys, you should run keygen before"
+        raise RuntimeError(msg)
     print(f"loading keys from '{concrete_keyset_path}'")
     with open(concrete_keyset_path, "rb") as f:
         eval_keys = fhe.EvaluationKeys.deserialize(f.read())

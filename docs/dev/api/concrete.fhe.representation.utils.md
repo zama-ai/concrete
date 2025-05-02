@@ -13,7 +13,7 @@ Declaration of various functions and constants related to representation of comp
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/utils.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/utils.py#L65"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `format_constant`
 
@@ -44,7 +44,7 @@ Get the textual representation of a constant.
 
 ---
 
-<a href="../../frontends/concrete-python/concrete/fhe/representation/utils.py#L107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../frontends/concrete-python/concrete/fhe/representation/utils.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `format_indexing_element`
 

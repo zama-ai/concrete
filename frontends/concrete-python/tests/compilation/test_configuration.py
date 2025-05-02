@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from concrete import fhe
-from concrete.fhe.compilation import Configuration, server
+from concrete.fhe.compilation import Configuration
 from concrete.fhe.compilation.configuration import SecurityLevel
 
 from ..conftest import USE_MULTI_PRECISION
@@ -189,7 +189,7 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             TypeError,
             (
                 "Unexpected type for keyword argument 'additional_pre_processors' "
-                "(expected 'Optional[List[GraphProcessor]]', got 'str')"
+                "(expected 'Optional[list[GraphProcessor]]', got 'str')"
             ),
         ),
         pytest.param(
@@ -197,7 +197,7 @@ FORK_NAME = "fork" if sys.version_info < (3, 10) else "Configuration.fork"
             TypeError,
             (
                 "Unexpected type for keyword argument 'additional_post_processors' "
-                "(expected 'Optional[List[GraphProcessor]]', got 'str')"
+                "(expected 'Optional[list[GraphProcessor]]', got 'str')"
             ),
         ),
     ],
@@ -306,7 +306,11 @@ Bit-Width Assignments for <lambda>
 
 
 def test_set_security_level():
+    """
+    Test that the security level is set correctly.
+    """
 
+    # pylint: disable=no-self-argument,missing-class-docstring,missing-function-docstring
     @fhe.module()
     class Module:
         @fhe.function({"x": "encrypted", "y": "clear"})
@@ -319,10 +323,13 @@ def test_set_security_level():
             }
         )
 
+    # pylint: enable=no-self-argument,missing-class-docstring,missing-function-docstring
+
     inputset = [
         (np.random.randint(1, 20, size=()), np.random.randint(1, 20, size=())) for _ in range(100)
     ]
 
+    # pylint: disable=no-member
     module1 = Module.compile(
         {"inc": inputset},
         security_level=SecurityLevel.SECURITY_128_BITS,
@@ -337,6 +344,7 @@ def test_set_security_level():
         {"inc": inputset},
         security_level=SecurityLevel.SECURITY_132_BITS,
     )
+    # pylint: enable=no-member
 
     assert (
         module1.server.client_specs.program_info.get_keyset_info()

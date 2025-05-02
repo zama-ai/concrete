@@ -13,7 +13,7 @@ Declaration of `ones` and `one` functions, to simplify creation of encrypted one
 ## <kbd>function</kbd> `ones`
 
 ```python
-ones(shape: Union[int, Tuple[int, ]]) → Union[ndarray, Tracer]
+ones(shape: Union[int, tuple[int, ]]) → Union[ndarray, Tracer]
 ```
 
 Create an encrypted array of ones. 
