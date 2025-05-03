@@ -200,24 +200,25 @@ void sim_wop_pbs_crt(
 
 uint64_t sim_neg_lwe_u64(uint64_t plaintext) { return ~plaintext + 1; }
 
-uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc,
-                         bool is_signed) {
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc, bool is_signed,
+                         bool overflow_detection) {
   const char msg_f[] =
       "WARNING at %s: overflow happened during addition in simulation\n";
 
   uint64_t result = lhs + rhs;
-
-  if (is_signed) {
-    // We shift left to discard the padding bit and only consider the message
-    // for easier overflow checking
-    int64_t lhs_signed = (int64_t)lhs << 1;
-    int64_t rhs_signed = (int64_t)rhs << 1;
-    if (lhs_signed > 0 && rhs_signed > INT64_MAX - lhs_signed)
+  if (overflow_detection) {
+    if (is_signed) {
+      // We shift left to discard the padding bit and only consider the message
+      // for easier overflow checking
+      int64_t lhs_signed = (int64_t)lhs << 1;
+      int64_t rhs_signed = (int64_t)rhs << 1;
+      if (lhs_signed > 0 && rhs_signed > INT64_MAX - lhs_signed)
+        printf(msg_f, loc);
+      else if (lhs_signed < 0 && rhs_signed < INT64_MIN - lhs_signed)
+        printf(msg_f, loc);
+    } else if (lhs > UINT63_MAX - rhs || result > UINT63_MAX) {
       printf(msg_f, loc);
-    else if (lhs_signed < 0 && rhs_signed < INT64_MIN - lhs_signed)
-      printf(msg_f, loc);
-  } else if (lhs > UINT63_MAX - rhs || result > UINT63_MAX) {
-    printf(msg_f, loc);
+    }
   }
   return result;
 }

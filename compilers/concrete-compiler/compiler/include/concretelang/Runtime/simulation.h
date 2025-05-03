@@ -28,7 +28,8 @@ uint64_t sim_neg_lwe_u64(uint64_t plaintext);
 /// \param loc location of the operation
 /// \param is_signed tell if operands are known to be signed
 /// \return uint64_t
-uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc, bool is_signed);
+uint64_t sim_add_lwe_u64(uint64_t lhs, uint64_t rhs, char *loc, bool is_signed,
+                         bool overflow_detection);
 
 /// \brief simulate the multiplication of a noisy plaintext with an integer
 ///
