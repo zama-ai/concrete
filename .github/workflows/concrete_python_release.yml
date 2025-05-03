@@ -159,7 +159,7 @@ jobs:
 
             deactivate
       - name: Upload wheel
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ format('{0}-wheel-{1}-linux-x86', matrix.hw, matrix.python-version) }}
           path: frontends/concrete-python/dist/*manylinux*.whl
@@ -230,7 +230,7 @@ jobs:
           CONCRETE_WHEEL="${WHEEL_DIR}/*.whl" .github/workflows/scripts/make_apidocs.sh
       - name: Upload docs.patch if failure
         if: ${{ failure() }}
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: docs-artifacts
           path: |
@@ -312,7 +312,7 @@ jobs:
 
           deactivate
       - name: Upload wheel
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ format('cpu-wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}
           path: frontends/concrete-python/dist/*macos*.whl
