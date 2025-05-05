@@ -53,7 +53,16 @@ pub struct CryptoParams {
 pub struct IntegerType {
     pub carry_width: usize,
     pub msg_width: usize,
+    pub is_signed: bool,
+    pub bit_width: usize,
     pub params: CryptoParams
+}
+
+impl IntegerType {
+
+    pub fn n_cts(&self) -> usize {
+        self.bit_width / self.msg_width
+    }
 }
 
 #[cfg(feature = "compiler")]
@@ -105,11 +114,15 @@ mod to_tokens {
                 let carry_width = self.carry_width;
                 let msg_width = self.msg_width;
                 let params = &self.params;
+                let bit_width = &self.bit_width;
+                let is_signed = &self.is_signed;
                 tokens.extend(quote! {
                     ::concrete::tfhe::IntegerType {
                         carry_width: #carry_width,
                         msg_width: #msg_width,
                         params: #params,
+                        bit_width: #bit_width,
+                        is_signed: #is_signed
                     }
                 });
             }

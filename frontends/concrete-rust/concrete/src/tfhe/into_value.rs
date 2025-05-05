@@ -1,17 +1,10 @@
 use std::ptr::copy_nonoverlapping;
-
 use cxx::UniquePtr;
 use tfhe::{
-    integer::IntegerCiphertext, FheInt10, FheInt12, FheInt14, FheInt16, FheInt2, FheInt4, FheInt6, FheInt8, FheUint10, FheUint12, FheUint128, FheUint14, FheUint16, FheUint2, FheUint4, FheUint6, FheUint8
+    integer::IntegerCiphertext, FheInt10, FheInt12, FheInt14, FheInt16, FheInt2, FheInt4, FheInt6, FheInt8, FheUint10, FheUint12, FheUint14, FheUint16, FheUint2, FheUint4, FheUint6, FheUint8
 };
-
-
-
 use crate::ffi::{Tensor, Value};
-
-pub trait IntoValue {
-    fn into_value(self) -> UniquePtr<Value>;
-}
+use crate::utils::into_value::IntoValue;
 
 macro_rules! impl_into_value {
     ($($type:ty),*) => {
@@ -57,7 +50,7 @@ macro_rules! impl_into_value {
 
 impl_into_value!(
     FheInt2, FheInt4, FheInt6, FheInt8, FheInt10, FheInt12, FheInt14, FheInt16,
-    FheUint2, FheUint4, FheUint6, FheUint8, FheUint10, FheUint12, FheUint14, FheUint16, FheUint128
+    FheUint2, FheUint4, FheUint6, FheUint8, FheUint10, FheUint12, FheUint14, FheUint16
 );
 
 #[cfg(test)]

@@ -4,10 +4,10 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
-use crate::protocol::{
+use crate::{protocol::{
     CircuitInfo, KeysetInfo, LweBootstrapKeyInfo, LweKeyswitchKeyInfo, LweSecretKeyInfo,
     PackingKeyswitchKeyInfo, ProgramInfo,
-};
+}, utils::into_value::IntoValue};
 use cxx::{CxxVector, SharedPtr, UniquePtr};
 
 #[cxx::bridge(namespace = "concrete_rust")]
@@ -429,6 +429,7 @@ mod ffi {
 }
 
 pub use ffi::*;
+use serde_json::map::IntoValues;
 
 impl ServerKeyset {
     /// Deserialize a server keyset from bytes.

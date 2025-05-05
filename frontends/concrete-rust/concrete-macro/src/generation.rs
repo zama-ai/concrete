@@ -1,4 +1,5 @@
-use concrete::protocol::{CircuitInfo, ProgramInfo};
+use concrete::protocol::{CircuitInfo, GateInfo, ProgramInfo};
+use concrete::tfhe::{FunctionSpec, IntegerType};
 use quote::{format_ident, quote};
 
 pub fn generate_unsafe_binding(pi: &ProgramInfo) -> proc_macro2::TokenStream {
@@ -46,7 +47,16 @@ pub(crate) fn generate_client(program_info: &ProgramInfo) -> proc_macro2::TokenS
     let client_functions = program_info
         .circuits
         .iter()
-        .map(|ci| generate_client_function(ci));
+        .map(|ci| {
+            (
+                ci,
+                program_info
+                    .tfhers_specs
+                    .as_ref()
+                    .map(|s| s.get_func(&ci.name).unwrap()),
+            )
+        })
+        .map(|(ci, ts)| generate_client_function(ci, ts));
     quote! {
         pub mod client {
             #(#client_functions)*
@@ -54,87 +64,254 @@ pub(crate) fn generate_client(program_info: &ProgramInfo) -> proc_macro2::TokenS
     }
 }
 
-fn generate_client_function_prepare_inputs(circuit_info: &CircuitInfo) -> proc_macro2::TokenStream {
-    let ith = (0..circuit_info.inputs.len()).collect::<Vec<_>>();
-    let input_idents = circuit_info.inputs.iter().enumerate().map(|(ith, _)| format_ident!("arg_{ith}")).collect::<Vec<_>>();
-    let input_types = circuit_info.inputs.iter().map(|gi| {
-        match (gi.rawInfo.integerPrecision, gi.rawInfo.isSigned) {
-            (8, true) => quote! {::concrete::common::Tensor<i8>},
-            (8, false) => quote! {::concrete::common::Tensor<u8>},
-            (16, true) => quote! {::concrete::common::Tensor<i16>},
-            (16, false) => quote! {::concrete::common::Tensor<u16>},
-            (32, true) => quote! {::concrete::common::Tensor<i32>},
-            (32, false) => quote! {::concrete::common::Tensor<u32>},
-            (64, true) => quote! {::concrete::common::Tensor<i64>},
-            (64, false) => quote! {::concrete::common::Tensor<u64>},
-            _ => unreachable!(),
-        }
-    }).collect::<Vec<_>>();
-    let output_types = circuit_info.inputs.iter().map(|_| {
-        quote! {::concrete::UniquePtr<::concrete::common::TransportValue>}
-    }).collect::<Vec<_>>();
+fn generate_types(gi: &GateInfo, ts: &Option<IntegerType>) -> proc_macro2::TokenStream {
+    match (ts, gi.rawInfo.integerPrecision, gi.rawInfo.isSigned) {
+        (
+            Some(IntegerType {
+                bit_width: 2,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt2},
+        (
+            Some(IntegerType {
+                bit_width: 2,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint2},
+        (
+            Some(IntegerType {
+                bit_width: 4,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt4},
+        (
+            Some(IntegerType {
+                bit_width: 4,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint4},
+        (
+            Some(IntegerType {
+                bit_width: 6,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt6},
+        (
+            Some(IntegerType {
+                bit_width: 6,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint6},
+        (
+            Some(IntegerType {
+                bit_width: 8,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt8},
+        (
+            Some(IntegerType {
+                bit_width: 8,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint8},
+        (
+            Some(IntegerType {
+                bit_width: 10,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt10},
+        (
+            Some(IntegerType {
+                bit_width: 10,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint10},
+        (
+            Some(IntegerType {
+                bit_width: 12,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt12},
+        (
+            Some(IntegerType {
+                bit_width: 12,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint12},
+        (
+            Some(IntegerType {
+                bit_width: 14,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt14},
+        (
+            Some(IntegerType {
+                bit_width: 14,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint14},
+        (
+            Some(IntegerType {
+                bit_width: 16,
+                is_signed: true,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheInt16},
+        (
+            Some(IntegerType {
+                bit_width: 16,
+                is_signed: false,
+                ..
+            }),
+            _,
+            _,
+        ) => quote! {::tfhe::FheUint16},
+        (_, 8, true) => quote! {::concrete::common::Tensor<i8>},
+        (_, 8, false) => quote! {::concrete::common::Tensor<u8>},
+        (_, 16, true) => quote! {::concrete::common::Tensor<i16>},
+        (_, 16, false) => quote! {::concrete::common::Tensor<u16>},
+        (_, 32, true) => quote! {::concrete::common::Tensor<i32>},
+        (_, 32, false) => quote! {::concrete::common::Tensor<u32>},
+        (_, 64, true) => quote! {::concrete::common::Tensor<i64>},
+        (_, 64, false) => quote! {::concrete::common::Tensor<u64>},
+        _ => unreachable!(),
+    }
+}
 
-    quote!{
+fn generate_client_function_prepare_inputs(
+    circuit_info: &CircuitInfo,
+    tfhers_spec: Option<FunctionSpec>,
+) -> proc_macro2::TokenStream {
+    let ith = (0..circuit_info.inputs.len()).collect::<Vec<_>>();
+    let input_specs = tfhers_spec.map_or(vec![None; circuit_info.inputs.len()], |v| {
+        v.input_types.to_owned()
+    });
+    let input_idents = circuit_info
+        .inputs
+        .iter()
+        .enumerate()
+        .map(|(ith, _)| format_ident!("arg_{ith}"))
+        .collect::<Vec<_>>();
+    let input_types = circuit_info
+        .inputs
+        .iter()
+        .zip(input_specs.iter())
+        .map(|(gi, ts)| generate_types(gi, ts))
+        .collect::<Vec<_>>();
+    let output_types = circuit_info
+        .inputs
+        .iter()
+        .map(|_| {
+            quote! {::concrete::UniquePtr<::concrete::common::TransportValue>}
+        })
+        .collect::<Vec<_>>();
+    quote! {
         pub fn prepare_inputs(&mut self, #(#input_idents: #input_types),*) -> (#(#output_types),*) {
             (
                 #(
-                    self.0.pin_mut().prepare_input(::concrete::common::Value::from_tensor(#input_idents), #ith)
+                    self.0.pin_mut().prepare_input(<#input_types as ::concrete::utils::into_value::IntoValue>::into_value(#input_idents), #ith)
                 ),*
             )
         }
     }
 }
 
-fn generate_client_function_process_outputs(circuit_info: &CircuitInfo) -> proc_macro2::TokenStream {
+fn generate_client_function_process_outputs(
+    circuit_info: &CircuitInfo,
+    tfhers_spec: Option<FunctionSpec>,
+) -> proc_macro2::TokenStream {
     let ith = (0..circuit_info.outputs.len()).collect::<Vec<_>>();
-    let input_idents = circuit_info.outputs.iter().enumerate().map(|(ith, _)| format_ident!("res_{ith}")).collect::<Vec<_>>();
-    let input_types = circuit_info.outputs.iter().map(|_| {
-        quote! {::concrete::UniquePtr<::concrete::common::TransportValue>}
-    }).collect::<Vec<_>>();
-    let output_types = circuit_info.outputs.iter().map(|gi| {
-        match (gi.rawInfo.integerPrecision, gi.rawInfo.isSigned) {
-            (8, true) => quote! {::concrete::common::Tensor<i8>},
-            (8, false) => quote! {::concrete::common::Tensor<u8>},
-            (16, true) => quote! {::concrete::common::Tensor<i16>},
-            (16, false) => quote! {::concrete::common::Tensor<u16>},
-            (32, true) => quote! {::concrete::common::Tensor<i32>},
-            (32, false) => quote! {::concrete::common::Tensor<u32>},
-            (64, true) => quote! {::concrete::common::Tensor<i64>},
-            (64, false) => quote! {::concrete::common::Tensor<u64>},
-            _ => unreachable!(),
-        }
-    }).collect::<Vec<_>>();
-    let output_unwrap = circuit_info.outputs.iter().map(|gi| {
-        match (gi.rawInfo.integerPrecision, gi.rawInfo.isSigned) {
-            (8, true) => quote! {get_tensor::<i8>().unwrap()},
-            (8, false) => quote! {get_tensor::<u8>().unwrap()},
-            (16, true) => quote! {get_tensor::<i16>().unwrap()},
-            (16, false) => quote! {get_tensor::<u16>().unwrap()},
-            (32, true) => quote! {get_tensor::<i32>().unwrap()},
-            (32, false) => quote! {get_tensor::<u32>().unwrap()},
-            (64, true) => quote! {get_tensor::<i64>().unwrap()},
-            (64, false) => quote! {get_tensor::<u64>().unwrap()},
-            _ => unreachable!(),
-        }
-    }).collect::<Vec<_>>();
-
-
-    quote!{
+    let output_specs = tfhers_spec.map_or(vec![None; circuit_info.outputs.len()], |v| {
+        v.output_types.to_owned()
+    });
+    let input_idents = circuit_info
+        .outputs
+        .iter()
+        .enumerate()
+        .map(|(ith, _)| format_ident!("res_{ith}"))
+        .collect::<Vec<_>>();
+    let input_types = circuit_info
+        .outputs
+        .iter()
+        .map(|_| {
+            quote! {::concrete::UniquePtr<::concrete::common::TransportValue>}
+        })
+        .collect::<Vec<_>>();
+    let output_types = circuit_info
+        .outputs
+        .iter()
+        .zip(output_specs.iter())
+        .map(|(gi, ts)| generate_types(gi, ts))
+        .collect::<Vec<_>>();
+    let output_specs = output_specs.iter()
+        .map(|a| match a {
+            Some(v) => quote! {#v},
+            None => quote! { () },
+        }).collect::<Vec<_>>();
+    quote! {
         pub fn process_outputs(&mut self, #(#input_idents: #input_types),*) -> (#(#output_types),*) {
             (
                 #(
-                    self.0.pin_mut().process_output(#input_idents, #ith).#output_unwrap
+                    <#output_types as ::concrete::utils::from_value::FromValue>::from_value(#output_specs, self.0.pin_mut().process_output(#input_idents, #ith))
                 ),*
             )
         }
     }
 }
 
-fn generate_client_function(circuit_info: &CircuitInfo) -> proc_macro2::TokenStream {
+fn generate_client_function(
+    circuit_info: &CircuitInfo,
+    tfhers_spec: Option<FunctionSpec>,
+) -> proc_macro2::TokenStream {
     let function_identifier = format_ident!("{}", circuit_info.name);
 
-    let prepare_inputs = generate_client_function_prepare_inputs(circuit_info);
-    let process_outputs = generate_client_function_process_outputs(circuit_info);
+    let prepare_inputs = generate_client_function_prepare_inputs(circuit_info, tfhers_spec.clone());
+    let process_outputs =
+        generate_client_function_process_outputs(circuit_info, tfhers_spec.clone());
 
     quote! {
         pub mod #function_identifier{
@@ -179,10 +356,9 @@ pub(crate) fn generate_server(program_info: &ProgramInfo) -> proc_macro2::TokenS
 }
 
 fn generate_server_function(circuit_info: &CircuitInfo) -> proc_macro2::TokenStream {
-
     let function_identifier = format_ident!("{}", circuit_info.name);
     let binding_identifier = format_ident!("_mlir_concrete_{}", circuit_info.name);
-    let invoke =  generate_server_function_invoke(circuit_info);
+    let invoke = generate_server_function_invoke(circuit_info);
 
     quote! {
         pub mod #function_identifier{
@@ -207,17 +383,24 @@ fn generate_server_function(circuit_info: &CircuitInfo) -> proc_macro2::TokenStr
             }
         }
     }
-
 }
 
 fn generate_server_function_invoke(circuit_info: &CircuitInfo) -> proc_macro2::TokenStream {
-    let args_idents = (0..circuit_info.inputs.len()).map(|a| format_ident!("arg_{a}")).collect::<Vec<_>>();
-    let args_types = (0..circuit_info.inputs.len()).map(|_| quote!{::concrete::UniquePtr<::concrete::common::TransportValue>}).collect::<Vec<_>>();
-    let results_idents = (0..circuit_info.outputs.len()).map(|a| format_ident!("res_{a}")).collect::<Vec<_>>();
-    let results_types = (0..circuit_info.outputs.len()).map(|_| quote!{::concrete::UniquePtr<::concrete::common::TransportValue>}).collect::<Vec<_>>();
+    let args_idents = (0..circuit_info.inputs.len())
+        .map(|a| format_ident!("arg_{a}"))
+        .collect::<Vec<_>>();
+    let args_types = (0..circuit_info.inputs.len())
+        .map(|_| quote! {::concrete::UniquePtr<::concrete::common::TransportValue>})
+        .collect::<Vec<_>>();
+    let results_idents = (0..circuit_info.outputs.len())
+        .map(|a| format_ident!("res_{a}"))
+        .collect::<Vec<_>>();
+    let results_types = (0..circuit_info.outputs.len())
+        .map(|_| quote! {::concrete::UniquePtr<::concrete::common::TransportValue>})
+        .collect::<Vec<_>>();
     let output_len = circuit_info.outputs.len();
 
-    quote!{
+    quote! {
         pub fn invoke(&mut self, server_keyset: &::concrete::common::ServerKeyset, #(#args_idents: #args_types),*) -> (#(#results_types),*) {
             let inputs = vec![
                 #(#args_idents),*

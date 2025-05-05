@@ -3,13 +3,37 @@ use serde::{Deserialize, Serialize};
 use super::IntegerType;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct ClientSpec{
+pub struct ModuleSpec{
     pub input_types_per_func: HashMap<String, Vec<Option<IntegerType>>>,
     pub output_types_per_func: HashMap<String, Vec<Option<IntegerType>>>,
     pub input_shapes_per_func: HashMap<String, Vec<Option<Vec<usize>>>>,
     pub output_shapes_per_func: HashMap<String, Vec<Option<Vec<usize>>>>,
 }
 
+impl ModuleSpec {
+
+    pub fn get_func(&self, name: &str) -> Option<FunctionSpec> {
+        if !self.input_types_per_func.contains_key(name){
+            return None;
+        }
+        Some(
+            FunctionSpec{
+                input_types: self.input_types_per_func.get(name).unwrap(),
+                output_types: self.output_types_per_func.get(name).unwrap(),
+                input_shapes: self.input_shapes_per_func.get(name).unwrap(),
+                output_shapes: self.output_shapes_per_func.get(name).unwrap(),
+            }
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionSpec<'a>{
+    pub input_types: &'a Vec<Option<IntegerType>>,
+    pub output_types: &'a Vec<Option<IntegerType>>,
+    pub input_shapes: &'a Vec<Option<Vec<usize>>>,
+    pub output_shapes: &'a Vec<Option<Vec<usize>>>,
+}
 
 #[cfg(feature = "compiler")]
 mod to_tokens {
@@ -21,7 +45,7 @@ mod to_tokens {
     use proc_macro2::TokenStream;
     use quote::{quote, ToTokens};
 
-        impl ToTokens for ClientSpec {
+        impl ToTokens for ModuleSpec {
             fn to_tokens(&self, tokens: &mut TokenStream) {
                 let input_types_per_func = &self.input_types_per_func
                     .iter()
@@ -57,7 +81,7 @@ mod to_tokens {
                     .collect::<Vec<_>>();
 
                 tokens.extend(quote! {
-                    ::concrete::tfhe::ClientSpec {
+                    ::concrete::tfhe::ModuleSpec {
                         input_types_per_func: vec![#(#input_types_per_func),*].into_iter().collect(),
                         output_types_per_func: vec![#(#output_types_per_func),*].into_iter().collect(),
                         input_shapes_per_func: vec![#(#input_shapes_per_func),*].into_iter().collect(),
@@ -137,7 +161,7 @@ mod tests {
           "output_shapes_per_func": { "my_func": [[]] }
         }
         "#;
-        let cp: ClientSpec = serde_json::from_str(string).unwrap();
+        let cp: ModuleSpec = serde_json::from_str(string).unwrap();
         let a = quote!{#cp};
 
         dbg!(a.to_string());
