@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chunked Keyset Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- this file comes from https://github.com/gildas-lormeau/zip.js/releases v2.7.60 -->
+    <script src="zip-full.min.js"></script>
+    <script src="keygen.js"></script>
+</head>
+
+<body>
+    <h1>Keyset Generator</h1>
+    <p>Run chunked keygeneration client-side using Wasm!<br>All keys except bootstrapping keys are generated fully.
+        Bootstrapping keys are generated in chunks so that we
+        don't go beyond Wasm memory limit.</p>
+    <form id="keygen-form">
+        <label for="keyset-file">Upload Concrete Keyset Info File</label>
+        <input type="file" id="keyset-file" required>
+        <br>
+        <label for="chunk-size">Chunk Size</label>
+        <input type="number" value="8" id="chunk-size" min="1" required>
+        <br>
+        <button type="submit">Generate Keyset</button>
+    </form>
+    <p id="status"></p>
+    <a id="download-link" style="display: none;">Download Result</a>
+</body>
+
+</html>

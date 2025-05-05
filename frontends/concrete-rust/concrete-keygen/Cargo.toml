@@ -1,17 +1,22 @@
 [package]
 
-name = "concrete-rust"
+name = "concrete-keygen"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [[bin]]
 
-name = "concrete-rust-keygen"
+name = "keygen"
 path = "src/keygen.rs"
 
+[[bin]]
+
+name = "keyasm"
+path = "src/keyasm.rs"
+
 [lib]
-name = "concrete_rust"
+name = "concrete_keygen"
 path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 
@@ -21,26 +26,20 @@ capnpc = "0.20.1"
 [dependencies]
 
 capnp = "0.20.3"
-clap = { version = "4.5.16", features = ["derive"] }
 
-wasm-bindgen = { version = ">=0.2.86,<0.2.94", features = ["serde-serialize"], optional = true}
+clap = { version = "4.5.16", features = ["derive"], optional = true }
+zip = { version = "2.6.1", optional = true }
 
-tfhe = { version = "0.10.0", features = ["integer"]}
-concrete-csprng = { version = "0.4.1", optional = true, features = ["generator_fallback"] }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"], optional = true }
+wasm-bindgen-futures = { version = "0.4.50", optional = true }
+web-sys = { version = "0.3.77", features = ["std", "MessagePort"], optional = true }
+serde-json = { package = "serde_json", version = "1.0", optional = true }
 
-[target.x86_64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.10.0", features = ["integer", "x86_64-unix"] }
-
-[target.aarch64-unknown-linux-gnu.dependencies]
-tfhe = { version = "0.10.0", features = ["integer", "aarch64-unix"] }
-
-[target.x86_64-pc-windows-gnu.dependencies]
-tfhe = { version = "0.10.0", features = ["integer", "x86_64"] }
+tfhe = { version = "1.1" }
+tfhe-csprng = { version = "0.5" }
 
 [features]
 
-default = ["csprng"]
-csprng = ["concrete-csprng"]
-# TODO: shortint and HL API are only required because that's how we can build tfhe-rs with wasm
-# newer version should have fixed this and we can remove them
-wasm = ["dep:wasm-bindgen", "tfhe/shortint-client-js-wasm-api", "tfhe/high-level-client-js-wasm-api"]
+default = []
+cli = ["dep:zip", "dep:clap"]
+wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:web-sys", "dep:serde-json", "tfhe/__wasm_api"]
