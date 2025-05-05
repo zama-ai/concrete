@@ -12,3 +12,7 @@ clean:
 		echo "Cleaning target folder in $$dir..."; \
 		rm -rf $$dir/target || exit 1; \
 	done
+
+regen_test_zips:
+	python test/python/test.py
+	python test/python/test_tfhers.py

@@ -3,7 +3,7 @@ pub use ffi::c_void;
 
 mod ffi;
 #[cfg(feature = "tfhe-rs")]
-mod tfhe;
+pub mod tfhe;
 
 
 #[cfg(feature = "compiler")]
@@ -28,3 +28,6 @@ pub mod server {
 }
 
 pub mod protocol;
+
+#[doc(hidden)]
+pub mod utils;

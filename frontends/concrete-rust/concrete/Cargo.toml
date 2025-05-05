@@ -29,6 +29,6 @@ cxx-build = "1.0"
 ar = "0.9"
 
 [features]
-default = ["tfhe-rs"]
+default = ["tfhe-rs", "compiler"]
 compiler = ["dep:quote", "dep:proc-macro2"]
 tfhe-rs = ["dep:tfhe"]
