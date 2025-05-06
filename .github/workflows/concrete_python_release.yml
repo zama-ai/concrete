@@ -498,6 +498,7 @@ jobs:
         run: |
           WHEEL_DIR=$(pwd)/${{ format('cpu-wheel-{0}-linux-x86', matrix.python-version) }}/
           CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
+          CONCRETE_KEYGEN_DIR=$(pwd)/repo/frontends/concrete-rust/concrete-keygen
 
           # Initialize an empty test environment
           cd "$(mktemp -d)"
@@ -522,7 +523,7 @@ jobs:
 
           # Running tests
           make tfhers-utils
-          make concrete-rust-keygen
+          make CONCRETE_KEYGEN_DIRECTORY="${CONCRETE_KEYGEN_DIR}" concrete-rust-keygen
           pytest tests -svv -n auto
       - name: Slack Notification
         if: ${{ failure() }}
@@ -681,6 +682,7 @@ jobs:
         run: |
           WHEEL_DIR=$(pwd)/${{ format('cpu-wheel-{0}-{1}', matrix.python-version, matrix.runs-on) }}/
           CONCRETE_PYTHON=$(pwd)/repo/frontends/concrete-python
+          CONCRETE_KEYGEN_DIR=$(pwd)/repo/frontends/concrete-rust/concrete-keygen
           PYTHON=${{ format('python{0}', matrix.python-version) }}
 
           # Initialize an empty test environment
@@ -708,7 +710,7 @@ jobs:
 
           # Running tests
           make tfhers-utils
-          make concrete-rust-keygen
+          make CONCRETE_KEYGEN_DIRECTORY="${CONCRETE_KEYGEN_DIR}" concrete-rust-keygen
           mkdir ./KeySetCache
           pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
       - name: Cleanup host
