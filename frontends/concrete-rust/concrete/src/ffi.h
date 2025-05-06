@@ -345,6 +345,24 @@ const auto _tensor_i32_new = _tensor_new<int32_t, TensorI32>;
 const auto _tensor_u64_new = _tensor_new<uint64_t, TensorU64>;
 const auto _tensor_i64_new = _tensor_new<int64_t, TensorI64>;
 
+struct TransportValue : concretelang::values::TransportValue {
+  std::unique_ptr<TransportValue> to_owned() const {
+    return std::make_unique<TransportValue>(*this);
+  }
+
+  rust::Vec<uint8_t> serialize() const {
+      auto output = rust::Vec<uint8_t>();
+      auto vec_ostream = VecOStream(output);
+      auto ostream = std::ostream(&vec_ostream);
+      this->writeBinaryToOstream(
+          ostream
+      ).value();
+      ostream.flush();
+      return output;
+  }
+
+};
+
 struct Value : concretelang::values::Value {
   bool _has_element_type_u8() const { return hasElementType<uint8_t>(); }
   bool _has_element_type_i8() const { return hasElementType<int8_t>(); }
@@ -406,6 +424,12 @@ struct Value : concretelang::values::Value {
     const auto& vecref = getDimensions();
     return {vecref.data(), vecref.size()};
   }
+
+  std::unique_ptr<TransportValue> get_transport_value() const {
+      auto output =
+          std::make_unique<::concretelang::values::TransportValue>(intoRawTransportValue());
+      return std::unique_ptr<TransportValue>(reinterpret_cast<TransportValue *>(output.release()));
+  }
 };
 
 template <typename T>
@@ -423,29 +447,18 @@ const auto _value_from_tensor_i32 = _value_from_tensor<TensorI32>;
 const auto _value_from_tensor_u64 = _value_from_tensor<TensorU64>;
 const auto _value_from_tensor_i64 = _value_from_tensor<TensorI64>;
 
-struct TransportValue : concretelang::values::TransportValue {
-  std::unique_ptr<TransportValue> to_owned() const {
-    return std::make_unique<TransportValue>(*this);
-  }
-
-  rust::Vec<uint8_t> serialize() const {
-      auto output = rust::Vec<uint8_t>();
-      auto vec_ostream = VecOStream(output);
-      auto ostream = std::ostream(&vec_ostream);
-      this->writeBinaryToOstream(
-          ostream
-      ).value();
-      ostream.flush();
-      return output;
-  }
-};
-
 std::unique_ptr<TransportValue> _deserialize_transport_value(rust::Slice<const uint8_t> slice) {
     auto output = TransportValue();
     auto slice_istream = SliceIStream(slice);
     auto istream = std::istream(&slice_istream);
     output.readBinaryFromIstream(istream).value();
     return std::make_unique<TransportValue>(output);
+}
+
+std::unique_ptr<Value> _transport_value_to_value(TransportValue const &tv) {
+    auto output =
+        std::make_unique<::concretelang::values::Value>(::concretelang::values::Value::fromRawTransportValue(tv));
+    return std::unique_ptr<Value>(reinterpret_cast<Value *>(output.release()));
 }
 
 struct ClientFunction : concretelang::clientlib::ClientCircuit {

@@ -319,6 +319,8 @@ mod ffi {
         #[doc(hidden)]
         fn _get_tensor_i64(self: &Value) -> UniquePtr<TensorI64>;
         fn get_dimensions(self: &Value) -> &[usize];
+        fn get_transport_value(self: &Value) -> UniquePtr<TransportValue>;
+
 
         /// A serialized value which can be transported between the server and the client.
         type TransportValue;
@@ -328,6 +330,8 @@ mod ffi {
         fn serialize(self: &TransportValue) -> Vec<u8>;
         #[doc(hidden)]
         fn _deserialize_transport_value(bytes: &[u8]) -> UniquePtr<TransportValue>;
+        #[doc(hidden)]
+        fn _transport_value_to_value(tv: &TransportValue) -> UniquePtr<Value>;
 
         // ------------------------------------------------------------------------------------------- Client
 
@@ -449,6 +453,10 @@ impl TransportValue {
     /// Deserialize a `TransportValue` from bytes.
     pub fn deserialize(bytes: &[u8]) -> UniquePtr<TransportValue> {
         _deserialize_transport_value(bytes)
+    }
+
+    pub fn to_value(&self) -> UniquePtr<Value>{
+        _transport_value_to_value(self)
     }
 }
 

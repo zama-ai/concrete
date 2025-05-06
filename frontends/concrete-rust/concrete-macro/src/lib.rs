@@ -256,6 +256,7 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         #[doc(hidden)]
         pub mod _binding {
             #[link(name = "ConcretelangRuntime", kind="dylib")]
+            #[link(name = "omp", kind="dylib")]
             #[link(name = #lib_name, kind="static")]
             #unsafe_binding
         }

@@ -9,25 +9,23 @@ mod test {
     use concrete::common::{ClientKeyset, ServerKeyset, Tensor, TransportValue};
     use super::precompile;
 
+
     #[test]
     fn test() {
-        let a = precompile::PROGRAM_INFO.tfhers_specs.as_ref().unwrap();
-        dbg!(a);
-
-        // let mut secret_csprng = concrete::common::SecretCsprng::new(0u128);
-        // let mut encryption_csprng = concrete::common::EncryptionCsprng::new(0u128);
-        // let keyset = precompile::new_keyset(secret_csprng.pin_mut(), encryption_csprng.pin_mut());
-        // let client_keyset = keyset.get_client();
-        // let serialized_client_keyset = client_keyset.serialize();
-        // let deserialized_client_keyset = ClientKeyset::deserialize(serialized_client_keyset.as_slice());
-        // let server_keyset = keyset.get_server();
-        // let serialized_server_keyset = server_keyset.serialize();
-        // let deserialized_server_keyset = ServerKeyset::deserialize(serialized_server_keyset.as_slice());
-        // let mut dec_client =
-        //     precompile::client::my_func::ClientFunction::new(&deserialized_client_keyset, encryption_csprng);
-        // let mut dec_server = precompile::server::my::ServerFunction::new();
-        // let input = Tensor::new(vec![5], vec![]);
-        // let prepared_input = dec_client.prepare_inputs(input);
+        let mut secret_csprng = concrete::common::SecretCsprng::new(0u128);
+        let mut encryption_csprng = concrete::common::EncryptionCsprng::new(0u128);
+        let keyset = precompile::new_keyset(secret_csprng.pin_mut(), encryption_csprng.pin_mut());
+        let client_keyset = keyset.get_client();
+        let serialized_client_keyset = client_keyset.serialize();
+        let deserialized_client_keyset = ClientKeyset::deserialize(serialized_client_keyset.as_slice());
+        let server_keyset = keyset.get_server();
+        let serialized_server_keyset = server_keyset.serialize();
+        let deserialized_server_keyset = ServerKeyset::deserialize(serialized_server_keyset.as_slice());
+        let mut client =
+            precompile::client::my_func::ClientFunction::new(&deserialized_client_keyset, encryption_csprng);
+        let mut server = precompile::server::my_func::ServerFunction::new();
+        let input = Tensor::new(vec![5], vec![]);
+        // let prepared_input = client.prepare_inputs(arg_0, arg_1);
         // let serialized_input = prepared_input.serialize();
         // let deserialized_input = TransportValue::deserialize(serialized_input.as_slice());
         // let output = dec_server.invoke(&deserialized_server_keyset, deserialized_input);
