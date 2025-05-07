@@ -316,11 +316,16 @@ struct Keyset : concretelang::keysets::Keyset {
 
 std::unique_ptr<Keyset> _keyset_new(rust::Str keyset_info,
                                     SecretCsprng &secret_csprng,
-                                    EncryptionCsprng &encryption_csprng) {
+                                    EncryptionCsprng &encryption_csprng,
+                                    rust::Slice<std::unique_ptr<LweSecretKey>> initial_keys) {
   auto info = Message<concreteprotocol::KeysetInfo>();
   info.readJsonFromString(std::string(keyset_info)).value();
+  auto map = std::map<uint32_t, concretelang::keys::LweSecretKey>();
+  for (auto &key : initial_keys) {
+      map.insert(std::make_pair(key->getInfo().asReader().getId(), std::move(*key.release())));
+  }
   auto output = std::make_unique<concretelang::keysets::Keyset>(
-      info, secret_csprng, encryption_csprng);
+      info, secret_csprng, encryption_csprng, map);
   return std::unique_ptr<Keyset>(reinterpret_cast<Keyset *>(output.release()));
 }
 

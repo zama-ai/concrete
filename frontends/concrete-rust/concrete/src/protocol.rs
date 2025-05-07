@@ -9,8 +9,8 @@ pub struct ProgramInfo {
     pub keyset: KeysetInfo,
     /// The informations for the different circuits of the program.
     pub circuits: Vec<CircuitInfo>,
-    /// The tfhers spec. This extra field is not part of the protocol, but may be added by the python frontend when the circuit was compiled to operate with tfhers ciphertexts.
-    pub tfhers_specs: Option<crate::tfhe::ModuleSpec>,
+    /// The tfhers spec.
+    pub tfhers_specs: crate::tfhe::ModuleSpec,
 }
 
 /// A circuit signature can be described completely by the type informations for its input and
@@ -457,10 +457,7 @@ mod to_tokens {
                 .iter()
                 .map(|circuit| quote! { #circuit })
                 .collect::<Vec<_>>();
-            let tfhers_specs = match self.tfhers_specs.as_ref() {
-                Some(spec) => quote! {Some(#spec)},
-                None => quote! {None},
-            };
+            let tfhers_specs = &self.tfhers_specs;
             tokens.extend(quote! {
                 ::concrete::protocol::ProgramInfo {
                     keyset: #keyset,

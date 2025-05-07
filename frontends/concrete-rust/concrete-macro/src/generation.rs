@@ -1,9 +1,33 @@
-use concrete::protocol::{CircuitInfo, GateInfo, ProgramInfo};
+use concrete::protocol::{CircuitInfo, ProgramInfo, TypeInfo};
 use concrete::tfhe::{FunctionSpec, IntegerType};
 use itertools::multizip;
 use quote::{format_ident, quote};
 
-pub fn generate_unsafe_binding(pi: &ProgramInfo) -> proc_macro2::TokenStream {
+pub fn generate(pi: &ProgramInfo, hash: u64) -> proc_macro2::TokenStream {
+    let lib_name = format!("concrete-artifact-{hash}");
+    let unsafe_binding = generate_unsafe_binding(&pi);
+    let infos = generate_infos(&pi);
+    let keyset = generate_keyset(&pi);
+    let client = generate_client(&pi);
+    let server = generate_server(&pi);
+
+    quote! {
+        #infos
+        #keyset
+        #client
+        #server
+
+        #[doc(hidden)]
+        pub mod _binding {
+            #[link(name = "ConcretelangRuntime", kind="dylib")]
+            #[link(name = "omp", kind="dylib")]
+            #[link(name = #lib_name, kind="static")]
+            #unsafe_binding
+        }
+    }
+}
+
+fn generate_unsafe_binding(pi: &ProgramInfo) -> proc_macro2::TokenStream {
     let func_defs = pi
         .circuits
         .iter()
@@ -21,7 +45,7 @@ pub fn generate_unsafe_binding(pi: &ProgramInfo) -> proc_macro2::TokenStream {
     }
 }
 
-pub fn generate_infos(pi: &ProgramInfo) -> proc_macro2::TokenStream {
+fn generate_infos(pi: &ProgramInfo) -> proc_macro2::TokenStream {
     quote! {
         pub static PROGRAM_INFO: std::sync::LazyLock<::concrete::protocol::ProgramInfo> = std::sync::LazyLock::new(|| {
             #pi
@@ -29,22 +53,84 @@ pub fn generate_infos(pi: &ProgramInfo) -> proc_macro2::TokenStream {
     }
 }
 
-pub fn generate_keyset() -> proc_macro2::TokenStream {
+fn generate_keyset(pi: &ProgramInfo) -> proc_macro2::TokenStream {
+    let mut need_providing = pi
+        .circuits
+        .iter()
+        .flat_map(|ci| {
+            multizip((
+                std::iter::repeat(&ci.name),
+                std::iter::successors(Some(0), |a| Some(a + 1)),
+                ci.inputs.iter(),
+                pi.tfhers_specs
+                    .get_func(&ci.name)
+                    .unwrap()
+                    .input_types
+                    .iter(),
+            ))
+        })
+        .filter(|(_, _, _, spec)| spec.is_some())
+        .collect::<Vec<_>>();
+
+    need_providing.dedup_by_key(|a| {
+        let TypeInfo::lweCiphertext(ref ct) = a.2.typeInfo else {
+            unreachable!()
+        };
+        ct.encryption.keyId
+    });
+
+    let fields = need_providing.iter().map(|(func_name, ith, ..)| {
+        let ident = format_ident!("{func_name}_{ith}");
+        quote! {
+            #ident: Option<concrete::UniquePtr<concrete::common::LweSecretKey>>
+        }
+    }).collect::<Vec<_>>();
+
+    let methods = need_providing.iter().map(|(func_name, ith, gi, ..)| {
+        let method_name = format_ident!("with_key_for_{func_name}_{ith}_arg");
+        let ident = format_ident!("{func_name}_{ith}");
+        let TypeInfo::lweCiphertext(ref ct) = gi.typeInfo else {
+            unreachable!()
+        };
+        let kid = ct.encryption.keyId;
+        quote! {
+            pub fn #method_name(mut self, key: &::tfhe::ClientKey) -> Self {
+                self.#ident = Some(<::tfhe::ClientKey as concrete::tfhe::IntoLweSecretKey>::into_lwe_secret_key(Some(#kid)));
+                self
+            }
+        }
+    });
+
     quote! {
-        pub fn new_keyset(
-            secret_csprng: std::pin::Pin<&mut ::concrete::common::SecretCsprng>,
-            encryption_csprng: std::pin::Pin<&mut ::concrete::common::EncryptionCsprng>
-        ) -> ::concrete::UniquePtr<::concrete::common::Keyset> {
-            ::concrete::common::Keyset::new(
-                &PROGRAM_INFO.keyset,
-                secret_csprng,
-                encryption_csprng
-            )
+        #[derive(Default)]
+        pub struct KeysetBuilder{
+            #(#fields),*
+        }
+
+        impl KeysetBuilder {
+            pub fn new() -> Self {
+                return Self::default();
+            }
+
+        //     #(#methods),*
+
+            pub fn generate(
+                self,
+                secret_csprng: std::pin::Pin<&mut ::concrete::common::SecretCsprng>,
+                encryption_csprng: std::pin::Pin<&mut ::concrete::common::EncryptionCsprng>
+            ) -> ::concrete::UniquePtr<::concrete::common::Keyset> {
+                ::concrete::common::Keyset::new(
+                    &PROGRAM_INFO.keyset,
+                    secret_csprng,
+                    encryption_csprng,
+                    vec![#(self.#fields .unwrap()),*]
+                )
+            }
         }
     }
 }
 
-pub(crate) fn generate_client(program_info: &ProgramInfo) -> proc_macro2::TokenStream {
+fn generate_client(program_info: &ProgramInfo) -> proc_macro2::TokenStream {
     let client_functions = program_info
         .circuits
         .iter()
@@ -53,8 +139,8 @@ pub(crate) fn generate_client(program_info: &ProgramInfo) -> proc_macro2::TokenS
                 ci,
                 program_info
                     .tfhers_specs
-                    .as_ref()
-                    .map(|s| s.get_func(&ci.name).unwrap()),
+                    .get_func(&ci.name)
+                    .unwrap(),
             )
         })
         .map(|(ci, ts)| generate_client_function(ci, ts));
@@ -210,7 +296,7 @@ fn generate_client_function(
     }
 }
 
-pub(crate) fn generate_server(program_info: &ProgramInfo) -> proc_macro2::TokenStream {
+fn generate_server(program_info: &ProgramInfo) -> proc_macro2::TokenStream {
     let server_functions = program_info
         .circuits
         .iter()
@@ -219,8 +305,8 @@ pub(crate) fn generate_server(program_info: &ProgramInfo) -> proc_macro2::TokenS
                 ci,
                 program_info
                     .tfhers_specs
-                    .as_ref()
-                    .map(|s| s.get_func(&ci.name).unwrap()),
+                    .get_func(&ci.name)
+                    .unwrap(),
             )
         })
         .map(|(ci, spec)| generate_server_function(ci, spec));

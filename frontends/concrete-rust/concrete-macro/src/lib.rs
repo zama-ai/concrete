@@ -240,26 +240,5 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
 
     lock_file.unlock().unwrap();
 
-    let lib_name = format!("concrete-artifact-{hash_val}");
-    let unsafe_binding = generation::generate_unsafe_binding(&program_info);
-    let infos = generation::generate_infos(&program_info);
-    let keyset = generation::generate_keyset();
-    let client = generation::generate_client(&program_info);
-    let server = generation::generate_server(&program_info);
-
-    quote! {
-        #infos
-        #keyset
-        #client
-        #server
-
-        #[doc(hidden)]
-        pub mod _binding {
-            #[link(name = "ConcretelangRuntime", kind="dylib")]
-            #[link(name = "omp", kind="dylib")]
-            #[link(name = #lib_name, kind="static")]
-            #unsafe_binding
-        }
-    }
-    .into()
+    generation::generate(&program_info, hash_val).into()
 }

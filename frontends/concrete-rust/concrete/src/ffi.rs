@@ -154,6 +154,7 @@ mod ffi {
             keyset_info_json: &str,
             secret_csprng: Pin<&mut SecretCsprng>,
             encryption_csprng: Pin<&mut EncryptionCsprng>,
+            initial_keys: &mut [UniquePtr<LweSecretKey>]
         ) -> UniquePtr<Keyset>;
         /// Return the associated server keyset.
         fn get_server(self: &Keyset) -> UniquePtr<ServerKeyset>;
@@ -1073,11 +1074,13 @@ impl Keyset {
         keyset_info: &KeysetInfo,
         secret_csprng: Pin<&mut SecretCsprng>,
         encryption_csprng: Pin<&mut EncryptionCsprng>,
+        mut initial_keys: Vec<UniquePtr<LweSecretKey>>
     ) -> UniquePtr<Keyset> {
         _keyset_new(
             &serde_json::to_string(keyset_info).unwrap(),
             secret_csprng,
             encryption_csprng,
+            initial_keys.as_mut_slice()
         )
     }
 }
