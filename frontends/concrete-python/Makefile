@@ -4,6 +4,7 @@ PIP=$(PYTHON) -m pip
 COMPILER_BUILD_DIRECTORY ?= $(PWD)/../../compilers/concrete-compiler/compiler/build
 BINDINGS_DIRECTORY=${COMPILER_BUILD_DIRECTORY}/tools/concretelang/python_packages/concretelang_core/
 TFHERS_UTILS_DIRECTORY ?= $(PWD)/tests/tfhers-utils/
+CONCRETE_KEYGEN_DIRECTORY ?= $(PWD)/../concrete-rust/concrete-keygen/
 
 OS=undefined
 ifeq ($(shell uname), Linux)
@@ -63,7 +64,7 @@ tfhers-utils:
 	cd ${TFHERS_UTILS_DIRECTORY} && $(MAKE) build
 
 concrete-rust-keygen:
-	cd ../concrete-rust/concrete-keygen && $(MAKE) build
+	cd ${CONCRETE_KEYGEN_DIRECTORY} && $(MAKE) build
 
 pytest: pytest-default
 
