@@ -144,6 +144,8 @@ mod ffi {
         fn get_buffer(self: Pin<&mut LweSecretKey>) -> &[u64];
         #[doc(hidden)]
         fn _get_info_json(self: &LweSecretKey) -> String;
+        #[doc(hidden)]
+        fn _lwe_secret_key_from_buffer_and_info(buffer: &[u64], info: &str) -> UniquePtr<LweSecretKey>;
 
         /// A Keyset object holding both the [`ClientKeyset`]  and the [`ServerKeyset`].
         type Keyset;

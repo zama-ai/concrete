@@ -176,6 +176,15 @@ std::unique_ptr<Library> compile(rust::Str sources,
 }
 
 template <typename T> struct Key : T {
+
+  static std::unique_ptr<Key<T>> _from_buffer_and_info(rust::Slice<const uint64_t> buffer_slice, rust::Str info_json) {
+      auto info = typename T::InfoType();
+      assert(info.readJsonFromString({info_json}).has_value());
+      auto buffer = std::make_shared<std::vector<uint64_t>>(buffer_slice.begin(), buffer_slice.end());
+      auto output =std::make_unique<T>(buffer, info);
+      return std::unique_ptr<Key<T>>(reinterpret_cast<Key<T> *>(output.release()));
+  }
+
   rust::Slice<const uint64_t> get_buffer() {
     auto buffer = this->getBuffer();
     return {buffer.data(), buffer.size()};
@@ -186,6 +195,12 @@ template <typename T> struct Key : T {
 };
 
 typedef Key<concretelang::keys::LweSecretKey> LweSecretKey;
+
+inline std::unique_ptr<LweSecretKey>
+_lwe_secret_key_from_buffer_and_info(rust::Slice<const uint64_t> buffer_slice, rust::Str info_json) {
+    return LweSecretKey::_from_buffer_and_info(buffer_slice, info_json);
+}
+
 typedef Key<concretelang::keys::LweBootstrapKey> LweBootstrapKey;
 typedef Key<concretelang::keys::LweKeyswitchKey> LweKeyswitchKey;
 typedef Key<concretelang::keys::PackingKeyswitchKey> PackingKeyswitchKey;
