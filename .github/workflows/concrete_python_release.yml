@@ -523,7 +523,8 @@ jobs:
 
           # Running tests
           make tfhers-utils
-          make CONCRETE_KEYGEN_DIRECTORY="${CONCRETE_KEYGEN_DIR}" concrete-rust-keygen
+          # FIXME: failing since capnp isn't available
+          make CONCRETE_KEYGEN_DIRECTORY="${CONCRETE_KEYGEN_DIR}" concrete-rust-keygen || true # continue if we can't build
           pytest tests -svv -n auto
       - name: Slack Notification
         if: ${{ failure() }}
@@ -710,7 +711,8 @@ jobs:
 
           # Running tests
           make tfhers-utils
-          make CONCRETE_KEYGEN_DIRECTORY="${CONCRETE_KEYGEN_DIR}" concrete-rust-keygen
+          # FIXME: failing since capnp isn't available
+          make CONCRETE_KEYGEN_DIRECTORY="${CONCRETE_KEYGEN_DIR}" concrete-rust-keygen || true # continue if we can't build
           mkdir ./KeySetCache
           pytest tests -svv -n auto --key-cache "./KeySetCache" -m "not dataflow and not graphviz"
       - name: Cleanup host
