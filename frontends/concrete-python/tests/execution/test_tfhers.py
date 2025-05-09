@@ -72,6 +72,34 @@ def is_input_and_output_tfhers(
 tfhers_int6_2_3 = partial(tfhers.TFHERSIntegerType, True, 6, 2, 3)
 
 
+@pytest.mark.parametrize("native_bitwidth", [8, 10, 11, 12, 13, 14, 15, 16])
+def test_tfhers_input_sign_ext(native_bitwidth):
+    """Test sign extension of tfhers input"""
+
+    dtype_spec = parameterize_partial_dtype(tfhers.int8_2_2)
+
+    dtype = partial(tfhers.TFHERSInteger, dtype_spec)
+    inputset = (dtype(-120),)
+
+    # we want get the native ciphertext to native_bitwidth bits
+    multiplier = 2 ** (native_bitwidth - 8) - 1
+
+    def compute(x):
+        x = tfhers.to_native(x)
+        return x * multiplier
+
+    compiler = fhe.Compiler(compute, {"x": "encrypted"})
+    fhe_circuit = compiler.compile(inputset)
+
+    input_x = -1
+    tfhers_x = (dtype_spec.encode(input_x),)
+
+    print(fhe_circuit.mlir)
+    result = fhe_circuit.encrypt_run_decrypt(*tfhers_x)
+
+    assert result == input_x * multiplier
+
+
 @pytest.mark.parametrize(
     "function, parameters, input_dtype, output_dtype",
     [

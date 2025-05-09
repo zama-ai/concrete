@@ -975,6 +975,7 @@ class Converter:
 
         # we want to set the padding bit if the native type is signed
         # and the ciphertext is negative (sign bit set to 1)
+        # we also want to extend the sign bit if we are going for a larger bitwidth
         if dtype.is_signed:
             # select MSBs of all tfhers ciphetexts
             index = [slice(0, dim_size) for dim_size in tfhers_int.shape[:-1]] + [
@@ -985,15 +986,21 @@ class Converter:
                 tfhers_int,
                 index=index,
             )
-            # construct padding bits based on sign bits (carry would be considered negative)
-            padding_bit_table = [
+            # extend sign bit up to the padding bit (carry would be considered negative)
+            sign_ext_bit_table = [
                 0,
             ] * 2 ** (msg_width - 1) + [
-                2**result_bit_width,
+                # we fill all new msbs (including the padding bit) with the sign bit
+                2**result_bit_width  # padding bit
+                + (  # sign bit extension
+                    2**result_bit_width - 2**dtype.bit_width
+                    if result_bit_width > dtype.bit_width
+                    else 0
+                ),
             ] * (2 ** (carry_width + msg_width) - 2 ** (msg_width - 1))
-            padding_bits_inc = ctx.tlu(result_type, msbs, padding_bit_table)
+            sign_ext_bits = ctx.tlu(result_type, msbs, sign_ext_bit_table)
             # set padding bits (where necessary) in the final result
-            result = ctx.add(result_type, sum_result, padding_bits_inc)
+            result = ctx.add(result_type, sum_result, sign_ext_bits)
         else:
             result = sum_result
 
