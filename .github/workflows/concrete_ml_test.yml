@@ -50,6 +50,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
+          persist-credentials: 'false'
       - name: Set release version
         run: echo "__version__ = \"$(date +"%Y.%m.%d")\"" >| frontends/concrete-python/version.txt
       - name: Expose release version from Python

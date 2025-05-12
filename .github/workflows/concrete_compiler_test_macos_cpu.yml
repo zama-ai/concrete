@@ -45,6 +45,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          persist-credentials: 'false'
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
       - name: Set python variables

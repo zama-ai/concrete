@@ -20,6 +20,8 @@ jobs:
           accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
       - name: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: 'false'
       - name: linelint
         uses: fernandrone/linelint@8136e0fa9997122d80f5f793e0bb9a45e678fbb1 # 0.0.4
         id: linelint

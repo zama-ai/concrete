@@ -53,6 +53,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+          persist-credentials: 'false'
 
       - name: Set up home
         # "Install rust" step require root user to have a HOME directory which is not set.

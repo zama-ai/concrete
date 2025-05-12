@@ -54,6 +54,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          persist-credentials: 'false'
       - name: Ouput benchmark details
         id: benchmark-details
         run: |
@@ -126,6 +127,7 @@ jobs:
           repository: zama-ai/slab
           path: slab
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          persist-credentials: 'false'
       - name: Send data to Slab
         shell: bash
         run: |
