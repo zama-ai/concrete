@@ -20,6 +20,9 @@ jobs:
       TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
       TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1 
     runs-on: ubuntu-latest
+    permissions:
+      # to upload scan results
+      security-events: write
     steps:
       - name: Checkout parent Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
