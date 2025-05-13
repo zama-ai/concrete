@@ -44,6 +44,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          persist-credentials: 'false'
 
       - name: Benchmark
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
@@ -86,6 +87,7 @@ jobs:
           repository: zama-ai/slab
           path: slab
           token: ${{ secrets.CONCRETE_ACTIONS_TOKEN }}
+          persist-credentials: 'false'
 
       - name: Send data to Slab
         shell: bash
