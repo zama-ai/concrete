@@ -30,3 +30,4 @@ jobs:
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
+          config-file: 'ci/markdown_link_check_config.json'
