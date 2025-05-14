@@ -9,11 +9,13 @@ build = "build.rs"
 
 name = "keygen"
 path = "src/keygen.rs"
+required-features = [ "cli" ]
 
 [[bin]]
 
 name = "keyasm"
 path = "src/keyasm.rs"
+required-features = [ "cli" ]
 
 [lib]
 name = "concrete_keygen"
