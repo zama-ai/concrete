@@ -1,6 +1,6 @@
 [package]
 name = "concrete"
-version = "2.10.1"
+version = "0.0.0"
 edition = "2021"
 links = "concrete"
 readme = "../../../../../../../README.md"
@@ -21,7 +21,7 @@ proc-macro2 = {version = "1.0", optional = true}
 tfhe = {version = "1.1", features = ["integer"], optional = true}
 
 [build-dependencies]
-zip = "2.6"
+zip = "2.4"
 curl = "0.4.47"
 cxx-build = "1.0"
 
