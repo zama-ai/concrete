@@ -297,7 +297,6 @@ struct Dependence {
             move_chunk_off_device(c->chunk_id, dfg);
             data_size += memref_get_data_size(c->host_data);
             num_samples += c->host_data.sizes[chunk_dim];
-            sdfg_gpu_debug_print_mref("Chunk", c->host_data);
           }
           host_data = chunks[0]->host_data;
           host_data.allocated = host_data.aligned =
