@@ -72,13 +72,27 @@ fn install_artifacts(out_dir: &Path) {
 }
 
 fn copy_local_artifacts(out_dir: &Path, mut lib_dir: PathBuf) {
-    println!("cargo:warning=\"COMPILER_BUILD_DIRECTORY detected: building from local artifacts\"");
+    println!(
+        "cargo:warning=\"COMPILER_BUILD_DIRECTORY detected: building from local artifacts in {}\"",
+        lib_dir.display()
+    );
     lib_dir.push("lib");
-    lib_dir = lib_dir.canonicalize().unwrap();
+    lib_dir = lib_dir
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize {}: {e}", lib_dir.display()))
+        .unwrap();
     do_with_lock(&out_dir.join(INSTALL_LOCK), || {
         for art in ARTIFACTS {
             println!("cargo::rerun-if-changed={}", &lib_dir.join(art).display());
-            std::fs::copy(&lib_dir.join(art), &out_dir.join(art)).unwrap();
+            std::fs::copy(&lib_dir.join(art), &out_dir.join(art))
+                .map_err(|e| {
+                    format!(
+                        "Failed to copy {} to {}: {e}",
+                        lib_dir.join(art).display(),
+                        out_dir.join(art).display()
+                    )
+                })
+                .unwrap();
         }
     });
 }
@@ -115,10 +129,18 @@ fn fetch_artifacts(out_dir: &Path) {
                 .write(true)
                 .create(true)
                 .open(out_dir.join(path.file_name().unwrap()))
+                .map_err(|e| {
+                    format!(
+                        "Failed to open file {}: {e}",
+                        out_dir.join(path.file_name().unwrap()).display()
+                    )
+                })
                 .unwrap();
             std::io::copy(&mut content, &mut file).unwrap();
         }
-        std::fs::File::create(out_dir.join(INSTALLED_FILE)).unwrap();
+        std::fs::File::create(out_dir.join(INSTALLED_FILE))
+            .map_err(|e| format!("Failed to create INSTALLED_FILE: {e}"))
+            .unwrap();
     });
 }
 
@@ -132,13 +154,25 @@ fn symlink_outdir(concrete_dir: &Path, out_dir: &Path) {
             "Failed to delete original out_dir {}",
             out_dir.display()
         );
-        std::os::unix::fs::symlink(concrete_dir, &out_dir).unwrap();
+        std::os::unix::fs::symlink(concrete_dir, &out_dir)
+            .map_err(|e| {
+                format!(
+                    "Failed to symlink {} to {}: {e}",
+                    concrete_dir.display(),
+                    out_dir.display()
+                )
+            })
+            .unwrap();
     }
 }
 
 fn main() {
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    let target_dir = out_dir.join("../../../..").canonicalize().unwrap();
+    let target_dir = out_dir
+        .join("../../../..")
+        .canonicalize()
+        .map_err(|e| format!("Failed to get target dir: {e}"))
+        .unwrap();
     let concrete_dir = target_dir.join("concrete");
 
     symlink_outdir(&concrete_dir, &out_dir);
