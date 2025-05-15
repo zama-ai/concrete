@@ -9,6 +9,7 @@ homepage = "https://zama.ai/"
 documentation = "https://docs.zama.ai/concrete"
 repository = "https://github.com/zama-ai/concrete"
 license = "BSD-3-Clause-Clear"
+license-file = "../../../LICENSE.txt"
 description = "concrete-keygen allows you to manage keys to be used in Zama's Concrete framework. It also provides a way to manage keys in Wasm."
 
 [[bin]]
