@@ -78,7 +78,8 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-          persist-credentials: 'false'
+          # needed for the tag push
+          persist-credentials: 'true'
       - name: Set release version (nightly)
         if: ${{ env.RELEASE_TYPE == 'nightly' }}
         run: |
