@@ -66,6 +66,9 @@ jobs:
         hw: ["cpu", "gpu"]
     needs: setup-instance
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    permissions:
+      # to push nightly tags
+      contents: write
     steps:
       - name: Set up GitHub environment
         run: |

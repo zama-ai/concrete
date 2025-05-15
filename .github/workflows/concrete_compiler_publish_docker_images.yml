@@ -40,6 +40,9 @@ jobs:
   cuda-image:
     needs: [setup-instance]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    permissions:
+      # to upload scan results
+      security-events: write
     env:
       image: ghcr.io/zama-ai/concrete/cuda
       dockerfile: docker/Dockerfile.cuda-env
@@ -103,6 +106,9 @@ jobs:
   compiler-image:
     needs: [setup-instance, cuda-image]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    permissions:
+      # to upload scan results
+      security-events: write
     env:
       image: ghcr.io/zama-ai/concrete/compiler-ci
       dockerfile: docker/Dockerfile.concrete-compiler-env
@@ -170,6 +176,9 @@ jobs:
   compiler-image-gpu:
     needs: [setup-instance, compiler-image]
     runs-on: ${{ needs.setup-instance.outputs.runner-name }}
+    permissions:
+      # to upload scan results
+      security-events: write
     env:
       image: ghcr.io/zama-ai/concrete/compiler-ci-gpu
       dockerfile: docker/Dockerfile.concrete-compiler-env-gpu

@@ -41,6 +41,9 @@ jobs:
 
   publish-to-dockerhub:
     runs-on: ubuntu-latest
+    permissions:
+      # to upload scan results
+      security-events: write
     env:
       DOCKER_IMAGE_NAME: zamafhe/concrete-python
       DOCKER_FILE: docker/Dockerfile.concrete-python
