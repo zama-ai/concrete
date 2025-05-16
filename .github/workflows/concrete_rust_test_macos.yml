@@ -31,6 +31,7 @@ jobs:
       slack_message: ${{ steps.prepare_slack_notif.outputs.slack_message }}
       slack_color: ${{ steps.prepare_slack_notif.outputs.slack_color }}
     env:
+      concrete-compiler-dir: ${{ github.workspace }}/compilers/concrete-compiler/compiler
       concrete-rust-dir: ${{ github.workspace }}/frontends/concrete-rust
     steps:
       - name: Checkout
@@ -59,7 +60,7 @@ jobs:
           pip install -r lib/Bindings/Python/requirements_dev.txt
           cargo install cxxbridge-cmd
           ccache -z
-          make Python3_EXECUTABLE=$(which python) concrete-rust
+          make Python3_EXECUTABLE="$(which python)" concrete-rust
           ccache -s
       - name: Run tests
         run: |

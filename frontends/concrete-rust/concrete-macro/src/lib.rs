@@ -1,7 +1,4 @@
-#![allow(stable_features)]
-#![feature(file_lock)]
-use concrete::compiler;
-use concrete::protocol::ProgramInfo;
+use concrete::{compiler, protocol::ProgramInfo, utils::flock::FileLock};
 use proc_macro::{
     TokenStream, {self},
 };
@@ -60,9 +57,7 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
         .open(concrete_build_dir.join(format!("{hash_val}.lock")))
         .expect("Failed to open lock file.");
 
-    lock_file
-        .lock()
-        .expect("Failed to acquire lock on the lock file");
+    let lock = FileLock::acquire(&lock_file).unwrap();
 
     let concrete_hash_dir = concrete_build_dir.join(format!("{hash_val}"));
     if !concrete_hash_dir.exists() {
@@ -243,9 +238,7 @@ pub fn from_concrete_python_export_zip(input: TokenStream) -> TokenStream {
 
     program_info.tfhers_specs = client_specs.tfhers_specs.clone();
 
-    // assert_eq!(client_specs, program_info, "Export client specs, and compiled program info do not match. Something is wrong. Get in touch with developers.");
-
-    lock_file.unlock().unwrap();
+    drop(lock);
 
     generation::generate(&program_info, hash_val).into()
 }

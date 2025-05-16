@@ -1,5 +1,3 @@
-#![allow(stable_features)]
-#![feature(file_lock)]
 use curl::easy::{Handler, WriteError};
 use curl::{self};
 use std::io::Cursor;
@@ -38,6 +36,7 @@ const INSTALL_LOCK: &str = "install";
 const INSTALLED_FILE: &str = "installed";
 const URL: &str = "https://github.com/zama-ai/concrete/releases/download/v2.10.1-rc1";
 
+include!("src/utils/flock.rs");
 fn do_with_lock<F: FnMut()>(file: &Path, f: F) {
     let mut lock_file_name = file.to_path_buf();
     lock_file_name.set_extension("lock");
@@ -48,18 +47,10 @@ fn do_with_lock<F: FnMut()>(file: &Path, f: F) {
     else {
         panic!("Failed to open lock file {}", lock_file_name.display())
     };
-    assert!(
-        lock_file.lock().is_ok(),
-        "Failed to acquire lock on file {}",
-        lock_file_name.display()
-    );
+    let lock = FileLock::acquire(&lock_file).unwrap();
     let mut f = f;
     f();
-    assert!(
-        lock_file.unlock().is_ok(),
-        "Failed to release lock on file {}",
-        lock_file_name.display()
-    );
+    drop(lock);
 }
 
 fn install_artifacts(out_dir: &Path) {
