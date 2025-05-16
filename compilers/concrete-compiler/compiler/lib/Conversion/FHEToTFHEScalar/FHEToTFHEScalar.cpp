@@ -409,6 +409,8 @@ struct ApplyLookupTableEintOpPattern
       auto inputOp = rewriter.create<TFHE::AddGLWEIntOp>(
           op.getLoc(), converter.convertType(input.getType()), input,
           encodedConstant);
+      inputOp->setAttr("overflow-detection",
+                       mlir::BoolAttr::get(op->getContext(), false));
       if (operatorIndexes != nullptr) {
         assert(operatorIndexes.size() == 2);
         auto addIndex = operatorIndexes[0];

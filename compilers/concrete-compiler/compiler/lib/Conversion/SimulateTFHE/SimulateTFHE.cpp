@@ -134,12 +134,21 @@ struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
     mlir::Value isSignedCst = rewriter.create<mlir::arith::ConstantIntOp>(
         addOp.getLoc(), isSigned, 1);
 
+    auto overflow = true;
+    mlir::Attribute noOverflowAttr =
+        adaptor.getAttributes().get("overflow-detection");
+    if (noOverflowAttr && !noOverflowAttr.cast<mlir::BoolAttr>().getValue()) {
+      overflow = false;
+    }
+    mlir::Value overflowCst = rewriter.create<mlir::arith::ConstantIntOp>(
+        addOp.getLoc(), overflow, 1);
+
     if (insertForwardDeclaration(
             addOp, rewriter, funcName,
             rewriter.getFunctionType(
                 {rewriter.getIntegerType(64), rewriter.getIntegerType(64),
                  mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type()),
-                 rewriter.getIntegerType(1)},
+                 rewriter.getIntegerType(1), rewriter.getIntegerType(1)},
                 {rewriter.getIntegerType(64)}))
             .failed()) {
       return mlir::failure();
@@ -147,8 +156,8 @@ struct AddOpPattern : public mlir::OpConversionPattern<AddOp> {
 
     rewriter.replaceOpWithNewOp<mlir::func::CallOp>(
         addOp, funcName, mlir::TypeRange{rewriter.getIntegerType(64)},
-        mlir::ValueRange(
-            {adaptor.getA(), adaptor.getB(), locString, isSignedCst}));
+        mlir::ValueRange({adaptor.getA(), adaptor.getB(), locString,
+                          isSignedCst, overflowCst}));
 
     return mlir::success();
   }
