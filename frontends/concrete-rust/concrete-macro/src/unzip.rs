@@ -28,8 +28,7 @@ pub fn unzip(zip_path: &Path, to: &Path) {
             use std::os::unix::fs::PermissionsExt;
 
             if let Some(mode) = file.unix_mode() {
-                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))
-                    .unwrap();
+                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode)).unwrap();
             }
         }
     }
