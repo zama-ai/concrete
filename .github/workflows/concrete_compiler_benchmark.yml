@@ -112,10 +112,12 @@ jobs:
           --database compiler_benchmarks \
           --hardware "hpc7a.96xlarge" \
           --project-version ${{ needs.build-and-run-benchmarks.outputs.commit_hash}} \
-          --branch ${{ github.ref_name }} \
+          --branch "${GITHUB_REF_NAME}" \
           --commit-date "${{ needs.build-and-run-benchmarks.outputs.commit_date }}" \
           --bench-date "${{ needs.build-and-run-benchmarks.outputs.bench_date }}" \
           --throughput
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
       - name: Upload parsed results artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
