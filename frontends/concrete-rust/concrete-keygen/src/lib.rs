@@ -22,6 +22,7 @@
 //! - `generate_pksk`: Generates an `LwePrivateFunctionalPackingKeyswitchKeyList` with the specified parameters and random generator.
 //! - `get_lwe_secret_key_from_client_keyset`: Retrieves an LWE secret key from a client keyset based on the provided key ID.
 //! - `chunked_bsk_keygen`: Generates an LWE bootstrap key in chunks and sends them to a `MessagePort`.
+//! - `chunked_ksk_keygen`: Generates an LWE keyswitch key in chunks and sends them to a `MessagePort`.
 //! - `generate_keyset`: Generates a Cap'n Proto message containing the keyset based on the provided keyset information and seeds.
 //! - `generate_keyset_from_buffers`: Reads keyset information from a file, generates the keyset, and writes it to an output file.
 //! - `get_client_keyset`: Extracts the client keyset from a keyset and returns it as a Cap'n Proto message builder.
@@ -1317,6 +1318,144 @@ pub mod wasm {
                     },
                     seeder,
                     false,
+                );
+                for chunk in chunk_generator {
+                    let mut serialized_data = Vec::new();
+                    let serialized_size = safe_serialized_size(&chunk)
+                        .expect_throw("couldn't guess size of serialized chunk");
+                    safe_serialize(&chunk, &mut serialized_data, serialized_size)
+                        .expect_throw("couldn't serialize chunk");
+                    total_len += serialized_data.len();
+                    let js_array = web_sys::js_sys::Uint8Array::from(serialized_data.as_slice());
+                    port.post_message(&js_array)
+                        .expect_throw("Failed to post message to port");
+                }
+            }
+            Compression::Paillier => todo!("Paillier compression not implemented"),
+        }
+        port.close();
+        total_len
+    }
+
+    /// Generates an LWE keyswitch key in chunks.
+    ///
+    /// This function reads the keyset information, input secret key, and output secret key from byte buffers,
+    /// generates the LWE keyswitch key in chunks, and sends each chunk to a specified `MessagePort`.
+    ///
+    /// # Arguments
+    ///
+    /// * `keyset_info_buffer` - A byte slice containing the serialized keyset information (Capnp).
+    /// * `input_secret_key_buffer` - A byte slice containing the serialized input secret key (Capnp).
+    /// * `output_secret_key_buffer` - A byte slice containing the serialized output secret key (Capnp).
+    /// * `ksk_id` - The ID of the keyswitch key to generate.
+    /// * `enc_seed` - The seed for the encryption random generator (used if no compression).
+    /// * `compression_seed` - The seed for the compression random generator (used if seeded key).
+    /// * `chunk_size` - The size of each chunk to generate.
+    /// * `port` - The `MessagePort` to send the generated chunks to.
+    ///
+    /// # Returns
+    ///
+    /// The total length of the generated keyswitch key in bytes.
+    ///
+    /// # Panics
+    ///
+    /// This function will throw an exception if it fails to read the keyset info buffer, input secret key buffer,
+    /// or output secret key buffer, or if it fails to post a message to the specified `MessagePort`.
+    #[wasm_bindgen]
+    pub async fn chunked_ksk_keygen(
+        keyset_info_buffer: &[u8],
+        input_secret_key_buffer: &[u8],
+        output_secret_key_buffer: &[u8],
+        ksk_id: u32,
+        enc_seed: u128,
+        compression_seed: u128,
+        chunk_size: usize,
+        port: web_sys::MessagePort,
+    ) -> usize {
+        // deserialize inputs
+        let message = read_capnp_from_buffer(keyset_info_buffer)
+            .expect_throw("Failed to read keyset info buffer");
+        let key_set_info =
+            get_reader_from_message::<concrete_protocol_capnp::keyset_info::Reader>(&message)
+                .expect_throw("Failed to get root keyset info reader");
+        let message = read_capnp_from_buffer(input_secret_key_buffer)
+            .expect_throw("Failed to read input secret key buffer");
+        let input_sk_reader = get_reader_from_message(&message)
+            .expect_throw("Failed to get root input secret key reader");
+        let message = read_capnp_from_buffer(output_secret_key_buffer)
+            .expect_throw("Failed to read output secret key buffer");
+        let output_sk_reader = get_reader_from_message(&message)
+            .expect_throw("Failed to get root output secret key reader");
+
+        // Parameters
+        let ksk_info = key_set_info
+            .get_lwe_keyswitch_keys()
+            .expect_throw("Failed to get LWE keyswitch keys")
+            .get(ksk_id);
+        let params = ksk_info
+            .get_params()
+            .expect_throw("Failed to get keyswitch key parameters");
+        let compression = ksk_info
+            .get_compression()
+            .expect_throw("Failed to get compression");
+
+        let decomp_base_log = DecompositionBaseLog(params.get_base_log() as usize);
+        let decomp_level_count = DecompositionLevelCount(params.get_level_count() as usize);
+        let glwe_noise_distribution = Gaussian::from_dispersion_parameter(
+            Variance::from_variance(params.get_variance()).get_standard_dev(),
+            0.0,
+        );
+        let ciphertext_modulus: CiphertextModulus<u64> = CiphertextModulus::new_native();
+
+        // Input and output secret keys
+        let input_lwe_secret_key = reader_to_lwe_secret_key(&input_sk_reader);
+        let output_lwe_secret_key = reader_to_lwe_secret_key(&output_sk_reader);
+
+        let mut total_len = 0;
+        let mut seeder = new_seeder();
+        let seeder = seeder.as_mut();
+        match compression {
+            Compression::None => {
+                let mut encryption_generator =
+                    EncryptionRandomGenerator::<DefaultRandomGenerator>::new(
+                        Seed(enc_seed),
+                        seeder,
+                    );
+                let chunk_generator = LweKeyswitchKeyChunkGenerator::new(
+                    &mut encryption_generator,
+                    ChunkSize(chunk_size),
+                    decomp_base_log,
+                    decomp_level_count,
+                    ciphertext_modulus,
+                    &input_lwe_secret_key,
+                    &output_lwe_secret_key,
+                    glwe_noise_distribution,
+                );
+                for chunk in chunk_generator {
+                    let mut serialized_data = Vec::new();
+                    let serialized_size = safe_serialized_size(&chunk)
+                        .expect_throw("couldn't guess size of serialized chunk");
+                    safe_serialize(&chunk, &mut serialized_data, serialized_size)
+                        .expect_throw("couldn't serialize chunk");
+                    total_len += serialized_data.len();
+                    let js_array = web_sys::js_sys::Uint8Array::from(serialized_data.as_slice());
+                    port.post_message(&js_array)
+                        .expect_throw("Failed to post message to port");
+                }
+            }
+            Compression::Seed => {
+                let chunk_generator = SeededLweKeyswitchKeyChunkGenerator::new(
+                    ChunkSize(chunk_size),
+                    decomp_base_log,
+                    decomp_level_count,
+                    ciphertext_modulus,
+                    &input_lwe_secret_key,
+                    &output_lwe_secret_key,
+                    glwe_noise_distribution,
+                    CompressionSeed {
+                        seed: Seed(compression_seed),
+                    },
+                    seeder,
                 );
                 for chunk in chunk_generator {
                     let mut serialized_data = Vec::new();

@@ -43,7 +43,7 @@ console.log("keyset_info explained:");
 console.dir(keyset_info_json, { depth: null });
 
 let client_keyset_buffer = cr.generate_client_keyset(keyset_info_buffer, BigInt(128));
-let keyset_buffer_no_bsk = cr.generate_keyset(keyset_info_buffer, true, {}, false, {}, BigInt(128), BigInt(128), client_keyset_buffer);
+let keyset_buffer_no_bsk_no_ksk = cr.generate_keyset(keyset_info_buffer, true, {}, true, {}, BigInt(128), BigInt(128), client_keyset_buffer);
 
 for (let bsk of keyset_info_json.lwe_bootstrap_keys) {
     let msgChannel = createChunkMessageChannel(`bsk_${bsk.id}_chunk`);
@@ -66,6 +66,27 @@ for (let bsk of keyset_info_json.lwe_bootstrap_keys) {
     }
 }
 
-// On server side, we should be able to assemble bsk keys first,
-// then full keyset from keyset_buffer_no_bsk and those bsk keys
-fs.writeFileSync(output_keyset_path, keyset_buffer_no_bsk)
+for (let ksk of keyset_info_json.lwe_bootstrap_keys) {
+    let msgChannel = createChunkMessageChannel(`ksk_${ksk.id}_chunk`);
+    let sk_in = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, ksk.input_id);
+    let sk_out = cr.get_lwe_secret_key_from_client_keyset(client_keyset_buffer, ksk.output_id);
+    try {
+        let returned_value = await cr.chunked_ksk_keygen(
+            keyset_info_buffer,
+            sk_in,
+            sk_out,
+            ksk.id,
+            BigInt(0),
+            BigInt(0),
+            8,
+            msgChannel.port2
+        );
+        console.log(`Keyswitch key ${ksk.id} generated successfully (returned value: ${returned_value})`);
+    } catch (error) {
+        console.error(`Error generating keyswitch key ${ksk.id}:`, error);
+    }
+}
+
+// On server side, we should be able to assemble bsk/ksk keys first,
+// then full keyset from keyset_buffer_no_bsk_no_ksk and those bsk and ksk keys
+fs.writeFileSync(output_keyset_path, keyset_buffer_no_bsk_no_ksk)

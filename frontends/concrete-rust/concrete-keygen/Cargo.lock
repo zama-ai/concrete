@@ -852,9 +852,7 @@ dependencies = [
 
 [[package]]
 name = "tfhe"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f0fea7aede7b88ff9cc1b697a7427323b37bbcd7eff543f5ceeb8c52d78c820"
+version = "1.2.0"
 dependencies = [
  "aligned-vec",
  "bincode",
@@ -880,8 +878,6 @@ dependencies = [
 [[package]]
 name = "tfhe-csprng"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b1a0b71a91c9e36e9e1e8e6a528a056086b01e193e173472ae59cfaac56fdad"
 dependencies = [
  "aes",
  "libc",
@@ -891,8 +887,6 @@ dependencies = [
 [[package]]
 name = "tfhe-fft"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8621277f2fcbcf56e4cd0e19476854bd9ac195f17f6906476826dceff4063fc"
 dependencies = [
  "aligned-vec",
  "bytemuck",
@@ -906,8 +900,6 @@ dependencies = [
 [[package]]
 name = "tfhe-ntt"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c64925e25d6ba666f75332ce44fbd2e80be64dbd657e3c2652a6a07f2868d17"
 dependencies = [
  "aligned-vec",
  "bytemuck",
@@ -916,9 +908,7 @@ dependencies = [
 
 [[package]]
 name = "tfhe-versionable"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af3a2785eb45d8bbb1cf26eb19277a7398b2fc818ad5136b57f5ee280bf0c430"
+version = "0.6.0"
 dependencies = [
  "aligned-vec",
  "num-complex",
@@ -928,9 +918,7 @@ dependencies = [
 
 [[package]]
 name = "tfhe-versionable-derive"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f221336486fd08a09dcfd035845f18ae4b742bbf6b6c21dc2121f6b3322705f7"
+version = "0.6.0"
 dependencies = [
  "proc-macro2",
  "quote",
