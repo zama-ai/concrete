@@ -163,8 +163,10 @@ jobs:
       - name: Tag and Publish Release Image
         if: steps.login.conclusion != 'skipped' && startsWith(github.ref, 'refs/tags/v')
         run: |
-          docker image tag ${{ env.image }} ${{ env.image }}:${{ github.ref_name }}
-          docker image push ${{ env.image }}:${{ github.ref_name }}
+          docker image tag ${{ env.image }} "${{ env.image }}:${GITHUB_REF_NAME}"
+          docker image push "${{ env.image }}:${GITHUB_REF_NAME}"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
       - name: Slack Notification
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true
