@@ -50,11 +50,12 @@ impl Problem for MultiBitCJPConstraint {
     type Param = MultiBitCJPParams;
 
     fn verify(&self, param: Self::Param) -> bool {
-        // TODO CHANGE NOISE FORMULAE
         let poly_size = 1 << param.log_poly_size;
 
+        // Calculate minimal variance for LWE key switching
         let variance_ksk = minimal_variance_lwe(param.small_lwe_dim, 64, self.security_level);
 
+        // Calculate key switching variance with updated parameters
         let v_ks = variance_keyswitch(
             param.big_lwe_dim(),
             param.base_log_ks,
@@ -63,17 +64,10 @@ impl Problem for MultiBitCJPConstraint {
             variance_ksk,
         );
 
-        let variance_bsk =
-            minimal_variance_glwe(param.glwe_dim, poly_size, 64, self.security_level);
-        // let v_pbs = variance_blind_rotate(
-        //     param.small_lwe_dim,
-        //     param.glwe_dim,
-        //     poly_size,
-        //     param.base_log_pbs,
-        //     param.level_pbs,
-        //     64,
-        //     variance_bsk,
-        // );
+        // Calculate minimal variance for GLWE bootstrapping
+        let variance_bsk = minimal_variance_glwe(param.glwe_dim, poly_size, 64, self.security_level);
+
+        // Calculate multi-bit blind rotation variance with all parameters
         let v_pbs = variance_multi_bit_blind_rotate(
             param.small_lwe_dim,
             param.glwe_dim,
@@ -86,13 +80,15 @@ impl Problem for MultiBitCJPConstraint {
             self.grouping_factor,
             self.jit_fft,
         );
+
+        // Calculate modulus switching noise with binary key
         let v_ms = estimate_modulus_switching_noise_with_binary_key(
             param.small_lwe_dim,
             param.log_poly_size,
             64,
         );
-        // println!("v_pbs: {}", v_pbs);
-        // println!("v_ks: {}", v_ks);
+
+        // Verify total noise is within constraint
         v_pbs * (1 << (2 * self.log_norm2)) as f64 + v_ks + v_ms < self.variance_constraint
     }
 
