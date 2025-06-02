@@ -48,16 +48,18 @@ jobs:
           persist-credentials: 'false'
       - name: Setup rust toolchain for concrete-cpu
         uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
-      - name: Set python variables
-        run: |
-          {
-            echo "PYTHON_EXEC=$(which ${{ env.python }})"
-          } >> "${GITHUB_ENV}"
       - name: Install dependencies
         run: |
-          brew install ninja ccache zstd
-          ${{ env.pip }} install -r ${{ env.concrete-compiler-dir }}/lib/Bindings/Python/requirements_dev.txt
-          ${{ env.pip }} install -r ${{ env.concrete-compiler-dir }}/../llvm-project/mlir/python/requirements.txt
+          # We don't start macos instances on every run
+          # brew install ninja ccache zstd
+          ${{ env.python }} -m venv .testenv
+          . .testenv/bin/activate
+          pip install -r ${{ env.concrete-compiler-dir }}/lib/Bindings/Python/requirements_dev.txt
+          pip install -r ${{ env.concrete-compiler-dir }}/../llvm-project/mlir/python/requirements.txt
+          pip install pytest
+          {
+            echo "PYTHON_EXEC=$(which python)"
+          } >> "${GITHUB_ENV}"
       - name: Build compiler
         run: |
           set -e
@@ -84,6 +86,7 @@ jobs:
       - name: Test
         run: |
           set -e
+          . .testenv/bin/activate
           cd ${{ env.concrete-compiler-dir }}
           export CONCRETE_COMPILER_DATAFLOW_EXECUTION_ENABLED=OFF
           make MINIMAL_TESTS=${{ env.MINIMAL_TESTS }} Python3_EXECUTABLE="${PYTHON_EXEC}" run-tests
