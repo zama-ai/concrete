@@ -30,8 +30,11 @@ fn assemble_keyset_from_zip(
     // Read keyset info
     let mut keyset_info_file = archive.by_name(KEYSET_INFO_FILENAME).unwrap();
     let mut keyset_info_buffer = Vec::new();
-    keyset_info_file.read_to_end(&mut keyset_info_buffer).unwrap();
-    let keyset_info_message = concrete_protocol_capnp::read_capnp_from_buffer(&keyset_info_buffer).unwrap();
+    keyset_info_file
+        .read_to_end(&mut keyset_info_buffer)
+        .unwrap();
+    let keyset_info_message =
+        concrete_protocol_capnp::read_capnp_from_buffer(&keyset_info_buffer).unwrap();
     let keyset_info_proto: concrete_protocol_capnp::keyset_info::Reader<'_> =
         concrete_protocol_capnp::get_reader_from_message(&keyset_info_message).unwrap();
 
