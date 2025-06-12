@@ -1,22 +1,27 @@
-use concrete::common::Tensor;
+use tfhe::prelude::{FheDecrypt, FheEncrypt};
+use tfhe::shortint::parameters::v0_10::classic::gaussian::p_fail_2_minus_64::ks_pbs::V0_10_PARAM_MESSAGE_2_CARRY_3_KS_PBS_GAUSSIAN_2M64;
+use tfhe::{generate_keys, FheUint8};
 
 mod precompile {
     use concrete_macro::from_concrete_python_export_zip;
-    from_concrete_python_export_zip!("src/test.zip");
+    from_concrete_python_export_zip!("src/test_tfhers.zip");
 }
 
 fn main() {
     let mut secret_csprng = concrete::common::SecretCsprng::new(0u128);
     let mut encryption_csprng = concrete::common::EncryptionCsprng::new(0u128);
-    let keyset = precompile::new_keyset(secret_csprng.pin_mut(), encryption_csprng.pin_mut());
-    let client_keyset = keyset.get_client();
+    let config = tfhe::ConfigBuilder::with_custom_parameters(
+        V0_10_PARAM_MESSAGE_2_CARRY_3_KS_PBS_GAUSSIAN_2M64,
+    );
+    let (client_key, _) = generate_keys(config);
+    let keyset = precompile::KeysetBuilder::new()
+        .with_key_for_my_func_0_arg(&client_key)
+        .generate(secret_csprng.pin_mut(), encryption_csprng.pin_mut());
     let server_keyset = keyset.get_server();
-    let mut dec_client =
-        precompile::client::dec::ClientFunction::new(&client_keyset, encryption_csprng);
-    let mut dec_server = precompile::server::dec::ServerFunction::new();
-    let input = Tensor::new(vec![5], vec![]);
-    let prepared_input = dec_client.prepare_inputs(input);
-    let output = dec_server.invoke(&server_keyset, prepared_input);
-    let processed_output = dec_client.process_outputs(output);
-    println!("{:?}", processed_output.values());
+    let mut server = precompile::server::my_func::ServerFunction::new();
+    let arg_0 = FheUint8::encrypt(6u8, &client_key);
+    let arg_1 = FheUint8::encrypt(4u8, &client_key);
+    let output = server.invoke(&server_keyset, arg_0, arg_1);
+    let decrypted: u8 = output.decrypt(&client_key);
+    assert_eq!(decrypted, 10);
 }

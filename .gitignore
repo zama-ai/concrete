@@ -6,6 +6,9 @@
 # Jetbrains tools
 .idea/
 
+# Zed
+.zed/
+
 # HPX library
 compilers/concrete-compiler/compiler/hpx*
 
@@ -14,3 +17,6 @@ tmp_directory_for_cml_tests
 
 # Temp file
 frontends/concrete-python/examples/sha1/tmp_sha1_test_file.txt
+
+# Macos files
+**/.DS_Store

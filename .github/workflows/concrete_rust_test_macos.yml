@@ -1,0 +1,91 @@
+name: concrete-rust tests macos
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/concrete_rust_test_macos.yml
+      - frontends/concrete-rust/**
+  push:
+    branches:
+      - 'main'
+      - 'release/*'
+
+concurrency:
+  group: concrete_rust_tests_macos_${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+jobs:
+  concrete-rust-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        machine: ["aws-mac1-metal", "aws-mac2-metal"]
+    runs-on: ${{ matrix.machine }}
+    outputs:
+      slack_message: ${{ steps.prepare_slack_notif.outputs.slack_message }}
+      slack_color: ${{ steps.prepare_slack_notif.outputs.slack_color }}
+    env:
+      concrete-compiler-dir: ${{ github.workspace }}/compilers/concrete-compiler/compiler
+      concrete-rust-dir: ${{ github.workspace }}/frontends/concrete-rust
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: 'false'
+      - name: Install build dependencies
+        run: |
+          brew install ninja ccache
+      - name: Setup rust toolchain for concrete-cpu
+        uses: ./.github/actions/setup_rust_toolchain_for_concrete_cpu
+      - name: Install rust
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1.0.7
+        with:
+          toolchain: 1.84.0
+          override: true
+      - name: Build rust bindings
+        run: |
+          set -e
+          cd ${{ env.concrete-compiler-dir }}
+          rm -rf .venv
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r lib/Bindings/Python/requirements_dev.txt
+          cargo install cxxbridge-cmd
+          ccache -z
+          make Python3_EXECUTABLE="$(which python)" concrete-rust
+          ccache -s
+      - name: Run tests
+        run: |
+          set -e
+          cd ${{ env.concrete-rust-dir }}
+          make clean
+          make clear_locks
+          make test
+      - name: Prepare Slack Notification
+        id: prepare_slack_notif
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: |
+          echo "slack_message=concrete-rust-test (${{matrix.machine}}) finished with status: ${{ job.status }}. (${{ env.ACTION_RUN_URL }})" >> "$GITHUB_OUTPUT"
+          echo "slack_color=${{ job.status }}" >> "$GITHUB_OUTPUT"
+
+  slack-notif-macos:
+    needs: ["concrete-rust-test"]
+    runs-on: "ubuntu-latest"
+    if: always()
+    steps:
+      - name: Slack Notification
+        # we want to check that prepare_slack_notif was run
+        if: ${{ needs.concrete-rust-test.outputs.slack_color != '' }}
+        uses: rtCamp/action-slack-notify@c33737706dea87cd7784c687dadc9adf1be59990
+        env:
+          SLACK_COLOR: ${{ needs.concrete-rust-test.outputs.slack_color }}
+          SLACK_MESSAGE: ${{ needs.concrete-rust-test.outputs.slack_message }}

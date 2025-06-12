@@ -12,8 +12,16 @@ if(LINUX)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic")
 endif()
 
-target_link_libraries(ConcreteRust PRIVATE ConcretelangSupport ConcretelangClientLib ConcretelangServerLib
-                                           ConcretelangRuntimeStatic)
+target_link_libraries(
+  ConcreteRust
+  PRIVATE ConcretelangSupport
+          ConcretelangClientLib
+          ConcretelangServerLib
+          ConcretelangRuntimeStatic
+          LLVMSupport
+          capnp
+          capnp-json
+          kj)
 
 if(APPLE)
   find_library(SECURITY_FRAMEWORK Security)

@@ -1,6 +1,6 @@
 [package]
 name = "concrete-macro"
-version = "2.10.1-rc1"
+version = "0.0.0"
 edition = "2021"
 readme = "../../../../../../../README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
@@ -21,4 +21,5 @@ proc-macro2 = "1.0"
 zip = "2.2.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-concrete = {  version = "2.10.1-rc1", path = "../concrete", features = ["compiler"]}
+itertools = "0.14.0"
+concrete = {  version = "=0.0.0", path = "../concrete", features = ["compiler"]}
