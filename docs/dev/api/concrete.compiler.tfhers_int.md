@@ -33,6 +33,8 @@ Convert Concrete value to TFHErs and serialize it.
 
 **Args:**
  
+
+
  - <b>`value`</b> (Value):  value to export 
  - <b>`info`</b> (TfhersFheIntDescription):  description of the TFHErs integer to export to 
 
@@ -50,7 +52,7 @@ Convert Concrete value to TFHErs and serialize it.
 
 ---
 
-<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/tfhers_int.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../compilers/concrete-compiler/compiler/lib/Bindings/Python/concrete/compiler/tfhers_int.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `import_int`
 
