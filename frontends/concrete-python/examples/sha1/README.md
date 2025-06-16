@@ -22,7 +22,7 @@ implementation.
 In our implementation, only the compression function is implemented in FHE, corresponding to the
 `_process_encrypted_chunk_server_side function`. The rest is done client-side in the clear,
 including the message expansion. While more of the process could be done in FHE, this tutorial
-focuses on demonstrating the use of [Modules](https://docs.zama.ai/concrete/compilation/modules).
+focuses on demonstrating the use of [Modules](https://docs.zama.ai/concrete/compilation/combining/composing_functions_with_modules).
 
 Our Module contains 7 functions which can be combined together:
 - `xor3` XORs three values together

@@ -38,6 +38,7 @@
 * [Debugging and artifact](execution-analysis/debug.md)
 * [Performance](optimization/summary.md)
 * [GPU acceleration](execution-analysis/gpu_acceleration.md)
+* [Rust integration](execution-analysis/rust_integration.md)
 * Other
   * [Statistics](compilation/statistics.md)
   * [Progressbar](execution-analysis/progressbar.md)
