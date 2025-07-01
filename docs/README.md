@@ -57,12 +57,3 @@ Collaborate with us to advance the FHE spaces and drive innovation together.
 * [Check the latest release note](https://github.com/zama-ai/concrete/releases)
 * [Request a feature](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=feature\&projects=\&template=features.md)
 * [Report a bug](https://github.com/zama-ai/concrete/issues/new?assignees=\&labels=bug%2C+triage\&projects=\&template=bug\_report.md)
-
-***
-
-{% hint style="success" %}
-
-**Zama 5-Question Developer Survey**
-
-We want to hear from you! Take 1 minute to share your thoughts and helping us enhance our documentation and libraries. **👉** [**Click here**](https://www.zama.ai/developer-survey) to participate.
-{% endhint %}
