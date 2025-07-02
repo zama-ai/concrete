@@ -5,7 +5,7 @@ instance_type = "m7i.16xlarge"
 security_group = ["sg-0e55cc31dfda0d8a7", ]
 
 [backend.aws.cpu-bench]
-region = "eu-west-1"
+region = "eu-west-3"
 image_id = "ami-0ee15e9cce9158583" # Based on Ubuntu 24.04
 instance_type = "hpc7a.96xlarge"
 
@@ -25,6 +25,6 @@ security_group= ["sg-02dd8470fa845f31b", ]
 runner_name = "distributed-ci"
 
 [backend.aws.release]
-region = "eu-west-1"
+region = "eu-west-3"
 image_id = "ami-0ee15e9cce9158583"
-instance_type = "hpc7a.96xlarge"
+instance_type = "m7i.16xlarge"
