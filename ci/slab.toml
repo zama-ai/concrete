@@ -27,4 +27,4 @@ runner_name = "distributed-ci"
 [backend.aws.release]
 region = "eu-west-3"
 image_id = "ami-0ee15e9cce9158583"
-instance_type = "hpc7a.96xlarge"
+instance_type = "hpc7a.48xlarge"
