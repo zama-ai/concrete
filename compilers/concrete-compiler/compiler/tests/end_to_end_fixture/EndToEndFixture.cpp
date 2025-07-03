@@ -245,11 +245,11 @@ template <> struct llvm::yaml::MappingTraits<EndToEndDesc> {
       io.setError("encoding can only be native or crt");
     }
 
-    mlir::concretelang::LargeIntegerParameter largeInterger;
+    mlir::concretelang::LargeIntegerParameter largeInteger;
     io.mapOptional("large-integer-crt-decomposition",
-                   largeInterger.crtDecomposition);
-    if (!largeInterger.crtDecomposition.empty()) {
-      desc.largeIntegerParameter = largeInterger;
+                   largeInteger.crtDecomposition);
+    if (!largeInteger.crtDecomposition.empty()) {
+      desc.largeIntegerParameter = largeInteger;
     }
     io.mapOptional("test-error-rates", desc.test_error_rates);
   }
