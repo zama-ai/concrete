@@ -34,7 +34,7 @@ const ARCHIVE: &str = if cfg!(all(target_os = "macos", target_arch = "x86_64")) 
 
 const INSTALL_LOCK: &str = "install";
 const INSTALLED_FILE: &str = "installed";
-const URL: &str = "https://github.com/zama-ai/concrete/releases/download/v2.10.1-rc1";
+const URL: &str = "https://github.com/zama-ai/concrete/releases/download/v2.11.0";
 
 include!("src/utils/flock.rs");
 fn do_with_lock<F: FnMut()>(file: &Path, f: F) {

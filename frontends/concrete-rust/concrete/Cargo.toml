@@ -1,9 +1,9 @@
 [package]
 name = "concrete"
-version = "0.0.0"
+version = "2.11.0"
 edition = "2021"
 links = "concrete"
-readme = "../../../../../../../README.md"
+readme = "README.md"
 keywords = ["fully", "homomorphic", "encryption", "fhe", "cryptography"]
 homepage = "https://zama.ai/"
 documentation = "https://docs.zama.ai/concrete"
@@ -19,7 +19,7 @@ serde_json = "1.0"
 quote  = {version = "1.0", optional =true }
 proc-macro2 = {version = "1.0", optional = true}
 libc = "0.2"
-tfhe = {version = "1.1", features = ["integer"], optional = true}
+tfhe = {version = "=1.2", features = ["integer"], optional = true}
 
 [build-dependencies]
 zip = "2.4"
