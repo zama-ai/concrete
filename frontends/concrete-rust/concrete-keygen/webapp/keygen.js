@@ -37,11 +37,11 @@ async function handleKeygen(event) {
         console.log("Client keyset generation completed.")
 
         // Generate keyset without bootstrap keys
-        const keysetBufferNoBsk = cr.generate_keyset(
+        const keysetBufferNoBskNoKsk = cr.generate_keyset(
             keysetInfoBuffer,
             true, // no_bsk
             {}, // ignore_bsk
-            false, // no_ksk
+            true, // no_ksk
             {}, // ignore_ksk
             BigInt(0),
             BigInt(0),
@@ -51,7 +51,7 @@ async function handleKeygen(event) {
 
         // Create a zip file
         const zipFile = new zip.ZipWriter(new zip.BlobWriter("application/zip"), { bufferedWrite: true });
-        zipFile.add('keyset_no_bsk.capnp', new zip.Uint8ArrayReader(keysetBufferNoBsk));
+        zipFile.add('keyset_no_bsk_no_ksk.capnp', new zip.Uint8ArrayReader(keysetBufferNoBskNoKsk));
         zipFile.add('keyset_info.capnp', new zip.Uint8ArrayReader(keysetInfoBuffer));
 
         // Generate bootstrap keys in chunks
@@ -77,6 +77,30 @@ async function handleKeygen(event) {
         }
 
         console.log("BSK chunks generation completed.")
+
+        // Generate keyswitch keys in chunks
+        for (const ksk of keysetInfoJson.lwe_keyswitch_keys) {
+            const chunk_size = parseInt(document.getElementById('chunk-size').value, 10) || 8;
+            var chunk_count = 0;
+            const port = {
+                postMessage: (data) => {
+                    zipFile.add(`ksk_${ksk.id}_chunk_${chunk_count++}`, new zip.Uint8ArrayReader(data));
+                },
+                close: () => console.log(`Keyswitch key ${ksk.id} generation completed.`)
+            };
+            await cr.chunked_ksk_keygen(
+                keysetInfoBuffer,
+                cr.get_lwe_secret_key_from_client_keyset(clientKeysetBuffer, ksk.input_id),
+                cr.get_lwe_secret_key_from_client_keyset(clientKeysetBuffer, ksk.output_id),
+                ksk.id,
+                BigInt(0),
+                BigInt(0),
+                chunk_size,
+                port
+            );
+        }
+
+        console.log("KSK chunks generation completed.")
 
         const url = URL.createObjectURL(await zipFile.close());
 
