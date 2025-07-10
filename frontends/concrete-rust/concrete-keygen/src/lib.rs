@@ -30,6 +30,8 @@
 //! - `explain_keyset_info`: Explains a keyset info buffer in JSON representation.
 //! - `add_bsk_keys_to_keyset`: Adds a list of bootstrap keys to an existing keyset.
 //! - `add_bsk_keys_to_keyset_from_buffer`: Adds a list of bootstrap keys to an existing keyset buffer.
+//! - `add_ksk_keys_to_keyset`: Adds a list of keyswitch keys to an existing keyset.
+//! - `add_ksk_keys_to_keyset_from_buffer`: Adds a list of keyswitch keys to an existing keyset buffer.
 //!
 //! # Macros
 //! - `build_key`: A macro for building a Cap'n Proto message for a key with the specified key information and builder type.
@@ -803,6 +805,172 @@ pub fn add_bsk_keys_to_keyset_from_buffers(
 
     // Call the original function
     let builder = add_bsk_keys_to_keyset(keyset_reader, bsks);
+
+    // Serialize the result to a buffer
+    serialize::write_message_to_words(&builder)
+}
+
+/// Builds a Cap'n Proto message containing a keyswitch key.
+///
+/// # Arguments
+///
+/// * `keyset_info`: The keyset information. This is used to get info about the keyswitch key.
+/// * `ksk_id`: The ID of the keyswitch key.
+/// * `ksk`: The keyswitch key to be included in the message.
+///
+/// # Returns
+///
+/// A Cap'n Proto message builder containing the keyswitch key.
+pub fn build_ksk_proto(
+    keyset_info: concrete_protocol_capnp::keyset_info::Reader,
+    ksk_id: u32,
+    ksk: &LweKeyswitchKey<Vec<u64>>,
+) -> capnp::message::Builder<HeapAllocator> {
+    let mut builder = capnp::message::Builder::new_default();
+    let mut ksk_builder =
+        builder.init_root::<concrete_protocol_capnp::lwe_keyswitch_key::Builder>();
+    ksk_builder
+        .set_info(
+            keyset_info
+                .get_lwe_keyswitch_keys()
+                .expect_or_throw("Failed to get LWE keyswitch key info")
+                .get(ksk_id),
+        )
+        .expect_or_throw("Failed to set keyswitch key info");
+    ksk_builder
+        .set_payload(
+            vector_to_payload(ksk.as_view().into_container())
+                .get_root_as_reader()
+                .expect_or_throw("Failed to get payload"),
+        )
+        .expect_or_throw("Failed to set keyswitch key payload");
+    builder
+}
+
+/// Adds a list of keyswitch keys to an existing keyset.
+///
+/// This function takes an existing keyset, a list of keyswitch keys, and constructs a new keyset
+/// by adding the keyswitch keys to the existing keyset.
+///
+/// # Arguments
+///
+/// * `keyset`: The existing keyset to which the keyswitch keys will be added.
+/// * `ksks`: A vector of keyswitch keys to be added.
+///
+/// # Returns
+///
+/// A new keyset with the additional keyswitch keys.
+pub fn add_ksk_keys_to_keyset(
+    keyset: concrete_protocol_capnp::keyset::Reader,
+    ksks: Vec<concrete_protocol_capnp::lwe_keyswitch_key::Reader>,
+) -> capnp::message::Builder<HeapAllocator> {
+    let mut builder = capnp::message::Builder::new_default();
+    let mut new_keyset = builder.init_root::<concrete_protocol_capnp::keyset::Builder>();
+
+    // Copy existing client and server keysets
+    new_keyset
+        .reborrow()
+        .set_client(
+            keyset
+                .get_client()
+                .expect_or_throw("Failed to get client keyset"),
+        )
+        .expect_or_throw("Failed to set client keyset");
+    let mut server_keyset = new_keyset.init_server();
+    server_keyset
+        .reborrow()
+        .set_lwe_bootstrap_keys(
+            keyset
+                .get_server()
+                .expect_or_throw("Failed to get server keyset")
+                .get_lwe_bootstrap_keys()
+                .expect_or_throw("Failed to get LWE bootstrap keys"),
+        )
+        .expect_or_throw("Failed to set LWE bootstrap keys");
+    server_keyset
+        .reborrow()
+        .set_packing_keyswitch_keys(
+            keyset
+                .get_server()
+                .expect_or_throw("Failed to get server keyset")
+                .get_packing_keyswitch_keys()
+                .expect_or_throw("Failed to get packing keyswitch keys"),
+        )
+        .expect_or_throw("Failed to set packing keyswitch keys");
+
+    // Initialize keyswitch keys with existing ones
+    let existing_ksk_keys = keyset
+        .get_server()
+        .expect_or_throw("Failed to get server keyset")
+        .get_lwe_keyswitch_keys()
+        .expect_or_throw("Failed to get LWE keyswitch keys");
+    let mut new_ksk_keys =
+        server_keyset.init_lwe_keyswitch_keys(existing_ksk_keys.len() + ksks.len() as u32);
+    for ksk in existing_ksk_keys.iter() {
+        new_ksk_keys
+            .set_with_caveats(
+                ksk.get_info()
+                    .expect_or_throw("Failed to get keyswitch key info")
+                    .get_id(),
+                ksk,
+            )
+            .expect_or_throw("Failed to set existing keyswitch key");
+    }
+    // Add new bootstrap keys
+    for ksk in ksks.iter() {
+        new_ksk_keys
+            .set_with_caveats(
+                ksk.get_info()
+                    .expect_or_throw("Failed to get keyswitch key info")
+                    .get_id(),
+                *ksk,
+            )
+            .expect_or_throw("Failed to set new keyswitch key");
+    }
+
+    builder
+}
+
+/// Adds a list of keyswitch keys to an existing keyset using buffers.
+///
+/// This function takes an existing keyset buffer, a list of keyswitch key buffers, and constructs a new keyset
+/// by adding the keyswitch keys to the existing keyset.
+///
+/// # Arguments
+///
+/// * `keyset_buffer`: A byte slice containing the serialized existing keyset (Capnp).
+/// * `ksk_buffers`: A vector of byte slices, each containing a serialized keyswitch key (Capnp).
+///
+/// # Returns
+///
+/// A `Vec<u8>` containing the serialized new keyset.
+pub fn add_ksk_keys_to_keyset_from_buffers(
+    keyset_buffer: &[u8],
+    ksk_buffers: Vec<&[u8]>,
+) -> Vec<u8> {
+    // Deserialize the keyset buffer
+    let keyset_message =
+        read_capnp_from_buffer(keyset_buffer).expect_or_throw("Failed to read keyset buffer");
+    let keyset_reader =
+        get_reader_from_message(&keyset_message).expect_or_throw("Failed to read keyset reader");
+
+    // Deserialize each bootstrap key buffer
+    let ksks_readers = ksk_buffers
+        .iter()
+        .map(|bsk_buffer| {
+            read_capnp_from_buffer(bsk_buffer).expect_or_throw("Failed to read keyswitch key")
+        })
+        .collect::<Vec<_>>();
+    let ksks = ksks_readers
+        .iter()
+        .map(|bsk_reader| {
+            get_reader_from_message(bsk_reader)
+                .expect_or_throw("Failed to get keyswitch key reader")
+        })
+        .collect::<Vec<_>>();
+
+    // Call the original function
+    let builder = add_ksk_keys_to_keyset(keyset_reader, ksks);
 
     // Serialize the result to a buffer
     serialize::write_message_to_words(&builder)

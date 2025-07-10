@@ -2,7 +2,9 @@ use std::io::Read;
 
 use concrete_keygen::concrete_protocol_capnp;
 use tfhe::core_crypto::prelude::{
-    allocate_and_assemble_lwe_bootstrap_key_from_chunks, LweBootstrapKeyChunk,
+    allocate_and_assemble_lwe_bootstrap_key_from_chunks,
+    allocate_and_assemble_lwe_keyswitch_key_from_chunks, LweBootstrapKeyChunk,
+    LweKeyswitchKeyChunk,
 };
 use tfhe::safe_serialization::safe_deserialize;
 
@@ -11,10 +13,14 @@ use zip::result::ZipResult;
 use zip::ZipArchive;
 
 const KEYSET_INFO_FILENAME: &str = "keyset_info.capnp";
-const KEYSET_FILENAME: &str = "keyset_no_bsk.capnp";
+const KEYSET_FILENAME: &str = "keyset_no_bsk_no_ksk.capnp";
 
 fn bsk_chunk_filename(bsk_id: u32, chunk_id: u32) -> String {
     format!("bsk_{}_chunk_{}", bsk_id, chunk_id)
+}
+
+fn ksk_chunk_filename(ksk_id: u32, chunk_id: u32) -> String {
+    format!("ksk_{}_chunk_{}", ksk_id, chunk_id)
 }
 
 fn new_zip_archive(path: &str) -> ZipResult<ZipArchive<std::fs::File>> {
@@ -90,11 +96,59 @@ fn assemble_keyset_from_zip(
     let keyset = concrete_protocol_capnp::get_reader_from_message(&keyset_message).unwrap();
 
     // Add BSks to keyset
-    let keyset_with_bsks = concrete_keygen::add_bsk_keys_to_keyset(keyset, bsk_readers);
+    let mut keyset_with_bsks = concrete_keygen::add_bsk_keys_to_keyset(keyset, bsk_readers);
+
+    // Read and assemble keyswitch keys
+    let ksk_ids: Vec<u32> = keyset_info_proto
+        .get_lwe_keyswitch_keys()
+        .unwrap()
+        .into_iter()
+        .map(|ksk| ksk.get_id())
+        .collect();
+    let mut ksk_protos = Vec::new();
+    for ksk_id in ksk_ids {
+        let mut chunks = Vec::new();
+        let mut chunk_id = 0;
+
+        loop {
+            let chunk_filename = ksk_chunk_filename(ksk_id, chunk_id);
+            let mut archive = new_zip_archive(zip_path).unwrap();
+            if let Ok(mut chunk_file) = archive.by_name(&chunk_filename) {
+                let mut chunk_buffer = Vec::new();
+                chunk_file.read_to_end(&mut chunk_buffer).unwrap();
+                let serialized_size_limit = 10_000_000_000;
+                let chunk: LweKeyswitchKeyChunk<Vec<u64>> =
+                    safe_deserialize(chunk_buffer.as_slice(), serialized_size_limit).unwrap();
+                chunks.push(chunk);
+                chunk_id += 1;
+            } else {
+                break;
+            };
+        }
+
+        let ksk = allocate_and_assemble_lwe_keyswitch_key_from_chunks(&chunks);
+        let bsk_proto = concrete_keygen::build_ksk_proto(keyset_info_proto, ksk_id, &ksk);
+        ksk_protos.push(bsk_proto);
+    }
+
+    let ksk_readers = ksk_protos
+        .iter_mut()
+        .map(|ksk_proto| {
+            concrete_protocol_capnp::get_reader_from_builder(ksk_proto)
+                .expect("Failed to get ksk reader")
+        })
+        .collect();
+
+    // Add KSKs to keyset
+    let keyset_with_bsks_and_ksks = concrete_keygen::add_ksk_keys_to_keyset(
+        concrete_protocol_capnp::get_reader_from_builder(&mut keyset_with_bsks)
+            .expect("Failed to get keyset reader"),
+        ksk_readers,
+    );
 
     // Write the final keyset to the output file
     let mut output_file = std::fs::File::create(output_keyset_path).unwrap();
-    capnp::serialize::write_message(&mut output_file, &keyset_with_bsks).unwrap();
+    capnp::serialize::write_message(&mut output_file, &keyset_with_bsks_and_ksks).unwrap();
 
     Ok(())
 }
