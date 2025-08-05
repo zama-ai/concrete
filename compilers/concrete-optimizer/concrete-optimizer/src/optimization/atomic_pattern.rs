@@ -1,4 +1,5 @@
 use concrete_cpu_noise_model::gaussian_noise::noise::modulus_switching::estimate_modulus_switching_noise_with_binary_key;
+use concrete_cpu_noise_model::gaussian_noise::complexity::estimate_min_complexity;
 
 use super::config::{Config, SearchSpace};
 use super::decomposition::cmux::CmuxComplexityNoise;
@@ -137,6 +138,26 @@ fn update_state_with_best_decompositions(
 
 const REL_EPSILON_PROBA: f64 = 1.0 + 1e-8;
 
+/// Estimates the minimum possible complexity for given parameters
+fn estimate_min_complexity(
+    internal_dim: u64,
+    glwe_log_poly_size: u64, 
+    ciphertext_modulus_log: u64,
+    config: &Config,
+) -> f64 {
+    // Minimum complexity includes:
+    // 1. Complexity of modulus switching
+    let modulus_switching_complexity = (internal_dim * (1 << glwe_log_poly_size)) as f64;
+    
+    // 2. Minimum complexity of the keyswitch operation
+    let min_ks_complexity = internal_dim.pow(2) as f64;
+    
+    // 3. Minimum complexity of blind rotation
+    let min_br_complexity = (1 << glwe_log_poly_size) as f64 * internal_dim as f64;
+
+    modulus_switching_complexity + min_ks_complexity + min_br_complexity
+}
+
 pub fn optimize_one(
     sum_size: u64,
     precision: u64,
@@ -179,7 +200,19 @@ pub fn optimize_one(
     // assume this noise is increasing with lwe_intern_dim
     let min_internal_lwe_dimensions = search_space.internal_lwe_dimensions[0];
     let lower_bound_cut = |glwe_log_poly_size| {
-        // TODO: cut if min complexity is higher than current best
+        // If we have a best solution, check if minimum complexity exceeds it
+        if let Some(best) = &state.best_solution {
+            let min_complexity = estimate_min_complexity(
+                min_internal_lwe_dimensions,
+                glwe_log_poly_size,
+                ciphertext_modulus_log,
+                &consts.config,
+            );
+            if min_complexity > best.complexity {
+                return true;
+            }
+        }
+        
         CUTS && estimate_modulus_switching_noise_with_binary_key(
             min_internal_lwe_dimensions,
             glwe_log_poly_size,
