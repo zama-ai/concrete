@@ -19,8 +19,6 @@
   <a href="https://slsa.dev"><img alt="SLSA 3" src="https://slsa.dev/images/gh-badge-level3.svg" /></a>
 </p>
 
-
-
 ## About
 
 ### What is Concrete
@@ -34,12 +32,10 @@
 - 📊 Built-in performance analysis tools
 - 🔄 Seamless integration with existing Python code
 
-Fully Homomorphic Encryption (FHE) enables performing computations on encrypted data directly without the need to decrypt it first. FHE allows developers to build services that ensure privacy for all users. FHE is also an excellent solution against data breaches as everything is performed on encrypted data. Even if the server is compromised, no sensitive data will be leaked.
+Fully Homomorphic Encryption (FHE) enables performing computations on encrypted data directly without the need to decrypt it first! FHE allows developers to build services that ensure privacy for all users. FHE is also an excellent solution against data breaches as everything is performed on encrypted data. Even if the server is compromised, no sensitive data will be leaked.
 
 Concrete is a versatile library that can be used for a variety of purposes. For instance, [Concrete ML](https://github.com/zama-ai/concrete-ml) is built on top of Concrete to simplify Machine-Learning oriented use cases.
 <br></br>
-
-
 
 ## Table of Contents
 - **[Getting Started](#getting-started)**
@@ -56,12 +52,11 @@ Concrete is a versatile library that can be used for a variety of purposes. For 
 - **[Support](#support)**
 <br></br>
 
-
 ## Getting Started
 
 ### System Requirements
 - Python 3.9 - 3.12
-- 8GB RAM minimum (16GB recommended)
+- 8GB RAM minimum, (16GB recommended)
 - x86_64 or ARM64 processor
 
 ###  Installation
@@ -80,7 +75,7 @@ pip install -U pip wheel setuptools
 pip install concrete-python --index-url https://pypi.zama.ai/gpu
 ```
 
-#### 2. Docker Installation
+#### 2. Docker Installation 
 ```shell
 # CPU version
 docker pull zamafhe/concrete-python:v2.0.0
@@ -151,8 +146,6 @@ assert result == add(2, 6)
 
 *Explore more useful resources in [Concrete tutorials](https://docs.zama.ai/concrete/v/main-1/tutorials/see-all-tutorials) and [Awesome Zama repo](https://github.com/zama-ai/awesome-zama?tab=readme-ov-file#concrete). If you have built awesome projects using Concrete, please let us know and we will be happy to showcase them here!*
 
-
-
 ### Documentation
 
 Full, comprehensive documentation is available at [https://docs.zama.ai/concrete](https://docs.zama.ai/concrete).
@@ -160,8 +153,6 @@ Full, comprehensive documentation is available at [https://docs.zama.ai/concrete
 <p align="right">
   <a href="#about" > ↑ Back to top </a>
 </p>
-
-
 
 ## Working with Concrete
 
@@ -220,9 +211,7 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
 </picture>
 </a>
 
-
 🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development.
-
 
 <p align="right">
   <a href="#about" > ↑ Back to top </a>
