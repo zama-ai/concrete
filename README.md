@@ -75,7 +75,7 @@ pip install -U pip wheel setuptools
 pip install concrete-python --index-url https://pypi.zama.ai/gpu
 ```
 
-#### 2. Docker Installation
+#### 2. Docker Installation 2
 ```shell
 # CPU version
 docker pull zamafhe/concrete-python:v2.0.0
