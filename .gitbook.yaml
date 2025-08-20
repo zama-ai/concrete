@@ -50,4 +50,4 @@ redirects:
   dev/compilation/SDFGDialect: explanations/SDFGDialect.md
   dev/security/security\_curves: explanations/security.md
   explanations/security\_curves: explanations/security.md
-  dev/setup/layout: explanations/layout.md
+
