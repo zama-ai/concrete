@@ -19,8 +19,6 @@
   <a href="https://slsa.dev"><img alt="SLSA 3" src="https://slsa.dev/images/gh-badge-level3.svg" /></a>
 </p>
 
-
-
 ## About
 
 ### What is Concrete
@@ -39,8 +37,6 @@ Fully Homomorphic Encryption (FHE) enables performing computations on encrypted 
 Concrete is a versatile library that can be used for a variety of purposes. For instance, [Concrete ML](https://github.com/zama-ai/concrete-ml) is built on top of Concrete to simplify Machine-Learning oriented use cases.
 <br></br>
 
-
-
 ## Table of Contents
 - **[Getting Started](#getting-started)**
    - [Installation](#installation)
@@ -56,12 +52,11 @@ Concrete is a versatile library that can be used for a variety of purposes. For 
 - **[Support](#support)**
 <br></br>
 
-
 ## Getting Started
 
 ### System Requirements
 - Python 3.9 - 3.12
-- 8GB RAM minimum (16GB recommended)
+- 8GB RAM minimum, (16GB recommended)
 - x86_64 or ARM64 processor
 
 ###  Installation
@@ -159,8 +154,6 @@ Full, comprehensive documentation is available at [https://docs.zama.ai/concrete
   <a href="#about" > ↑ Back to top </a>
 </p>
 
-
-
 ## Working with Concrete
 
 ### Citations
@@ -218,9 +211,7 @@ This software is distributed under the **BSD-3-Clause-Clear** license. Read [thi
 </picture>
 </a>
 
-
 🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development.
-
 
 <p align="right">
   <a href="#about" > ↑ Back to top </a>
