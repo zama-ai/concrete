@@ -19,18 +19,21 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_IAM_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET_NAME: ${{ secrets.AWS_S3_PYPI_BUCKET_NAME }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           mkdir wheels
-          aws s3 cp "s3://${S3_BUCKET_NAME}/cpu/concrete-python/" ./wheels/ --recursive --exclude "*" --include "concrete_python-${{ inputs.version }}-*"
+          aws s3 cp "s3://${S3_BUCKET_NAME}/cpu/concrete-python/" ./wheels/ --recursive --exclude "*" --include "concrete_python-${INPUT_VERSION}-*"
           echo "============== Downloaded wheels ==============="
           ls -la ./wheels/
       - name: Push wheels to public PyPI (public)
         run: |
           pip install twine==6.0.0
-          twine upload wheels/concrete_python-${{ inputs.version }}*.whl \
+          twine upload "wheels/concrete_python-${INPUT_VERSION}*.whl" \
             -u "${{ secrets.PUBLIC_PYPI_USER }}" \
             -p "${{ secrets.PUBLIC_PYPI_PASSWORD }}" \
             -r pypi
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
       - name: Slack Notification
         if: ${{ failure() }}
         continue-on-error: true
@@ -55,11 +58,13 @@ jobs:
       - name: Get version from tag
         run: |
           # remove leading 'v' and '-' from tag
-          VERSION=$(echo ${{ inputs.version }} | sed "s/^v*//g" | sed "s/-//g")
+          VERSION=$(echo "${INPUT_VERSION}" | sed "s/^v*//g" | sed "s/-//g")
           {
             echo "VERSION=$VERSION"
             echo "NAME_TAG=${{ env.DOCKER_IMAGE_NAME }}:v$VERSION"
           } >> "${GITHUB_ENV}"
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
       - name: Build image
         run: |
           mkdir empty_context
