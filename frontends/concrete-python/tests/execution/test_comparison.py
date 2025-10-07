@@ -64,6 +64,7 @@ for _ in range(35):
                     ("<=", lambda x, y: x <= y),
                     (">", lambda x, y: x > y),
                     (">=", lambda x, y: x >= y),
+                    ("mixed", lambda x, y:  fhe.if_then_else(x < y, x, y))
                 ]
             ),
             # bit widths
