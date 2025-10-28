@@ -55,7 +55,7 @@ fn caches_from(options: &ffi::Options) -> decomposition::PersistDecompCaches {
     decomposition::cache(
         options.security_level,
         processing_unit,
-        Some(ProcessingUnit::Cpu.complexity_model()),
+        Some(ProcessingUnit::Cpu.complexity_model() ),
         options.cache_on_disk,
         options.ciphertext_modulus_log,
         options.fft_precision,
@@ -662,55 +662,73 @@ impl Dag {
             }
             ffi::MultiParamStrategy::ByPrecision | _ => PartitionCut::for_each_precision(&self.0),
         };
+
+        // ---- FIX: Own cloned restrictions and pass references to those locals ----
+        let ks_opt = if !options.keyset_restriction.is_null() {
+            Some((*options.keyset_restriction).clone())
+        } else {
+            None
+        };
+        let rr_opt = if !options.range_restriction.is_null() {
+            Some((*options.range_restriction).clone())
+        } else {
+            None
+        };
+
         let circuit_sol =
-            if !options.keyset_restriction.is_null() && !options.range_restriction.is_null() {
-                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    &(
-                        (*options.keyset_restriction).clone(),
-                        (*options.range_restriction).clone(),
-                    ),
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                    &Some(p_cut),
-                )
-            } else if !options.keyset_restriction.is_null() {
-                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    &*options.keyset_restriction,
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                    &Some(p_cut),
-                )
-            } else if !options.range_restriction.is_null() {
-                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    &*options.range_restriction,
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                    &Some(p_cut),
-                )
-            } else {
-                concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
-                    &self.0,
-                    config,
-                    &search_space,
-                    &NoSearchSpaceRestriction,
-                    encoding,
-                    options.default_log_norm2_woppbs,
-                    &caches_from(options),
-                    &Some(p_cut),
-                )
+            match (ks_opt, rr_opt) {
+                (Some(ks), Some(rr)) => {
+                    let restriction = (ks, rr);
+                    concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                        &self.0,
+                        config,
+                        &search_space,
+                        &restriction, // reference to an owned local tuple
+                        encoding,
+                        options.default_log_norm2_woppbs,
+                        &caches_from(options),
+                        &Some(p_cut),
+                    )
+                }
+                (Some(ks), None) => {
+                    concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                        &self.0,
+                        config,
+                        &search_space,
+                        &ks, // reference to owned local
+                        encoding,
+                        options.default_log_norm2_woppbs,
+                        &caches_from(options),
+                        &Some(p_cut),
+                    )
+                }
+                (None, Some(rr)) => {
+                    concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                        &self.0,
+                        config,
+                        &search_space,
+                        &rr, // reference to owned local
+                        encoding,
+                        options.default_log_norm2_woppbs,
+                        &caches_from(options),
+                        &Some(p_cut),
+                    )
+                }
+                (None, None) => {
+                    concrete_optimizer::optimization::dag::multi_parameters::optimize_generic::optimize(
+                        &self.0,
+                        config,
+                        &search_space,
+                        &NoSearchSpaceRestriction,
+                        encoding,
+                        options.default_log_norm2_woppbs,
+                        &caches_from(options),
+                        &Some(p_cut),
+                    )
+                }
             };
+        // ---- END FIX ----
+
         circuit_sol.into()
     }
 }
@@ -1602,3 +1620,4 @@ impl SearchSpaceRestriction for ffi::KeysetRestriction {
         }
     }
 }
+```
