@@ -64,7 +64,7 @@ server = fhe.Server.load("server.zip")
 
 <!--pytest-codeblocks:skip-->
 ```python
-serialized_client_specs: str = server.client_specs.serialize()
+serialized_client_specs: bytes = server.client_specs.serialize()
 ```
 
 7. **Send serialized `ClientSpecs` to clients.**
