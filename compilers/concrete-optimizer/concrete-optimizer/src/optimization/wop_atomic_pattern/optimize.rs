@@ -217,7 +217,12 @@ fn update_state_with_best_decompositions(
     let input_lwe_dimension = glwe_params.sample_extract_lwe_dimension();
 
     let safe_variance_bound = consts.safe_variance;
-    let norm = consts.noise_factor;
+    //let norm = consts.noise_factor;
+    // assert that all precisions are the same
+    assert!(precisions.iter().all(|&p| p == precisions[0]));
+    // the norm is (2 ^(2*p) - 1) / (2^p - 1)
+    let norm = (2u64.pow(2 * precisions[0] as u32) - 1) as f64
+        / (2u64.pow(precisions[0] as u32) - 1) as f64;
 
     let variance_modulus_switching = estimate_modulus_switching_noise_with_binary_key(
         internal_dim,

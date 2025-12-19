@@ -1,0 +1,95 @@
+warning: virtual workspace defaulting to `resolver = "1"` despite one or more workspace members being on edition 2021 which implies `resolver = "2"`
+note: to keep the current resolver, specify `workspace.resolver = "1"` in the workspace root's manifest
+note: to use the edition 2021 resolver, specify `workspace.resolver = "2"` in the workspace root's manifest
+note: for more details see https://doc.rust-lang.org/cargo/reference/resolver.html#resolver-versions
+   Compiling concrete-optimizer v0.1.0 (/home/yundsi/code/concrete/compilers/concrete-optimizer/concrete-optimizer)
+warning: struct `ParameterCount` is never constructed
+ --> concrete-optimizer/src/global_parameters.rs:6:8
+  |
+6 | struct ParameterCount {
+  |        ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `operators` is never read
+   --> concrete-optimizer/src/optimization/dag/solo_key/analyze.rs:117:9
+    |
+116 | pub struct OperationDag {
+    |            ------------ field in this struct
+117 |     pub operators: Vec<Op>,
+    |         ^^^^^^^^^
+    |
+    = note: `OperationDag` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: fields `precision` and `nb_luts` are never read
+   --> concrete-optimizer/src/optimization/dag/solo_key/analyze.rs:129:9
+    |
+128 | pub struct VariancesAndBound {
+    |            ----------------- fields in this struct
+129 |     pub precision: Precision,
+    |         ^^^^^^^^^
+130 |     pub safe_variance_bound: f64,
+131 |     pub nb_luts: u64,
+    |         ^^^^^^^
+    |
+    = note: `VariancesAndBound` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> concrete-optimizer/src/utils/cache/persistent.rs:121:29
+    |
+121 |     fn own_or_clone_content(&self) -> (RwLockWriteGuard<Arc<ROC>>, ROC) {
+    |                             ^^^^^      ^^^^^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                             |
+    |                             the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+121 |     fn own_or_clone_content(&self) -> (RwLockWriteGuard<'_, Arc<ROC>>, ROC) {
+    |                                                         +++
+
+   Compiling v0-parameters v0.1.0 (/home/yundsi/code/concrete/compilers/concrete-optimizer/v0-parameters)
+warning: `concrete-optimizer` (lib) generated 4 warnings (run `cargo fix --lib -p concrete-optimizer` to apply 1 suggestion)
+warning: function `experiments_9_bits` is never used
+  --> v0-parameters/src/bin/woppbs-parameters.rs:60:4
+   |
+60 | fn experiments_9_bits() -> Vec<ExperimentParameters> {
+   |    ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `experiments_11_bits` is never used
+  --> v0-parameters/src/bin/woppbs-parameters.rs:90:4
+   |
+90 | fn experiments_11_bits() -> Vec<ExperimentParameters> {
+   |    ^^^^^^^^^^^^^^^^^^^
+
+warning: `v0-parameters` (bin "woppbs-parameters") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.94s
+     Running `target/debug/woppbs-parameters --p-fail 2.938735877055719e-39`
+security level: 128
+target p_error: 2.9e-39
+
+// -> Experiment for 8 bits
+ p, n_blocks, n_inputs, k,  N, stddev,    n, stddev, br_l,br_b, ks_l,ks_b, cb_l,cb_b, pp_l,pp_b,  cost
+ 8,        1,        1, 2, 10, -51.49,  618, -13.46,    7,   6,   12,  1,     7,  4,     3, 13,  16707
+ 4,        2,        1, 2, 10, -51.49,  618, -13.46,    4,   9,    6,  2,     2,  9,     2, 17,   3555
+ 2,        4,        1, 2, 10, -51.49,  618, -13.46,    5,   8,    6,  2,     1, 14,     2, 17,   2261
+
+
+
+// -> Experiment for 10 bits
+ p, n_blocks, n_inputs, k,  N, stddev,    n, stddev, br_l,br_b, ks_l,ks_b, cb_l,cb_b, pp_l,pp_b,  cost
+10,        1,        1, 4,  9, -51.49,  634, -13.88,   22,   2,   12,  1,    10,  3,     4, 10,  73688
+ 5,        2,        1, 2, 10, -51.49,  622, -13.56,    4,   9,    6,  2,     3,  7,     2, 17,   6230
+
+
+
+// -> Experiment for 12 bits
+ p, n_blocks, n_inputs, k,  N, stddev,    n, stddev, br_l,br_b, ks_l,ks_b, cb_l,cb_b, pp_l,pp_b,  cost
+ 6,        2,        1, 4,  9, -51.49,  620, -13.51,    6,   7,    6,  2,     3,  8,     3, 13,  11466
+ 4,        3,        1, 2, 10, -51.49,  655, -14.44,    4,   9,    6,  2,     2,  9,     2, 17,   5583
+ 3,        4,        1, 2, 10, -51.49,  619, -13.48,    3,  12,    6,  2,     2,  8,     2, 17,   4406
+
+

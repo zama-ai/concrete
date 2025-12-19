@@ -117,6 +117,10 @@ fn experiments_12_bits() -> Vec<ExperimentParameters> {
             n_blocks: 1,
         },
         ExperimentParameters {
+            precision: 6,
+            n_blocks: 2,
+        },
+        ExperimentParameters {
             precision: 4,
             n_blocks: 3,
         },
@@ -162,7 +166,7 @@ fn launch_experiments(mut writer: impl Write, args: &WopArgs) {
             " p, n_blocks, n_inputs, k,  N, stddev,    n, stddev, br_l,br_b, ks_l,ks_b, cb_l,cb_b, pp_l,pp_b,  cost"
         )
             .unwrap();
-        for n_inputs in 2..5 {
+        for n_inputs in 1..2 {
             for experiment in experiment_parameters.iter() {
                 let res = optimize_raw(
                     0.,
@@ -206,39 +210,39 @@ fn launch_experiments(mut writer: impl Write, args: &WopArgs) {
                                  (solution.complexity / (1024.0 * 1024.0)) as u64,
                                  // solution.p_error
                         ).unwrap();
-                        writeln!(writer,
-                                 "lwe_dimension: LweDimension({:1}),\n\
-                                  glwe_dimension: GlweDimension({:1}),\n\
-                                  polynomial_size: PolynomialSize({:1}),\n\
-                                  lwe_modular_std_dev: StandardDev({:.2}),\n\
-                                  glwe_modular_std_dev: StandardDev({:.2}),\n\
-                                  pbs_base_log: DecompositionBaseLog({:1}),\n\
-                                  pbs_level: DecompositionLevelCount({:1}),\n\
-                                  ks_base_log: DecompositionBaseLog({:1}),\n\
-                                  ks_level: DecompositionLevelCount({:1}),\n\
-                                  pfks_level: DecompositionLevelCount({:1}),\n\
-                                  pfks_base_log: DecompositionBaseLog({:1}),\n\
-                                  pfks_modular_std_dev: StandardDev({:.2}),\n\
-                                  cbs_level: DecompositionLevelCount({:1}),\n\
-                                  cbs_base_log: DecompositionBaseLog({:1}),\n\
-                                  message_modulus: MessageModulus(-),\n\
-                                  carry_modulus: CarryModulus(1),\n\
-                                  ",
-                                 solution.internal_ks_output_lwe_dimension,
-                                 solution.glwe_dimension,
-                                 (solution.glwe_polynomial_size as f64) as u64,
-                                 lwe_log_std_dev,
-                                 glwe_log_std_dev,
-                                 solution.br_decomposition_base_log,
-                                 solution.br_decomposition_level_count,
-                                 solution.ks_decomposition_base_log,
-                                 solution.ks_decomposition_level_count,
-                                 solution.pp_decomposition_level_count,
-                                 solution.pp_decomposition_base_log,
-                                 glwe_log_std_dev,
-                                 solution.cb_decomposition_level_count,
-                                 solution.cb_decomposition_base_log,
-                        ).unwrap();
+                        // writeln!(writer,
+                        //          "lwe_dimension: LweDimension({:1}),\n\
+                        //           glwe_dimension: GlweDimension({:1}),\n\
+                        //           polynomial_size: PolynomialSize({:1}),\n\
+                        //           lwe_modular_std_dev: StandardDev({:.2}),\n\
+                        //           glwe_modular_std_dev: StandardDev({:.2}),\n\
+                        //           pbs_base_log: DecompositionBaseLog({:1}),\n\
+                        //           pbs_level: DecompositionLevelCount({:1}),\n\
+                        //           ks_base_log: DecompositionBaseLog({:1}),\n\
+                        //           ks_level: DecompositionLevelCount({:1}),\n\
+                        //           pfks_level: DecompositionLevelCount({:1}),\n\
+                        //           pfks_base_log: DecompositionBaseLog({:1}),\n\
+                        //           pfks_modular_std_dev: StandardDev({:.2}),\n\
+                        //           cbs_level: DecompositionLevelCount({:1}),\n\
+                        //           cbs_base_log: DecompositionBaseLog({:1}),\n\
+                        //           message_modulus: MessageModulus(-),\n\
+                        //           carry_modulus: CarryModulus(1),\n\
+                        //           ",
+                        //          solution.internal_ks_output_lwe_dimension,
+                        //          solution.glwe_dimension,
+                        //          (solution.glwe_polynomial_size as f64) as u64,
+                        //          lwe_log_std_dev,
+                        //          glwe_log_std_dev,
+                        //          solution.br_decomposition_base_log,
+                        //          solution.br_decomposition_level_count,
+                        //          solution.ks_decomposition_base_log,
+                        //          solution.ks_decomposition_level_count,
+                        //          solution.pp_decomposition_level_count,
+                        //          solution.pp_decomposition_base_log,
+                        //          glwe_log_std_dev,
+                        //          solution.cb_decomposition_level_count,
+                        //          solution.cb_decomposition_base_log,
+                        // ).unwrap();
                     }
                     _ => {}
                 }
@@ -248,9 +252,9 @@ fn launch_experiments(mut writer: impl Write, args: &WopArgs) {
     };
 
     launch_experiment(experiments_8_bits(), 8);
-    launch_experiment(experiments_9_bits(), 9);
+    //launch_experiment(experiments_9_bits(), 9);
     launch_experiment(experiments_10_bits(), 10);
-    launch_experiment(experiments_11_bits(), 11);
+    //launch_experiment(experiments_11_bits(), 11);
     launch_experiment(experiments_12_bits(), 12);
 }
 
