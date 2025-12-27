@@ -1,4 +1,8 @@
-# Zama codeowners rules
+# Assign maintainers to specific parts of the repository.
 
-# All pull requests should be reviewed by at least one of the members of concrete-devs
-*    @zama-ai/concrete-devs
+# Global owners for all files
+*       @zama-cpp-maintainers
+
+# Specific teams
+src/    @zama-rust-team
+docs/   @zama-docs-team
