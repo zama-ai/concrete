@@ -202,15 +202,31 @@ getPythonTypeTransformer(const Message<concreteprotocol::GateInfo> &info) {
 
 template <typename T> Tensor<T> arrayToTensor(pybind11::array &input) {
   auto data_ptr = (const T *)input.data();
-  std::vector<T> data = std::vector(data_ptr, data_ptr + input.size());
+  // Optimized: copy directly from numpy buffer to vector without intermediate default initialization
+  std::vector<T> data(data_ptr, data_ptr + input.size());
   auto dims = std::vector<size_t>(input.ndim(), 0);
   for (ssize_t i = 0; i < input.ndim(); i++) {
     dims[i] = input.shape(i);
   }
-  return std::move(Tensor<T>(std::move(data), std::move(dims)));
+  return Tensor<T>(std::move(data), std::move(dims));
 }
 
-template <typename T> pybind11::array tensorToArray(Tensor<T> input) {
+template <typename T> pybind11::array tensorToArray(Tensor<T>&& input) {
+  auto dims = input.dimensions;
+  // Optimized: move vector data to heap, transfer ownership to numpy array without copy
+  auto* values_ptr = new std::vector<T>(std::move(input.values));
+  return pybind11::array(
+    pybind11::dtype::of<T>(),
+    dims,
+    values_ptr->data(),
+    pybind11::capsule(values_ptr, [](void *ptr) {
+      delete static_cast<std::vector<T>*>(ptr);
+    })
+  );
+}
+
+// Lvalue fallback for backwards compatibility
+template <typename T> pybind11::array tensorToArray(const Tensor<T>& input) {
   return pybind11::array(pybind11::array::ShapeContainer(input.dimensions),
                          input.values.data());
 }
