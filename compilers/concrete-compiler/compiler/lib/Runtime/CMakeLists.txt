@@ -9,7 +9,8 @@ if(CONCRETELANG_CUDA_SUPPORT)
     GPUDFG.cpp
     simulation.cpp
     wrappers.cpp
-    time_util.cpp)
+    time_util.cpp
+    debug_probes.cpp)
 else()
   add_library(
     ConcretelangRuntime SHARED
@@ -19,7 +20,8 @@ else()
     GPUDFG.cpp
     simulation.cpp
     wrappers.cpp
-    time_util.cpp)
+    time_util.cpp
+    debug_probes.cpp)
 endif()
 
 add_dependencies(ConcretelangRuntime rust_deps_bundle concrete-protocol)
@@ -83,7 +85,8 @@ add_library(
   GPUDFG.cpp
   simulation.cpp
   wrappers.cpp
-  time_util.cpp)
+  time_util.cpp
+  debug_probes.cpp)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(ConcretelangRuntimeStatic PUBLIC omp)

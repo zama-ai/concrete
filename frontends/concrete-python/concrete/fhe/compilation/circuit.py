@@ -5,13 +5,14 @@ Declaration of `Circuit` class.
 # pylint: disable=import-error,no-member,no-name-in-module
 
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 from concrete.compiler import CompilationContext, LweSecretKey, Parameter
 from mlir.ir import Module as MlirModule
 
 from ..representation import Graph
+from ..representation.probes import ProbeResult
 from .client import Client
 from .configuration import Configuration
 from .keys import Keys
@@ -228,6 +229,32 @@ class Circuit:
                 inspection result with per-node snapshots
         """
         return self._function.graph.inspect(*args, stop_at=stop_at)
+
+    def run_with_probes(
+        self,
+        *args: Any,
+        probes: Optional[Union[list[str], Callable]] = None,
+    ) -> "ProbeResult":
+        """
+        Run the circuit in simulation mode with debug probes inserted.
+
+        Probes capture intermediate values during MLIR simulation execution.
+
+        Args:
+            *args (Any):
+                inputs to the circuit
+
+            probes (Optional[Union[list[str], Callable[[Node], bool]]]):
+                probe specification:
+                - None: probe all encrypted nodes
+                - list[str]: probe nodes matching these tags
+                - Callable: predicate on Node, probe where True
+
+        Returns:
+            ProbeResult:
+                result containing the output and captured probe snapshots
+        """
+        return self._function.run_with_probes(*args, probes=probes)
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """

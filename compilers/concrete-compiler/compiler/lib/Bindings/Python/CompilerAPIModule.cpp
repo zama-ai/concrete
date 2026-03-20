@@ -13,6 +13,7 @@
 #include "concretelang/Common/Values.h"
 #include "concretelang/Runtime/DFRuntime.hpp"
 #include "concretelang/Runtime/GPUDFG.hpp"
+#include "concretelang/Runtime/debug_probes.h"
 #include "concretelang/ServerLib/ServerLib.h"
 #include "concretelang/Support/CompilerEngine.h"
 #include "concretelang/Support/Error.h"
@@ -2346,5 +2347,22 @@ void mlir::concretelang::python::populateCompilerAPISubmodule(
       throw std::runtime_error(result.error().mesg);
     }
     return result.value();
+  });
+
+  // Debug probes
+  m.def("debug_probe_buffer_reset", &debug_probe_buffer_reset);
+  m.def("debug_probe_buffer_size", &debug_probe_buffer_size);
+  m.def("debug_probe_get_entries", []() -> pybind11::list {
+    auto &buf = mlir::concretelang::debug::ProbeBuffer::instance();
+    pybind11::list result;
+    for (const auto &entry : buf.all()) {
+      pybind11::dict d;
+      d["probe_id"] = entry.probe_id;
+      d["tag"] = entry.tag;
+      d["value"] = entry.value;
+      d["nmsb"] = entry.nmsb;
+      result.append(d);
+    }
+    return result;
   });
 }

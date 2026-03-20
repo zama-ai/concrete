@@ -44,4 +44,22 @@ def Tracing_TraceMessageOp : Tracing_Op<"trace_message"> {
   let arguments = (ins OptionalAttr<StrAttr> : $msg);
 }
 
+def Tracing_DebugProbeOp : Tracing_Op<"debug_probe"> {
+  let summary = "Captures a value into the debug probe buffer.";
+
+  let arguments = (ins
+        Type<Or<[
+            FHE_EncryptedUnsignedIntegerType.predicate,
+            FHE_EncryptedSignedIntegerType.predicate,
+            TFHE_GLWECipherTextType.predicate,
+            1DTensorOf<[I64]>.predicate,
+            MemRefRankOf<[I64], [1]>.predicate,
+            AnyInteger.predicate
+        ]>>: $value,
+        I32Attr: $probe_id,
+        OptionalAttr<StrAttr>: $tag,
+        OptionalAttr<I32Attr>: $nmsb
+    );
+}
+
 #endif

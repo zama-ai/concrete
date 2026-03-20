@@ -696,6 +696,39 @@ struct ZeroTensorOpPattern
   };
 };
 
+struct DebugProbeOpPattern
+    : public mlir::OpConversionPattern<Tracing::DebugProbeOp> {
+  DebugProbeOpPattern(mlir::MLIRContext *context,
+                      mlir::TypeConverter &typeConverter)
+      : mlir::OpConversionPattern<Tracing::DebugProbeOp>(
+            typeConverter, context,
+            mlir::concretelang::DEFAULT_PATTERN_BENEFIT) {}
+
+  ::mlir::LogicalResult
+  matchAndRewrite(Tracing::DebugProbeOp debugProbeOp,
+                  Tracing::DebugProbeOp::Adaptor adaptor,
+                  mlir::ConversionPatternRewriter &rewriter) const override {
+    // After simulation type conversion, the value is now i64.
+    // Re-create the op with the converted operand.
+    auto newOp = rewriter.replaceOpWithNewOp<Tracing::DebugProbeOp>(
+        debugProbeOp, mlir::TypeRange{}, adaptor.getValue());
+
+    newOp.setProbeId(debugProbeOp.getProbeId());
+
+    if (auto tag = debugProbeOp.getTag())
+      newOp.setTag(tag);
+
+    if (auto nmsb = debugProbeOp.getNmsb())
+      newOp.setNmsb(nmsb);
+
+    auto inputWidth =
+        newOp.getValue().getType().cast<mlir::IntegerType>().getWidth();
+    newOp->setAttr("input_width", rewriter.getI64IntegerAttr(inputWidth));
+
+    return ::mlir::success();
+  };
+};
+
 struct TraceCiphertextOpPattern
     : public mlir::OpConversionPattern<Tracing::TraceCiphertextOp> {
   TraceCiphertextOpPattern(mlir::MLIRContext *context,
@@ -747,6 +780,10 @@ void SimulateTFHEPass::runOnOperation() {
                     mlir::tensor::CastOp, mlir::LLVM::GlobalOp,
                     mlir::LLVM::AddressOfOp, mlir::LLVM::GEPOp,
                     Tracing::TracePlaintextOp>();
+  // DebugProbeOp is dynamically legal after type conversion
+  target.addDynamicallyLegalOp<Tracing::DebugProbeOp>([&](mlir::Operation *op) {
+    return converter.isLegal(op->getOperandTypes());
+  });
   // Make sure that no ops from `TFHE` remain after the lowering
   target.addIllegalDialect<TFHE::TFHEDialect>();
 
@@ -821,7 +858,8 @@ void SimulateTFHEPass::runOnOperation() {
   patterns.insert<ZeroOpPattern, ZeroTensorOpPattern, KeySwitchGLWEOpPattern,
                   WopPBSGLWEOpPattern, EncodeLutForCrtWopPBSOpPattern,
                   EncodePlaintextWithCrtOpPattern, NegOpPattern,
-                  TraceCiphertextOpPattern>(&getContext(), converter);
+                  TraceCiphertextOpPattern, DebugProbeOpPattern>(
+      &getContext(), converter);
   patterns.insert<SubIntGLWEOpPattern>(&getContext());
 
   // if overflow detection is enable, then rewrite to CAPI functions that

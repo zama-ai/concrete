@@ -312,6 +312,18 @@ class Converter:
         conversion.set_original_bit_width(node.properties["original_bit_width"])
 
         ctx.conversions[node] = conversion
+
+        # Insert debug probe if this node is being probed
+        if ctx.probed_nodes is not None and node in ctx.probed_nodes:
+            probe_id = ctx.next_probe_id()
+            ctx.probe_id_to_node[probe_id] = node
+            tag = node.tag if node.tag else ""
+            concrete.lang.dialects.tracing.DebugProbeOp(  # pylint: disable=no-member
+                conversion.result,
+                probe_id=probe_id,
+                tag=tag,
+            )
+
         return conversion
 
     # The name of the remaining methods all correspond to node names.

@@ -310,6 +310,15 @@ void memref_trace_plaintext(uint64_t input, uint64_t input_width,
 
 void memref_trace_message(char *message_ptr, uint32_t message_len);
 
+// Debug probes ////////////////////////////////////////////////////////////////
+void memref_debug_probe_plaintext(int64_t value, int64_t input_width,
+                                  int32_t probe_id, char *tag_ptr,
+                                  int32_t tag_len, int32_t nmsb);
+
+void debug_probe_buffer_reset();
+
+uint64_t debug_probe_buffer_size();
+
 /// @brief Allocate memory using malloc and check for nullptr
 /// @param size number of bytes to allocate
 /// @return pointer to the allocated memory or nullptr

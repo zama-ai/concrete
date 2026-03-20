@@ -9,7 +9,7 @@ from collections.abc import Awaitable, Iterable
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from threading import Thread
-from typing import Any, NamedTuple, Optional, Union
+from typing import Any, Callable, NamedTuple, Optional, Union
 
 import numpy as np
 from concrete.compiler import CompilationContext, LweSecretKey, Parameter
@@ -17,6 +17,7 @@ from mlir.ir import Module as MlirModule
 
 from ..internal.utils import assert_that
 from ..representation import Graph
+from ..representation.probes import ProbeResult, ProbeSnapshot
 from ..tfhers.specs import TFHERSClientSpecs
 from .client import Client
 from .composition import CompositionRule
@@ -375,6 +376,192 @@ class FheFunction:
                 inspection result with per-node snapshots
         """
         return self.graph.inspect(*args, stop_at=stop_at)
+
+    def run_with_probes(
+        self,
+        *args: Any,
+        probes: Optional[Union[list[str], Callable]] = None,
+    ) -> "ProbeResult":
+        """
+        Run the function in simulation mode with debug probes inserted.
+
+        Probes capture intermediate values during MLIR simulation execution.
+
+        Args:
+            *args (Any):
+                inputs to the function
+
+            probes (Optional[Union[list[str], Callable[[Node], bool]]]):
+                probe specification:
+                - None: probe all encrypted nodes
+                - list[str]: probe nodes matching these tags
+                - Callable: predicate on Node, probe where True
+
+        Returns:
+            ProbeResult:
+                result containing the output and captured probe snapshots
+        """
+        import warnings
+
+        import concrete.lang
+        import concrete.lang.dialects.tracing
+        import networkx as nx
+        from concrete.compiler import CompilationContext
+        from mlir.ir import Context as MlirContext
+        from mlir.ir import InsertionPoint as MlirInsertionPoint
+        from mlir.ir import Location as MlirLocation
+        from mlir.ir import Module as MlirModule
+
+        from ..mlir.converter import Converter
+        from ..representation import Node, Operation
+
+        graph = self.graph
+
+        # Resolve probe spec to set[Node]
+        probed_nodes: set[Node] = set()
+        all_nodes = list(nx.lexicographical_topological_sort(graph.graph))
+
+        if probes is None:
+            # Probe all encrypted nodes (skip inputs)
+            for node in all_nodes:
+                if node.operation != Operation.Input and node.output.is_encrypted:
+                    probed_nodes.add(node)
+        elif isinstance(probes, list):
+            # Match by tag
+            for node in all_nodes:
+                if node.operation != Operation.Input and node.tag in probes:
+                    probed_nodes.add(node)
+        elif callable(probes):
+            for node in all_nodes:
+                if node.operation != Operation.Input and probes(node):
+                    probed_nodes.add(node)
+
+        if len(probed_nodes) == 0:
+            # No probes matched — run normally, return empty ProbeResult
+            output = self.simulate(*args)
+            return ProbeResult(output, [], graph)
+
+        if len(probed_nodes) > 100:
+            warnings.warn(
+                f"Large number of probes ({len(probed_nodes)}). "
+                "This may use significant memory.",
+                stacklevel=2,
+            )
+
+        # Recompile MLIR with probes inserted
+        converter = Converter(self.configuration)
+        compilation_context = CompilationContext()
+        mlir_context = compilation_context.mlir_context()
+
+        # Set probed_nodes on the converter's context during conversion
+        original_convert_many = converter.convert_many
+
+        probe_ctx_ref = [None]
+
+        def patched_convert_many(graphs, mlir_ctx):
+            with mlir_ctx as context, MlirLocation.unknown():
+                concrete.lang.register_dialects(context)
+
+                module = MlirModule.create()
+                with MlirInsertionPoint(module.body):
+                    for name, g in graphs.items():
+                        from ..mlir.context import Context
+                        from ..mlir.conversion import Conversion
+
+                        ctx = Context(context, g, converter.configuration)
+                        ctx.probed_nodes = probed_nodes
+                        probe_ctx_ref[0] = ctx
+
+                        from mlir.dialects import func
+
+                        input_types = [ctx.typeof(node).mlir for node in g.ordered_inputs()]
+
+                        location = g.location.split(":")
+                        with MlirLocation.file(
+                            location[0], line=int(location[1]), col=0, context=context
+                        ):
+
+                            @func.FuncOp.from_py_func(*input_types, name=name)
+                            def main(*fn_args):
+                                for index, node in enumerate(g.ordered_inputs()):
+                                    conversion = Conversion(node, fn_args[index])
+                                    if "original_bit_width" in node.properties:
+                                        conversion.set_original_bit_width(
+                                            node.properties["original_bit_width"]
+                                        )
+                                    ctx.conversions[node] = conversion
+
+                                ordered_nodes = [
+                                    node
+                                    for node in nx.lexicographical_topological_sort(g.graph)
+                                    if node.operation != Operation.Input
+                                ]
+
+                                for node in ordered_nodes:
+                                    preds = [
+                                        ctx.conversions[pred]
+                                        for pred in g.ordered_preds_of(node)
+                                    ]
+                                    converter.node(ctx, node, preds)
+
+                                outputs = []
+                                for node in g.ordered_outputs():
+                                    assert node in ctx.conversions
+                                    outputs.append(ctx.conversions[node].result)
+
+                                return tuple(outputs)
+
+                return module
+
+        # Process graphs first (assigns bit widths, etc.)
+        converter.process({graph.name: graph})
+
+        probed_mlir = patched_convert_many({graph.name: graph}, mlir_context)
+        probe_id_to_node = probe_ctx_ref[0].probe_id_to_node if probe_ctx_ref[0] else {}
+
+        # Create temporary simulation runtime with probed MLIR
+        probed_server = Server.create(
+            probed_mlir,
+            self.configuration.fork(fhe_simulation=True),
+            is_simulated=True,
+            compilation_context=compilation_context,
+        )
+        probed_client = Client(probed_server.client_specs, is_simulated=True)
+
+        # Reset probe buffer, run simulation, read back
+        from concrete.compiler import (
+            debug_probe_buffer_reset,
+            debug_probe_buffer_size,
+            debug_probe_get_entries,
+        )
+
+        debug_probe_buffer_reset()
+
+        encrypted = probed_client.simulate_encrypt(*args, function_name=self.name)
+        result = probed_server.run(encrypted, function_name=self.name)
+        output = probed_client.simulate_decrypt(result, function_name=self.name)
+
+        # Read probe entries
+        entries = debug_probe_get_entries()
+        snapshots = []
+        for entry in entries:
+            pid = entry["probe_id"]
+            node = probe_id_to_node.get(pid)
+            if node is not None:
+                snapshots.append(
+                    ProbeSnapshot(
+                        node=node,
+                        probe_id=pid,
+                        value=entry["value"],
+                        tag=entry["tag"],
+                        nmsb=entry["nmsb"],
+                    )
+                )
+
+        # Cleanup
+        probed_server.cleanup()
+
+        return ProbeResult(output, snapshots, graph)
 
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """
