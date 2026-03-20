@@ -17,15 +17,18 @@ _OperationInput = None
 def _ensure_imports():
     """Populate _NodeSnapshot and _OperationInput from concrete.fhe (if available)."""
     global _NodeSnapshot, _OperationInput
-    if _NodeSnapshot is not None:
-        return
-    try:
-        from concrete.fhe.representation.inspection import NodeSnapshot
-        from concrete.fhe.representation.operation import Operation
-        _NodeSnapshot = NodeSnapshot
-        _OperationInput = Operation.Input
-    except ImportError:
-        pass
+    if _NodeSnapshot is None:
+        try:
+            from concrete.fhe.representation.inspection import NodeSnapshot
+            _NodeSnapshot = NodeSnapshot
+        except ImportError:
+            pass
+    if _OperationInput is None:
+        try:
+            from concrete.fhe.representation.operation import Operation
+            _OperationInput = Operation.Input
+        except ImportError:
+            pass
 
 
 def _is_input_node(node) -> bool:
