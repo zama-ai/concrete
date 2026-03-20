@@ -272,3 +272,68 @@ class TestConfigurationDoneWithoutSession:
         msgs = client.read_all_messages()
         resp = client.find_response(msgs, "configurationDone")
         assert resp["success"] is True
+
+
+class TestOutputEvents:
+    def test_launch_sends_loading_output(self):
+        # Launch with a nonexistent program still emits "Loading script..." before failing
+        client = DAPTestClient()
+        client.send("initialize")
+        client.send("launch", {
+            "program": "/nonexistent_script_for_test.py",
+            "function": "f",
+        })
+        client.send("disconnect")
+        client.run_server()
+
+        msgs = client.read_all_messages()
+        output_events = client.find_events(msgs, "output")
+        outputs = [e["body"]["output"] for e in output_events]
+        assert any("Loading" in o for o in outputs)
+
+
+class TestStopOnOverflowConfig:
+    def test_overflow_in_launch_config_accepted(self):
+        # Verify stopOnOverflow doesn't cause errors (program doesn't exist, but config is parsed)
+        client = DAPTestClient()
+        client.send("initialize")
+        client.send("launch", {
+            "program": "/nonexistent.py",
+            "function": "f",
+            "stopOnOverflow": True,
+        })
+        client.send("disconnect")
+        client.run_server()
+
+        msgs = client.read_all_messages()
+        # Should fail on program execution, not on config parsing
+        resp = client.find_response(msgs, "launch")
+        assert resp["success"] is False
+        assert "nonexistent" in resp["message"].lower() or "failed" in resp["message"].lower()
+
+
+class TestModuleLaunchErrors:
+    def test_functions_without_module(self):
+        """When functions config is given but object isn't a module, should error."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write("my_obj = 42\n")
+            f.flush()
+            temp_path = f.name
+
+        try:
+            client = DAPTestClient()
+            client.send("initialize")
+            client.send("launch", {
+                "program": temp_path,
+                "function": "my_obj",
+                "functions": [{"name": "f1", "args": []}],
+            })
+            client.send("disconnect")
+            client.run_server()
+
+            msgs = client.read_all_messages()
+            resp = client.find_response(msgs, "launch")
+            assert resp["success"] is False
+            assert "module" in resp["message"].lower()
+        finally:
+            os.unlink(temp_path)

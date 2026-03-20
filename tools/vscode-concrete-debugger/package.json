@@ -26,8 +26,7 @@
                 "configurationAttributes": {
                     "launch": {
                         "required": [
-                            "program",
-                            "function"
+                            "program"
                         ],
                         "properties": {
                             "program": {
@@ -53,6 +52,30 @@
                                 "type": "boolean",
                                 "description": "Stop on the first non-input node.",
                                 "default": true
+                            },
+                            "stopOnOverflow": {
+                                "type": "boolean",
+                                "description": "Stop execution when a node overflows its bit width.",
+                                "default": false
+                            },
+                            "functions": {
+                                "type": "array",
+                                "description": "Ordered list of function calls for @fhe.module debugging. Each entry has a 'name' and optional 'args'.",
+                                "items": {
+                                    "type": "object",
+                                    "required": ["name"],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Function name within the module."
+                                        },
+                                        "args": {
+                                            "type": "array",
+                                            "description": "Input values for this function.",
+                                            "default": []
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -69,6 +92,22 @@
                             "function": "${1:circuit_name}",
                             "args": [],
                             "stopOnEntry": true
+                        }
+                    },
+                    {
+                        "label": "Concrete FHE: Debug Module",
+                        "description": "Debug an @fhe.module with multiple functions.",
+                        "body": {
+                            "type": "concrete",
+                            "request": "launch",
+                            "name": "Debug FHE Module",
+                            "program": "${file}",
+                            "function": "${1:module_name}",
+                            "functions": [
+                                { "name": "${2:function_name}", "args": [] }
+                            ],
+                            "stopOnEntry": true,
+                            "stopOnOverflow": false
                         }
                     }
                 ]

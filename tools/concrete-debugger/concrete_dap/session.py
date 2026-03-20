@@ -47,16 +47,19 @@ class StopReason(Enum):
     ENTRY = auto()
     FINISHED = auto()
     EXCEPTION = auto()
+    OVERFLOW = auto()
 
 
 class ConcreteDebugSession:
     """Walks a Concrete FHE graph node-by-node with pause/resume state."""
 
-    def __init__(self, graph, args: tuple, breakpoints: BreakpointManager):
+    def __init__(self, graph, args: tuple, breakpoints: BreakpointManager,
+                 stop_on_overflow: bool = False):
         _ensure_imports()
         self.graph = graph
         self.args = args
         self.breakpoints = breakpoints
+        self.stop_on_overflow = stop_on_overflow
 
         self.topo_order: list = list(nx.topological_sort(graph.graph))
         self.current_index: int = 0
@@ -111,6 +114,13 @@ class ConcreteDebugSession:
             self._error = e
             self.finished = True
             return StopReason.EXCEPTION
+
+        if self.stop_on_overflow and self.snapshots[-1].overflow:
+            self.current_index += 1
+            if self.current_index >= len(self.topo_order):
+                self.finished = True
+            return StopReason.OVERFLOW
+
         current_location = node.location
         self.current_index += 1
 
@@ -127,6 +137,11 @@ class ConcreteDebugSession:
                 self._error = e
                 self.finished = True
                 return StopReason.EXCEPTION
+            if self.stop_on_overflow and self.snapshots[-1].overflow:
+                self.current_index += 1
+                if self.current_index >= len(self.topo_order):
+                    self.finished = True
+                return StopReason.OVERFLOW
             self.current_index += 1
 
         if self.current_index >= len(self.topo_order):
@@ -135,18 +150,21 @@ class ConcreteDebugSession:
 
         return StopReason.STEP
 
-    def continue_to_breakpoint(self) -> StopReason:
+    def continue_to_breakpoint(self, _skip_first: bool = True) -> StopReason:
         """Evaluate nodes until a breakpoint is hit or the graph finishes."""
         if self.finished:
             return StopReason.FINISHED
 
         # If currently stopped at a breakpoint node, step past it first
-        first_step = True
+        first_step = _skip_first
+        offset = getattr(self, '_topo_offset', 0)
         while self.current_index < len(self.topo_order):
             node = self.topo_order[self.current_index]
 
             # Check breakpoint (skip on first step to avoid re-stopping at same spot)
-            if not first_step and self.breakpoints.is_breakpoint(node, self.current_index):
+            if not first_step and self.breakpoints.is_breakpoint(
+                node, self.current_index + offset
+            ):
                 return StopReason.BREAKPOINT
             first_step = False
 
@@ -156,6 +174,11 @@ class ConcreteDebugSession:
                 self._error = e
                 self.finished = True
                 return StopReason.EXCEPTION
+            if self.stop_on_overflow and self.snapshots[-1].overflow:
+                self.current_index += 1
+                if self.current_index >= len(self.topo_order):
+                    self.finished = True
+                return StopReason.OVERFLOW
             self.current_index += 1
 
         self.finished = True
@@ -171,6 +194,11 @@ class ConcreteDebugSession:
                 self._error = e
                 self.finished = True
                 return StopReason.EXCEPTION
+            if self.stop_on_overflow and self.snapshots[-1].overflow:
+                self.current_index += 1
+                if self.current_index >= len(self.topo_order):
+                    self.finished = True
+                return StopReason.OVERFLOW
             self.current_index += 1
 
         self.finished = True
@@ -245,7 +273,17 @@ class _FallbackSnapshot:
         self.node = node
         self.value = value
         self.index = index
+        # Bounds-based overflow check from node dtype
         self.overflow = False
+        try:
+            dtype = node.output.dtype
+            lo, hi = dtype.min(), dtype.max()
+            if isinstance(value, np.ndarray):
+                self.overflow = bool(int(value.min()) < lo or int(value.max()) > hi)
+            else:
+                self.overflow = bool(int(value) < lo or int(value) > hi)
+        except (AttributeError, TypeError, ValueError):
+            pass
 
     @property
     def location(self):
@@ -268,6 +306,114 @@ class _FallbackSnapshot:
     @property
     def is_encrypted(self):
         return getattr(self.node.output, "is_encrypted", False)
+
+
+class ModuleDebugSession:
+    """Debug session for @fhe.module circuits with multiple functions.
+
+    Wraps an ordered list of ConcreteDebugSession instances, one per function.
+    Tracks the active function and advances to the next when it finishes.
+    """
+
+    def __init__(self, named_sessions: list, breakpoints: BreakpointManager):
+        self._sessions = named_sessions  # list of (name, ConcreteDebugSession)
+        self._current_idx = 0
+        self.breakpoints = breakpoints
+
+        # Build combined topo order for cross-function breakpoints
+        offset = 0
+        combined_topo = []
+        for _name, session in self._sessions:
+            session._topo_offset = offset
+            combined_topo.extend(session.topo_order)
+            offset += len(session.topo_order)
+        breakpoints.build_index(combined_topo)
+
+    @property
+    def _active(self):
+        return self._sessions[self._current_idx][1]
+
+    @property
+    def current_function_name(self) -> str:
+        return self._sessions[self._current_idx][0]
+
+    @property
+    def current_snapshot(self):
+        return self._active.current_snapshot
+
+    @property
+    def snapshots(self) -> list:
+        return self._active.snapshots
+
+    @property
+    def all_snapshots(self) -> list:
+        result = []
+        for _, session in self._sessions:
+            result.extend(session.snapshots)
+        return result
+
+    @property
+    def error(self):
+        return self._active.error
+
+    @property
+    def finished(self) -> bool:
+        return (self._current_idx >= len(self._sessions) - 1
+                and self._active.finished)
+
+    @property
+    def topo_order(self) -> list:
+        return self._active.topo_order
+
+    @property
+    def stop_on_overflow(self) -> bool:
+        return self._active.stop_on_overflow
+
+    def evaluate_inputs_and_stop_on_entry(self) -> StopReason:
+        return self._active.evaluate_inputs_and_stop_on_entry()
+
+    def step_one(self) -> StopReason:
+        reason = self._active.step_one()
+        if reason == StopReason.FINISHED and self._advance_to_next():
+            return StopReason.ENTRY
+        return reason
+
+    def continue_to_breakpoint(self) -> StopReason:
+        reason = self._active.continue_to_breakpoint()
+        while reason == StopReason.FINISHED and self._advance_to_next():
+            reason = self._active.continue_to_breakpoint(_skip_first=False)
+        return reason
+
+    def step_out(self) -> StopReason:
+        reason = self._active.step_out()
+        if reason == StopReason.FINISHED and self._advance_to_next():
+            return StopReason.ENTRY
+        return reason
+
+    def step_into_next_function(self) -> StopReason:
+        if self._active.finished:
+            if self._advance_to_next():
+                return StopReason.ENTRY
+            return StopReason.FINISHED
+        return self.step_one()
+
+    def _advance_to_next(self) -> bool:
+        if self._current_idx < len(self._sessions) - 1:
+            self._current_idx += 1
+            self._active.evaluate_inputs_and_stop_on_entry()
+            return True
+        return False
+
+    def get_stack_frames(self) -> list[dict]:
+        frames = self._active.get_stack_frames()
+        progress = f"{self._current_idx + 1}/{len(self._sessions)}"
+        frames.append({
+            "id": len(frames),
+            "name": f"Module [{self.current_function_name}] ({progress})",
+            "line": 0,
+            "column": 0,
+        })
+        return frames
 
 
 def _parse_location(location: str) -> dict:

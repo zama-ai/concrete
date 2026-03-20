@@ -166,3 +166,46 @@ class TestVariableStore:
         variables = store.get_variables(scopes[0]["variablesReference"])
         var_dict = {v["name"]: v["value"] for v in variables}
         assert var_dict["overflow"] == "True"
+
+
+class TestModuleContextScope:
+    def test_module_scope_variables(self):
+        store = VariableStore()
+        scopes = store.scopes_for_module_stop("encrypt_layer", 0, 3, [])
+        assert len(scopes) == 1
+        assert scopes[0]["name"] == "Module Context"
+
+        variables = store.get_variables(scopes[0]["variablesReference"])
+        var_dict = {v["name"]: v["value"] for v in variables}
+        assert var_dict["function"] == "encrypt_layer"
+        assert var_dict["progress"] == "1/3"
+
+    def test_module_scope_with_snapshots(self):
+        store = VariableStore()
+        snaps = [
+            MockSnapshot(np.int64(1), index=0),
+            MockSnapshot(np.int64(2), index=1),
+        ]
+        scopes = store.scopes_for_module_stop("compute", 1, 2, snaps)
+        variables = store.get_variables(scopes[0]["variablesReference"])
+
+        var_dict = {v["name"]: v for v in variables}
+        assert var_dict["progress"]["value"] == "2/2"
+        assert "all_functions_snapshots" in var_dict
+        assert var_dict["all_functions_snapshots"]["variablesReference"] > 0
+
+        # Expand all_functions_snapshots
+        all_vars = store.get_variables(
+            var_dict["all_functions_snapshots"]["variablesReference"]
+        )
+        assert len(all_vars) == 2
+
+    def test_module_scope_no_snapshots_no_expand(self):
+        store = VariableStore()
+        scopes = store.scopes_for_module_stop("func", 0, 1, [])
+        variables = store.get_variables(scopes[0]["variablesReference"])
+
+        names = [v["name"] for v in variables]
+        assert "function" in names
+        assert "progress" in names
+        assert "all_functions_snapshots" not in names

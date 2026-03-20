@@ -62,6 +62,9 @@ class VariableStore:
             if tag == "ndarray":
                 return self._ndarray_variables(data)
 
+            if tag == "module_context":
+                return self._module_context_variables(data)
+
         return []
 
     def _snapshot_variables(self, snapshot) -> list[dict]:
@@ -142,6 +145,47 @@ class VariableStore:
                 "value": _format_value(snap.value),
                 "variablesReference": ref,
             })
+        return variables
+
+    def scopes_for_module_stop(self, function_name: str, current_idx: int,
+                               total_functions: int,
+                               all_snapshots: list) -> list[dict]:
+        """Build a Module Context scope for module debug sessions."""
+        ref = self._alloc_ref(("module_context", {
+            "function_name": function_name,
+            "current_idx": current_idx,
+            "total_functions": total_functions,
+            "all_snapshots": all_snapshots,
+        }))
+        return [{
+            "name": "Module Context",
+            "variablesReference": ref,
+            "expensive": False,
+        }]
+
+    def _module_context_variables(self, ctx: dict) -> list[dict]:
+        """Build variables for the Module Context scope."""
+        variables = [
+            {
+                "name": "function",
+                "value": ctx["function_name"],
+                "variablesReference": 0,
+            },
+            {
+                "name": "progress",
+                "value": f"{ctx['current_idx'] + 1}/{ctx['total_functions']}",
+                "variablesReference": 0,
+            },
+        ]
+
+        if ctx["all_snapshots"]:
+            ref = self._alloc_ref(("all_evaluated", ctx["all_snapshots"]))
+            variables.append({
+                "name": "all_functions_snapshots",
+                "value": f"{len(ctx['all_snapshots'])} snapshots",
+                "variablesReference": ref,
+            })
+
         return variables
 
     def _ndarray_variables(self, arr: np.ndarray) -> list[dict]:

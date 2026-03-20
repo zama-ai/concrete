@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from concrete_dap.breakpoints import BreakpointManager
-from concrete_dap.session import ConcreteDebugSession, StopReason
+from concrete_dap.session import ConcreteDebugSession, StopReason, _FallbackSnapshot
 
 
 # ── Helpers to build a mock graph ──
@@ -353,3 +353,109 @@ class TestEvaluationError:
         assert reason == StopReason.EXCEPTION
         assert session.error is not None
         assert "kaboom" in str(session.error)
+
+
+def _make_overflow_graph():
+    """Build: input(x) -> mul(x, 100). With bit_width=8, mul overflows for x > 1."""
+    g = MockGraph()
+
+    inp = MockNode("x", "input", lambda x: np.int64(x),
+                   location="overflow.py:1")
+    mul = MockNode("mul", "generic",
+                   lambda a: np.int64(a * 100),
+                   inputs=[MockValueDescription()],
+                   location="overflow.py:2",
+                   output=MockValueDescription(dtype=MockDtype(bit_width=8)))
+
+    g.graph.add_node(inp)
+    g.graph.add_node(mul)
+    g.graph.add_edge(inp, mul, input_idx=0)
+
+    g.input_nodes = {0: inp}
+    g.output_nodes = {0: mul}
+    g.input_indices = {inp: 0}
+
+    return g, inp, mul
+
+
+class TestOverflowStop:
+    def test_step_one_stops_on_overflow(self):
+        graph, inp, mul = _make_overflow_graph()
+        bp = BreakpointManager()
+        session = ConcreteDebugSession(graph, (2,), bp, stop_on_overflow=True)
+        session.evaluate_inputs_and_stop_on_entry()
+
+        reason = session.step_one()
+        assert reason == StopReason.OVERFLOW
+        assert session.snapshots[-1].overflow is True
+
+    def test_step_one_no_stop_when_disabled(self):
+        graph, inp, mul = _make_overflow_graph()
+        bp = BreakpointManager()
+        session = ConcreteDebugSession(graph, (2,), bp, stop_on_overflow=False)
+        session.evaluate_inputs_and_stop_on_entry()
+
+        reason = session.step_one()
+        assert reason == StopReason.FINISHED  # doesn't stop, runs to end
+        assert session.snapshots[-1].overflow is True
+
+    def test_continue_stops_on_overflow(self):
+        graph, inp, mul = _make_overflow_graph()
+        bp = BreakpointManager()
+        session = ConcreteDebugSession(graph, (2,), bp, stop_on_overflow=True)
+        session.evaluate_inputs_and_stop_on_entry()
+
+        reason = session.continue_to_breakpoint()
+        assert reason == StopReason.OVERFLOW
+
+    def test_step_out_stops_on_overflow(self):
+        graph, inp, mul = _make_overflow_graph()
+        bp = BreakpointManager()
+        session = ConcreteDebugSession(graph, (2,), bp, stop_on_overflow=True)
+        session.evaluate_inputs_and_stop_on_entry()
+
+        reason = session.step_out()
+        assert reason == StopReason.OVERFLOW
+
+    def test_no_overflow_no_stop(self):
+        graph, inp, mul = _make_overflow_graph()
+        bp = BreakpointManager()
+        session = ConcreteDebugSession(graph, (1,), bp, stop_on_overflow=True)
+        session.evaluate_inputs_and_stop_on_entry()
+
+        reason = session.step_one()
+        # 1*100=100, within [-128, 127]
+        assert reason == StopReason.FINISHED
+        assert session.snapshots[-1].overflow is False
+
+
+class TestFallbackSnapshotOverflow:
+    def test_overflow_detected(self):
+        node = MockNode("mul", "generic", lambda a: a,
+                        output=MockValueDescription(dtype=MockDtype(bit_width=8)))
+        snap = _FallbackSnapshot(node, np.int64(200), 0)
+        assert snap.overflow is True
+
+    def test_no_overflow(self):
+        node = MockNode("mul", "generic", lambda a: a,
+                        output=MockValueDescription(dtype=MockDtype(bit_width=8)))
+        snap = _FallbackSnapshot(node, np.int64(50), 0)
+        assert snap.overflow is False
+
+    def test_negative_overflow(self):
+        node = MockNode("mul", "generic", lambda a: a,
+                        output=MockValueDescription(dtype=MockDtype(bit_width=8)))
+        snap = _FallbackSnapshot(node, np.int64(-200), 0)
+        assert snap.overflow is True
+
+    def test_array_overflow(self):
+        node = MockNode("mul", "generic", lambda a: a,
+                        output=MockValueDescription(dtype=MockDtype(bit_width=8)))
+        snap = _FallbackSnapshot(node, np.array([50, 200]), 0)
+        assert snap.overflow is True
+
+    def test_array_no_overflow(self):
+        node = MockNode("mul", "generic", lambda a: a,
+                        output=MockValueDescription(dtype=MockDtype(bit_width=8)))
+        snap = _FallbackSnapshot(node, np.array([50, 100]), 0)
+        assert snap.overflow is False

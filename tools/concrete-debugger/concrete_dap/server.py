@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from .breakpoints import BreakpointManager
 from .protocol import make_event, make_response, read_message, write_message
-from .session import ConcreteDebugSession, StopReason
+from .session import ConcreteDebugSession, ModuleDebugSession, StopReason
 from .variables import VariableStore
 
 THREAD_ID = 1
@@ -83,6 +83,13 @@ class DAPServer:
         self._seq += 1
         write_message(msg, self._output)
 
+    def _send_output(self, text: str, category: str = "console") -> None:
+        """Send a DAP output event to the Debug Console."""
+        self._send(make_event("output", {
+            "category": category,
+            "output": text + "\n",
+        }))
+
     # ── Lifecycle ──
 
     def _handle_initialize(self, request: dict) -> None:
@@ -101,8 +108,10 @@ class DAPServer:
 
         program = args.get("program", "")
         function_name = args.get("function", "")
+        functions_config = args.get("functions")
         input_args = tuple(args.get("args", []))
         stop_on_entry = args.get("stopOnEntry", True)
+        stop_on_overflow = args.get("stopOnOverflow", False)
 
         if not program:
             self._send(make_response(request, success=False,
@@ -114,10 +123,13 @@ class DAPServer:
                                      message="'function' is required in launch config"))
             return
 
+        self._send_output("Loading script...")
+
         # Execute the user script to find the circuit
         try:
             namespace = runpy.run_path(program, run_name="__main__")
         except Exception as e:
+            self._send_output(f"Error: {e}", "stderr")
             self._send(make_response(request, success=False,
                                      message=f"Failed to execute {program}: {e}"))
             return
@@ -129,14 +141,30 @@ class DAPServer:
                                      message=f"'{function_name}' not found in {program}"))
             return
 
+        # Check for module with functions config
+        if functions_config:
+            module_graphs = _extract_module_graphs(circuit_obj)
+            if module_graphs is None:
+                self._send(make_response(request, success=False,
+                                         message=f"'{function_name}' is not a module (no .graphs attribute)"))
+                return
+            self._handle_launch_module(request, module_graphs, functions_config,
+                                       stop_on_entry, stop_on_overflow)
+            return
+
         graph = _extract_graph(circuit_obj)
         if graph is None:
             self._send(make_response(request, success=False,
                                      message=f"'{function_name}' is not a Circuit or Compiler object"))
             return
 
+        self._send_output(f"Found circuit with {len(graph.graph.nodes)} nodes")
+        self._send_output(f"Evaluating inputs: {input_args}")
+
         # Create debug session
-        self._session = ConcreteDebugSession(graph, input_args, self._breakpoints)
+        self._session = ConcreteDebugSession(graph, input_args, self._breakpoints,
+                                             stop_on_overflow=stop_on_overflow)
+        self._emit_graph_summary(graph)
         self._send(make_response(request))
 
         if stop_on_entry:
@@ -202,6 +230,15 @@ class DAPServer:
             self._session.current_snapshot,
             list(self._session.snapshots),
         )
+
+        if isinstance(self._session, ModuleDebugSession):
+            scopes.extend(self._variables.scopes_for_module_stop(
+                self._session.current_function_name,
+                self._session._current_idx,
+                len(self._session._sessions),
+                self._session.all_snapshots,
+            ))
+
         self._send(make_response(request, body={"scopes": scopes}))
 
     def _handle_variables(self, request: dict) -> None:
@@ -225,10 +262,12 @@ class DAPServer:
             self._send_stopped_event(reason)
 
     def _handle_step_in(self, request: dict) -> None:
-        # Same as step over in single-graph mode
         self._send(make_response(request))
         if self._session:
-            reason = self._session.step_one()
+            if isinstance(self._session, ModuleDebugSession):
+                reason = self._session.step_into_next_function()
+            else:
+                reason = self._session.step_one()
             self._send_stopped_event(reason)
 
     def _handle_step_out(self, request: dict) -> None:
@@ -240,6 +279,62 @@ class DAPServer:
     def _handle_pause(self, request: dict) -> None:
         # Graph evaluation is synchronous, pause is a no-op
         self._send(make_response(request))
+
+    # ── Module Launch ──
+
+    def _handle_launch_module(self, request: dict, module_graphs: dict,
+                               functions_config: list, stop_on_entry: bool,
+                               stop_on_overflow: bool) -> None:
+        """Launch a module debug session with multiple functions."""
+        named_sessions = []
+        for func_conf in functions_config:
+            name = func_conf.get("name", "")
+            func_args = tuple(func_conf.get("args", []))
+
+            if name not in module_graphs:
+                avail = list(module_graphs.keys())
+                self._send(make_response(
+                    request, success=False,
+                    message=f"Function '{name}' not found in module. Available: {avail}"))
+                return
+
+            graph = module_graphs[name]
+            session = ConcreteDebugSession(graph, func_args, self._breakpoints,
+                                           stop_on_overflow=stop_on_overflow)
+            named_sessions.append((name, session))
+            self._send_output(f"Function '{name}': {len(graph.graph.nodes)} nodes")
+            self._emit_graph_summary(graph)
+
+        self._session = ModuleDebugSession(named_sessions, self._breakpoints)
+        self._send(make_response(request))
+
+        if stop_on_entry:
+            reason = self._session.evaluate_inputs_and_stop_on_entry()
+            self._send_stopped_event(reason)
+
+    def _emit_graph_summary(self, graph) -> None:
+        """Emit a compact circuit summary to the Debug Console."""
+        total = len(graph.graph.nodes)
+        input_count = len(getattr(graph, 'input_nodes', {}))
+        output_count = len(getattr(graph, 'output_nodes', {}))
+
+        ops = set()
+        input_set = set(getattr(graph, 'input_nodes', {}).values())
+        for n in graph.graph.nodes:
+            if n not in input_set:
+                name = getattr(n, 'properties', {}).get("name", "")
+                if name:
+                    ops.add(name)
+
+        has_tags = any(getattr(n, 'tag', '') for n in graph.graph.nodes)
+
+        lines = [
+            "=== Circuit Summary ===",
+            f"  Nodes: {total} ({input_count} inputs, {output_count} outputs)",
+            f"  Operations: {', '.join(sorted(ops)) if ops else '(none)'}",
+            f"  Tags: {'yes' if has_tags else 'no'}",
+        ]
+        self._send_output("\n".join(lines))
 
     # ── Evaluate ──
 
@@ -270,6 +365,7 @@ class DAPServer:
             StopReason.BREAKPOINT: "breakpoint",
             StopReason.ENTRY: "entry",
             StopReason.EXCEPTION: "exception",
+            StopReason.OVERFLOW: "data breakpoint",
         }
 
         body: dict = {
@@ -281,6 +377,20 @@ class DAPServer:
         if reason == StopReason.EXCEPTION and self._session and self._session.error:
             body["text"] = str(self._session.error)
             body["description"] = "Node evaluation failed"
+            snap = self._session.current_snapshot
+            if snap:
+                self._send_output(
+                    f"Exception at node [{snap.index}] {snap.operation_name}: "
+                    f"{self._session.error}", "stderr")
+
+        if reason == StopReason.OVERFLOW and self._session:
+            snap = self._session.current_snapshot
+            if snap:
+                body["text"] = f"Overflow at [{snap.index}] {snap.operation_name}"
+                body["description"] = "Value exceeds bit width"
+                self._send_output(
+                    f"Overflow: node [{snap.index}] {snap.operation_name}, "
+                    f"value={repr(snap.value)}", "important")
 
         self._send(make_event("stopped", body))
 
@@ -318,6 +428,14 @@ class DAPServer:
                 )
             return "No overflows detected"
 
+        # Module-specific expressions
+        if isinstance(self._session, ModuleDebugSession):
+            if expression == "functions":
+                names = [name for name, _ in self._session._sessions]
+                return f"Functions: {', '.join(names)}"
+            if expression == "function":
+                return f"Current function: {self._session.current_function_name}"
+
         return f"(unknown expression: {expression})"
 
 
@@ -333,4 +451,15 @@ def _extract_graph(obj):
     if hasattr(obj, "_graph"):
         return obj._graph
 
+    return None
+
+
+def _extract_module_graphs(obj) -> dict | None:
+    """Extract a dict of graphs from an FheModule (obj.graphs)."""
+    graphs = getattr(obj, 'graphs', None)
+    if isinstance(graphs, dict):
+        # Verify at least one entry looks like a Graph
+        for g in graphs.values():
+            if hasattr(g, 'graph') and hasattr(g, 'input_indices'):
+                return graphs
     return None
