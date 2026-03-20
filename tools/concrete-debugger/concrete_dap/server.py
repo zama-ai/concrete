@@ -1,5 +1,6 @@
 """DAP server: stdin/stdout message loop and dispatch."""
 
+import os
 import runpy
 import sys
 import traceback
@@ -125,7 +126,18 @@ class DAPServer:
 
         self._send_output("Loading script...")
 
-        # Execute the user script to find the circuit
+        # Execute the user script to find the circuit.
+        # Change to the script's directory so that .artifacts/ and other
+        # relative paths land next to the script, not in the (potentially
+        # read-only) working directory inherited from VS Code.
+        script_dir = os.path.dirname(os.path.abspath(program))
+        self._breakpoints.set_script_dir(script_dir)
+        prev_cwd = os.getcwd()
+        try:
+            os.chdir(script_dir)
+        except OSError:
+            pass  # best-effort; if it fails we'll still try to run
+
         try:
             namespace = runpy.run_path(program, run_name="__main__")
         except Exception as e:
@@ -133,6 +145,8 @@ class DAPServer:
             self._send(make_response(request, success=False,
                                      message=f"Failed to execute {program}: {e}"))
             return
+        finally:
+            os.chdir(prev_cwd)
 
         # Find the circuit object
         circuit_obj = namespace.get(function_name)
@@ -167,19 +181,21 @@ class DAPServer:
         self._emit_graph_summary(graph)
         self._send(make_response(request))
 
-        if stop_on_entry:
-            reason = self._session.evaluate_inputs_and_stop_on_entry()
-            self._send_stopped_event(reason)
-
     def _handle_disconnect(self, request: dict) -> None:
         self._send(make_response(request))
         self._running = False
 
     def _handle_configuration_done(self, request: dict) -> None:
         self._send(make_response(request))
-        # If session exists and not stopped on entry, start running
-        if self._session and not self._launch_config.get("stopOnEntry", True):
-            reason = self._session.evaluate_inputs_and_stop_on_entry()
+        if not self._session:
+            return
+        # Now that VS Code is fully configured, start evaluation.
+        reason = self._session.evaluate_inputs_and_stop_on_entry()
+        if self._launch_config.get("stopOnEntry", True):
+            # Pause before the first non-input node
+            self._send_stopped_event(reason)
+        else:
+            # Run until breakpoint or end
             if reason == StopReason.ENTRY:
                 reason = self._session.continue_to_breakpoint()
             self._send_stopped_event(reason)
@@ -307,10 +323,6 @@ class DAPServer:
 
         self._session = ModuleDebugSession(named_sessions, self._breakpoints)
         self._send(make_response(request))
-
-        if stop_on_entry:
-            reason = self._session.evaluate_inputs_and_stop_on_entry()
-            self._send_stopped_event(reason)
 
     def _emit_graph_summary(self, graph) -> None:
         """Emit a compact circuit summary to the Debug Console."""
