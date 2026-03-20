@@ -1,0 +1,86 @@
+{
+    "name": "vscode-concrete-debugger",
+    "displayName": "Concrete FHE Debugger",
+    "description": "Debug Adapter for Concrete FHE circuits — step through DAG nodes, inspect intermediate values, and detect overflow.",
+    "version": "0.1.0",
+    "publisher": "zama-ai",
+    "license": "BSD-3-Clause",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Debuggers"
+    ],
+    "activationEvents": [
+        "onDebugResolve:concrete"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "debuggers": [
+            {
+                "type": "concrete",
+                "label": "Concrete FHE",
+                "languages": [
+                    "python"
+                ],
+                "configurationAttributes": {
+                    "launch": {
+                        "required": [
+                            "program",
+                            "function"
+                        ],
+                        "properties": {
+                            "program": {
+                                "type": "string",
+                                "description": "Path to the Python script containing the FHE circuit.",
+                                "default": "${file}"
+                            },
+                            "function": {
+                                "type": "string",
+                                "description": "Name of the circuit/function variable to debug."
+                            },
+                            "args": {
+                                "type": "array",
+                                "description": "Input values for the circuit.",
+                                "default": []
+                            },
+                            "pythonPath": {
+                                "type": "string",
+                                "description": "Path to the Python interpreter.",
+                                "default": "python3"
+                            },
+                            "stopOnEntry": {
+                                "type": "boolean",
+                                "description": "Stop on the first non-input node.",
+                                "default": true
+                            }
+                        }
+                    }
+                },
+                "configurationSnippets": [
+                    {
+                        "label": "Concrete FHE: Debug Circuit",
+                        "description": "Debug a Concrete FHE circuit with the simulator inspector.",
+                        "body": {
+                            "type": "concrete",
+                            "request": "launch",
+                            "name": "Debug FHE Circuit",
+                            "program": "${file}",
+                            "function": "${1:circuit_name}",
+                            "args": [],
+                            "stopOnEntry": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "scripts": {
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.80.0",
+        "typescript": "^5.0.0"
+    }
+}

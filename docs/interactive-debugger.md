@@ -389,4 +389,216 @@ module.my_func.run_with_probes(x, probes=["my_tag"])
 
 ---
 
+## Phase 3: VS Code DAP Debugger
+
+### The problem
+
+Phases 1 and 2 provide powerful inspection APIs, but they are Python-only. You write code, call `inspect()` or `run_with_probes()`, print results, tweak, and repeat. There is no way to set a breakpoint, step through the DAG node by node, or see intermediate values update live — the standard workflow developers expect from a debugger.
+
+### The solution: a VS Code debug extension
+
+Phase 3 wraps the Phase 1 inspection engine in a **Debug Adapter Protocol (DAP) server** and ships a **VS Code extension**. This gives you a standard IDE debugging experience for FHE circuits:
+
+- **Breakpoints** on Python source lines — the debugger maps them to DAG nodes
+- **Step Over** advances one DAG node (grouping nodes from the same source line)
+- **Variables pane** shows intermediate values, bit widths, overflow status, tags, and bounds
+- **Call Stack** synthesized from the tag hierarchy (e.g. `layer1.matmul.relu` becomes three nested frames)
+- **Debug Console** for querying session state
+
+No compiler or MLIR changes are needed — this is pure Python + TypeScript.
+
+### Getting started
+
+#### 1. Install the extension
+
+From the `tools/vscode-concrete-debugger` directory:
+
+```bash
+cd tools/vscode-concrete-debugger
+npm install
+npm run compile
+```
+
+Then press **F5** in VS Code to launch an Extension Development Host, or package with `vsce package` and install the `.vsix`.
+
+#### 2. Create a launch configuration
+
+Add a `launch.json` entry in your project:
+
+```jsonc
+{
+    "type": "concrete",
+    "request": "launch",
+    "name": "Debug FHE Circuit",
+    "program": "${file}",           // Python script with the circuit
+    "function": "my_circuit",       // variable name of the Circuit object
+    "args": [3, 5],                 // input values
+    "pythonPath": "python3",        // Python with concrete-python installed
+    "stopOnEntry": true             // pause before the first non-input node
+}
+```
+
+#### 3. Write a script with a compiled circuit
+
+```python
+from concrete import fhe
+
+@fhe.compiler({"x": "encrypted", "y": "encrypted"})
+def my_circuit(x, y):
+    return (x + y) * 2
+
+inputset = [(i, j) for i in range(8) for j in range(8)]
+my_circuit = my_circuit.compile(inputset)
+```
+
+#### 4. Debug
+
+Open the script, press **F5**, and the debugger will:
+
+1. Execute your script to find the `my_circuit` object
+2. Extract its computation graph
+3. Evaluate input nodes automatically
+4. Pause before the first operation node (if `stopOnEntry` is true)
+
+From there, use the standard VS Code debug controls.
+
+### Stepping model
+
+| VS Code Action | Keyboard | Behavior |
+|---|---|---|
+| **Step Over** | F10 | Evaluate the next DAG node. If the following node has the same source location (e.g. `x * y + z` producing two nodes at line 12), both are evaluated in one step. |
+| **Continue** | F5 | Run until the next breakpoint or end of graph. |
+| **Step Into** | F11 | Same as Step Over (single graph). Future: enter sub-circuit for `@fhe.module`. |
+| **Step Out** | Shift+F11 | Run to end of graph (single graph). Future: return from sub-circuit. |
+
+### Breakpoints
+
+Set breakpoints in your Python source as usual. The debugger maps each `file:line` to the set of DAG nodes whose `node.location` matches. A breakpoint is verified (solid red dot) if at least one DAG node exists at that line.
+
+When continuing, execution stops **before** the first node at a breakpoint line (in topological order).
+
+### Variables pane
+
+When stopped, two scopes are available:
+
+**Current Node** — details about the node that was just evaluated:
+
+| Variable | Example | Description |
+|---|---|---|
+| `value` | `42` | Computed value (expandable for arrays) |
+| `operation` | `add` | Operation name |
+| `encrypted` | `True` | Whether the output is encrypted |
+| `bit_width` | `8` | Output dtype bit width |
+| `overflow` | `False` | Whether value exceeds dtype range |
+| `tag` | `layer1.matmul` | User-assigned tag |
+| `location` | `script.py:12` | Source file and line |
+| `bounds` | `[0, 255]` | Measured input bounds (if available) |
+
+**All Evaluated** — expandable list of all node snapshots evaluated so far, each with the same fields.
+
+For large arrays, the value is shown as a summary (`array(shape=(100,), min=0, max=99)`) and can be expanded to see individual elements.
+
+### Call stack
+
+The call stack is synthesized from the tag hierarchy of the current node. If a node has tag `layer1.matmul.relu`, the stack shows:
+
+```
+relu   [layer1.matmul.relu]    @ script.py:12
+matmul [layer1.matmul]         @ script.py:12
+layer1 [layer1]                @ script.py:12
+```
+
+Nodes without tags show a single frame with the operation name.
+
+### Debug console
+
+Type expressions in the debug console to query session state:
+
+| Expression | Result |
+|---|---|
+| `value` | Current node's computed value |
+| `nodes` | Total node count and how many have been evaluated |
+| `overflow` | Summary of all overflow nodes found so far |
+| `snap[3]` | Details of the snapshot at index 3 |
+
+### Architecture
+
+```
+VS Code  <── DAP over stdin/stdout ──>  Python DAP Server
+                                             |
+                                             +-- DAPServer (message loop + dispatch)
+                                             +-- ConcreteDebugSession (graph walker)
+                                             +-- BreakpointManager (file:line -> nodes)
+                                             +-- VariableStore (snapshots -> DAP variables)
+```
+
+The VS Code extension is minimal — it registers a `DebugAdapterDescriptorFactory` that spawns the Python DAP server as a child process. VS Code handles all UI and stdin/stdout piping automatically.
+
+The DAP server reads Content-Length framed JSON messages on stdin and writes responses/events on stdout. It handles ~16 DAP request types (initialize, launch, setBreakpoints, configurationDone, threads, stackTrace, scopes, variables, continue, next, stepIn, stepOut, evaluate, disconnect, etc.).
+
+### How stepping works (vs. `inspect()`)
+
+Phase 1's `inspect()` re-evaluates all prior nodes each time it is called with a new `stop_at`, making it O(n²) for stepping through n nodes. The DAP server instead replicates the ~30 lines of walk logic with **persistent state**: a topological-order cursor, accumulated results dict, and snapshot list. Each step advances the cursor and evaluates only the next node(s), making a full step-through O(n).
+
+### File structure
+
+**Python DAP Server** — `tools/concrete-debugger/`:
+
+```
+tools/concrete-debugger/
+    concrete_dap_server.py          # Entry point (VS Code spawns this)
+    concrete_dap/
+        __init__.py
+        server.py                   # DAPServer: message loop + dispatch
+        protocol.py                 # DAP Content-Length framed I/O
+        session.py                  # ConcreteDebugSession: graph walker
+        variables.py                # NodeSnapshot -> DAP variable tree
+        breakpoints.py              # file:line -> node set mapping
+    requirements.txt
+    tests/
+        test_protocol.py
+        test_session.py
+        test_breakpoints.py
+        test_variables.py
+        test_server.py
+```
+
+**VS Code Extension** — `tools/vscode-concrete-debugger/`:
+
+```
+tools/vscode-concrete-debugger/
+    package.json                    # Extension manifest + debugger contribution
+    src/
+        extension.ts                # activate(): register debug adapter factory
+    tsconfig.json
+    .vscodeignore
+```
+
+### Important notes
+
+- **Cleartext evaluation only.** The DAP debugger uses the same cleartext graph evaluation as `inspect()`. It does not run FHE encryption. For simulation-level probing, use `run_with_probes()` from Phase 2.
+- **Single graph.** Step Into and Step Out behave the same as Step Over and Continue respectively. Future phases will add sub-circuit navigation for `@fhe.module`.
+- **Python path.** The `pythonPath` in your launch config must point to a Python environment where `concrete-python` is installed.
+- **No third-party DAP library.** The protocol surface is small enough that the server implements Content-Length framing and message dispatch directly (~80 lines), avoiding an extra dependency.
+
+### API reference
+
+The DAP server is not called directly from Python. It is spawned by VS Code via the extension. However, the core session class can be used programmatically if needed:
+
+**`ConcreteDebugSession(graph, args, breakpoints)`**
+
+| Method | Returns | Description |
+|---|---|---|
+| `evaluate_inputs_and_stop_on_entry()` | `StopReason` | Evaluate all input nodes, stop before first operation |
+| `step_one()` | `StopReason` | Evaluate next node (with same-line grouping) |
+| `continue_to_breakpoint()` | `StopReason` | Run until breakpoint or end |
+| `step_out()` | `StopReason` | Run to end of graph |
+| `current_snapshot` | `NodeSnapshot` | Most recently evaluated node's snapshot |
+| `snapshots` | `list` | All snapshots evaluated so far |
+| `get_stack_frames()` | `list[dict]` | DAP stack frames from tag hierarchy |
+
+**`StopReason`** — enum: `STEP`, `BREAKPOINT`, `ENTRY`, `FINISHED`, `EXCEPTION`
+
+---
+
 *Future phases will add features below this line.*
