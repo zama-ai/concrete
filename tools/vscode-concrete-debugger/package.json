@@ -76,10 +76,13 @@
         ]
     },
     "scripts": {
+        "bundle-dap": "rm -rf dap-server && mkdir -p dap-server/concrete_dap && cp ../concrete-debugger/concrete_dap_server.py dap-server/ && cp ../concrete-debugger/concrete_dap/*.py dap-server/concrete_dap/",
         "compile": "tsc -p ./",
+        "build": "npm run bundle-dap && npm run compile",
         "watch": "tsc -watch -p ./"
     },
     "devDependencies": {
+        "@types/node": "^25.5.0",
         "@types/vscode": "^1.80.0",
         "typescript": "^5.0.0"
     }

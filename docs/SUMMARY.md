@@ -36,6 +36,7 @@
 
 * [Simulation](execution-analysis/simulation.md)
 * [Debugging and artifact](execution-analysis/debug.md)
+* [Interactive debugger](interactive-debugger.md)
 * [Performance](optimization/summary.md)
 * [GPU acceleration](execution-analysis/gpu_acceleration.md)
 * [Rust integration](execution-analysis/rust_integration.md)
