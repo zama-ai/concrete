@@ -208,6 +208,27 @@ class Circuit:
 
         return self._function.decrypt(*results)
 
+    def inspect(
+        self,
+        *args: Any,
+        stop_at=None,
+    ) -> "InspectionResult":
+        """
+        Inspect intermediate values of the circuit evaluation without noise.
+
+        Args:
+            *args (Any):
+                inputs to the circuit
+
+            stop_at (Optional[Union[str, Callable[[Node], bool]]]):
+                stop condition — string (location prefix) or predicate on Node
+
+        Returns:
+            InspectionResult:
+                inspection result with per-node snapshots
+        """
+        return self._function.graph.inspect(*args, stop_at=stop_at)
+
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """
         Encrypt inputs, run the circuit, and decrypt the outputs in one go.

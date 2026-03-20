@@ -72,7 +72,7 @@ from .extensions import (
     zeros_like,
 )
 from .mlir.utils import MAXIMUM_TLU_BIT_WIDTH
-from .representation import Graph, GraphProcessor, Node, Operation
+from .representation import Graph, GraphProcessor, InspectionResult, Node, NodeSnapshot, Operation
 from .tracing.typing import (
     f32,
     f64,

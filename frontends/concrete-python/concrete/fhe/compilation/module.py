@@ -355,6 +355,27 @@ class FheFunction:
         results = [res.result() if isinstance(res, Future) else res for res in results]
         return self.execution_runtime.val.client.decrypt(*results, function_name=self.name)
 
+    def inspect(
+        self,
+        *args: Any,
+        stop_at=None,
+    ) -> "InspectionResult":
+        """
+        Inspect intermediate values of the function evaluation without noise.
+
+        Args:
+            *args (Any):
+                inputs to the function
+
+            stop_at (Optional[Union[str, Callable[[Node], bool]]]):
+                stop condition — string (location prefix) or predicate on Node
+
+        Returns:
+            InspectionResult:
+                inspection result with per-node snapshots
+        """
+        return self.graph.inspect(*args, stop_at=stop_at)
+
     def encrypt_run_decrypt(self, *args: Any) -> Any:
         """
         Encrypt inputs, run the function, and decrypt the outputs in one go.
