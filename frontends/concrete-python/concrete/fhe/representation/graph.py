@@ -208,6 +208,77 @@ class Graph:
 
         return node_results
 
+    def inspect(
+        self,
+        *args: Any,
+        stop_at: Optional[Union[str, Callable[["Node"], bool]]] = None,
+    ) -> "InspectionResult":
+        """
+        Evaluate the graph without noise and return an InspectionResult with per-node snapshots.
+
+        Args:
+            *args (Any):
+                inputs to the computation
+
+            stop_at (Optional[Union[str, Callable[[Node], bool]]]):
+                stop condition — if a string, halts before any node whose location starts with it;
+                if a callable, halts before the first node where the predicate returns True.
+                Input nodes are never stopped at.
+
+        Returns:
+            InspectionResult:
+                inspection result containing snapshots of all evaluated nodes
+        """
+
+        # pylint: disable=import-outside-toplevel
+        from .inspection import InspectionResult, NodeSnapshot
+        # pylint: enable=import-outside-toplevel
+
+        def should_stop(node: Node) -> bool:
+            if node.operation == Operation.Input:
+                return False
+            if stop_at is None:
+                return False
+            if isinstance(stop_at, str):
+                return node.location.startswith(stop_at)
+            return stop_at(node)
+
+        snapshots: list[NodeSnapshot] = []
+        node_results: dict[Node, Union[np.bool_, np.integer, np.floating, np.ndarray]] = {}
+        stopped = False
+        stopped_at_node: Optional[Node] = None
+        index = 0
+
+        for node in nx.topological_sort(self.graph):
+            if should_stop(node):
+                stopped = True
+                stopped_at_node = node
+                break
+
+            if node.operation == Operation.Input:
+                node_results[node] = node(args[self.input_indices[node]])
+                snapshots.append(NodeSnapshot(node, deepcopy(node_results[node]), index))
+                index += 1
+                continue
+
+            pred_results = [deepcopy(node_results[pred]) for pred in self.ordered_preds_of(node)]
+
+            try:
+                node_results[node] = node(*pred_results)
+            except Exception as error:
+                raise RuntimeError(
+                    "Evaluation of the graph failed\n\n"
+                    + self.format(
+                        highlighted_nodes={node: ["evaluation of this node failed"]},
+                        show_bounds=False,
+                    )
+                ) from error
+
+            snapshots.append(NodeSnapshot(node, deepcopy(node_results[node]), index))
+            index += 1
+
+        return InspectionResult(snapshots, self, stopped, stopped_at_node)
+
     def draw(
         self,
         *,

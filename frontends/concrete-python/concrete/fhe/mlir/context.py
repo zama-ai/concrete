@@ -85,6 +85,11 @@ class Context:
 
     tfhers_partition: dict[tfhers.CryptoParams, str]
 
+    # Debug probe support
+    probed_nodes: Optional[set[Node]]
+    _probe_id_counter: int
+    probe_id_to_node: dict[int, Node]
+
     def __init__(self, context: MlirContext, graph: Graph, configuration: Configuration):
         self.context = context
 
@@ -98,6 +103,15 @@ class Context:
         self.configuration = configuration
 
         self.tfhers_partition = {}
+
+        self.probed_nodes = None
+        self._probe_id_counter = 0
+        self.probe_id_to_node = {}
+
+    def next_probe_id(self) -> int:
+        """Allocate and return the next probe ID."""
+        self._probe_id_counter += 1
+        return self._probe_id_counter
 
     # types
 

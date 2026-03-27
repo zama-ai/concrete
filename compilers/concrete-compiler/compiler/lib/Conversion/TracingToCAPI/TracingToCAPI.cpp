@@ -22,6 +22,7 @@ namespace memref = mlir::memref;
 char memref_trace_ciphertext[] = "memref_trace_ciphertext";
 char memref_trace_plaintext[] = "memref_trace_plaintext";
 char memref_trace_message[] = "memref_trace_message";
+char memref_debug_probe_plaintext[] = "memref_debug_probe_plaintext";
 
 mlir::Type getDynamicMemrefWithUnknownOffset(mlir::RewriterBase &rewriter,
                                              size_t rank) {
@@ -75,6 +76,14 @@ mlir::LogicalResult insertForwardDeclarationOfTheCAPI(
         rewriter.getContext(),
         {mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type()),
          rewriter.getI32Type()},
+        {});
+  } else if (funcName == memref_debug_probe_plaintext) {
+    funcType = mlir::FunctionType::get(
+        rewriter.getContext(),
+        {rewriter.getI64Type(), rewriter.getI64Type(),
+         rewriter.getI32Type(),
+         mlir::LLVM::LLVMPointerType::get(rewriter.getI8Type()),
+         rewriter.getI32Type(), rewriter.getI32Type()},
         {});
   } else {
     op->emitError("unknwon external function") << funcName;
@@ -190,6 +199,38 @@ void traceMessageAddOperands(Tracing::TraceMessageOp op,
       op.getLoc(), rewriter.getI32IntegerAttr(msg.size())));
 }
 
+void debugProbeAddOperands(Tracing::DebugProbeOp op,
+                           mlir::SmallVector<mlir::Value> &operands,
+                           mlir::RewriterBase &rewriter) {
+  auto tag = op.getTag().value_or("");
+  auto nmsb = op.getNmsb().value_or(0);
+  auto probeId = op.getProbeId();
+
+  // input_width (set as attribute by SimulateTFHE pass)
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), op->getAttr("input_width")));
+
+  // probe_id
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), rewriter.getI32IntegerAttr(probeId)));
+
+  // tag string
+  std::string tagName;
+  std::stringstream stream;
+  stream << rand();
+  stream >> tagName;
+  auto tagVal = mlir::LLVM::createGlobalString(
+      op.getLoc(), rewriter, tagName, tag,
+      mlir::LLVM::linkage::Linkage::Linkonce, false);
+  operands.push_back(tagVal);
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), rewriter.getI32IntegerAttr(tag.size())));
+
+  // nmsb
+  operands.push_back(rewriter.create<mlir::arith::ConstantOp>(
+      op.getLoc(), rewriter.getI32IntegerAttr(nmsb)));
+}
+
 struct TracingToCAPIPass : public TracingToCAPIBase<TracingToCAPIPass> {
 
   TracingToCAPIPass() {}
@@ -219,6 +260,9 @@ struct TracingToCAPIPass : public TracingToCAPIBase<TracingToCAPIPass> {
     patterns.add<TracingToCAPICallPattern<Tracing::TraceMessageOp,
                                           memref_trace_message>>(
         &getContext(), traceMessageAddOperands);
+    patterns.add<TracingToCAPICallPattern<Tracing::DebugProbeOp,
+                                          memref_debug_probe_plaintext>>(
+        &getContext(), debugProbeAddOperands);
 
     // Apply conversion
     if (mlir::applyPartialConversion(op, target, std::move(patterns))

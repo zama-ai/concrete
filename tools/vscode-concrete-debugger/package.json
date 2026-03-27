@@ -1,0 +1,132 @@
+{
+    "name": "vscode-concrete-debugger",
+    "displayName": "Concrete FHE Debugger",
+    "description": "Debug Adapter for Concrete FHE circuits — step through DAG nodes, inspect intermediate values, and detect overflow.",
+    "version": "0.1.0",
+    "publisher": "zama-ai",
+    "license": "BSD-3-Clause",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zama-ai/concrete"
+    },
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Debuggers"
+    ],
+    "activationEvents": [
+        "onDebugResolve:concrete"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "debuggers": [
+            {
+                "type": "concrete",
+                "label": "Concrete FHE",
+                "languages": [
+                    "python"
+                ],
+                "configurationAttributes": {
+                    "launch": {
+                        "required": [
+                            "program"
+                        ],
+                        "properties": {
+                            "program": {
+                                "type": "string",
+                                "description": "Path to the Python script containing the FHE circuit.",
+                                "default": "${file}"
+                            },
+                            "function": {
+                                "type": "string",
+                                "description": "Name of the circuit/function variable to debug."
+                            },
+                            "args": {
+                                "type": "array",
+                                "description": "Input values for the circuit.",
+                                "default": []
+                            },
+                            "pythonPath": {
+                                "type": "string",
+                                "description": "Path to the Python interpreter.",
+                                "default": "python3"
+                            },
+                            "stopOnEntry": {
+                                "type": "boolean",
+                                "description": "Stop on the first non-input node.",
+                                "default": true
+                            },
+                            "stopOnOverflow": {
+                                "type": "boolean",
+                                "description": "Stop execution when a node overflows its bit width.",
+                                "default": false
+                            },
+                            "functions": {
+                                "type": "array",
+                                "description": "Ordered list of function calls for @fhe.module debugging. Each entry has a 'name' and optional 'args'.",
+                                "items": {
+                                    "type": "object",
+                                    "required": ["name"],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Function name within the module."
+                                        },
+                                        "args": {
+                                            "type": "array",
+                                            "description": "Input values for this function.",
+                                            "default": []
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "configurationSnippets": [
+                    {
+                        "label": "Concrete FHE: Debug Circuit",
+                        "description": "Debug a Concrete FHE circuit with the simulator inspector.",
+                        "body": {
+                            "type": "concrete",
+                            "request": "launch",
+                            "name": "Debug FHE Circuit",
+                            "program": "${file}",
+                            "function": "${1:circuit_name}",
+                            "args": [],
+                            "stopOnEntry": true
+                        }
+                    },
+                    {
+                        "label": "Concrete FHE: Debug Module",
+                        "description": "Debug an @fhe.module with multiple functions.",
+                        "body": {
+                            "type": "concrete",
+                            "request": "launch",
+                            "name": "Debug FHE Module",
+                            "program": "${file}",
+                            "function": "${1:module_name}",
+                            "functions": [
+                                { "name": "${2:function_name}", "args": [] }
+                            ],
+                            "stopOnEntry": true,
+                            "stopOnOverflow": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "scripts": {
+        "bundle-dap": "rm -rf dap-server && mkdir -p dap-server/concrete_dap && cp ../concrete-debugger/concrete_dap_server.py dap-server/ && cp ../concrete-debugger/concrete_dap/*.py dap-server/concrete_dap/",
+        "compile": "tsc -p ./",
+        "build": "npm run bundle-dap && npm run compile",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/node": "^25.5.0",
+        "@types/vscode": "^1.80.0",
+        "typescript": "^5.0.0"
+    }
+}
